@@ -433,6 +433,13 @@ def patch_webcam_api_and_ui(root: Path) -> None:
         "              " + insert + "<small class=\"form-note\">Les temps sont en secondes : 3 600 = 01:00:00. Pour une VOD, sélectionne une plage afin d'éviter un téléchargement massif.",
         "sélecteur webcam du formulaire Twitch",
     )
+    replace_once(
+        html,
+        "<small>Score explicable et extraits candidats de 35 secondes</small>",
+        "<small>Durées adaptatives de 25 à 60 secondes, sans chevauchement</small>",
+        "libellé des durées adaptatives",
+    )
+
 
 
 def patch_tests(root: Path) -> None:
@@ -508,6 +515,58 @@ def test_webcam_graph_rejects_unknown_zone() -> None:
 ''',
         encoding="utf-8",
     )
+    # Exercise the adaptive default and assert the selected passages stay distinct.
+    highlights_test = root / "tests/test_highlights.py"
+    replace_once(
+        highlights_test,
+        "def test_score_short_twitch_clip_returns_single_candidate() -> None:\n",
+        """def test_default_highlight_candidates_are_non_overlapping_and_use_supported_lengths() -> None:
+    audio = [
+        {
+            "start": float(second),
+            "end": float(second + 2),
+            "rms": 0.06 if (40 <= second < 60 or 110 <= second < 136) else 0.005,
+        }
+        for second in range(0, 180, 2)
+    ]
+    words = [
+        WordTiming(42.0, 42.4, "BRO"),
+        WordTiming(46.0, 46.4, "WHAT"),
+        WordTiming(50.0, 50.4, "NO"),
+        WordTiming(54.0, 54.4, "INSANE"),
+        WordTiming(114.0, 114.4, "WAIT"),
+        WordTiming(118.0, 118.4, "BRO"),
+        WordTiming(122.0, 122.4, "CRAZY"),
+        WordTiming(126.0, 126.4, "WHAT"),
+    ]
+    candidates = score_highlight_candidates(180, audio, words)
+
+    assert candidates
+    assert all(
+        round(item["end_time"] - item["start_time"]) in {25, 35, 45, 60}
+        for item in candidates
+    )
+    for index, first in enumerate(candidates):
+        for second in candidates[index + 1:]:
+            assert (
+                first["end_time"] + 6 <= second["start_time"]
+                or second["end_time"] + 6 <= first["start_time"]
+            )
+
+
+def test_score_short_twitch_clip_returns_single_candidate() -> None:
+""",
+        "test scoring adaptatif et anti-chevauchement",
+    )
+
+    render_test = root / "tests/test_render_integration.py"
+    replace_once(
+        render_test,
+        "        max_duration=60,\n",
+        '        max_duration=60,\n        webcam_zone="top-right",\n',
+        "test FFmpeg réel avec overlay webcam",
+    )
+
 
 
 def apply(root: Path) -> None:
