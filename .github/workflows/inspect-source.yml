@@ -46,6 +46,7 @@ jobs:
               "studio/web/model_manager.py",
               "studio/web/store.py",
               "studio/web/highlights.py",
+              "installer/build_release_package.py",
           ]
           for rel in targets:
               p = root / rel
@@ -96,9 +97,9 @@ jobs:
               print(f"\\n--- {rel} ---")
               if names:
                   for name in names:
-                      starts = [i for i, line in enumerate(lines) if line.startswith(name)]
+                      starts = [i for i, line in enumerate(lines) if line.strip().startswith(name)]
                       for start in starts:
-                          end = next((i for i in range(start + 1, len(lines)) if lines[i].startswith("    def ") or lines[i].startswith("def ")), min(len(lines), start + 180))
+                          end = next((i for i in range(start + 1, len(lines)) if lines[i].strip().startswith("def ") or lines[i].strip().startswith("class ")), min(len(lines), start + 240))
                           print(f"\\n[{name} at {start+1}]")
                           for i in range(start, min(end, start+220)):
                               print(f"{i+1:04d}: {lines[i]}")
@@ -106,6 +107,24 @@ jobs:
                   for i, line in enumerate(lines):
                       if "highlight" in line.lower() or "candidate" in line.lower():
                           print(f"{i+1:04d}: {line}")
+          print("\\n=== DOWNLOAD AND SETUP PATHS ===")
+          targets = [
+              "installer/build_release_package.py",
+              "installer/install.ps1",
+              "installer/update_from_archive.ps1",
+              "studio/web/transcribe.py",
+              "requirements.txt",
+              "pyproject.toml",
+          ]
+          for rel in targets:
+              p = root / rel
+              if p.is_file():
+                  print(f"\\n--- {rel} ---")
+                  lines = p.read_text(encoding="utf-8-sig", errors="replace").splitlines()
+                  for i, line in enumerate(lines):
+                      if rel.endswith("transcribe.py") and i > 300:
+                          break
+                      print(f"{i+1:04d}: {line}")
           print("\\n=== APP TRANSCRIPTION/CAPTION REFERENCES ===")
           p = root / "studio/web/app.py"
           lines = p.read_text(encoding="utf-8-sig").splitlines()
