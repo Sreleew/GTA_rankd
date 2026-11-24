@@ -28,6 +28,7 @@ jobs:
           grep -n -A 3 -B 3 'version:' "$APP/config.yaml.default" | head -30
           echo "=== Patched FFprobe call ==="
           grep -n -B 2 -A 8 'probe_timeout_for_file\|timeout=probe_timeout' "$APP/studio/web/short_renderer.py" "$APP/studio/web/highlights.py"
-          echo "=== Test added by hotfix ==="
+          echo "=== Run regression tests ==="
+          python -m pip install --disable-pip-version-check pytest
           cd "$APP"
           python -m pytest -q tests/test_probe_timeout.py
