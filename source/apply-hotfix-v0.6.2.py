@@ -101,7 +101,7 @@ def test_highlight_candidates_are_unlimited_above_score_threshold() -> None:
 
 def patch_ui(root: Path) -> None:
     replace_once(root / "studio/web/static/index.html",
-        "Score explicable et extraits candidats de 35 secondes",
+        "Durées adaptatives de 25 à 60 secondes, sans chevauchement",
         "Seuls les passages au score supérieur à 80/100 sont proposés, sans limite de quantité",
         "information de sélection dans l'interface")
     app = root / "studio/web/static/app.js"
