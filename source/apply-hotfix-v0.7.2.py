@@ -413,4 +413,3 @@ if __name__ == "__main__":
     if len(sys.argv) != 2:
         raise SystemExit("Usage: apply-hotfix-v0.7.2.py <gta-ranked-studio-source-root>")
     apply(Path(sys.argv[1]))
-    apply(Path(sys.argv[1]))
