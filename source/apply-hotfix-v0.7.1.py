@@ -137,7 +137,8 @@ def patch_metadata(root: Path) -> None:
             "hashtags": ["3-4 relevant search tags"],
             "hook_text": "string", "context_card": "string", "thumbnail_text": "2-4 words",
         },
-    }    request_body = json.dumps({
+    }
+    request_body = json.dumps({
         "model": ollama_model, "system": prompt_rules,
         "prompt": json.dumps(payload, ensure_ascii=False), "stream": False,
         "format": "json", "options": {"temperature": 0.62, "num_predict": 240},
@@ -276,7 +277,8 @@ def patch_thumbnail(root: Path) -> None:
 
     draw.rounded_rectangle((margin, 64, margin + 300, 132), radius=15,
                            fill=(5, 7, 10, 220), outline=(255, 197, 42, 245), width=3)
-    draw.text((margin + 22, 80), "GTA RANKED", font=load_font(30), fill=white)    series = "CLIP / GTA UNIVERSE"
+    draw.text((margin + 22, 80), "GTA RANKED", font=load_font(30), fill=white)
+    series = "CLIP / GTA UNIVERSE"
     series_font = load_font(20)
     series_width = draw.textbbox((0, 0), series, font=series_font)[2]
     draw.text((width - margin - series_width, 91), series, font=series_font, fill=muted)
@@ -415,7 +417,8 @@ def patch_ui(root: Path) -> None:
     )
     replace_once(
         app,
-        '<div class="job-main"><strong title="${escapeHtml(title)}">${escapeHtml(title)}</strong><div class="job-meta">',        """<div class="job-main"><strong title="${escapeHtml(title)}">${escapeHtml(title)}</strong>${socialCaption ? `<div class="job-caption">${escapeHtml(socialCaption)}</div>` : ''}<div class="job-meta">""",
+        '<div class="job-main"><strong title="${escapeHtml(title)}">${escapeHtml(title)}</strong><div class="job-meta">',
+        """<div class="job-main"><strong title="${escapeHtml(title)}">${escapeHtml(title)}</strong>${socialCaption ? `<div class="job-caption">${escapeHtml(socialCaption)}</div>` : ''}<div class="job-meta">""",
         "affichage du premier extrait de la légende",
     )
     replace_once(
@@ -554,7 +557,8 @@ Performance :
 
     for relative in ("README.md", "docs/UPDATES.md"):
         path = root / relative
-        content = path.read_text(encoding="utf-8-sig")        content += """
+        content = path.read_text(encoding="utf-8-sig")
+        content += """
 
 ## v0.7.1 : miniatures GTA et texte social plus naturel
 
