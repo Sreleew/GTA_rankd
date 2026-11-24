@@ -1,0 +1,32 @@
+name: Inspect GTA Ranked Studio Twitch range handling
+
+on:
+  push:
+    paths:
+      - ".github/workflows/inspect-twitch-range.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Print Twitch range handling and related tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/gta-source
+          tar -xJf source/GTA-Ranked-Studio-source-v0.4.0.tar.xz -C /tmp/gta-source
+          APP="/tmp/gta-source/gta-ranked-studio"
+          python source/apply-hotfix-v0.3.5.py "$APP"
+          python source/apply-hotfix-v0.3.6.py "$APP"
+          python source/apply-hotfix-v0.4.1.py "$APP"
+          echo "=== DOWNLOAD FUNCTION ==="
+          nl -ba "$APP/studio/web/highlights.py" | sed -n '404,510p'
+          echo "=== RANGE / DOWNLOAD TESTS ==="
+          grep -R -n -B 8 -A 20 -E 'download_ranges|window_start|window_end|download.*range|section' "$APP/tests" | head -600 || true
+          echo "=== UI RANGE FIELDS ==="
+          grep -R -n -B 6 -A 10 -E 'window_start|window_end' "$APP/studio/web/static" | head -400 || true
