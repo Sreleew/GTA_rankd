@@ -1,16 +1,24 @@
-name: Inspect v0.5 subprocess and config blocks
+name: Validate GTA Ranked Studio v0.5 patch
+
 on:
   push:
-    paths: [".github/workflows/inspect-windows-subprocesses.yml"]
+    paths:
+      - "source/apply-hotfix-v0.5.0.py"
+      - ".github/workflows/inspect-windows-subprocesses.yml"
   workflow_dispatch:
+
 permissions:
   contents: read
+
 jobs:
-  inspect:
+  validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Print remaining v0.5 blocks
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - name: Extract source and apply all cumulative patches
         shell: bash
         run: |
           set -euo pipefail
@@ -19,25 +27,21 @@ jobs:
           APP="/tmp/gta-source/gta-ranked-studio"
           python source/apply-hotfix-v0.4.1.py "$APP"
           python source/apply-hotfix-v0.4.2.py "$APP"
-          for spec in \
-            "studio/web/transcribe.py:45:110" \
-            "studio/web/transcribe.py:235:330" \
-            "studio/doctor.py:32:50" \
-            "studio/web/app.py:105:120" \
-            "studio/web/short_renderer.py:31:50" \
-            "studio/web/short_renderer.py:119:178" \
-            "studio/web/short_renderer.py:180:264" \
-            "studio/web/short_renderer.py:264:370" \
-            "studio/web/highlights.py:420:500" \
-            "config.yaml.default:1:220"; do
-              file="${spec%%:*}"
-              rest="${spec#*:}"
-              start="${rest%%:*}"
-              end="${rest##*:}"
-              echo "===== $file ($start-$end) ====="
-              nl -ba "$APP/$file" | sed -n "${start},${end}p"
-          done
-          echo "===== IMPORTS ====="
-          for f in studio/web/app.py studio/web/worker.py studio/web/short_renderer.py studio/web/transcribe.py studio/doctor.py; do
-            echo "### $f"; head -35 "$APP/$f"
-          done
+          python source/apply-hotfix-v0.5.0.py "$APP"
+          test "$(grep -E '^Version:' "$APP/VERSION.txt" | awk '{print $2}')" = "0.5.0"
+          python -m compileall -q "$APP/studio" "$APP/tests"
+          echo "Version v0.5.0 patch applied and Python sources compile."
+      - name: Install FFmpeg and application dependencies
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends ffmpeg
+          python -m pip install --disable-pip-version-check -r /tmp/gta-source/gta-ranked-studio/requirements.txt
+      - name: Run complete test suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd /tmp/gta-source/gta-ranked-studio
+          cp config.yaml.default config.yaml
+          trap 'rm -f config.yaml' EXIT
+          python -m pytest -q
