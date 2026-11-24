@@ -382,7 +382,7 @@ def patch_app(root: Path) -> None:
     )
     replace_once(
         app,
-        '            "streamer": scan.get("streamer", ""), "note": f"Moment fort détecté automatiquement · {candidate[\\'score\\']}/100",',
+        """            "streamer": scan.get("streamer", ""), "note": f"Moment fort détecté automatiquement · {candidate['score']}/100",""",
         '            "streamer": scan.get("streamer", ""), "note": "",',
         "suppression du score automatique dans la note éditoriale",
     )
