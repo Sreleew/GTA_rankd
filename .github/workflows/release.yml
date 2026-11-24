@@ -5,13 +5,12 @@ on:
     branches: [main]
     paths:
       - "source/GTA-Ranked-Studio-source-v0.4.0.tar.xz"
+      - "source/apply-hotfix-v0.4.1.py"
       - ".github/workflows/release.yml"
-      - "VERSION.txt"
-      - "README.md"
   workflow_dispatch:
     inputs:
       version:
-        description: "Version à publier (doit correspondre au VERSION.txt du snapshot)"
+        description: "Version à publier (doit correspondre à la version produite par le correctif source)"
         required: true
         type: string
 
@@ -37,7 +36,7 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Validate and extract v0.4.0 source snapshot
+      - name: Extract v0.4.0 base snapshot and apply v0.4.1 hotfix
         shell: bash
         run: |
           set -euo pipefail
@@ -53,10 +52,11 @@ jobs:
           tar -xJf "$SNAPSHOT" -C source-checkout
           APP_ROOT="source-checkout/gta-ranked-studio"
           test -f "$APP_ROOT/VERSION.txt"
+          python source/apply-hotfix-v0.4.1.py "$APP_ROOT"
 
           APP_VERSION="$(sed -nE 's/^Version:[[:space:]]*([0-9]+(\.[0-9]+){2,3})[[:space:]]*$/\1/p' "$APP_ROOT/VERSION.txt" | head -n 1)"
-          if [ "$APP_VERSION" != "0.4.0" ]; then
-            echo "Le snapshot doit être en version 0.4.0, version trouvée : ${APP_VERSION:-absente}."
+          if [ "$APP_VERSION" != "0.4.1" ]; then
+            echo "Le correctif doit produire la version 0.4.1, version trouvée : ${APP_VERSION:-absente}."
             exit 1
           fi
 
@@ -68,7 +68,7 @@ jobs:
             REQUESTED_VERSION="$APP_VERSION"
           fi
           if [ "$REQUESTED_VERSION" != "$APP_VERSION" ]; then
-            echo "Version demandée ($REQUESTED_VERSION) différente du snapshot ($APP_VERSION)."
+            echo "Version demandée ($REQUESTED_VERSION) différente du paquet produit ($APP_VERSION)."
             exit 1
           fi
 
