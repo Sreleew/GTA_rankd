@@ -149,6 +149,24 @@ jobs:
               for first, last in spans:
                   for i in range(first-1, min(last, len(lines))):
                       print(f"{i+1:04d}: {lines[i]}")
+          print("\\n=== HTML TRANSCRIPTION FORM CONTEXT ===")
+          p = root / "studio/web/static/index.html"
+          lines = p.read_text(encoding="utf-8-sig").splitlines()
+          hits = [i for i, line in enumerate(lines) if any(k in line.lower() for k in ("captions_enabled", "hook_text", "name=\\"note\\"", "form-local", "form-url", "name=\\"url\\""))]
+          shown = set()
+          for i in hits:
+              for j in range(max(0, i-7), min(len(lines), i+10)):
+                  if j not in shown:
+                      print(f"{j+1:04d}: {lines[j]}")
+                      shown.add(j)
+          print("\\n=== HIGHLIGHT DOWNLOAD OPTIONS ===")
+          p = root / "studio/web/highlights.py"
+          lines = p.read_text(encoding="utf-8-sig").splitlines()
+          for i in range(438, min(505, len(lines))):
+              print(f"{i+1:04d}: {lines[i]}")
+          print("\\n=== METADATA FILE ===")
+          p = root / "studio/web/metadata.py"
+          print(p.read_text(encoding="utf-8-sig"))
           print("\\n=== APP TRANSCRIPTION/CAPTION REFERENCES ===")
           p = root / "studio/web/app.py"
           lines = p.read_text(encoding="utf-8-sig").splitlines()
