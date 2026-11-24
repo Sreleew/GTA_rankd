@@ -27,16 +27,28 @@ def replace_function(path: Path, name: str, replacement: str) -> None:
     path.write_text(updated, encoding="utf-8")
 
 
+def ensure_function(path: Path, name: str, replacement: str) -> None:
+    text = path.read_text(encoding="utf-8-sig")
+    if f"def {name}(" in text:
+        replace_function(path, name, replacement)
+        return
+    anchor = "\ndef _fallback_metadata("
+    if anchor not in text:
+        raise SystemExit(f"Point d'insertion absent pour {name} dans {path}")
+    text = text.replace(anchor, "\n" + replacement.rstrip() + "\n" + anchor, 1)
+    path.write_text(text, encoding="utf-8")
+
+
 def patch_metadata(root: Path) -> None:
     path = root / "studio/web/metadata.py"
-    replace_function(path, "_creator_name", r'''def _creator_name(streamer: str, source_title: str) -> str:
+    ensure_function(path, "_creator_name", r'''def _creator_name(streamer: str, source_title: str) -> str:
     return re.sub(r"\s+", " ", str(streamer or "")).strip()[:42]''')
-    replace_function(path, "_creator_tag", r'''def _creator_tag(streamer: str, source_title: str) -> str | None:
+    ensure_function(path, "_creator_tag", r'''def _creator_tag(streamer: str, source_title: str) -> str | None:
     value = re.sub(r"[^A-Za-z0-9_]", "", str(streamer or ""))
     if len(value) < 3 or value.lower() in {"streamer", "creator", "unknown"}:
         return None
     return "#" + value[:28]''')
-    replace_function(path, "_default_tags", r'''def _default_tags(game: str, streamer: str, source_title: str) -> list[str]:
+    ensure_function(path, "_default_tags", r'''def _default_tags(game: str, streamer: str, source_title: str) -> list[str]:
     tags = ["#GTA"]
     if game == "GTA RP":
         tags.append("#GTARP")
@@ -125,8 +137,7 @@ def patch_metadata(root: Path) -> None:
             "hashtags": ["3-4 relevant search tags"],
             "hook_text": "string", "context_card": "string", "thumbnail_text": "2-4 words",
         },
-    }
-    request_body = json.dumps({
+    }    request_body = json.dumps({
         "model": ollama_model, "system": prompt_rules,
         "prompt": json.dumps(payload, ensure_ascii=False), "stream": False,
         "format": "json", "options": {"temperature": 0.62, "num_predict": 240},
@@ -265,8 +276,7 @@ def patch_thumbnail(root: Path) -> None:
 
     draw.rounded_rectangle((margin, 64, margin + 300, 132), radius=15,
                            fill=(5, 7, 10, 220), outline=(255, 197, 42, 245), width=3)
-    draw.text((margin + 22, 80), "GTA RANKED", font=load_font(30), fill=white)
-    series = "CLIP / GTA UNIVERSE"
+    draw.text((margin + 22, 80), "GTA RANKED", font=load_font(30), fill=white)    series = "CLIP / GTA UNIVERSE"
     series_font = load_font(20)
     series_width = draw.textbbox((0, 0), series, font=series_font)[2]
     draw.text((width - margin - series_width, 91), series, font=series_font, fill=muted)
@@ -405,8 +415,7 @@ def patch_ui(root: Path) -> None:
     )
     replace_once(
         app,
-        '<div class="job-main"><strong title="${escapeHtml(title)}">${escapeHtml(title)}</strong><div class="job-meta">',
-        """<div class="job-main"><strong title="${escapeHtml(title)}">${escapeHtml(title)}</strong>${socialCaption ? `<div class="job-caption">${escapeHtml(socialCaption)}</div>` : ''}<div class="job-meta">""",
+        '<div class="job-main"><strong title="${escapeHtml(title)}">${escapeHtml(title)}</strong><div class="job-meta">',        """<div class="job-main"><strong title="${escapeHtml(title)}">${escapeHtml(title)}</strong>${socialCaption ? `<div class="job-caption">${escapeHtml(socialCaption)}</div>` : ''}<div class="job-meta">""",
         "affichage du premier extrait de la légende",
     )
     replace_once(
@@ -545,8 +554,7 @@ Performance :
 
     for relative in ("README.md", "docs/UPDATES.md"):
         path = root / relative
-        content = path.read_text(encoding="utf-8-sig")
-        content += """
+        content = path.read_text(encoding="utf-8-sig")        content += """
 
 ## v0.7.1 : miniatures GTA et texte social plus naturel
 
