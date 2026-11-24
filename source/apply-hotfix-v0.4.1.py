@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
@@ -13,6 +14,16 @@ def replace_once(path: Path, old: str, new: str, label: str) -> None:
     if text.count(old) != 1:
         raise SystemExit(f"Patch v0.4.1 ambigu : {text.count(old)} occurrences ({label}) dans {path}")
     path.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+
+def set_version(path: Path, pattern: str, replacement: str, label: str) -> None:
+    text = path.read_text(encoding="utf-8-sig")
+    updated, count = re.subn(pattern, replacement, text, count=1, flags=re.MULTILINE)
+    if count == 0:
+        if "0.4.1" in text:
+            return
+        raise SystemExit(f"Version {label} introuvable dans {path}")
+    path.write_text(updated, encoding="utf-8")
 
 
 def apply(root: Path) -> None:
@@ -149,9 +160,19 @@ def test_probe_media_uses_the_supplied_timeout(
 
     (root / "VERSION.txt").write_text("GTA Ranked Studio\nVersion: 0.4.1\n", encoding="utf-8")
     pyproject = root / "pyproject.toml"
-    replace_once(pyproject, 'version = "0.4.0"', 'version = "0.4.1"', "version pyproject.toml")
+    set_version(
+        pyproject,
+        r'^(\s*version\s*=\s*)["\'][^"\']+["\'](\s*(?:#.*)?)$',
+        r'\g<1>"0.4.1"\g<2>',
+        "pyproject.toml",
+    )
     config = root / "config.yaml.default"
-    replace_once(config, "  version: 0.4.0\n", "  version: 0.4.1\n", "version config.yaml.default")
+    set_version(
+        config,
+        r'^(\s{2}version:\s*)[^\s#]+(\s*(?:#.*)?)$',
+        r'\g<1>0.4.1\g<2>',
+        "config.yaml.default",
+    )
 
     for relative in (
         "installer/apply_update.ps1",
