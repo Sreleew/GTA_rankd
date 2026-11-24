@@ -105,20 +105,12 @@ def test_twitch_download_range_callback_preserves_fractional_seconds() -> None:
     ):
         path = root / relative
         text = path.read_text(encoding="utf-8-sig")
-        old = "'NOTES-v0.3.6.txt', 'VERIFICATION-v0.3.6.md'"
-        required = [
-            "'NOTES-v0.4.1.txt', 'VERIFICATION-v0.4.1.md'",
-            "'NOTES-v0.4.2.txt', 'VERIFICATION-v0.4.2.md'",
-        ]
-        if old in text:
-            text = text.replace(old, old + ", " + ", ".join(required), 1)
-        else:
-            missing = [entry for entry in required if entry not in text]
-            if missing:
-                marker = required[0]
-                if marker not in text:
-                    raise SystemExit(f"Liste de fichiers root absente dans {relative}")
-                text = text.replace(marker, marker + ", " + required[1], 1)
+        previous = "'NOTES-v0.4.1.txt', 'VERIFICATION-v0.4.1.md'"
+        current = "'NOTES-v0.4.2.txt', 'VERIFICATION-v0.4.2.md'"
+        if current not in text:
+            if previous not in text:
+                raise SystemExit(f"Liste de fichiers root absente dans {relative}")
+            text = text.replace(previous, previous + ", " + current, 1)
         path.write_bytes(b"\xef\xbb\xbf" + text.replace("\r\n", "\n").replace("\n", "\r\n").encode("utf-8"))
 
     (root / "NOTES-v0.4.2.txt").write_text(
