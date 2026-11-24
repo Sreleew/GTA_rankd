@@ -68,15 +68,6 @@ def patch_ui(root: Path) -> None:
         "  if (verifyGpuButton) verifyGpuButton.addEventListener('click', verifyWhisperGpu);\n",
         'liaison tolérante du clic GPU',
     )
-    # Ensure the test routine reports its state before the request starts and has
-    # a stable, visible result even if the API returns an error.
-    replace_once(
-        js,
-        "  $('#whisper-engine-status').textContent = 'Test Vulkan en cours · chargement du modèle sur le GPU...';\n",
-        "  $('#whisper-engine-status').textContent = 'Test Vulkan en cours · chargement du modèle sur le GPU...';\n"
-        "  $('#whisper-engine-status').setAttribute('aria-live', 'polite');\n",
-        'retour accessible état GPU',
-    )
 
 
 def patch_tests(root: Path) -> None:
