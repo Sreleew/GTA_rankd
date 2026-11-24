@@ -1,0 +1,192 @@
+name: Full GTA Ranked Studio audit
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Reconstruct, test, scan and inventory v0.7.7
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - name: Reconstruct exact Windows release source
+        shell: bash
+        run: |
+          set -euo pipefail
+          SNAPSHOT="source/GTA-Ranked-Studio-source-v0.4.0.tar.xz"
+          EXPECTED_SHA256="bbf35740febed311d7788b42edb569a1b9afcfd89bee449d9dbf62d8b07162e9"
+          echo "$EXPECTED_SHA256  $SNAPSHOT" | sha256sum --check -
+          xz -t "$SNAPSHOT"
+          mkdir -p source-checkout
+          tar -xJf "$SNAPSHOT" -C source-checkout
+          APP_ROOT="source-checkout/gta-ranked-studio"
+          python source/apply-hotfix-v0.4.1.py "$APP_ROOT"
+          python source/apply-hotfix-v0.4.2.py "$APP_ROOT"
+          python source/apply-hotfix-v0.5.0.py "$APP_ROOT"
+          python source/apply-hotfix-v0.5.1.py "$APP_ROOT"
+          python source/apply-hotfix-v0.6.0.py "$APP_ROOT"
+          python source/apply-hotfix-v0.6.1.py "$APP_ROOT"
+          python source/apply-hotfix-v0.6.2.py "$APP_ROOT"
+          cat source/v0.7.0-patch.part*.b64 | base64 --decode | xz --decompress --stdout > source/apply-hotfix-v0.7.0.py
+          python -m py_compile source/apply-hotfix-v0.7.0.py
+          python source/apply-hotfix-v0.7.0.py "$APP_ROOT"
+          python source/apply-hotfix-v0.7.1.py "$APP_ROOT"
+          python source/apply-hotfix-v0.7.2.py "$APP_ROOT"
+          python source/apply-hotfix-v0.7.3.py "$APP_ROOT"
+          python source/apply-hotfix-v0.7.4.py "$APP_ROOT"
+          python source/apply-hotfix-v0.7.5.py "$APP_ROOT"
+          python source/apply-hotfix-v0.7.6.py "$APP_ROOT"
+          python source/apply-hotfix-v0.7.7.py "$APP_ROOT"
+          test "$(sed -nE 's/^Version:[[:space:]]*([0-9.]+).*$/\1/p' "$APP_ROOT/VERSION.txt" | head -1)" = "0.7.7"
+          echo "APP_ROOT=$APP_ROOT" >> "$GITHUB_ENV"
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends ffmpeg
+          ffmpeg -version
+      - name: Install app dependencies
+        run: python -m pip install --disable-pip-version-check -r "$APP_ROOT/requirements.txt"
+      - name: Install audit tools
+        run: python -m pip install --disable-pip-version-check pip-audit bandit ruff pipdeptree
+      - name: Inventory and declared-vs-used dependency audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$APP_ROOT"
+          mkdir -p audit
+          {
+            echo "## Version"; cat VERSION.txt
+            echo
+            echo "## Top-level files"; find . -maxdepth 2 -type f -printf '%p %s bytes\n' | sort
+            echo
+            echo "## Python source size"; find studio installer tests -type f -name '*.py' -print0 | xargs -0 wc -l | tail -1
+            echo
+            echo "## Requirements"; cat requirements.txt
+            echo
+            echo "## pyproject"; cat pyproject.toml
+            echo
+            echo "## pip check"; python -m pip check
+            echo
+            echo "## Dependency tree"; pipdeptree --warn fail
+          } | tee audit/inventory.txt
+          python - <<'PY' | tee audit/dependency-usage.txt
+          import ast
+          import importlib.metadata as md
+          import pathlib
+          import re
+          root=pathlib.Path(".")
+          files=[p for base in ("studio","installer") for p in pathlib.Path(base).rglob("*.py")]
+          imports=set()
+          for p in files:
+              try: tree=ast.parse(p.read_text(encoding="utf-8-sig"))
+              except Exception as e:
+                  print(f"AST_ERROR {p}: {e}"); continue
+              for n in ast.walk(tree):
+                  if isinstance(n,ast.Import):
+                      imports.update(a.name.split(".")[0] for a in n.names)
+                  elif isinstance(n,ast.ImportFrom) and n.module:
+                      imports.add(n.module.split(".")[0])
+          req=[]
+          for line in pathlib.Path("requirements.txt").read_text().splitlines():
+              line=line.strip()
+              if not line or line.startswith("#"): continue
+              name=re.split(r"[<=>~!\[]",line,1)[0].strip()
+              req.append((name, re.sub(r"[-_.]+","-",name).lower()))
+          mapping={dist.metadata.get("Top-Level-Modules",""):dist.metadata["Name"] for dist in md.distributions()}
+          normalized_imports={x.lower().replace("_","-") for x in imports}
+          print("Top-level imports:",", ".join(sorted(imports)))
+          print("Declared packages:")
+          for raw,norm in req:
+              print(f"  {raw}: {'IMPORTED' if norm in normalized_imports or any(x.startswith(norm) for x in normalized_imports) else 'REVIEW_UNUSED'}")
+          print("Note: dynamic/plugin imports can make a declared dependency appear unused; do not auto-remove based on this report alone.")
+          PY
+      - name: Python compile and Ruff
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$APP_ROOT"
+          python -m compileall -q studio installer tests
+          ruff check studio installer tests --output-format=concise > audit/ruff.txt || true
+          echo "Ruff findings: $(wc -l < audit/ruff.txt)"
+          head -200 audit/ruff.txt
+      - name: Security scan
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$APP_ROOT"
+          bandit -r studio installer -q -f json -o audit/bandit.json || true
+          python - <<'PY'
+          import json,pathlib
+          p=pathlib.Path("audit/bandit.json")
+          data=json.loads(p.read_text()) if p.exists() else {}
+          results=data.get("results",[])
+          print(f"Bandit findings: {len(results)}")
+          for x in results:
+              print(f"{x['issue_severity']} {x['issue_confidence']} {x['filename']}:{x['line_number']} {x['test_id']} {x['issue_text']}")
+          PY
+          pip-audit -r requirements.txt --format json > audit/pip-audit.json || true
+          python - <<'PY'
+          import json,pathlib
+          data=json.loads(pathlib.Path("audit/pip-audit.json").read_text())
+          vulns=data.get("dependencies",[])
+          count=sum(len(x.get("vulns",[])) for x in vulns)
+          print(f"pip-audit vulnerabilities: {count}")
+          for x in vulns:
+              for v in x.get("vulns",[]):
+                  print(x.get("name"),x.get("version"),v.get("id"),v.get("fix_versions"))
+          PY
+      - name: Frontend syntax and insecure pattern scan
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$APP_ROOT"
+          node --check studio/web/static/app.js
+          python - <<'PY' | tee audit/frontend-security-review.txt
+          import pathlib,re
+          js=pathlib.Path("studio/web/static/app.js").read_text(encoding="utf-8-sig")
+          html=pathlib.Path("studio/web/static/index.html").read_text(encoding="utf-8-sig")
+          checks={
+            "eval(":r"\beval\s*\(",
+            "new Function(":r"new\s+Function\s*\(",
+            "document.write(":r"document\.write\s*\(",
+            "innerHTML assignments":r"\.innerHTML\s*=",
+            "inline event attributes":r"\son(?:click|load|error)\s*=",
+            "http:// remote URLs":r"http://",
+          }
+          for label,pattern in checks.items():
+              hits=list(re.finditer(pattern,js+"\n"+html,re.I))
+              print(f"{label}: {len(hits)}")
+          print("HTML forms/buttons count:",len(re.findall(r"<button\b",html,re.I)))
+          PY
+      - name: Full application tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$APP_ROOT"
+          cp config.yaml.default config.yaml
+          trap 'rm -f config.yaml' EXIT
+          python -m pytest -q --durations=20 | tee audit/pytest.txt
+      - name: Package release build audit report
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$APP_ROOT"
+          python installer/build_release_package.py --version 0.7.7 --output-dir "$GITHUB_WORKSPACE/dist"
+          cp -a audit "$GITHUB_WORKSPACE/"
+          tar -czf "$GITHUB_WORKSPACE/gta-ranked-v077-audit-source.tar.gz" --exclude='config.yaml' --exclude='data' --exclude='out' --exclude='work' --exclude='models' .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gta-ranked-v077-full-audit
+          path: |
+            audit/
+            gta-ranked-v077-audit-source.tar.gz
+            dist/
+          retention-days: 3
