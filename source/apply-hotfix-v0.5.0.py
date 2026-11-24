@@ -536,26 +536,23 @@ def apply(root: Path) -> None:
                 anchor + ", 'NOTES-v0.5.0.txt', 'VERIFICATION-v0.5.0.md'",
                 1,
             )
-        path.write_bytes(
-            b"\\xef\\xbb\\xbf"
-            + text.replace("\\r\\n", "\\n").replace("\\n", "\\r\\n").encode("utf-8")
-        )
+        path.write_text(text, encoding="utf-8-sig", newline="\r\n")
 
     (root / "VERSION.txt").write_text(
-        "GTA Ranked Studio\\nVersion: 0.5.0\\n",
+        "GTA Ranked Studio\nVersion: 0.5.0\n",
         encoding="utf-8",
     )
-    set_version(
+    replace_once(
         root / "pyproject.toml",
-        r'^(\s*version\s*=\s*)["\'][^"\']+["\'](\s*(?:#.*)?)
-        r'\g<1>"0.5.0"\g<2>',
-        "pyproject.toml",
+        'version = "0.4.2"',
+        'version = "0.5.0"',
+        "version pyproject.toml",
     )
-    set_version(
+    replace_once(
         root / "config.yaml.default",
-        r'^(\s{2}version:\s*)[^\s#]+(\s*(?:#.*)?)
-        r'\g<1>0.5.0\g<2>',
-        "config.yaml.default",
+        "  version: 0.4.2",
+        "  version: 0.5.0",
+        "version config.yaml.default",
     )
 
     (root / "NOTES-v0.5.0.txt").write_text(
