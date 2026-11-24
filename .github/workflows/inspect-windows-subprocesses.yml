@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Print compact render and API implementation
+      - name: Print exact render route and ui blocks
         shell: bash
         run: |
           set -euo pipefail
@@ -23,17 +23,37 @@ jobs:
           APP="/tmp/gta-source/gta-ranked-studio"
           python source/apply-hotfix-v0.4.1.py "$APP"
           python source/apply-hotfix-v0.4.2.py "$APP"
-          echo "=== API ROUTES ==="
-          grep -n -E 'highlights|create.*short|shorts/create' "$APP/studio/web/app.py"
+          echo "=== APP.PY HIGHLIGHT ROUTES ==="
+          grep -n 'highlights' "$APP/studio/web/app.py" || true
           echo "=== RENDERER FUNCTION NAMES ==="
-          grep -n -E '^def |^class ' "$APP/studio/web/short_renderer.py"
-          echo "=== HIGHLIGHT STORE TABLE / METHODS ==="
-          grep -n -E 'highlight|short_job|source_start|source_end|crop' "$APP/studio/web/store.py" | head -150
-          echo "=== HIGHLIGHT JS FUNCTION ==="
-          grep -n -A 65 -B 8 'function createShortFromHighlight' "$APP/studio/web/static/app.js"
-          echo "=== HIGHLIGHT CARD RENDER ==="
-          grep -n -A 60 -B 10 'function renderHighlight' "$APP/studio/web/static/app.js"
-          echo "=== SHORT RENDER FUNCTION ==="
-          grep -n -A 200 -B 8 '^def render_short' "$APP/studio/web/short_renderer.py"
-          echo "=== APP SHORT ROUTES ==="
-          nl -ba "$APP/studio/web/app.py" | sed -n '650,850p'
+          grep -n -E '^def |^class ' "$APP/studio/web/short_renderer.py" || true
+          echo "=== HIGHLIGHTS STORE ==="
+          grep -n -E 'highlight|short_job|source_start|source_end|crop' "$APP/studio/web/store.py" | head -120 || true
+          echo "=== APP.JS HIGHLIGHT LINES ==="
+          grep -n -E 'highlight|candidate' "$APP/studio/web/static/app.js" | head -120 || true
+          echo "=== SHORT RENDER CORE ==="
+          nl -ba "$APP/studio/web/short_renderer.py" | sed -n '190,370p'
+          echo "=== API ROUTE CONTEXT ==="
+          python - "$APP/studio/web/app.py" <<'PY'
+          from pathlib import Path
+          import sys
+          p=Path(sys.argv[1]); lines=p.read_text(encoding="utf-8-sig").splitlines()
+          ix=[i for i,l in enumerate(lines) if "highlights" in l]
+          for i in ix:
+              print(f"\n--- app.py:{i+1} ---")
+              for j in range(max(0,i-6),min(len(lines),i+28)):
+                  print(f"{j+1}: {lines[j]}")
+          PY
+          echo "=== JS HIGHLIGHT CONTEXT ==="
+          python - "$APP/studio/web/static/app.js" <<'PY'
+          from pathlib import Path
+          import sys
+          p=Path(sys.argv[1]); lines=p.read_text(encoding="utf-8-sig").splitlines()
+          ix=[i for i,l in enumerate(lines) if "highlight" in l.lower() or "candidate" in l.lower()]
+          shown=set()
+          for i in ix:
+              for j in range(max(0,i-5),min(len(lines),i+18)):
+                  if j not in shown:
+                      print(f"{j+1}: {lines[j]}")
+                      shown.add(j)
+          PY
