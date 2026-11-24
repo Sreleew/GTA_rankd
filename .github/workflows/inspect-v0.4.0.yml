@@ -14,39 +14,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Extract source and inspect analysis timeouts
+      - name: Extract source and print highlight analysis flow
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p /tmp/gta-source
           tar -xJf source/GTA-Ranked-Studio-source-v0.4.0.tar.xz -C /tmp/gta-source
-          echo "=== Relevant Python files ==="
-          find /tmp/gta-source -type f -name '*.py' | grep -Ei 'highlight|moment|scan|analysis|twitch|video|media|job|process' | head -100 || true
-          echo "=== Exact timeout and cancellation code ==="
-          python - <<'PY'
-          from pathlib import Path
-          import re
-          root = Path("/tmp/gta-source")
-          patterns = re.compile(r"timeout|interrompue après|60\s*\*|\*\s*60|wait_for|communicate\(", re.I)
-          count = 0
-          for path in root.rglob("*.py"):
-              try:
-                  lines = path.read_text(encoding="utf-8-sig").splitlines()
-              except Exception:
-                  continue
-              hits = [i for i, line in enumerate(lines) if patterns.search(line)]
-              if not hits:
-                  continue
-              print(f"\\n--- {path} ---")
-              shown = set()
-              for i in hits:
-                  for j in range(max(0, i-2), min(len(lines), i+3)):
-                      if j not in shown:
-                          print(f"{j+1}: {lines[j]}")
-                          shown.add(j)
-                  print("...")
-                  count += 1
-                  if count >= 80:
-                      raise SystemExit(0)
-          print(f"Total matching locations: {count}")
-          PY
+          APP="/tmp/gta-source/gta-ranked-studio"
+          echo "=== highlights.py ==="
+          nl -ba "$APP/studio/web/highlights.py" | sed -n '1,430p'
+          echo "=== short_renderer.py command/probe helpers ==="
+          nl -ba "$APP/studio/web/short_renderer.py" | sed -n '1,105p'
+          echo "=== app.py scan routes ==="
+          grep -n -B 12 -A 35 -Ei 'highlight|scan' "$APP/studio/web/app.py" | head -300 || true
