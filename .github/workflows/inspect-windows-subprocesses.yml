@@ -1,4 +1,4 @@
-name: Inspect v0.5 focused functions
+name: Inspect v0.5 render and API hooks
 
 on:
   push:
@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Print exact implementation blocks
+      - name: Print compact render and API implementation
         shell: bash
         run: |
           set -euo pipefail
@@ -23,17 +23,17 @@ jobs:
           APP="/tmp/gta-source/gta-ranked-studio"
           python source/apply-hotfix-v0.4.1.py "$APP"
           python source/apply-hotfix-v0.4.2.py "$APP"
-          echo "=== HIGHLIGHTS SCORE ==="
-          nl -ba "$APP/studio/web/highlights.py" | sed -n '90,195p'
-          echo "=== HIGHLIGHTS PROCESS ==="
-          nl -ba "$APP/studio/web/highlights.py" | sed -n '238,410p'
-          echo "=== HIGHLIGHTS CREATE ROUTES ==="
-          grep -R -n -B 10 -A 25 -E 'create_highlight|highlight.*candidate|media_start|media_end' "$APP/studio/web" --include='*.py' | head -500
-          echo "=== RENDER FUNCTIONS ==="
+          echo "=== API ROUTES ==="
+          grep -n -E 'highlights|create.*short|shorts/create' "$APP/studio/web/app.py"
+          echo "=== RENDERER FUNCTION NAMES ==="
           grep -n -E '^def |^class ' "$APP/studio/web/short_renderer.py"
-          echo "=== RENDER CORE ==="
-          nl -ba "$APP/studio/web/short_renderer.py" | sed -n '180,390p'
-          echo "=== TRANSCRIBE PROCESS CORE ==="
-          nl -ba "$APP/studio/web/transcribe.py" | sed -n '230,340p'
-          echo "=== UI HIGHLIGHT TEMPLATE/JS ==="
-          grep -n -B 8 -A 35 -E 'highlight-candidate|data-highlight-create|createShortFromHighlight|highlight-url-form' "$APP/studio/web/static/app.js" "$APP/studio/web/static/index.html"
+          echo "=== HIGHLIGHT STORE TABLE / METHODS ==="
+          grep -n -E 'highlight|short_job|source_start|source_end|crop' "$APP/studio/web/store.py" | head -150
+          echo "=== HIGHLIGHT JS FUNCTION ==="
+          grep -n -A 65 -B 8 'function createShortFromHighlight' "$APP/studio/web/static/app.js"
+          echo "=== HIGHLIGHT CARD RENDER ==="
+          grep -n -A 60 -B 10 'function renderHighlight' "$APP/studio/web/static/app.js"
+          echo "=== SHORT RENDER FUNCTION ==="
+          grep -n -A 200 -B 8 '^def render_short' "$APP/studio/web/short_renderer.py"
+          echo "=== APP SHORT ROUTES ==="
+          nl -ba "$APP/studio/web/app.py" | sed -n '650,850p'
