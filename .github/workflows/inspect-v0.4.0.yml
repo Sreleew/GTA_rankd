@@ -14,16 +14,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Extract source and print highlight analysis flow
+      - name: Extract source and inspect probe tests
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p /tmp/gta-source
           tar -xJf source/GTA-Ranked-Studio-source-v0.4.0.tar.xz -C /tmp/gta-source
           APP="/tmp/gta-source/gta-ranked-studio"
-          echo "=== highlights.py ==="
-          nl -ba "$APP/studio/web/highlights.py" | sed -n '1,430p'
-          echo "=== short_renderer.py command/probe helpers ==="
-          nl -ba "$APP/studio/web/short_renderer.py" | sed -n '1,105p'
-          echo "=== app.py scan routes ==="
-          grep -n -B 12 -A 35 -Ei 'highlight|scan' "$APP/studio/web/app.py" | head -300 || true
+          echo "=== Probe tests/files ==="
+          find "$APP/tests" -maxdepth 2 -type f -name '*.py' -print
+          grep -R -n -B 8 -A 18 "probe_media\|run_command" "$APP/tests" | head -500 || true
+          echo "=== Full download implementation ==="
+          nl -ba "$APP/studio/web/highlights.py" | sed -n '400,510p'
+          echo "=== Project version files ==="
+          cat "$APP/VERSION.txt"
+          grep -n '^version' "$APP/pyproject.toml"
+          grep -n -A 3 -B 3 'version:' "$APP/config.yaml.default" | head -30
