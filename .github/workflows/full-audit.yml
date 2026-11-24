@@ -1,6 +1,10 @@
 name: Full GTA Ranked Studio audit
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/full-audit.yml"
   workflow_dispatch:
 
 permissions:
