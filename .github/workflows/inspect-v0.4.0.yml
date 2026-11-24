@@ -1,0 +1,52 @@
+name: Inspect GTA Ranked Studio v0.4.0 source
+
+on:
+  push:
+    paths:
+      - ".github/workflows/inspect-v0.4.0.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract source and inspect analysis timeouts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/gta-source
+          tar -xJf source/GTA-Ranked-Studio-source-v0.4.0.tar.xz -C /tmp/gta-source
+          echo "=== Relevant Python files ==="
+          find /tmp/gta-source -type f -name '*.py' | grep -Ei 'highlight|moment|scan|analysis|twitch|video|media|job|process' | head -100 || true
+          echo "=== Exact timeout and cancellation code ==="
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          root = Path("/tmp/gta-source")
+          patterns = re.compile(r"timeout|interrompue après|60\s*\*|\*\s*60|wait_for|communicate\(", re.I)
+          count = 0
+          for path in root.rglob("*.py"):
+              try:
+                  lines = path.read_text(encoding="utf-8-sig").splitlines()
+              except Exception:
+                  continue
+              hits = [i for i, line in enumerate(lines) if patterns.search(line)]
+              if not hits:
+                  continue
+              print(f"\\n--- {path} ---")
+              shown = set()
+              for i in hits:
+                  for j in range(max(0, i-2), min(len(lines), i+3)):
+                      if j not in shown:
+                          print(f"{j+1}: {lines[j]}")
+                          shown.add(j)
+                  print("...")
+                  count += 1
+                  if count >= 80:
+                      raise SystemExit(0)
+          print(f"Total matching locations: {count}")
+          PY
