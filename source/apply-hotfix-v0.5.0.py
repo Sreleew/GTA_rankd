@@ -430,7 +430,7 @@ def patch_webcam_api_and_ui(root: Path) -> None:
     replace_once(
         html,
         "              <small class=\"form-note\">Les temps sont en secondes : 3 600 = 01:00:00. Pour une VOD, sélectionne une plage afin d'éviter un téléchargement massif.",
-        '              ' + insert + '<small class="form-note">Les temps sont en secondes : 3 600 = 01:00:00. Pour une VOD, sélectionne une plage afin d\\'éviter un téléchargement massif.',
+        "              " + insert + '<small class="form-note">Les temps sont en secondes : 3 600 = 01:00:00. Pour une VOD, sélectionne une plage afin d'éviter un téléchargement massif.',
         "sélecteur webcam du formulaire Twitch",
     )
 
