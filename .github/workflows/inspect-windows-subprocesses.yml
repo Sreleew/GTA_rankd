@@ -1,4 +1,4 @@
-name: Inspect GTA Ranked Studio v0.5 implementation points
+name: Inspect v0.5 focused functions
 
 on:
   push:
@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Extract source and inspect highlight pipeline
+      - name: Print exact implementation blocks
         shell: bash
         run: |
           set -euo pipefail
@@ -23,17 +23,17 @@ jobs:
           APP="/tmp/gta-source/gta-ranked-studio"
           python source/apply-hotfix-v0.4.1.py "$APP"
           python source/apply-hotfix-v0.4.2.py "$APP"
-          echo "=== HIGHLIGHTS CORE 1 ==="
-          nl -ba "$APP/studio/web/highlights.py" | sed -n '1,260p'
-          echo "=== HIGHLIGHTS CORE 2 ==="
-          nl -ba "$APP/studio/web/highlights.py" | sed -n '260,560p'
-          echo "=== RENDERER ==="
-          nl -ba "$APP/studio/web/short_renderer.py" | sed -n '1,360p'
-          echo "=== TRANSCRIPTION PROCESS CALLS ==="
-          nl -ba "$APP/studio/web/transcribe.py" | sed -n '1,380p'
-          echo "=== UI SCAN AND SHORTS TEMPLATES ==="
-          grep -R -n -B 4 -A 12 -E 'Moments forts|Créer ce Short|highlight|candidate|candidate_seconds|35 secondes|35.0' "$APP/studio/web/static" | head -1000 || true
-          echo "=== TEST INVENTORY ==="
-          find "$APP/tests" -maxdepth 1 -type f -name '*.py' -printf '%f\n' | sort
-          echo "=== PACKAGE BUILD SCRIPT ==="
-          nl -ba "$APP/installer/build_release_package.py" | sed -n '1,260p'
+          echo "=== HIGHLIGHTS SCORE ==="
+          nl -ba "$APP/studio/web/highlights.py" | sed -n '90,195p'
+          echo "=== HIGHLIGHTS PROCESS ==="
+          nl -ba "$APP/studio/web/highlights.py" | sed -n '238,410p'
+          echo "=== HIGHLIGHTS CREATE ROUTES ==="
+          grep -R -n -B 10 -A 25 -E 'create_highlight|highlight.*candidate|media_start|media_end' "$APP/studio/web" --include='*.py' | head -500
+          echo "=== RENDER FUNCTIONS ==="
+          grep -n -E '^def |^class ' "$APP/studio/web/short_renderer.py"
+          echo "=== RENDER CORE ==="
+          nl -ba "$APP/studio/web/short_renderer.py" | sed -n '180,390p'
+          echo "=== TRANSCRIBE PROCESS CORE ==="
+          nl -ba "$APP/studio/web/transcribe.py" | sed -n '230,340p'
+          echo "=== UI HIGHLIGHT TEMPLATE/JS ==="
+          grep -n -B 8 -A 35 -E 'highlight-candidate|data-highlight-create|createShortFromHighlight|highlight-url-form' "$APP/studio/web/static/app.js" "$APP/studio/web/static/index.html"
