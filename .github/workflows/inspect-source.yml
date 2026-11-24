@@ -1,0 +1,73 @@
+name: Inspect GTA Ranked Studio source internals
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/inspect-source.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - name: Extract and apply cumulative patches
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p source-checkout
+          tar -xJf source/GTA-Ranked-Studio-source-v0.4.0.tar.xz -C source-checkout
+          APP_ROOT="source-checkout/gta-ranked-studio"
+          python source/apply-hotfix-v0.4.1.py "$APP_ROOT"
+          python source/apply-hotfix-v0.4.2.py "$APP_ROOT"
+          python source/apply-hotfix-v0.5.0.py "$APP_ROOT"
+          python source/apply-hotfix-v0.5.1.py "$APP_ROOT"
+          echo "APP_ROOT=$APP_ROOT" >> "$GITHUB_ENV"
+      - name: Print relevant source modules for implementation review
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          root = Path("source-checkout/gta-ranked-studio")
+          print("=== WEB SOURCE FILES ===")
+          for p in sorted((root / "studio" / "web").rglob("*.py")):
+              print(p.relative_to(root))
+          targets = [
+              "studio/web/transcribe.py",
+              "studio/web/captions.py",
+              "studio/web/short_renderer.py",
+              "studio/web/worker.py",
+          ]
+          for rel in targets:
+              p = root / rel
+              if p.exists():
+                  print(f"\\n=== FILE {rel} ===")
+                  print(p.read_text(encoding="utf-8-sig"))
+          for rel in ["requirements.txt", "pyproject.toml"]:
+              p = root / rel
+              if p.exists():
+                  print(f"\\n=== FILE {rel} ===")
+                  print(p.read_text(encoding="utf-8-sig"))
+          print("\\n=== APP TRANSCRIPTION/CAPTION REFERENCES ===")
+          p = root / "studio/web/app.py"
+          lines = p.read_text(encoding="utf-8-sig").splitlines()
+          needles = ("transcrib", "caption", "subtitle", "hook_text", "source_range", "speaker")
+          ranges = set()
+          for i, line in enumerate(lines):
+              if any(n in line.lower() for n in needles):
+                  ranges.update(range(max(0, i-5), min(len(lines), i+9)))
+          last = -2
+          for i in sorted(ranges):
+              if i > last + 1:
+                  print("...")
+              print(f"{i+1:04d}: {lines[i]}")
+              last = i
+          PY
