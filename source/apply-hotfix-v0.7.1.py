@@ -27,6 +27,15 @@ def replace_function(path: Path, name: str, replacement: str) -> None:
     path.write_text(updated, encoding="utf-8")
 
 
+def replace_or_append_function(path: Path, name: str, replacement: str) -> None:
+    text = path.read_text(encoding="utf-8-sig")
+    if f"def {name}(" in text:
+        replace_function(path, name, replacement)
+        return
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write("\n\n" + replacement.rstrip() + "\n")
+
+
 def ensure_function(path: Path, name: str, replacement: str) -> None:
     text = path.read_text(encoding="utf-8-sig")
     if f"def {name}(" in text:
@@ -441,7 +450,7 @@ def patch_tests(root: Path) -> None:
         '    assert "Clip: StreamerA (https://example.test/clip)" in result["description"]',
         '    assert "Clip: StreamerA" in result["description"]\n    assert "Source: https://example.test/clip" in result["description"]',
         "crédit source séparé et lisible")
-    replace_function(path, "test_metadata_fallback_uses_one_natural_shared_post_with_search_keywords", '''def test_metadata_fallback_uses_one_natural_shared_post_with_search_keywords():
+    replace_or_append_function(path, "test_metadata_fallback_uses_one_natural_shared_post_with_search_keywords", '''def test_metadata_fallback_uses_one_natural_shared_post_with_search_keywords():
     result = generate_short_metadata(
         streamer="IShowSpeed", source_title="GTA RP", transcript="Letting everybody look good. Hey, it's okay, you know.",
         source_url="https://www.twitch.tv/videos/2934870795", ollama_base_url="http://127.0.0.1:1", retries=0,
@@ -459,7 +468,7 @@ def patch_tests(root: Path) -> None:
     assert 1 <= len(result["thumbnail_text"].split()) <= 4
 ''')
     short_editor = root / "tests/test_short_editor.py"
-    replace_function(short_editor, "test_thumbnail_overlay_builds_full_bleed_vertical_cover_from_landscape_gameplay", '''def test_thumbnail_overlay_builds_vertical_gta_poster_from_full_landscape_gameplay(tmp_path: Path) -> None:
+    replace_or_append_function(short_editor, "test_thumbnail_overlay_builds_full_bleed_vertical_cover_from_landscape_gameplay", '''def test_thumbnail_overlay_builds_vertical_gta_poster_from_full_landscape_gameplay(tmp_path: Path) -> None:
     from PIL import Image, ImageChops
 
     thumbnail = tmp_path / "thumbnail.jpg"
