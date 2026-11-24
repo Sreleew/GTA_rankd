@@ -116,6 +116,7 @@ def patch_highlight_defaults(root: Path) -> None:
     text = app.read_text(encoding="utf-8-sig")
     old = '''        options = {
             "layout": "fill", "crop_x": 50, "crop_y": 50, "dynamic_zoom": True, "zoom_percent": 8,
+            "webcam_zone": webcam_zone,
             "captions_enabled": True, "brand_enabled": True, "auto_trim_enabled": False, "sfx_enabled": True,
             "hook_text": "", "context_text": "",
             "source_range": {"start": media_start, "end": media_end},
