@@ -152,10 +152,10 @@ jobs:
           print("\\n=== HTML TRANSCRIPTION FORM CONTEXT ===")
           p = root / "studio/web/static/index.html"
           lines = p.read_text(encoding="utf-8-sig").splitlines()
-          hits = [i for i, line in enumerate(lines) if any(k in line.lower() for k in ("captions_enabled", "hook_text", "name=\\"note\\"", "form-local", "form-url", "name=\\"url\\""))]
+          hits = [i for i, line in enumerate(lines) if "captions_enabled" in line or "hook_text" in line or "dynamic_zoom" in line]
           shown = set()
           for i in hits:
-              for j in range(max(0, i-7), min(len(lines), i+10)):
+              for j in range(max(0, i-6), min(len(lines), i+8)):
                   if j not in shown:
                       print(f"{j+1:04d}: {lines[j]}")
                       shown.add(j)
