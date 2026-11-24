@@ -24,7 +24,7 @@ jobs:
           python source/apply-hotfix-v0.3.5.py "$APP"
           python source/apply-hotfix-v0.3.6.py "$APP"
           python source/apply-hotfix-v0.4.1.py "$APP"
-          echo "=== Effective version ==="
+          echo "=== Patched source package version ==="
           cat "$APP/VERSION.txt"
           grep -n '^version' "$APP/pyproject.toml"
           grep -n -A 3 -B 3 'version:' "$APP/config.yaml.default" | head -30
