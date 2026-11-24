@@ -148,6 +148,7 @@ def test_probe_media_uses_the_supplied_timeout(
         calls.append(timeout)
         return subprocess.CompletedProcess(args, 0, json.dumps(payload), "")
 
+    monkeypatch.setattr(short_renderer, "resolve_executable", lambda _: "ffprobe")
     monkeypatch.setattr(short_renderer, "run_command", fake_run_command)
     result = short_renderer.probe_media(media, "ffprobe", timeout=420)
 
