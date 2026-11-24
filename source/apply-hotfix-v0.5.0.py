@@ -330,12 +330,23 @@ def patch_webcam_rendering(root: Path) -> None:
         '        zoom_percent=zoom_percent, webcam_zone=webcam_zone,\n    )\n    command = [resolve_executable(ffmpeg), "-hide_banner", "-y"]',
         "transmission webcam vers build_filter_complex",
     )
-    replace_once(
-        renderer,
-        '    layout: str = "fill",\n    crop_x: int = 50,',
-        '    layout: str = "fill",\n    webcam_zone: str = "none",\n    crop_x: int = 50,',
-        "paramètre webcam render_vertical_short",
-    )
+    render_start = renderer.read_text(encoding="utf-8-sig")
+    function_start = render_start.index("def render_vertical_short(")
+    function_end = render_start.index(") -> dict[str, Any]:", function_start)
+    function_signature = render_start[function_start:function_end]
+    if 'webcam_zone: str = "none"' not in function_signature:
+        target = '    layout: str = "fill",\n    crop_x: int = 50,'
+        if target not in function_signature:
+            raise SystemExit("Signature render_vertical_short introuvable pour la webcam.")
+        updated_signature = function_signature.replace(
+            target,
+            '    layout: str = "fill",\n    webcam_zone: str = "none",\n    crop_x: int = 50,',
+            1,
+        )
+        renderer.write_text(
+            render_start[:function_start] + updated_signature + render_start[function_end:],
+            encoding="utf-8",
+        )
     replace_once(
         renderer,
         '            zoom_percent=zoom_percent, duration=output_duration,',
@@ -369,44 +380,22 @@ def patch_webcam_api_and_ui(root: Path) -> None:
         "validation des zones webcam",
     )
 
-    for route_marker, form_signature, metadata_marker in (
-        (
-            '@app.post("/api/highlights/scan/url", status_code=202)',
-            '        window_end: Annotated[str | None, Form()] = None,\n    ) -> dict:',
-            '            "metadata": {"note": note.strip()[:1000]},',
-        ),
-        (
-            '@app.post("/api/highlights/scan/upload", status_code=202)',
-            '        window_end: Annotated[str | None, Form()] = None,\n    ) -> dict:',
-            '            "rights_confirmed": True, "metadata": {"note": note.strip()[:1000], "file_size": written},',
-        ),
-    ):
-        del route_marker
-        if form_signature not in app.read_text(encoding="utf-8-sig"):
-            raise SystemExit("Signature du formulaire Moments forts introuvable.")
-        replace_once(
-            app,
-            form_signature,
-            '        window_end: Annotated[str | None, Form()] = None,\n        webcam_zone: Annotated[str, Form()] = "none",\n    ) -> dict:',
-            "champ webcam du formulaire",
-        )
-        # The helper call is inserted separately into each route by matching the
-        # source-specific validation sequence.
-        if "scan/url" in metadata_marker:
-            pass
+    form_signature = '        window_end: Annotated[str | None, Form()] = None,\n    ) -> dict:'
+    if app.read_text(encoding="utf-8-sig").count(form_signature) != 2:
+        raise SystemExit("Les deux formulaires Moments forts n'ont pas la signature attendue.")
+    replace_all(
+        app,
+        form_signature,
+        '        window_end: Annotated[str | None, Form()] = None,\n        webcam_zone: Annotated[str, Form()] = "none",\n    ) -> dict:',
+        "champ webcam des deux formulaires",
+    )
 
     # Validate the source-region input before persisting it with the scan.
-    replace_once(
+    replace_all(
         app,
         '        start, end = _validate_highlight_window(start, end)\n        scan_id = uuid.uuid4().hex\n',
         '        start, end = _validate_highlight_window(start, end)\n        webcam_zone = _validate_webcam_zone(webcam_zone)\n        scan_id = uuid.uuid4().hex\n',
-        "validation webcam route URL",
-    )
-    replace_once(
-        app,
-        '        start, end = _validate_highlight_window(start, end)\n        scan_id = uuid.uuid4().hex\n',
-        '        start, end = _validate_highlight_window(start, end)\n        webcam_zone = _validate_webcam_zone(webcam_zone)\n        scan_id = uuid.uuid4().hex\n',
-        "validation webcam route upload",
+        "validation webcam des deux routes",
     )
     replace_once(
         app,
@@ -558,7 +547,190 @@ def apply(root: Path) -> None:
     )
     set_version(
         root / "pyproject.toml",
-        r'^(\\s*version\\s*=\\s*)["\\'][^"\\']+["\\'](\\s*(?:#.*)?)$',
+        r'^(\s*version\s*=\s*)["\'][^"\']+["\'](\s*(?:#.*)?)
+        r'\g<1>"0.5.0"\g<2>',
+        "pyproject.toml",
+    )
+    set_version(
+        root / "config.yaml.default",
+        r'^(\s{2}version:\s*)[^\s#]+(\s*(?:#.*)?)
+        r'\g<1>0.5.0\g<2>',
+        "config.yaml.default",
+    )
+
+    (root / "NOTES-v0.5.0.txt").write_text(
+        """GTA Ranked Studio v0.5.0
+
+Améliorations des Moments forts :
+- Les passages candidats sont désormais évalués sur plusieurs durées (25, 35, 45 et 60 secondes).
+- Les candidats retenus sont classés par score et ne se chevauchent plus, avec un intervalle minimal entre deux passages.
+- Le pipeline Shorts existant reste utilisé pour chaque passage sélectionné.
+
+Montage webcam :
+- Possibilité d'extraire la webcam intégrée à la VOD depuis l'un des quatre coins de l'image.
+- La webcam est superposée au gameplay dans le rendu vertical 9:16.
+- Le choix du coin est fait au moment de l'analyse et conservé lors de la création du Short.
+
+Windows :
+- FFmpeg, FFprobe, Whisper et les diagnostics sont lancés sans créer de fenêtre console parasite.
+- Les sorties et erreurs restent capturées pour les journaux locaux.
+
+Les vidéos, modèles IA, projets, réglages et données locales sont préservés.
+La sélection webcam est basée sur une zone prédéfinie dans un coin de l'image, pas sur une détection automatique de visage.
+""",
+        encoding="utf-8",
+    )
+    (root / "VERIFICATION-v0.5.0.md").write_text(
+        """# Vérification v0.5.0
+
+- Scoring adaptatif testé sur 25, 35, 45 et 60 secondes.
+- La sélection finale vérifie l'absence de chevauchement et conserve le classement par score.
+- Tests du filtre webcam pour les quatre coins, le mode désactivé et une valeur invalide.
+- Tests du wrapper de sous-processus sur Windows et les autres plateformes.
+- Les tests d'intégration FFmpeg de la suite vérifient le rendu MP4 vertical.
+- La caméra est découpée à partir d'une zone de coin choisie dans le formulaire. Il n'y a pas de détection automatique de visage dans cette version.
+""",
+        encoding="utf-8",
+    )
+
+    for relative in ("README.md", "docs/UPDATES.md"):
+        path = root / relative
+        text = path.read_text(encoding="utf-8-sig")
+        if "## v0.5.0 : moments forts adaptatifs" not in text:
+            text += """
+
+## v0.5.0 : moments forts adaptatifs et webcam
+
+Le scan compare plusieurs durées de passages, de 25 à 60 secondes, puis sélectionne les candidats les mieux classés sans chevauchement. Lors de l'analyse, tu peux indiquer dans quel coin de la VOD se trouve la webcam. Cette zone est ensuite extraite et superposée au gameplay dans le rendu vertical. Les processus externes utilisés sous Windows ne créent plus de fenêtres console parasites ; leurs sorties restent consignées dans les logs.
+"""
+        path.write_text(text, encoding="utf-8")
+
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        raise SystemExit("Usage: apply-hotfix-v0.5.0.py <gta-ranked-studio-source-root>")
+    apply(Path(sys.argv[1]))
+,
+        r'\\g<1>"0.5.0"\\g<2>',
+        "pyproject.toml",
+    )
+    set_version(
+        root / "config.yaml.default",
+        r'^(\\s{2}version:\\s*)[^\\s#]+(\\s*(?:#.*)?)$',
+        r'\\g<1>0.5.0\\g<2>',
+        "config.yaml.default",
+    )
+
+    (root / "NOTES-v0.5.0.txt").write_text(
+        """GTA Ranked Studio v0.5.0
+
+Améliorations des Moments forts :
+- Les passages candidats sont désormais évalués sur plusieurs durées (25, 35, 45 et 60 secondes).
+- Les candidats retenus sont classés par score et ne se chevauchent plus, avec un intervalle minimal entre deux passages.
+- Le pipeline Shorts existant reste utilisé pour chaque passage sélectionné.
+
+Montage webcam :
+- Possibilité d'extraire la webcam intégrée à la VOD depuis l'un des quatre coins de l'image.
+- La webcam est superposée au gameplay dans le rendu vertical 9:16.
+- Le choix du coin est fait au moment de l'analyse et conservé lors de la création du Short.
+
+Windows :
+- FFmpeg, FFprobe, Whisper et les diagnostics sont lancés sans créer de fenêtre console parasite.
+- Les sorties et erreurs restent capturées pour les journaux locaux.
+
+Les vidéos, modèles IA, projets, réglages et données locales sont préservés.
+La sélection webcam est basée sur une zone prédéfinie dans un coin de l'image, pas sur une détection automatique de visage.
+""",
+        encoding="utf-8",
+    )
+    (root / "VERIFICATION-v0.5.0.md").write_text(
+        """# Vérification v0.5.0
+
+- Scoring adaptatif testé sur 25, 35, 45 et 60 secondes.
+- La sélection finale vérifie l'absence de chevauchement et conserve le classement par score.
+- Tests du filtre webcam pour les quatre coins, le mode désactivé et une valeur invalide.
+- Tests du wrapper de sous-processus sur Windows et les autres plateformes.
+- Les tests d'intégration FFmpeg de la suite vérifient le rendu MP4 vertical.
+- La caméra est découpée à partir d'une zone de coin choisie dans le formulaire. Il n'y a pas de détection automatique de visage dans cette version.
+""",
+        encoding="utf-8",
+    )
+
+    for relative in ("README.md", "docs/UPDATES.md"):
+        path = root / relative
+        text = path.read_text(encoding="utf-8-sig")
+        if "## v0.5.0 : moments forts adaptatifs" not in text:
+            text += """
+
+## v0.5.0 : moments forts adaptatifs et webcam
+
+Le scan compare plusieurs durées de passages, de 25 à 60 secondes, puis sélectionne les candidats les mieux classés sans chevauchement. Lors de l'analyse, tu peux indiquer dans quel coin de la VOD se trouve la webcam. Cette zone est ensuite extraite et superposée au gameplay dans le rendu vertical. Les processus externes utilisés sous Windows ne créent plus de fenêtres console parasites ; leurs sorties restent consignées dans les logs.
+"""
+        path.write_text(text, encoding="utf-8")
+
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        raise SystemExit("Usage: apply-hotfix-v0.5.0.py <gta-ranked-studio-source-root>")
+    apply(Path(sys.argv[1]))
+,
+        r'\\g<1>0.5.0\\g<2>',
+        "config.yaml.default",
+    )
+
+    (root / "NOTES-v0.5.0.txt").write_text(
+        """GTA Ranked Studio v0.5.0
+
+Améliorations des Moments forts :
+- Les passages candidats sont désormais évalués sur plusieurs durées (25, 35, 45 et 60 secondes).
+- Les candidats retenus sont classés par score et ne se chevauchent plus, avec un intervalle minimal entre deux passages.
+- Le pipeline Shorts existant reste utilisé pour chaque passage sélectionné.
+
+Montage webcam :
+- Possibilité d'extraire la webcam intégrée à la VOD depuis l'un des quatre coins de l'image.
+- La webcam est superposée au gameplay dans le rendu vertical 9:16.
+- Le choix du coin est fait au moment de l'analyse et conservé lors de la création du Short.
+
+Windows :
+- FFmpeg, FFprobe, Whisper et les diagnostics sont lancés sans créer de fenêtre console parasite.
+- Les sorties et erreurs restent capturées pour les journaux locaux.
+
+Les vidéos, modèles IA, projets, réglages et données locales sont préservés.
+La sélection webcam est basée sur une zone prédéfinie dans un coin de l'image, pas sur une détection automatique de visage.
+""",
+        encoding="utf-8",
+    )
+    (root / "VERIFICATION-v0.5.0.md").write_text(
+        """# Vérification v0.5.0
+
+- Scoring adaptatif testé sur 25, 35, 45 et 60 secondes.
+- La sélection finale vérifie l'absence de chevauchement et conserve le classement par score.
+- Tests du filtre webcam pour les quatre coins, le mode désactivé et une valeur invalide.
+- Tests du wrapper de sous-processus sur Windows et les autres plateformes.
+- Les tests d'intégration FFmpeg de la suite vérifient le rendu MP4 vertical.
+- La caméra est découpée à partir d'une zone de coin choisie dans le formulaire. Il n'y a pas de détection automatique de visage dans cette version.
+""",
+        encoding="utf-8",
+    )
+
+    for relative in ("README.md", "docs/UPDATES.md"):
+        path = root / relative
+        text = path.read_text(encoding="utf-8-sig")
+        if "## v0.5.0 : moments forts adaptatifs" not in text:
+            text += """
+
+## v0.5.0 : moments forts adaptatifs et webcam
+
+Le scan compare plusieurs durées de passages, de 25 à 60 secondes, puis sélectionne les candidats les mieux classés sans chevauchement. Lors de l'analyse, tu peux indiquer dans quel coin de la VOD se trouve la webcam. Cette zone est ensuite extraite et superposée au gameplay dans le rendu vertical. Les processus externes utilisés sous Windows ne créent plus de fenêtres console parasites ; leurs sorties restent consignées dans les logs.
+"""
+        path.write_text(text, encoding="utf-8")
+
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        raise SystemExit("Usage: apply-hotfix-v0.5.0.py <gta-ranked-studio-source-root>")
+    apply(Path(sys.argv[1]))
+,
         r'\\g<1>"0.5.0"\\g<2>',
         "pyproject.toml",
     )
