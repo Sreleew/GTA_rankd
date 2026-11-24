@@ -70,6 +70,16 @@ def patch_metadata(root: Path) -> None:
         tags.append(creator)
     tags.append("#GTAClips")
     return tags[:4]''')
+    ensure_function(path, "_game_keyword", r'''def _game_keyword(note: str, source_title: str, transcript: str) -> str:
+    text = " ".join((str(note or ""), str(source_title or ""), str(transcript or ""))).lower()
+    compact = re.sub(r"[^a-z0-9]+", " ", text)
+    if any(term in compact for term in ("gta rp", "gta roleplay", "roleplay", "role play")):
+        return "GTA RP"
+    if any(term in compact for term in ("gta online", "gtao")):
+        return "GTA Online"
+    if any(term in compact for term in ("gta 5", "gta v", "grand theft auto v")):
+        return "GTA 5"
+    return "GTA 5"''')
     replace_function(path, "_fallback_metadata", r'''def _fallback_metadata(
     *, streamer: str, note: str, source_url: str, transcript: str,
     custom_hook: str, custom_context: str, source_title: str = "",
@@ -215,6 +225,7 @@ def patch_metadata(root: Path) -> None:
             "title": title, "title_variants": {key: title for key in PLATFORMS},
             "description": description, "hashtags": tags,
             "platforms": platforms, "thumbnail_text": thumbnail_text,
+            "game_keyword": game,
             "transcript_excerpt": transcript[:1200], "generator": "ollama_local",
         }
     except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, ValueError, KeyError, TypeError) as exc:
@@ -408,6 +419,12 @@ def patch_worker(root: Path) -> None:
         '            publication_text = str(metadata.get("title", "GTA Short")) + "\\n\\n" + str(metadata.get("description", "")) + "\\n"\n            (output_dir / "publication.txt").write_text(publication_text, encoding="utf-8")\n',
         "un seul fichier texte commun aux réseaux",
     )
+    replace_once(
+        path,
+        '                    font_path=custom_font if custom_font.is_file() else None,\n                )',
+        '                    font_path=custom_font if custom_font.is_file() else None,\n                    streamer=str(job.get("streamer", "")),\n                    game_label=str(metadata.get("game_keyword") or "GTA"),\n                )',
+        "identité de la miniature liée au streamer et au jeu détecté",
+    )
 
 
 def patch_ui(root: Path) -> None:
@@ -461,6 +478,7 @@ def patch_tests(root: Path) -> None:
     assert len({item["description"] for item in result["platforms"].values()}) == 1
     assert "IShowSpeed" in result["title"]
     assert "GTA RP" in result["title"]
+    assert result["game_keyword"] == "GTA RP"
     assert "Watch the full moment" not in result["description"]
     assert "#GTARP" in result["description"]
     assert "#GTAClips" in result["description"]
@@ -468,6 +486,18 @@ def patch_tests(root: Path) -> None:
     assert 1 <= len(result["thumbnail_text"].split()) <= 4
 ''')
     short_editor = root / "tests/test_short_editor.py"
+    replace_once(short_editor,
+        "        assert result.size == (360, 640)",
+        "        assert result.size == (1080, 1920)",
+        "dimensions de la nouvelle miniature verticale")
+    replace_once(short_editor,
+        '        assert ImageChops.difference(baseline, result.convert("RGB")).getbbox() is not None',
+        '        assert ImageChops.difference(baseline.resize(result.size), result.convert("RGB")).getbbox() is not None',
+        "comparaison de la miniature redimensionnée")
+    replace_once(short_editor,
+        "        assert thumbnail.stat().st_size > 1000",
+        "        assert thumbnail.stat().st_size > 10_000",
+        "qualité minimale du poster JPEG")
     replace_or_append_function(short_editor, "test_thumbnail_overlay_builds_full_bleed_vertical_cover_from_landscape_gameplay", '''def test_thumbnail_overlay_builds_vertical_gta_poster_from_full_landscape_gameplay(tmp_path: Path) -> None:
     from PIL import Image, ImageChops
 
