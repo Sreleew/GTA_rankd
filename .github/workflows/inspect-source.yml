@@ -41,10 +41,10 @@ jobs:
           for p in sorted((root / "studio" / "web").rglob("*.py")):
               print(p.relative_to(root))
           targets = [
-              "studio/web/transcribe.py",
-              "studio/web/captions.py",
-              "studio/web/short_renderer.py",
-              "studio/web/worker.py",
+              "studio/web/metadata.py",
+              "studio/web/short_editor.py",
+              "studio/web/model_manager.py",
+              "studio/web/store.py",
           ]
           for rel in targets:
               p = root / rel
@@ -56,6 +56,12 @@ jobs:
               if p.exists():
                   print(f"\\n=== FILE {rel} ===")
                   print(p.read_text(encoding="utf-8-sig"))
+          print("\\n=== STATIC FILES ===")
+          for p in sorted((root / "studio" / "web" / "static").glob("*")):
+              print(p.relative_to(root))
+          print("\\n=== PROMPTS AND CONFIG PATHS ===")
+          for p in sorted((root / "prompts").glob("*")) if (root / "prompts").exists() else []:
+              print(p.relative_to(root))
           print("\\n=== APP TRANSCRIPTION/CAPTION REFERENCES ===")
           p = root / "studio/web/app.py"
           lines = p.read_text(encoding="utf-8-sig").splitlines()
