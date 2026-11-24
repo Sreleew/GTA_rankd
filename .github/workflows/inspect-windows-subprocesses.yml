@@ -1,4 +1,4 @@
-name: Inspect v0.5 render graph and scan form
+name: Inspect v0.5 metadata and worker mapping
 on:
   push:
     paths: [".github/workflows/inspect-windows-subprocesses.yml"]
@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Extract and print render graph, route and form
+      - name: Print scan schema, post routes and worker options
         shell: bash
         run: |
           set -euo pipefail
@@ -19,26 +19,14 @@ jobs:
           APP="/tmp/gta-source/gta-ranked-studio"
           python source/apply-hotfix-v0.4.1.py "$APP"
           python source/apply-hotfix-v0.4.2.py "$APP"
-          echo "=== RENDER FILTER GRAPH ==="
-          nl -ba "$APP/studio/web/short_renderer.py" | sed -n '107,190p'
-          echo "=== BUILD RENDER COMMAND ==="
-          nl -ba "$APP/studio/web/short_renderer.py" | sed -n '180,265p'
-          echo "=== RENDER EXECUTION ==="
-          nl -ba "$APP/studio/web/short_renderer.py" | sed -n '264,390p'
-          echo "=== API ROUTES ==="
-          nl -ba "$APP/studio/web/app.py" | sed -n '150,325p'
-          echo "=== HIGHLIGHT FORMS ==="
-          grep -n -B 10 -A 50 'highlight-url-form\|highlight-upload-form' "$APP/studio/web/static/index.html" || true
-          echo "=== SUBPROCESS INVENTORY ==="
-          python - "$APP" <<'PY'
-          from pathlib import Path
-          import sys
-          root=Path(sys.argv[1])
-          for p in sorted(root.rglob("*.py")):
-              if "tests" in p.parts: continue
-              try: lines=p.read_text(encoding="utf-8-sig").splitlines()
-              except Exception: continue
-              for n,line in enumerate(lines,1):
-                  if "subprocess.run(" in line or "subprocess.Popen(" in line:
-                      print(f"{p.relative_to(root)}:{n}: {line.strip()}")
-          PY
+          echo "=== STORE SCHEMA ==="
+          nl -ba "$APP/studio/web/store.py" | sed -n '60,140p'
+          nl -ba "$APP/studio/web/store.py" | sed -n '250,395p'
+          echo "=== APP ROUTES ==="
+          nl -ba "$APP/studio/web/app.py" | sed -n '155,325p'
+          echo "=== WORKER RENDER MAP ==="
+          grep -n -B 10 -A 45 -E 'render_vertical_short|layout.*crop_x|crop_y|source_range' "$APP/studio/web/worker.py" | head -350 || true
+          echo "=== JOB CREATE OPTIONS ==="
+          grep -n -B 10 -A 30 -E 'options =|source_range|layout' "$APP/studio/web/app.py" | head -350 || true
+          echo "=== UPDATE SCRIPT CONTENT ==="
+          grep -n -B 4 -A 8 -E 'requirements|pip install|venv' "$APP/installer/apply_update.ps1" | head -150 || true
