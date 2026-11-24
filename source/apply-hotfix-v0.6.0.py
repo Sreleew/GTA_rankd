@@ -481,7 +481,8 @@ def patch_model_resume(root: Path) -> None:
     path = root / "studio/web/model_manager.py"
     text = path.read_text(encoding="utf-8-sig")
     start = text.index("    def _download_whisper(self) -> None:")
-    end = text.index("\n    def ", start + 8)
+    next_method = text.find("\n    def ", start + 8)
+    end = next_method if next_method >= 0 else len(text)
     replacement = '''    def _download_whisper(self) -> None:
         target = self.whisper_model_path
         partial = target.with_suffix(target.suffix + ".part")
