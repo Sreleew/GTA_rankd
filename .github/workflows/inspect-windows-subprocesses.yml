@@ -1,4 +1,4 @@
-name: Inspect v0.5 metadata and worker mapping
+name: Inspect v0.5 render worker mapping
 on:
   push:
     paths: [".github/workflows/inspect-windows-subprocesses.yml"]
@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Print scan schema, post routes and worker options
+      - name: Print worker render invocation and editor titles
         shell: bash
         run: |
           set -euo pipefail
@@ -19,14 +19,11 @@ jobs:
           APP="/tmp/gta-source/gta-ranked-studio"
           python source/apply-hotfix-v0.4.1.py "$APP"
           python source/apply-hotfix-v0.4.2.py "$APP"
-          echo "=== STORE SCHEMA ==="
-          nl -ba "$APP/studio/web/store.py" | sed -n '60,140p'
-          nl -ba "$APP/studio/web/store.py" | sed -n '250,395p'
-          echo "=== APP ROUTES ==="
-          nl -ba "$APP/studio/web/app.py" | sed -n '155,325p'
-          echo "=== WORKER RENDER MAP ==="
-          grep -n -B 10 -A 45 -E 'render_vertical_short|layout.*crop_x|crop_y|source_range' "$APP/studio/web/worker.py" | head -350 || true
-          echo "=== JOB CREATE OPTIONS ==="
-          grep -n -B 10 -A 30 -E 'options =|source_range|layout' "$APP/studio/web/app.py" | head -350 || true
-          echo "=== UPDATE SCRIPT CONTENT ==="
-          grep -n -B 4 -A 8 -E 'requirements|pip install|venv' "$APP/installer/apply_update.ps1" | head -150 || true
+          echo "=== WORKER RENDER INVOCATIONS ==="
+          grep -n -B 18 -A 70 'render_vertical_short(' "$APP/studio/web/worker.py"
+          echo "=== SHORT EDITOR FUNCTIONS ==="
+          grep -n -E '^def |hook_text|context_text|intro|title_card|Moment fort' "$APP/studio/web/short_editor.py" | head -250 || true
+          echo "=== WORKER SOURCE RANGE / OPTIONS ==="
+          grep -n -B 12 -A 30 'source_range' "$APP/studio/web/worker.py" || true
+          echo "=== TEST RENDER INTEGRATION ==="
+          grep -n -B 10 -A 35 'build_filter_complex\|build_render_command\|render_vertical_short' "$APP/tests/test_render_integration.py" "$APP/tests/test_highlights.py"
