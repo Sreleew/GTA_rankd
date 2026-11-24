@@ -21,8 +21,6 @@ jobs:
           mkdir -p /tmp/gta-source
           tar -xJf source/GTA-Ranked-Studio-source-v0.4.0.tar.xz -C /tmp/gta-source
           APP="/tmp/gta-source/gta-ranked-studio"
-          python source/apply-hotfix-v0.3.5.py "$APP"
-          python source/apply-hotfix-v0.3.6.py "$APP"
           python source/apply-hotfix-v0.4.1.py "$APP"
           echo "=== Patched source package version ==="
           cat "$APP/VERSION.txt"
