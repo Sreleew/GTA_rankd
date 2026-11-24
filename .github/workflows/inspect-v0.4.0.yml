@@ -14,19 +14,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Extract source and inspect probe tests
+      - name: Apply the proposed hotfix and validate it
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p /tmp/gta-source
           tar -xJf source/GTA-Ranked-Studio-source-v0.4.0.tar.xz -C /tmp/gta-source
           APP="/tmp/gta-source/gta-ranked-studio"
-          echo "=== Probe tests/files ==="
-          find "$APP/tests" -maxdepth 2 -type f -name '*.py' -print
-          grep -R -n -B 8 -A 18 "probe_media\|run_command" "$APP/tests" | head -500 || true
-          echo "=== Full download implementation ==="
-          nl -ba "$APP/studio/web/highlights.py" | sed -n '400,510p'
-          echo "=== Project version files ==="
+          python source/apply-hotfix-v0.3.5.py "$APP"
+          python source/apply-hotfix-v0.3.6.py "$APP"
+          python source/apply-hotfix-v0.4.1.py "$APP"
+          echo "=== Effective version ==="
           cat "$APP/VERSION.txt"
           grep -n '^version' "$APP/pyproject.toml"
           grep -n -A 3 -B 3 'version:' "$APP/config.yaml.default" | head -30
+          echo "=== Patched FFprobe call ==="
+          grep -n -B 2 -A 8 'probe_timeout_for_file\|timeout=probe_timeout' "$APP/studio/web/short_renderer.py" "$APP/studio/web/highlights.py"
+          echo "=== Test added by hotfix ==="
+          cd "$APP"
+          python -m pytest -q tests/test_probe_timeout.py
