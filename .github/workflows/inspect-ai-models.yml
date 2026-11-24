@@ -1,0 +1,47 @@
+name: Temporary inspect local AI model diagnostics
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/inspect-ai-models.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Reconstruct v0.7.3 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          SNAPSHOT="source/GTA-Ranked-Studio-source-v0.4.0.tar.xz"
+          EXPECTED_SHA256="bbf35740febed311d7788b42edb569a1b9afcfd89bee449d9dbf62d8b07162e9"
+          echo "$EXPECTED_SHA256  $SNAPSHOT" | sha256sum --check -
+          mkdir -p source-checkout
+          tar -xJf "$SNAPSHOT" -C source-checkout
+          APP_ROOT="source-checkout/gta-ranked-studio"
+          python source/apply-hotfix-v0.4.1.py "$APP_ROOT"
+          python source/apply-hotfix-v0.4.2.py "$APP_ROOT"
+          python source/apply-hotfix-v0.5.0.py "$APP_ROOT"
+          python source/apply-hotfix-v0.5.1.py "$APP_ROOT"
+          python source/apply-hotfix-v0.6.0.py "$APP_ROOT"
+          python source/apply-hotfix-v0.6.1.py "$APP_ROOT"
+          python source/apply-hotfix-v0.6.2.py "$APP_ROOT"
+          cat source/v0.7.0-patch.part*.b64 | base64 --decode | xz --decompress --stdout > source/apply-hotfix-v0.7.0.py
+          python source/apply-hotfix-v0.7.0.py "$APP_ROOT"
+          python source/apply-hotfix-v0.7.1.py "$APP_ROOT"
+          python source/apply-hotfix-v0.7.2.py "$APP_ROOT"
+          python source/apply-hotfix-v0.7.3.py "$APP_ROOT"
+          tar -czf gta-ranked-studio-v0.7.3-source.tar.gz -C source-checkout gta-ranked-studio
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gta-ranked-studio-v0.7.3-source-inspect
+          path: gta-ranked-studio-v0.7.3-source.tar.gz
+          retention-days: 1
