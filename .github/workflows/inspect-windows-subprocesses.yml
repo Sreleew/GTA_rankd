@@ -1,4 +1,4 @@
-name: Inspect v0.5 patch targets
+name: Inspect v0.5 exact patch blocks
 on:
   push:
     paths: [".github/workflows/inspect-windows-subprocesses.yml"]
@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Print exact source files for v0.5 patch
+      - name: Print targeted source blocks
         shell: bash
         run: |
           set -euo pipefail
@@ -20,19 +20,16 @@ jobs:
           python source/apply-hotfix-v0.4.1.py "$APP"
           python source/apply-hotfix-v0.4.2.py "$APP"
           for spec in \
-            "studio/web/highlights.py:90:200" \
-            "studio/web/highlights.py:380:430" \
-            "studio/web/short_renderer.py:1:370" \
+            "studio/web/highlights.py:1:195" \
+            "studio/web/highlights.py:253:420" \
+            "studio/web/short_renderer.py:107:370" \
             "studio/web/transcribe.py:1:380" \
-            "studio/web/app.py:90:330" \
-            "studio/web/worker.py:80:300" \
-            "studio/doctor.py:1:100" \
-            "studio/desktop_launcher.py:1:130" \
-            "studio/web/short_editor.py:150:230" \
-            "studio/web/store.py:80:130" \
-            "studio/web/static/index.html:120:155" \
-            "studio/web/static/app.js:110:210" \
-            "tests/test_highlights.py:1:180" \
+            "studio/web/app.py:195:323" \
+            "studio/web/worker.py:225:260" \
+            "studio/desktop_launcher.py:20:115" \
+            "START-STUDIO.bat:1:100" \
+            "START-STUDIO.vbs:1:100" \
+            "installer/apply_update.ps1:90:112" \
             "tests/test_render_integration.py:1:120"; do
               file="${spec%%:*}"
               rest="${spec#*:}"
@@ -41,10 +38,9 @@ jobs:
               echo "===== $file ($start-$end) ====="
               nl -ba "$APP/$file" | sed -n "${start},${end}p"
           done
-          echo "===== ROOT STARTERS ====="
-          find "$APP" -maxdepth 2 -type f \( -iname '*.bat' -o -iname '*.vbs' -o -iname '*.cmd' \) -print
-          for file in "$APP"/START-STUDIO.bat "$APP"/START-STUDIO.vbs "$APP"/INSTALL.bat; do
-            if [ -f "$file" ]; then echo "===== $file ====="; cat "$file"; fi
+          echo "===== TRANSCRIBE SUBPROCESS BLOCKS ====="
+          grep -n -A 18 -B 4 'subprocess.run(' "$APP/studio/web/transcribe.py"
+          echo "===== WINDOWS ENTRYPOINTS ====="
+          for file in "$APP/START-STUDIO.bat" "$APP/START-STUDIO.vbs" "$APP/INSTALL.bat"; do
+            if [ -f "$file" ]; then echo "### $file"; cat "$file"; fi
           done
-          echo "===== REQUIREMENTS ====="
-          cat "$APP/requirements.txt"
