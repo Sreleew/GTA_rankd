@@ -256,7 +256,7 @@ def test_probe_whisper_vulkan_rejects_cpu_or_missing_model_allocation(tmp_path: 
     tools_dir.mkdir(parents=True, exist_ok=True)
     binary = tools_dir / "whisper-cli.exe"
     binary.write_bytes(b"fake-vulkan-cli")
-    model = tmp_path / "models" / "ggml-large-v3-turbo.bin"
+    model = tmp_path / "models" / "whisper" / "ggml-large-v3-turbo.bin"
     model.parent.mkdir(parents=True, exist_ok=True)
     model.write_bytes(b"m" * (1024 * 1024))
     monkeypatch.setattr(app_module, "probe_whisper_vulkan", lambda *args, **kwargs: {
