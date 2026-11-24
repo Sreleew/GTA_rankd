@@ -1,20 +1,16 @@
-name: Inspect v0.5 render and API hooks
-
+name: Inspect v0.5 render graph and scan form
 on:
   push:
-    paths:
-      - ".github/workflows/inspect-windows-subprocesses.yml"
+    paths: [".github/workflows/inspect-windows-subprocesses.yml"]
   workflow_dispatch:
-
 permissions:
   contents: read
-
 jobs:
   inspect:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Print exact render route and ui blocks
+      - name: Extract and print render graph, route and form
         shell: bash
         run: |
           set -euo pipefail
@@ -23,37 +19,26 @@ jobs:
           APP="/tmp/gta-source/gta-ranked-studio"
           python source/apply-hotfix-v0.4.1.py "$APP"
           python source/apply-hotfix-v0.4.2.py "$APP"
-          echo "=== APP.PY HIGHLIGHT ROUTES ==="
-          grep -n 'highlights' "$APP/studio/web/app.py" || true
-          echo "=== RENDERER FUNCTION NAMES ==="
-          grep -n -E '^def |^class ' "$APP/studio/web/short_renderer.py" || true
-          echo "=== HIGHLIGHTS STORE ==="
-          grep -n -E 'highlight|short_job|source_start|source_end|crop' "$APP/studio/web/store.py" | head -120 || true
-          echo "=== APP.JS HIGHLIGHT LINES ==="
-          grep -n -E 'highlight|candidate' "$APP/studio/web/static/app.js" | head -120 || true
-          echo "=== SHORT RENDER CORE ==="
-          nl -ba "$APP/studio/web/short_renderer.py" | sed -n '190,370p'
-          echo "=== API ROUTE CONTEXT ==="
-          python - "$APP/studio/web/app.py" <<'PY'
+          echo "=== RENDER FILTER GRAPH ==="
+          nl -ba "$APP/studio/web/short_renderer.py" | sed -n '107,190p'
+          echo "=== BUILD RENDER COMMAND ==="
+          nl -ba "$APP/studio/web/short_renderer.py" | sed -n '180,265p'
+          echo "=== RENDER EXECUTION ==="
+          nl -ba "$APP/studio/web/short_renderer.py" | sed -n '264,390p'
+          echo "=== API ROUTES ==="
+          nl -ba "$APP/studio/web/app.py" | sed -n '150,325p'
+          echo "=== HIGHLIGHT FORMS ==="
+          grep -n -B 10 -A 50 'highlight-url-form\|highlight-upload-form' "$APP/studio/web/static/index.html" || true
+          echo "=== SUBPROCESS INVENTORY ==="
+          python - "$APP" <<'PY'
           from pathlib import Path
           import sys
-          p=Path(sys.argv[1]); lines=p.read_text(encoding="utf-8-sig").splitlines()
-          ix=[i for i,l in enumerate(lines) if "highlights" in l]
-          for i in ix:
-              print(f"\n--- app.py:{i+1} ---")
-              for j in range(max(0,i-6),min(len(lines),i+28)):
-                  print(f"{j+1}: {lines[j]}")
-          PY
-          echo "=== JS HIGHLIGHT CONTEXT ==="
-          python - "$APP/studio/web/static/app.js" <<'PY'
-          from pathlib import Path
-          import sys
-          p=Path(sys.argv[1]); lines=p.read_text(encoding="utf-8-sig").splitlines()
-          ix=[i for i,l in enumerate(lines) if "highlight" in l.lower() or "candidate" in l.lower()]
-          shown=set()
-          for i in ix:
-              for j in range(max(0,i-5),min(len(lines),i+18)):
-                  if j not in shown:
-                      print(f"{j+1}: {lines[j]}")
-                      shown.add(j)
+          root=Path(sys.argv[1])
+          for p in sorted(root.rglob("*.py")):
+              if "tests" in p.parts: continue
+              try: lines=p.read_text(encoding="utf-8-sig").splitlines()
+              except Exception: continue
+              for n,line in enumerate(lines,1):
+                  if "subprocess.run(" in line or "subprocess.Popen(" in line:
+                      print(f"{p.relative_to(root)}:{n}: {line.strip()}")
           PY
