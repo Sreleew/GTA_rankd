@@ -1,11 +1,11 @@
 Dépôt de distribution de GTA Ranked Studio.
 
-Version publiée : 0.3.6.
+Version source préparée : 0.4.0.
 
-Le dossier `source/` contient un snapshot source assaini et les correctifs reproductibles v0.3.5 et v0.3.6 appliqués par GitHub Actions avant les tests et la construction des paquets Windows. Aucun environnement virtuel, média personnel, base de données, configuration locale ou modèle IA n'est inclus.
+La source complète v0.4.0 est fournie dans `source/GTA-Ranked-Studio-source-v0.4.0.tar.xz`. GitHub Actions vérifie son SHA-256, exécute la suite de tests, construit le paquet de mise à jour Windows et publie une Release stable.
 
-La v0.3.5 corrige les timestamps Whisper DTW en désactivant Flash Attention avec `-nfa`. La v0.3.6 fiabilise le programme de mise à jour Windows : journal créé avant l'exécution PowerShell, capture de stdout/stderr, détection d'un arrêt immédiat et meilleure compatibilité Windows PowerShell 5.1.
+v0.4.0 ajoute la fonctionnalité **Moments forts** : analyse de vidéos locales et de VOD/clips Twitch, découpage facultatif par plage horaire, classement heuristique de passages à partir de l'énergie audio et de la transcription Whisper, puis création d'un Short à partir du passage sélectionné via le pipeline habituel.
 
-Le client Windows lit les Releases publiques de `Sreleew/GTA_rankd` sans token GitHub. Les modifications du snapshot ou des correctifs lancent les tests, construisent le paquet de mise à jour et publient une Release stable.
+La détection est audio + texte dans cette version. Elle ne réalise pas encore d'analyse visuelle du gameplay. Les médias, modèles IA, `config.yaml`, bases de données, rendus et environnements locaux ne sont pas inclus dans le paquet de mise à jour.
 
-Ne jamais publier de vidéos personnelles, `config.yaml`, bases de données, modèles ou secrets.
+Le client Windows lit les Releases publiques de `Sreleew/GTA_rankd` sans token GitHub.
