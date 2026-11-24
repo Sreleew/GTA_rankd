@@ -84,6 +84,28 @@ jobs:
                       if j not in shown:
                           print(f"{j+1:04d}: {lines[j]}")
                           shown.add(j)
+          print("\\n=== TARGETED WORKER/SCANNER/APIs ===")
+          specs = {
+              "studio/web/worker.py": ("def _download", "def _process"),
+              "studio/web/highlights.py": ("def _download", "def _process"),
+              "studio/web/app.py": (),
+          }
+          for rel, names in specs.items():
+              p = root / rel
+              lines = p.read_text(encoding="utf-8-sig").splitlines()
+              print(f"\\n--- {rel} ---")
+              if names:
+                  for name in names:
+                      starts = [i for i, line in enumerate(lines) if line.startswith(name)]
+                      for start in starts:
+                          end = next((i for i in range(start + 1, len(lines)) if lines[i].startswith("    def ") or lines[i].startswith("def ")), min(len(lines), start + 180))
+                          print(f"\\n[{name} at {start+1}]")
+                          for i in range(start, min(end, start+220)):
+                              print(f"{i+1:04d}: {lines[i]}")
+              else:
+                  for i, line in enumerate(lines):
+                      if "highlight" in line.lower() or "candidate" in line.lower():
+                          print(f"{i+1:04d}: {line}")
           print("\\n=== APP TRANSCRIPTION/CAPTION REFERENCES ===")
           p = root / "studio/web/app.py"
           lines = p.read_text(encoding="utf-8-sig").splitlines()
