@@ -1,4 +1,4 @@
-name: Inspect v0.5 exact patch blocks
+name: Inspect v0.5 subprocess and config blocks
 on:
   push:
     paths: [".github/workflows/inspect-windows-subprocesses.yml"]
@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Print targeted source blocks
+      - name: Print remaining v0.5 blocks
         shell: bash
         run: |
           set -euo pipefail
@@ -20,17 +20,16 @@ jobs:
           python source/apply-hotfix-v0.4.1.py "$APP"
           python source/apply-hotfix-v0.4.2.py "$APP"
           for spec in \
-            "studio/web/highlights.py:1:195" \
-            "studio/web/highlights.py:253:420" \
-            "studio/web/short_renderer.py:107:370" \
-            "studio/web/transcribe.py:1:380" \
-            "studio/web/app.py:195:323" \
-            "studio/web/worker.py:225:260" \
-            "studio/desktop_launcher.py:20:115" \
-            "START-STUDIO.bat:1:100" \
-            "START-STUDIO.vbs:1:100" \
-            "installer/apply_update.ps1:90:112" \
-            "tests/test_render_integration.py:1:120"; do
+            "studio/web/transcribe.py:45:110" \
+            "studio/web/transcribe.py:235:330" \
+            "studio/doctor.py:32:50" \
+            "studio/web/app.py:105:120" \
+            "studio/web/short_renderer.py:31:50" \
+            "studio/web/short_renderer.py:119:178" \
+            "studio/web/short_renderer.py:180:264" \
+            "studio/web/short_renderer.py:264:370" \
+            "studio/web/highlights.py:420:500" \
+            "config.yaml.default:1:220"; do
               file="${spec%%:*}"
               rest="${spec#*:}"
               start="${rest%%:*}"
@@ -38,9 +37,7 @@ jobs:
               echo "===== $file ($start-$end) ====="
               nl -ba "$APP/$file" | sed -n "${start},${end}p"
           done
-          echo "===== TRANSCRIBE SUBPROCESS BLOCKS ====="
-          grep -n -A 18 -B 4 'subprocess.run(' "$APP/studio/web/transcribe.py"
-          echo "===== WINDOWS ENTRYPOINTS ====="
-          for file in "$APP/START-STUDIO.bat" "$APP/START-STUDIO.vbs" "$APP/INSTALL.bat"; do
-            if [ -f "$file" ]; then echo "### $file"; cat "$file"; fi
+          echo "===== IMPORTS ====="
+          for f in studio/web/app.py studio/web/worker.py studio/web/short_renderer.py studio/web/transcribe.py studio/doctor.py; do
+            echo "### $f"; head -35 "$APP/$f"
           done
