@@ -125,6 +125,30 @@ jobs:
                       if rel.endswith("transcribe.py") and i > 300:
                           break
                       print(f"{i+1:04d}: {line}")
+          print("\\n=== TARGETED EXACT RANGES ===")
+          ranges = {
+              "studio/web/worker.py": [(125, 290)],
+              "studio/web/highlights.py": [(438, 510)],
+              "studio/web/app.py": [(370, 475)],
+              "studio/web/short_editor.py": [(150, 220)],
+              "tests": [],
+          }
+          for rel, spans in ranges.items():
+              if rel == "tests":
+                  for p in sorted((root / "tests").glob("test_*.py")):
+                      lines = p.read_text(encoding="utf-8-sig").splitlines()
+                      if any(t in p.name for t in ("metadata", "worker", "model", "highlight", "editor", "transcrib")):
+                          print(f"\\n--- {p.relative_to(root)} ---")
+                          for i, line in enumerate(lines):
+                              if line.startswith("def test_") or line.startswith("class Test"):
+                                  print(f"{i+1:04d}: {line}")
+                  continue
+              p = root / rel
+              lines = p.read_text(encoding="utf-8-sig").splitlines()
+              print(f"\\n--- {rel} ---")
+              for first, last in spans:
+                  for i in range(first-1, min(last, len(lines))):
+                      print(f"{i+1:04d}: {lines[i]}")
           print("\\n=== APP TRANSCRIPTION/CAPTION REFERENCES ===")
           p = root / "studio/web/app.py"
           lines = p.read_text(encoding="utf-8-sig").splitlines()
