@@ -1,20 +1,18 @@
 name: Build and publish GTA Ranked Studio
 
 on:
-  # Une publication publique ne part que d'un commit explicite d'approbation.
   push:
     branches: [main]
     paths:
       - ".release-approval"
-  # La voie manuelle conserve son contrôle et produit une Release brouillon.
   workflow_dispatch:
     inputs:
       version:
-        description: "Version canonique à préparer (ex. 0.7.8)"
+        description: "Version à préparer (ex. 0.7.9)"
         required: true
         type: string
       confirm_publish:
-        description: "Confirmer explicitement la préparation de la Release brouillon"
+        description: "Confirmer la préparation de la Release brouillon"
         required: true
         default: false
         type: boolean
@@ -30,6 +28,7 @@ jobs:
   release:
     name: Verify, test, package and publish an explicitly approved release
     runs-on: ubuntu-latest
+    timeout-minutes: 35
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -41,7 +40,12 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Validate release request and explicit approval
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Validate release request and direct source version
         shell: bash
         env:
           VERSION_INPUT: ${{ inputs.version }}
@@ -63,9 +67,8 @@ jobs:
             test -s .release-approval
             VERSION="$(tr -d '[:space:]' < .release-approval)"
             VERSION="${VERSION#v}"
-            echo "Publication explicitement approuvée par .release-approval : $VERSION"
           else
-            echo "Refus : événement de publication non pris en charge."
+            echo "Événement de publication non pris en charge."
             exit 1
           fi
 
@@ -74,97 +77,28 @@ jobs:
             exit 1
           fi
           ROOT_VERSION="$(sed -nE 's/^Version:[[:space:]]*([0-9]+(\.[0-9]+){2,3})[[:space:]]*$/\1/p' VERSION.txt | head -n 1)"
-          if [[ "$ROOT_VERSION" != "$VERSION" ]]; then
-            echo "La version approuvée ($VERSION) ne correspond pas à VERSION.txt ($ROOT_VERSION)."
+          APP_VERSION="$(sed -nE 's/^Version:[[:space:]]*([0-9]+(\.[0-9]+){2,3})[[:space:]]*$/\1/p' app/VERSION.txt | head -n 1)"
+          if [[ "$VERSION" != "$ROOT_VERSION" || "$VERSION" != "$APP_VERSION" ]]; then
+            echo "Version incohérente : approbation=$VERSION, racine=$ROOT_VERSION, app=$APP_VERSION."
+            exit 1
+          fi
+          if [[ ! -s "NOTES-v$VERSION.txt" || ! -s "app/NOTES-v$VERSION.txt" ]]; then
+            echo "Notes de version absentes pour v$VERSION."
             exit 1
           fi
 
-          SNAPSHOT_DIR="source/canonical-v${VERSION}"
-          SNAPSHOT="$SNAPSHOT_DIR/GTA-Ranked-Studio-source-v${VERSION}.tar.xz"
-          test -s "$SNAPSHOT"
-          test -s "$SNAPSHOT_DIR/MANIFEST.json"
-          test -s "$SNAPSHOT_DIR/SHA256SUMS.txt"
-          RELEASE_TAG="v${VERSION}"
+          RELEASE_TAG="v$VERSION"
           if git ls-remote --exit-code --tags origin "refs/tags/$RELEASE_TAG" >/dev/null 2>&1; then
             echo "Refus : le tag $RELEASE_TAG existe déjà. Aucune Release ne sera écrasée."
             exit 1
           fi
           {
             echo "APP_VERSION=$VERSION"
-            echo "SNAPSHOT_DIR=$SNAPSHOT_DIR"
-            echo "SNAPSHOT=$SNAPSHOT"
             echo "RELEASE_TAG=$RELEASE_TAG"
+            echo "APP_ROOT=$GITHUB_WORKSPACE/app"
           } >> "$GITHUB_ENV"
 
-      - name: Verify canonical archive, manifest and every source file
-        shell: bash
-        run: |
-          set -euo pipefail
-          python - "$SNAPSHOT_DIR" "$SNAPSHOT" "$APP_VERSION" <<'PY'
-          import hashlib
-          import json
-          import sys
-          import tarfile
-          from pathlib import PurePosixPath
-
-          snapshot_dir, archive_path, requested_version = sys.argv[1:]
-          with open(f"{snapshot_dir}/MANIFEST.json", encoding="utf-8") as stream:
-              manifest = json.load(stream)
-          checksum_fields = open(f"{snapshot_dir}/SHA256SUMS.txt", encoding="utf-8").read().split()
-          if len(checksum_fields) < 2:
-              raise SystemExit("SHA256SUMS.txt invalide.")
-          digest = hashlib.sha256(open(archive_path, "rb").read()).hexdigest()
-          if digest != manifest.get("archive_sha256") or digest != checksum_fields[0]:
-              raise SystemExit("Le SHA-256 de l'archive ne correspond pas au manifeste/checksum.")
-          if manifest.get("version") != requested_version:
-              raise SystemExit("La version du manifeste ne correspond pas à la version demandée.")
-          expected = {item["path"]: item for item in manifest.get("files", [])}
-          if len(expected) != manifest.get("file_count"):
-              raise SystemExit("Le nombre de fichiers du manifeste est incohérent.")
-          actual = {}
-          with tarfile.open(archive_path, "r:xz") as archive:
-              for member in archive.getmembers():
-                  if not member.isfile():
-                      raise SystemExit(f"Entrée non prise en charge dans l'archive : {member.name}")
-                  path = PurePosixPath(member.name)
-                  if path.is_absolute() or ".." in path.parts or len(path.parts) < 2 or path.parts[0] != "gta-ranked-studio":
-                      raise SystemExit(f"Chemin d'archive non sûr : {member.name}")
-                  relative = PurePosixPath(*path.parts[1:]).as_posix()
-                  source = archive.extractfile(member)
-                  if source is None:
-                      raise SystemExit(f"Fichier illisible : {member.name}")
-                  data = source.read()
-                  actual[relative] = {
-                      "size": len(data),
-                      "sha256": hashlib.sha256(data).hexdigest(),
-                  }
-          if set(actual) != set(expected):
-              missing = sorted(set(expected) - set(actual))
-              unexpected = sorted(set(actual) - set(expected))
-              raise SystemExit(f"Inventaire différent. Manquants={missing}; inattendus={unexpected}")
-          for name, expected_item in expected.items():
-              if actual[name]["size"] != expected_item["size"] or actual[name]["sha256"] != expected_item["sha256"]:
-                  raise SystemExit(f"Intégrité invalide pour {name}")
-          print(f"Archive canonique v{requested_version} vérifiée : {len(actual)} fichiers.")
-          PY
-          xz -t "$SNAPSHOT"
-
-      - name: Extract canonical source
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p source-checkout
-          tar -xJf "$SNAPSHOT" -C source-checkout
-          APP_ROOT="source-checkout/gta-ranked-studio"
-          test -f "$APP_ROOT/VERSION.txt"
-          APP_VERSION_IN_SOURCE="$(sed -nE 's/^Version:[[:space:]]*([0-9]+(\.[0-9]+){2,3})[[:space:]]*$/\1/p' "$APP_ROOT/VERSION.txt" | head -n 1)"
-          if [[ "$APP_VERSION_IN_SOURCE" != "$APP_VERSION" ]]; then
-            echo "La version source ($APP_VERSION_IN_SOURCE) ne correspond pas à $APP_VERSION."
-            exit 1
-          fi
-          echo "APP_ROOT=$APP_ROOT" >> "$GITHUB_ENV"
-
-      - name: Inject current documentation and validate project memory
+      - name: Synchronize release documentation into the application package
         shell: bash
         run: |
           set -euo pipefail
@@ -174,37 +108,19 @@ jobs:
           cp "NOTES-v$APP_VERSION.txt" "$APP_ROOT/NOTES-v$APP_VERSION.txt"
           cp docs/CONTINUATION.md "$APP_ROOT/docs/CONTINUATION.md"
           cp docs/UPDATES.md "$APP_ROOT/docs/UPDATES.md"
+          cp docs/implementation-plan-v0.7.8.md "$APP_ROOT/docs/implementation-plan-v0.7.8.md"
           cp tools/check_project_memory.py "$APP_ROOT/tools/check_project_memory.py"
           python "$APP_ROOT/tools/check_project_memory.py" --root "$APP_ROOT"
 
-      - name: Normalize source timestamps for ZIP compatibility
+      - name: Install FFmpeg and application dependencies
         shell: bash
         run: |
           set -euo pipefail
-          # The canonical tar uses mtime=0 for reproducibility; ZIP starts at 1980-01-01.
-          find "$APP_ROOT" -type f -exec touch -m -d '1980-01-01 00:00:00 UTC' -- {} +
-          python - "$APP_ROOT" <<'PY'
-          import sys
-          from pathlib import Path
-
-          root = Path(sys.argv[1])
-          minimum = 315532800  # 1980-01-01T00:00:00Z
-          invalid = [str(path.relative_to(root)) for path in root.rglob("*")
-                     if path.is_file() and path.stat().st_mtime < minimum]
-          if invalid:
-              raise SystemExit("Horodatages antérieurs à 1980 dans la source : " + ", ".join(invalid))
-          print("Horodatages normalisés pour le format ZIP.")
-          PY
-
-      - name: Install FFmpeg
-        run: |
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends ffmpeg
           ffmpeg -version
           ffprobe -version
-
-      - name: Install application and test dependencies
-        run: python -m pip install --disable-pip-version-check -r "$APP_ROOT/requirements.txt"
+          python -m pip install --disable-pip-version-check -r "$APP_ROOT/requirements.txt"
 
       - name: Run full test suite and frontend syntax check
         shell: bash
@@ -218,47 +134,57 @@ jobs:
           node --check studio/web/static/app.js
 
       - name: Build sanitized Windows update ZIP
-        run: python "$APP_ROOT/installer/build_release_package.py" --version "$APP_VERSION" --output-dir "$GITHUB_WORKSPACE/dist"
+        shell: bash
+        run: |
+          set -euo pipefail
+          python "$APP_ROOT/installer/build_release_package.py" --version "$APP_VERSION" --output-dir "$GITHUB_WORKSPACE/dist"
 
       - name: Verify update package and user-data exclusions
         shell: bash
         run: |
           set -euo pipefail
-          python - "$GITHUB_WORKSPACE/dist/GTA-Ranked-Studio-v$APP_VERSION.zip" "$APP_VERSION" <<'PY'
+          python - "$GITHUB_WORKSPACE/dist/GTA-Ranked-Studio-v$APP_VERSION.zip" "$GITHUB_WORKSPACE/dist/SHA256SUMS.txt" "$APP_VERSION" <<'PY'
+          import hashlib
           import sys
           import zipfile
+          from pathlib import PurePosixPath
 
-          package_path, version = sys.argv[1:]
+          package_path, checksum_path, version = sys.argv[1:]
           required = {
-              "gta-ranked-studio/docs/CONTINUATION.md",
-              "gta-ranked-studio/tools/check_project_memory.py",
-              "gta-ranked-studio/docs/UPDATES.md",
               "gta-ranked-studio/VERSION.txt",
+              "gta-ranked-studio/installer/apply_update.ps1",
+              "gta-ranked-studio/studio/web/updater.py",
+              "gta-ranked-studio/docs/CONTINUATION.md",
+              "gta-ranked-studio/docs/UPDATES.md",
+              "gta-ranked-studio/tools/check_project_memory.py",
           }
-          forbidden = (
-              "gta-ranked-studio/config.yaml",
-              "gta-ranked-studio/.env",
-          )
           with zipfile.ZipFile(package_path) as archive:
               names = set(archive.namelist())
               missing = required - names
               if missing:
                   raise SystemExit("Fichiers requis absents : " + ", ".join(sorted(missing)))
-              found_forbidden = [name for name in names if name in forbidden or name.endswith((".sqlite", ".sqlite3", ".db", ".log", ".pyc", ".pem", ".key"))]
-              if found_forbidden:
-                  raise SystemExit("Données ou fichiers sensibles dans le paquet : " + ", ".join(sorted(found_forbidden)))
-              if archive.testzip() is not None:
+              if archive.testzip():
                   raise SystemExit("Le ZIP de mise à jour est corrompu.")
               version_text = archive.read("gta-ranked-studio/VERSION.txt").decode("utf-8-sig")
               if f"Version: {version}" not in version_text:
                   raise SystemExit("La version du paquet ne correspond pas à la Release.")
+              forbidden = []
+              for name in names:
+                  path = PurePosixPath(name)
+                  if path.name in {"config.yaml", "secrets.json", "credentials.json"} or path.name.startswith(".env") or path.suffix.lower() in {".sqlite", ".sqlite3", ".db", ".log", ".pyc", ".pem", ".key"}:
+                      forbidden.append(name)
+              if forbidden:
+                  raise SystemExit("Données locales ou fichiers sensibles dans le paquet : " + ", ".join(sorted(forbidden)))
+          digest = hashlib.sha256(open(package_path, "rb").read()).hexdigest()
+          if digest not in open(checksum_path, encoding="utf-8").read():
+              raise SystemExit("Le checksum SHA-256 du ZIP ne correspond pas.")
           print(f"Paquet Windows v{version} vérifié.")
           PY
 
       - name: Prepare release notes
         shell: bash
         run: |
-          cp "$APP_ROOT/NOTES-v$APP_VERSION.txt" "$GITHUB_WORKSPACE/dist/release-notes.md"
+          cp "NOTES-v$APP_VERSION.txt" "$GITHUB_WORKSPACE/dist/release-notes.md"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
