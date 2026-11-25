@@ -12,6 +12,7 @@ on:
       - "README.md"
       - "VERSION.txt"
       - "NOTES-v0.7.8.txt"
+      - "source/canonical-v0.7.8/**"
   workflow_dispatch:
 
 permissions:
