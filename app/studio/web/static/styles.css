@@ -94,3 +94,7 @@
 .quality-report p{margin:0;padding:0 10px 7px;line-height:1.5}
 .quality-report ul{margin:0;padding:0 12px 9px 27px;line-height:1.5;color:#d7bd82}
 .quality-report li+li{margin-top:3px}
+
+
+/* Smart pause editing feedback */
+.smart-cut-note{margin-top:7px;color:#d8c47a;font-size:10px;line-height:1.5;max-width:760px}

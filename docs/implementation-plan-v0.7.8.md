@@ -44,6 +44,26 @@ Recommended improvements:
 
 The candidate scorer now estimates whether a moment starts with useful activity during its first five seconds. This is an explainable audio/transcript proxy, not a measurement of actual viewer retention or gameplay understanding. It contributes 10% of the existing score so the established audio, speech and reaction signals remain dominant. The UI displays it separately, SQLite stores it with a non-destructive migration, and scans remain usable without Whisper by falling back to audio-only evidence.
 
+### Phrase-aware smart cutting (implemented on `feature/smart-short-editing`, not yet released)
+
+The excerpt selector now prefers a nearby sentence or natural-pause boundary before the audio peak and keeps the complete payoff phrase plus a short reaction tail. It still preserves short source clips in full.
+
+Automatic pause removal is intentionally conservative and requires Whisper word-level DTW timestamps. Segment-level SRT fallback never triggers jump cuts. The current limits are:
+- pause must be at least 3.0 seconds
+- keep 0.55 seconds of context on both sides
+- protect the detected audio peak within a 2.5-second guard
+- at most 2 cuts and 6 seconds removed per Short
+- each retained segment must be at least 1.25 seconds
+
+The renderer trims and concatenates video and matching audio in one FFmpeg filter graph. Captions, audio peak, dynamic zoom and thumbnail selection use the resulting joined timeline. The Short metadata records the removed pauses and retained source ranges, and the job card explains whether a cut occurred or DTW precision was unavailable.
+
+Validation on the feature branch:
+- Linux: 142 passed, 1 skipped (PowerShell-only test unavailable on Linux).
+- Windows: 143 passed, no skips.
+- A real FFmpeg integration test verifies a stitched MP4's output duration, audio track, vertical dimensions and generated thumbnail.
+
+This is not part of the stable v0.7.8 release until a future version is explicitly approved and published. Real GTA clips still need editorial review to calibrate false cuts and ensure streamer reactions remain intact.
+
 ## C. Detection roadmap
 ### Post-export quality diagnostics (implemented on the working branch)
 

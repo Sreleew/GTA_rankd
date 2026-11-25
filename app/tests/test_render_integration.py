@@ -111,3 +111,82 @@ def test_real_vertical_short_render(tmp_path: Path) -> None:
     assert rendered["has_audio"] is True
     assert output.is_file() and output.stat().st_size > 10_000
     assert thumbnail.is_file() and thumbnail.stat().st_size > 1_000
+
+
+
+@pytest.mark.skipif(shutil.which("ffmpeg") is None or shutil.which("ffprobe") is None, reason="FFmpeg/FFprobe absent")
+def test_real_vertical_short_stitches_speech_segments_and_keeps_audio_synced(tmp_path: Path) -> None:
+    ffmpeg = shutil.which("ffmpeg")
+    ffprobe = shutil.which("ffprobe")
+    assert ffmpeg and ffprobe
+
+    encoder_result = subprocess.run(
+        [ffmpeg, "-hide_banner", "-encoders"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        check=False, timeout=30,
+    )
+    if encoder_result.returncode != 0 or "libx264" not in (encoder_result.stdout + encoder_result.stderr):
+        pytest.skip("La build FFmpeg ne contient pas libx264")
+
+    source = tmp_path / "speech-gaps.mp4"
+    output = tmp_path / "stitched-short.mp4"
+    thumbnail = tmp_path / "stitched-thumbnail.jpg"
+    subprocess.run(
+        [
+            ffmpeg, "-hide_banner", "-loglevel", "error", "-y",
+            "-f", "lavfi", "-i", "testsrc2=duration=6:size=320x180:rate=30",
+            "-f", "lavfi", "-i", "sine=frequency=880:duration=6",
+            "-shortest", "-c:v", "libx264", "-preset", "ultrafast",
+            "-pix_fmt", "yuv420p", "-c:a", "aac", str(source),
+        ],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        check=True, timeout=60,
+    )
+
+    captions = tmp_path / "stitched-captions.ass"
+    create_ass_file(
+        captions,
+        words=[
+            WordTiming(0.25, 0.55, "FIRST"),
+            WordTiming(1.65, 1.95, "SECOND"),
+        ],
+        hook_text="WAIT FOR IT",
+        brand_enabled=False,
+        width=360,
+        height=640,
+    )
+
+    result = render_vertical_short(
+        source,
+        output,
+        thumbnail,
+        ffmpeg=ffmpeg,
+        ffprobe=ffprobe,
+        preferred_encoder="libx264",
+        fallback_encoder="libx264",
+        max_duration=60,
+        width=360,
+        height=640,
+        ass_file=captions,
+        project_root=tmp_path,
+        layout="blur",
+        dynamic_zoom=False,
+        trim_start=0.0,
+        trim_duration=6.0,
+        edit_segments=[(0.0, 1.5), (4.0, 6.0)],
+        sound_effect_path=Path(__file__).resolve().parents[1] / "assets" / "sfx" / "soft_whoosh.wav",
+        sound_effect_offset=1.0,
+        sound_effect_volume=0.12,
+    )
+
+    rendered = probe_media(output, ffprobe)
+    assert result["duration"] == pytest.approx(3.5, abs=0.08)
+    assert result["source_window_duration"] == pytest.approx(6.0, abs=0.01)
+    assert result["removed_duration"] == pytest.approx(2.5, abs=0.01)
+    assert result["edit_segments"] == [(0.0, 1.5), (4.0, 6.0)]
+    assert rendered["duration"] == pytest.approx(3.5, abs=0.12)
+    assert rendered["has_audio"] is True
+    assert result["sound_effect_used"] is True
+    assert rendered["width"] == 360 and rendered["height"] == 640
+    assert output.is_file() and output.stat().st_size > 10_000
+    assert thumbnail.is_file() and thumbnail.stat().st_size > 1_000

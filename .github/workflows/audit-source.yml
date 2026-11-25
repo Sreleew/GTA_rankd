@@ -2,7 +2,7 @@ name: Audit GTA Ranked Studio application
 
 on:
   push:
-    branches: [main, chore/clean-source-layout]
+    branches: [main, chore/clean-source-layout, "feature/**"]
     paths:
       - "app/**"
       - ".github/workflows/audit-source.yml"

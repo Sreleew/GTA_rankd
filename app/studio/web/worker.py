@@ -17,8 +17,9 @@ from studio.config import AppConfig
 from studio.process import ProcessingCancelled, check_cancelled, set_current_cancel_event
 from studio.web.metadata import generate_short_metadata
 from studio.web.short_editor import (
-    apply_thumbnail_overlay, create_ass_file, parse_srt, rebase_word_timings, select_thumbnail_timestamp,
-    select_excerpt_range, write_srt_file,
+    apply_thumbnail_overlay, create_ass_file, map_timestamp_through_segments, parse_srt,
+    plan_speech_pause_edits, rebase_word_timings, rebase_word_timings_by_segments,
+    select_excerpt_range, select_thumbnail_timestamp, write_srt_file,
 )
 from studio.web.short_renderer import MediaError, probe_media, render_vertical_short
 from studio.web.export_quality import analyze_export_quality
@@ -219,11 +220,9 @@ class JobRunner:
                     minimum_seconds=float(self.config.get("shorts", "auto_trim_min_seconds", default=15)),
                     maximum_seconds=float(self.config.get("shorts", "auto_trim_max_seconds", default=45)),
                 )
+            excerpt_duration = max(0.0, trim_end - trim_start)
             render_words = rebase_word_timings(all_words, trim_start, trim_end) if all_words else []
             render_peak_timestamp = max(0.0, peak_timestamp - trim_start)
-            render_thumbnail_timestamp = select_thumbnail_timestamp(
-                render_words, trim_end - trim_start, preferred=render_peak_timestamp
-            )
             speaker_filter: dict[str, Any] = {"mode": str(options.get("caption_voice_mode", "dominant")), "status": "not_requested"}
             if render_words and speaker_filter["mode"] == "dominant":
                 original_words = render_words
@@ -255,6 +254,36 @@ class JobRunner:
                     speaker_audio_path.unlink(missing_ok=True)
             elif speaker_filter["mode"] != "dominant":
                 speaker_filter["status"] = "all_voices"
+
+            auto_pause_trim_enabled = bool(
+                options.get(
+                    "auto_pause_trim_enabled",
+                    self.config.get("shorts", "auto_pause_trim_enabled", default=True),
+                )
+            ) and auto_trim_enabled and not source_range
+            pause_plan = plan_speech_pause_edits(
+                render_words,
+                excerpt_duration,
+                render_peak_timestamp,
+                timestamp_mode=str(transcript_result.get("timestamp_mode") or ""),
+                min_pause_seconds=float(self.config.get("shorts", "auto_pause_trim_min_pause_seconds", default=3.0)),
+                keep_context_seconds=float(self.config.get("shorts", "auto_pause_trim_keep_seconds", default=0.55)),
+                peak_guard_seconds=float(self.config.get("shorts", "auto_pause_trim_peak_guard_seconds", default=2.5)),
+                max_removed_seconds=float(self.config.get("shorts", "auto_pause_trim_max_removed_seconds", default=6.0)),
+                max_cuts=int(self.config.get("shorts", "auto_pause_trim_max_cuts", default=2)),
+            ) if auto_pause_trim_enabled else plan_speech_pause_edits(
+                [], excerpt_duration, render_peak_timestamp, timestamp_mode="disabled",
+            )
+            edit_segments = list(pause_plan.segments) if len(pause_plan.segments) > 1 else None
+            if edit_segments:
+                render_words = rebase_word_timings_by_segments(render_words, pause_plan.segments)
+                render_peak_timestamp = map_timestamp_through_segments(
+                    render_peak_timestamp, pause_plan.segments
+                )
+            render_duration = pause_plan.output_duration if edit_segments else excerpt_duration
+            render_thumbnail_timestamp = select_thumbnail_timestamp(
+                render_words, render_duration, preferred=render_peak_timestamp
+            )
             render_transcript = " ".join(word.text for word in render_words).strip()
             if not render_transcript and trim_start == 0 and trim_end >= float(source_info["duration"]):
                 render_transcript = transcript_result.get("text", "")
@@ -321,7 +350,8 @@ class JobRunner:
                 thumbnail_timestamp=render_thumbnail_timestamp,
                 zoom_percent=int(options.get("zoom_percent", 8)),
                 trim_start=trim_start,
-                trim_duration=trim_end - trim_start,
+                trim_duration=excerpt_duration,
+                edit_segments=edit_segments,
                 sound_effect_path=(self.config.root / "assets" / "sfx" / "soft_whoosh.wav")
                     if bool(options.get("sfx_enabled", True)) else None,
                 sound_effect_offset=max(0.0, min(render_peak_timestamp, (trim_end - trim_start) - 0.12)),
@@ -383,6 +413,20 @@ class JobRunner:
                 "trim_start": trim_start,
                 "trim_end": trim_end,
                 "auto_trim_enabled": auto_trim_enabled,
+                "smart_cutting": {
+                    "enabled": auto_pause_trim_enabled,
+                    "timestamp_mode": transcript_result.get("timestamp_mode"),
+                    "removed_pause_count": len(pause_plan.removed_pauses),
+                    "removed_pause_seconds": pause_plan.removed_duration,
+                    "removed_pauses": [
+                        {"start": round(trim_start + start, 3), "end": round(trim_start + end, 3)}
+                        for start, end in pause_plan.removed_pauses
+                    ],
+                    "kept_segments": [
+                        {"start": round(trim_start + start, 3), "end": round(trim_start + end, 3)}
+                        for start, end in pause_plan.segments
+                    ],
+                },
                 "transcription_status": transcript_result.get("status"),
                 "transcription_timestamp_mode": transcript_result.get("timestamp_mode"),
                 "transcription_message": transcript_result.get("reason"),
