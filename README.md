@@ -2,7 +2,7 @@
 
 Application Windows locale pour analyser des clips et VOD GTA, repérer les passages intéressants et produire des Shorts verticaux avec leurs éléments de publication.
 
-**Version source de travail : 0.7.8.** Le candidat a été reconstruit, testé et empaqueté par GitHub Actions. Il ne doit pas être présenté comme une Release stable publiée tant que la Release n'existe pas.
+**Version intégrée : 0.7.8.** Les nouvelles fonctions sont intégrées à `main`. La disponibilité dans le logiciel dépend de la publication de la GitHub Release `v0.7.8`, détectée depuis **Paramètres > Mises à jour**.
 
 ## Fonctionnalités principales
 
@@ -49,7 +49,7 @@ Construire un ZIP avec `python installer/build_release_package.py --version 0.7.
 
 Le workflow `Windows runtime validation` vérifie la source canonique sur Windows, exécute les tests PowerShell et construit le paquet de mise à jour. Il ne remplace pas les tests matériels sur la RX 9060 XT.
 
-La publication est volontairement désactivée sur les événements `push`. Le workflow de release doit être déclenché manuellement depuis `main`, avec confirmation, et crée une Release brouillon à vérifier avant publication.
+Une publication stable est déclenchée uniquement par un commit explicite qui crée ou met à jour `.release-approval` sur `main`, avec un numéro identique à `VERSION.txt`. Le workflow vérifie la source canonique, les tests et le ZIP avant de publier. Le lancement manuel reste disponible pour produire une Release brouillon.
 
 - [Mémo de continuité](docs/CONTINUATION.md)
 - [Processus de validation et de publication](docs/RELEASE_PROCESS.md)
