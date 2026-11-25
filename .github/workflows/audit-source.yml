@@ -71,7 +71,6 @@ jobs:
           fi
           test -s "NOTES-v$ROOT_VERSION.txt"
           mkdir -p app/docs app/tools
-          cp README.md app/README.md
           cp VERSION.txt app/VERSION.txt
           cp "NOTES-v$ROOT_VERSION.txt" "app/NOTES-v$ROOT_VERSION.txt"
           cp docs/CONTINUATION.md app/docs/CONTINUATION.md
