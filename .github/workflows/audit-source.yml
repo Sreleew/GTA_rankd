@@ -71,6 +71,7 @@ jobs:
           cp VERSION.txt "$APP_ROOT/VERSION.txt"
           cp NOTES-v0.7.8.txt "$APP_ROOT/NOTES-v0.7.8.txt"
           cp docs/CONTINUATION.md "$APP_ROOT/docs/CONTINUATION.md"
+          cp docs/UPDATES.md "$APP_ROOT/docs/UPDATES.md"
           cp tools/check_project_memory.py "$APP_ROOT/tools/check_project_memory.py"
           python "$APP_ROOT/tools/check_project_memory.py" --root "$APP_ROOT"
       - name: Install FFmpeg and application test dependencies
