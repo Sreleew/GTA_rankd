@@ -58,8 +58,8 @@ Automatic pause removal is intentionally conservative and requires Whisper word-
 The renderer trims and concatenates video and matching audio in one FFmpeg filter graph. Captions, audio peak, dynamic zoom and thumbnail selection use the resulting joined timeline. The Short metadata records the removed pauses and retained source ranges, and the job card explains whether a cut occurred or DTW precision was unavailable.
 
 Validation on the feature branch:
-- Linux: 142 passed, 1 skipped (PowerShell-only test unavailable on Linux).
-- Windows: 143 passed, no skips.
+- Linux: 143 passed, 1 skipped (PowerShell-only test unavailable on Linux).
+- Windows: 144 passed, no skips.
 - A real FFmpeg integration test verifies a stitched MP4's output duration, audio track, vertical dimensions and generated thumbnail.
 
 This is not part of the stable v0.7.8 release until a future version is explicitly approved and published. Real GTA clips still need editorial review to calibrate false cuts and ensure streamer reactions remain intact.
