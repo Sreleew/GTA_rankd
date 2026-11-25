@@ -1,6 +1,12 @@
 name: Build and prepare GTA Ranked Studio release
 
 on:
+  # Une publication publique ne part que d'un commit explicite d'approbation.
+  push:
+    branches: [main]
+    paths:
+      - ".release-approval"
+  # La voie manuelle conserve son contrôle et produit une Release brouillon.
   workflow_dispatch:
     inputs:
       version:
@@ -8,7 +14,7 @@ on:
         required: true
         type: string
       confirm_publish:
-        description: "Confirmer explicitement la préparation de la Release"
+        description: "Confirmer explicitement la préparation de la Release brouillon"
         required: true
         default: false
         type: boolean
@@ -22,7 +28,7 @@ concurrency:
 
 jobs:
   release:
-    name: Verify, test, package and prepare a draft release
+    name: Verify, test, package and publish an explicitly approved release
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -30,7 +36,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Validate manual release request
+      - name: Validate release request and explicit approval
         shell: bash
         env:
           VERSION_INPUT: ${{ inputs.version }}
@@ -41,15 +47,33 @@ jobs:
             echo "Refus : une Release doit être préparée depuis main."
             exit 1
           fi
-          if [[ "$CONFIRM_PUBLISH" != "true" ]]; then
-            echo "Refus : la confirmation explicite n'a pas été cochée."
+
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            if [[ "$CONFIRM_PUBLISH" != "true" ]]; then
+              echo "Refus : la confirmation explicite n'a pas été cochée."
+              exit 1
+            fi
+            VERSION="${VERSION_INPUT#v}"
+          elif [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
+            test -s .release-approval
+            VERSION="$(tr -d '[:space:]' < .release-approval)"
+            VERSION="${VERSION#v}"
+            echo "Publication explicitement approuvée par .release-approval : $VERSION"
+          else
+            echo "Refus : événement de publication non pris en charge."
             exit 1
           fi
-          VERSION="${VERSION_INPUT#v}"
+
           if [[ ! "$VERSION" =~ ^[0-9]+(\.[0-9]+){2,3}$ ]]; then
-            echo "Version invalide : $VERSION_INPUT"
+            echo "Version invalide : $VERSION"
             exit 1
           fi
+          ROOT_VERSION="$(sed -nE 's/^Version:[[:space:]]*([0-9]+(\.[0-9]+){2,3})[[:space:]]*$/\1/p' VERSION.txt | head -n 1)"
+          if [[ "$ROOT_VERSION" != "$VERSION" ]]; then
+            echo "La version approuvée ($VERSION) ne correspond pas à VERSION.txt ($ROOT_VERSION)."
+            exit 1
+          fi
+
           SNAPSHOT_DIR="source/canonical-v${VERSION}"
           SNAPSHOT="$SNAPSHOT_DIR/GTA-Ranked-Studio-source-v${VERSION}.tar.xz"
           test -s "$SNAPSHOT"
@@ -207,12 +231,12 @@ jobs:
           print(f"Paquet Windows v{version} vérifié.")
           PY
 
-      - name: Prepare draft release notes
+      - name: Prepare release notes
         shell: bash
         run: |
           cp "$APP_ROOT/NOTES-v$APP_VERSION.txt" "$GITHUB_WORKSPACE/dist/release-notes.md"
 
-      - name: Create draft GitHub Release
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ env.RELEASE_TAG }}
@@ -222,10 +246,10 @@ jobs:
           files: |
             dist/GTA-Ranked-Studio-${{ env.RELEASE_TAG }}.zip
             dist/SHA256SUMS.txt
-          draft: true
+          draft: ${{ github.event_name == 'workflow_dispatch' }}
           prerelease: false
           generate_release_notes: true
-          make_latest: false
+          make_latest: ${{ github.event_name == 'push' }}
           fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
