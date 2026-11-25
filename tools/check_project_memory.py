@@ -31,26 +31,29 @@ def main() -> int:
         print("ERREUR: VERSION.txt ou docs/CONTINUATION.md est absent.")
         return 1
 
-    match = re.search(
-        r"(?im)^Version:\\s*(\\d+(?:\\.\\d+){2,3})\\s*$",
-        version_file.read_text(encoding="utf-8-sig"),
-    )
-    if not match:
+    version = None
+    for line in version_file.read_text(encoding="utf-8-sig").splitlines():
+        if line.strip().lower().startswith("version:"):
+            version = line.split(":", 1)[1].strip()
+            break
+    if not version or not re.fullmatch(r"[0-9]+([.][0-9]+){2,3}", version):
         print("ERREUR: VERSION.txt ne contient pas de version valide.")
         return 1
-    version = match.group(1)
-    memory = memory_file.read_text(encoding="utf-8")
 
-    expected_version = rf"(?m)^- \\*\\*Version source de référence :\\*\\* {re.escape(version)}$"
-    if not re.search(expected_version, memory):
+    memory = memory_file.read_text(encoding="utf-8")
+    expected_version = f"- **Version source de référence :** {version}"
+    if expected_version not in memory.splitlines():
         print(f"ERREUR: le mémo ne référence pas la version {version}.")
         return 1
 
-    if not re.search(
-        r"(?m)^- \\*\\*Dernière mise à jour :\\*\\* \\d{1,2} [A-Za-zÀ-ÿ]+ \\d{4}$",
-        memory,
-    ):
-        print("ERREUR: date de mise à jour du mémo absente ou invalide.")
+    date_prefix = "- **Dernière mise à jour :** "
+    date_lines = [line for line in memory.splitlines() if line.startswith(date_prefix)]
+    if len(date_lines) != 1:
+        print("ERREUR: la date de mise à jour du mémo est absente ou ambiguë.")
+        return 1
+    date_parts = date_lines[0][len(date_prefix):].split()
+    if len(date_parts) != 4 or not date_parts[0].isdigit() or not date_parts[3].isdigit():
+        print("ERREUR: date de mise à jour invalide dans docs/CONTINUATION.md.")
         return 1
 
     missing = [section for section in REQUIRED_SECTIONS if section not in memory]
@@ -65,9 +68,9 @@ def main() -> int:
         print(f"ERREUR: fichier de notes absent: {notes.name}")
         return 1
 
-    print(f"Mémo de continuité OK pour la version {version}.")
-    print(f"{len(REQUIRED_SECTIONS)} sections obligatoires trouvées.")
-    print(f"Notes de version trouvées: {notes.name}.")
+    print(f"Memo de continuite OK pour la version {version}.")
+    print(f"{len(REQUIRED_SECTIONS)} sections obligatoires trouvees.")
+    print(f"Notes de version trouvees: {notes.name}.")
     return 0
 
 
