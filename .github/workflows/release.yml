@@ -177,6 +177,25 @@ jobs:
           cp tools/check_project_memory.py "$APP_ROOT/tools/check_project_memory.py"
           python "$APP_ROOT/tools/check_project_memory.py" --root "$APP_ROOT"
 
+      - name: Normalize source timestamps for ZIP compatibility
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The canonical tar uses mtime=0 for reproducibility; ZIP starts at 1980-01-01.
+          find "$APP_ROOT" -type f -exec touch -m -d '1980-01-01 00:00:00 UTC' -- {} +
+          python - "$APP_ROOT" <<'PY'
+          import sys
+          from pathlib import Path
+
+          root = Path(sys.argv[1])
+          minimum = 315532800  # 1980-01-01T00:00:00Z
+          invalid = [str(path.relative_to(root)) for path in root.rglob("*")
+                     if path.is_file() and path.stat().st_mtime < minimum]
+          if invalid:
+              raise SystemExit("Horodatages antérieurs à 1980 dans la source : " + ", ".join(invalid))
+          print("Horodatages normalisés pour le format ZIP.")
+          PY
+
       - name: Install FFmpeg
         run: |
           sudo apt-get update
