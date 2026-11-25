@@ -19,6 +19,10 @@ permissions:
   contents: write
   actions: write
 
+concurrency:
+  group: gta-ranked-source-audit-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   reconstruct:
     runs-on: ubuntu-latest
