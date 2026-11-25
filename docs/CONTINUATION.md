@@ -68,13 +68,27 @@ La source a été reconstruite depuis le snapshot v0.4.0 avec les correctifs cum
 
 C'est un candidat validé par CI, pas une Release stable et pas une validation GPU sur Windows réel.
 
+### Snapshot canonique v0.7.8
+
+- Source canonique reconstruite, déterministe et commitée dans `source/canonical-v0.7.8/`.
+- Archive : `GTA-Ranked-Studio-source-v0.7.8.tar.xz`.
+- Fichiers de contrôle : `MANIFEST.json` et `SHA256SUMS.txt`.
+- Le manifeste inventorie les fichiers et leurs SHA-256 individuels. L'archive contrôlée contient 103 fichiers.
+- Le mémo, son vérificateur et le changelog complet sont inclus dans l'archive et dans le ZIP Windows.
+- Aucun `config.yaml`, média, base SQLite, modèle local, log ou bytecode Python n'est inclus.
+- SHA-256 de l'archive canonique au dernier audit : `0d712600b24f2d9bbbe41d77401648a934c80f13047c952a12d1e3eaf343cb5b`. Le manifeste et `SHA256SUMS.txt` du dépôt restent la référence de vérité.
+- Workflow validé : https://github.com/Sreleew/GTA_rankd/actions/runs/45672998549.
+- La CI a reconstruit la version, passé 128 tests avec 1 test ignoré, généré le ZIP Windows et vérifié la présence des fichiers de continuité dans le paquet.
+
+Le workflow de release lit désormais cette archive canonique, vérifie son checksum et sa version, puis lance les tests et le packaging. Il ne rejoue plus toute la chaîne de patchs depuis v0.4.0. Une publication stable ne doit être déclenchée qu'après validation Windows réelle et intégration volontaire sur `main`.
+
 ### Snapshot v0.8.0 bloqué
 
 Le dépôt contient 17 fragments `source/v0.8.0-source.part000.b64` à `part016.b64`. Les segments `part003` et `part004` sont strictement identiques : seulement 16 contenus uniques. L'archive reconstruite est invalide. L'historique Git consulté ne fournit pas d'ancienne version de `part004`.
 
 **Ne pas utiliser, fusionner ou réparer par supposition le snapshot v0.8.0 actuel.** Restaurer le véritable segment depuis la source d'origine ou régénérer l'archive depuis un arbre source complet et vérifié.
 
-La prochaine étape est de figer l'arbre applicatif v0.7.8 reconstruit en snapshot source canonique déterministe, accompagné d'un manifeste, d'un inventaire et d'un SHA-256. Les futures versions devront partir de cette base plutôt que rejouer les anciens correctifs depuis v0.4.0.
+Le snapshot v0.7.8 canonique est maintenant créé, vérifié et enregistré dans Git. Les futures versions doivent partir de cette base plutôt que rejouer les anciens correctifs depuis v0.4.0.
 
 ## 6. Fichiers importants
 
@@ -83,7 +97,11 @@ La prochaine étape est de figer l'arbre applicatif v0.7.8 reconstruit en snapsh
 - `README.md` : documentation produit.
 - `docs/UPDATES.md` : guide utilisateur et historique des mises à jour.
 - `docs/CONTINUATION.md` : ce mémo maître à lire en premier.
+- `docs/UPDATES.md` : guide de mise à jour et historique complet des versions.
+- `source/canonical-v0.7.8/` : archive source de référence, manifeste et SHA-256.
 - `tools/check_project_memory.py` : vérifie l'alignement du mémo avec la version et les notes.
+- `.github/workflows/audit-source.yml` : reconstruit, teste et actualise le snapshot canonique.
+- `.github/workflows/release.yml` : publie depuis la source canonique vérifiée après contrôle de la mémoire.
 - `installer/build_release_package.py` : crée le ZIP de mise à jour.
 - `studio/web/` : application et interface.
 - `tests/` : tests de régression.
@@ -113,20 +131,23 @@ La copie du fichier de configuration n'est valable que pour une installation neu
 - Modifier une branche de travail, tester, conserver des commits explicites, ne pas publier une version non validée.
 - Préserver config, bases, projets, exports, médias et modèles locaux.
 - À chaque version, mettre à jour ensemble `VERSION.txt`, `NOTES-vX.Y.Z.txt`, `README.md`, `docs/UPDATES.md` et ce mémo.
-- Le contrôle CI doit échouer si la version du mémo ne correspond pas à `VERSION.txt), si la date ou des sections essentielles manquent, ou si les notes de version sont absentes.
+- Le contrôle CI doit échouer si la version du mémo ne correspond pas à `VERSION.txt`, si la date ou des sections essentielles manquent, ou si les notes de version sont absentes.
+- Le workflow de release doit partir de `source/canonical-vX.Y.Z/`, vérifier son `SHA256SUMS.txt` et confirmer que le paquet Windows contient le mémo, le vérificateur et le changelog.
+- Une fusion de cette branche vers `main` peut déclencher le workflow de publication, car les chemins de source canonique sont surveillés. Ne pas fusionner avant les tests Windows et la décision explicite de publier.
 - À chaque mise à jour, ajouter au mémo les fonctionnalités livrées, les tests et résultats, la branche/commit, le statut CI/Release, les limites et les prochaines tâches.
 - Toujours distinguer « implémenté », « testé en CI », « testé sous Windows réel » et « publié ».
 
 ## 9. Prochaines étapes priorisées
 
-1. Créer le snapshot canonique v0.7.8 déterministe avec SHA-256, manifeste et inventaire des fichiers.
-2. Enregistrer le snapshot dans Git et faire repartir les futures versions de celui-ci.
-3. Brancher le contrôle du mémo sur les workflows d'audit et de release.
-4. Réconcilier proprement `main` et `feature/v0.7.8-shorts-retention`, sans intégrer les fragments v0.8.0 corrompus.
-5. Tester sous Windows le cycle complet création > validation > fermeture/réouverture du Short et la persistance des métadonnées.
-6. Valider AMF, Whisper Vulkan, Qwen et la qualité du rendu sur la machine réelle.
-7. Améliorer ensuite le scoring, les coupes naturelles, les hooks et enfin l'analyse visuelle du gameplay.
+1. Faire relire la source canonique v0.7.8 et le workflow de release. Le snapshot avec manifeste et checksum est déjà commité.
+2. Tester sous Windows le cycle complet création > validation > fermeture/réouverture du Short et la persistance des fichiers et métadonnées.
+3. Valider sur la machine réelle AMD AMF, Whisper Vulkan, Qwen et la qualité du rendu/son.
+4. Corriger les éventuels problèmes détectés sous Windows sans écraser les données utilisateur.
+5. Après validation, intégrer volontairement la branche de travail à `main`, en sachant que cela peut déclencher une publication automatique.
+6. Restaurer le vrai fragment `part004` ou reconstruire la source v0.8.0 depuis un arbre complet ; ne pas utiliser les fragments actuels.
+7. Commencer les évolutions depuis le snapshot canonique v0.7.8 : améliorer le scoring, les coupes naturelles, les hooks, puis l'analyse visuelle du gameplay.
+8. À chaque version, mettre à jour le mémo, les notes, le README et le changelog, puis laisser la CI reconstruire le snapshot et vérifier que le ZIP le contient.
 
 ## 10. Message de reprise prêt à copier
 
-> Nous reprenons GTA Ranked Studio. Lis d'abord `docs/CONTINUATION.md` dans le dépôt `Sreleew/GTA_rankd`, puis vérifie les branches et derniers workflows GitHub. La base provisoire fiable est la source reconstruite v0.7.8, validée par CI avec 128 tests réussis et 1 ignoré. Le snapshot v0.8.0 actuel est corrompu car `part003` et `part004` sont identiques : ne l'utilise pas. Continue les étapes du mémo directement depuis GitHub sans me demander de ZIP, en préservant les données locales. Après chaque mise à jour, actualise ce mémo, les notes, le README et le changelog, puis fais vérifier leur cohérence par CI.
+> Nous reprenons GTA Ranked Studio. Lis d'abord `docs/CONTINUATION.md` dans le dépôt `Sreleew/GTA_rankd`, puis vérifie le HEAD de la branche `feature/v0.7.8-shorts-retention`, les commits, les Releases et les workflows GitHub récents. La source canonique v0.7.8 est dans `source/canonical-v0.7.8/`, avec manifeste et SHA-256 ; la CI l'a validée avec 128 tests réussis et 1 ignoré. Le candidat n'est pas encore une Release stable et n'a pas été validé sur Windows réel. Le snapshot v0.8.0 actuel est corrompu car `part003` et `part004` sont identiques : ne l'utilise pas. Continue directement depuis GitHub sans me demander de ZIP, en préservant les données locales. Lis le mémo avant toute modification et actualise-le, les notes, le README et le changelog à chaque version. Laisse la CI vérifier les documents et leur présence dans le paquet. Ne publie rien et ne fusionne pas vers `main` sans validation Windows et décision de publication.
