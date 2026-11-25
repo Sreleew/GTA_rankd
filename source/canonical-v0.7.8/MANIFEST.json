@@ -2,7 +2,7 @@
   "project": "GTA Ranked Studio",
   "version": "0.7.8",
   "archive": "GTA-Ranked-Studio-source-v0.7.8.tar.xz",
-  "archive_sha256": "cd1380c2a381fcb99e0674d0249203d4ed8e1de20b3572dba221c02f9b08f492",
+  "archive_sha256": "d862e92613e38cf288e496c516ce3f10e756bb15ab31d81cb4b5c5108c4a1472",
   "file_count": 103,
   "files": [
     {
@@ -112,8 +112,8 @@
     },
     {
       "path": "README.md",
-      "size": 3012,
-      "sha256": "b408d2a2d962631beac2af2386f988265ee3de38a43a3d51d63d905d5ae069c3"
+      "size": 3687,
+      "sha256": "ad6014a6a85908c356a53b298f68ba0a3c39364ce43fa37effc947d9957d4a21"
     },
     {
       "path": "README_M0.txt",
