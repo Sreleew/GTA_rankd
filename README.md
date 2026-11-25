@@ -43,6 +43,16 @@ node --check studio/web/static/app.js
 
 Construire un ZIP avec `python installer/build_release_package.py --version 0.7.8 --output-dir dist`.
 
+## Validation et publication
+
+Le workflow `Windows runtime validation` vérifie la source canonique sur Windows, exécute les tests PowerShell et construit le paquet de mise à jour. Il ne remplace pas les tests matériels sur la RX 9060 XT.
+
+La publication est volontairement désactivée sur les événements `push`. Le workflow de release doit être déclenché manuellement depuis `main`, avec confirmation, et crée une Release brouillon à vérifier avant publication.
+
+- [Mémo de continuité](docs/CONTINUATION.md)
+- [Processus de validation et de publication](docs/RELEASE_PROCESS.md)
+- [Checklist de validation Windows et AMD](docs/WINDOWS-HARDWARE-VALIDATION.md)
+
 ## Reprise du projet
 
 **Lire en premier [docs/CONTINUATION.md](docs/CONTINUATION.md).** Ce mémo maître doit être mis à jour à chaque version avec les fonctionnalités, commits, résultats de tests, limites et prochaines tâches. Le contrôle `tools/check_project_memory.py` vérifie que le mémo et les notes correspondent à `VERSION.txt`.
