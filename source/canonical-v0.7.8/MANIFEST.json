@@ -2,8 +2,8 @@
   "project": "GTA Ranked Studio",
   "version": "0.7.8",
   "archive": "GTA-Ranked-Studio-source-v0.7.8.tar.xz",
-  "archive_sha256": "b6185f1f17f48f488663f74d3f73be71edb391c482696f547e91dc190e91c3d0",
-  "file_count": 104,
+  "archive_sha256": "248f9485db1e9f01d2a57734b55dc5bf8711ad1c16d956748be949b3a72cab78",
+  "file_count": 106,
   "files": [
     {
       "path": ".gitignore",
@@ -107,13 +107,13 @@
     },
     {
       "path": "NOTES-v0.7.8.txt",
-      "size": 976,
-      "sha256": "71f179300b7b73fb13dca5338bf1718094b7a2179bc657cb02a2b55d158019e6"
+      "size": 1518,
+      "sha256": "245c43aa013f7483b3b6c2155b4173f1dddf48c11391b0c902c3ff05ebbef2e9"
     },
     {
       "path": "README.md",
-      "size": 3845,
-      "sha256": "667693d47d96ece30d46d7ab9020ac95e9ca1d220478f38bb870cfbf727e3da3"
+      "size": 4109,
+      "sha256": "339288c1205e7e2d8bbfb5ac93247ff0835cb9f17c963e2a17cbd583be539e4a"
     },
     {
       "path": "README_M0.txt",
@@ -227,18 +227,18 @@
     },
     {
       "path": "docs/CONTINUATION.md",
-      "size": 16601,
-      "sha256": "9bcb9fedc243aa7783c379352d71f3f37d75d35082010cbe2d547efccedd9964"
+      "size": 17934,
+      "sha256": "cc4f459ad3a57bdc9b929de01d253b7509d3dd67903a4e82198150747f190ae1"
     },
     {
       "path": "docs/UPDATES.md",
-      "size": 10046,
-      "sha256": "53b7fcca70f47341e844f1563960dab5a21e52e5776c2b25b2f8a90ce8c190d6"
+      "size": 10619,
+      "sha256": "e8ad9b750483a80ad63aa52042832ca7f6f26fb4a17d553066a6670662c1bc4a"
     },
     {
       "path": "docs/implementation-plan-v0.7.8.md",
-      "size": 4042,
-      "sha256": "9e7ef61d93cebe2b05b6b195fc3984ac74121d37501fe74507c06bd99802ad10"
+      "size": 4588,
+      "sha256": "f8edd8bf90296ffc389626f74152f4aa480ba124bc3c815eaf51e4d1e822ada9"
     },
     {
       "path": "installer/apply_update.ps1",
@@ -351,6 +351,11 @@
       "sha256": "05e52ebe348011a4f7261cc42f7bcdf5dd3dce111c5fd31db419a425e8b8d924"
     },
     {
+      "path": "studio/web/export_quality.py",
+      "size": 12940,
+      "sha256": "06b21979aa38736de7a5cdfd70bd48e04f6155d4084290af7612609a264d5c88"
+    },
+    {
       "path": "studio/web/highlights.py",
       "size": 28724,
       "sha256": "75499923c0c50555e8d4c03743d93db463520a3829f1fde2ace6b278722b0992"
@@ -382,8 +387,8 @@
     },
     {
       "path": "studio/web/static/app.js",
-      "size": 36174,
-      "sha256": "d9d9984befba2b34969a11281e5c0c404904c182ad05d22f00bc7fdfbbed3ce3"
+      "size": 36789,
+      "sha256": "243d382da3653c6b11d66221447396efff0208b0287bca8c631652b30f2f3e98"
     },
     {
       "path": "studio/web/static/index.html",
@@ -392,8 +397,8 @@
     },
     {
       "path": "studio/web/static/styles.css",
-      "size": 20474,
-      "sha256": "3619e24cbd32b0f824c8f08b0e01f681cc4d1322ff7c6c60d0a7bc71b55a54d2"
+      "size": 21268,
+      "sha256": "a30d95400a245f404d80b22c53e42c497242c00057062096a0f9e3bb3b0057b4"
     },
     {
       "path": "studio/web/store.py",
@@ -412,8 +417,8 @@
     },
     {
       "path": "studio/web/worker.py",
-      "size": 24049,
-      "sha256": "47720066242447d1d2d45ace1bf4f82dd1080d89cb9844e619e74710a17d1c5c"
+      "size": 25667,
+      "sha256": "66537bb023880fcc9b7d612dd331760737bcef3d8f631cfaf976f3d745c8d1d6"
     },
     {
       "path": "tests/test_config.py",
@@ -424,6 +429,11 @@
       "path": "tests/test_dependency_metadata.py",
       "size": 913,
       "sha256": "9fb8c8f8365f8fa92079a62caaadda6c92cc72137a2af8cab3d3d0bb39ab6f71"
+    },
+    {
+      "path": "tests/test_export_quality.py",
+      "size": 6971,
+      "sha256": "bb86a944e7c9800122a7421e796b591578ad36011fa5d2627c1d1edfcfaeb39a"
     },
     {
       "path": "tests/test_highlights.py",
@@ -507,8 +517,8 @@
     },
     {
       "path": "tests/test_web.py",
-      "size": 20358,
-      "sha256": "b4019a4f212434228741d7e0e0b489124d3316f55cf30898672ef433fb552106"
+      "size": 20439,
+      "sha256": "21e27beb70ec2daa6fd4358b16c9466d20a81a43d8e890a118e62469821c600c"
     },
     {
       "path": "tests/test_webcam_renderer.py",
