@@ -7,7 +7,8 @@
 - **État :** candidat reconstruit, testé et empaqueté par GitHub Actions. Pas encore une Release stable publiée.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
 - **Branche de travail :** `feature/v0.7.8-shorts-retention`
-- **Base publique au dernier audit :** `main`, v0.5.1
+- **Dernière Release stable publique :** v0.7.7.
+- **État du dépôt `main` :** son `VERSION.txt` indique encore v0.5.1, alors que son ancien workflow reconstruit la v0.7.7 publiée. Cette métadonnée est obsolète.
 - **Dernier audit Linux :** https://github.com/Sreleew/GTA_rankd/actions/runs/45673431003
 - **Validation Windows :** workflow ajouté, premier résultat encore à examiner.
 - **Comparaison des sources :** `docs/source-audit-v0.7.8-v0.8.0-2026-11-25.md`
@@ -82,6 +83,11 @@ C'est un candidat validé par CI, pas une Release stable et pas une validation G
 - La CI a reconstruit la version, passé 128 tests avec 1 test ignoré, généré le ZIP Windows et vérifié la présence des fichiers de continuité dans le paquet.
 
 Le workflow de release lit l'archive canonique, vérifie le checksum et l'intégrité de chaque fichier du manifeste, puis lance les tests et le packaging. Il ne rejoue plus la chaîne de patchs depuis v0.4.0. Il ne se déclenche plus sur `push` : il exige un lancement manuel depuis `main`, une confirmation explicite, vérifie que le tag n'existe pas déjà et crée une Release brouillon. La publication publique finale reste une action manuelle sur GitHub.
+
+
+### Divergence des branches relevée avant le sprint
+
+Le compare Git du 25 novembre indiquait une branche de travail en avance de 38 commits et \`main\` en avance de 2 commits depuis leur base commune. Les deux commits propres à \`main\` modifiaient uniquement l'ancien \`.github/workflows/audit-source.yml\` (ajout du workflow initial et extension jusqu'au correctif v0.7.8). La branche de travail contient maintenant une version plus complète de ce workflow. Ne pas fusionner aveuglément : refaire le compare, vérifier le diff du workflow et intégrer les intentions utiles de façon explicite dans une PR. La dernière Release stable publique demeure v0.7.7 ; aucune v0.7.8 stable n'existe à ce stade.
 
 ### Snapshot v0.8.0 bloqué
 
