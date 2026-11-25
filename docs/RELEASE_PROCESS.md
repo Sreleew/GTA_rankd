@@ -27,6 +27,17 @@ Une version n'est publiable que lorsque sa source canonique, les tests Linux, le
 - Les configurations, secrets, bases, médias, exports, journaux, modèles locaux et environnements virtuels ne doivent jamais entrer dans le paquet.
 - Ne jamais utiliser les fragments v0.8.0 actuels : `part003` et `part004` sont dupliqués et l'archive reconstruite est invalide.
 
+## Protection de `main`
+
+Le workflow de publication est maintenant verrouillé, mais les règles de protection de branche sont un réglage GitHub indépendant. Elles n'ont pas été modifiées pendant ce sprint. Avant la fusion de la PR, configurer dans les paramètres du dépôt :
+
+- exiger une Pull Request avant toute fusion sur `main` ;
+- exiger les contrôles Linux et Windows comme checks obligatoires ;
+- interdire les force-push et la suppression de `main` ;
+- exiger une conversation de revue résolue.
+
+Ne pas considérer la branche comme protégée tant que ces règles ne sont pas visibles et activées dans GitHub.
+
 ## État actuel au 25 novembre 2026
 
 - Base de travail : v0.7.8 canonique sur `feature/v0.7.8-shorts-retention`.
