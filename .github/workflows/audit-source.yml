@@ -9,6 +9,9 @@ on:
       - ".github/workflows/windows-smoke.yml"
       - "docs/source-audit-v0.7.8-v0.8.0-2026-11-25.md"
       - "source/apply-hotfix-v0.7.8.py"
+      - "source/apply-hotfix-v0.7.8-retention.py"
+      - "source/apply-hotfix-v0.7.8-export-qc.py"
+      - "source/export-quality-patch-v0.7.8.diff.xz.b64"
       - "docs/CONTINUATION.md"
       - "docs/UPDATES.md"
       - "tools/check_project_memory.py"
@@ -105,6 +108,8 @@ jobs:
           echo "APP_ROOT=source-checkout/gta-ranked-studio" >> "$GITHUB_ENV"
       - name: Apply opening-retention scoring patch
         run: python source/apply-hotfix-v0.7.8-retention.py "$APP_ROOT"
+      - name: Apply post-export quality-control patch
+        run: python source/apply-hotfix-v0.7.8-export-qc.py "$APP_ROOT"
       - name: Inject current project documentation and validate memory
         shell: bash
         run: |

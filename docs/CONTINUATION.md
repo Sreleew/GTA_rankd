@@ -9,8 +9,8 @@
 - **Branche de travail :** `feature/v0.7.8-shorts-retention`
 - **Dernière Release stable publique :** v0.7.7.
 - **État du dépôt `main` :** son `VERSION.txt` indique encore v0.5.1, alors que son ancien workflow reconstruit la v0.7.7 publiée. Cette métadonnée est obsolète.
-- **Dernier audit Linux réussi :** https://github.com/Sreleew/GTA_rankd/actions/runs/45689877019.
-- **Validation Windows CI :** 129 tests réussis, aucun ignoré, PowerShell et paquet Windows validés : https://github.com/Sreleew/GTA_rankd/actions/runs/45688998298. Cela ne valide pas le GPU AMD physique.
+- **Dernier audit Linux réussi :** 131 tests réussis, 1 test PowerShell ignoré sous Linux : https://github.com/Sreleew/GTA_rankd/actions/runs/45702617690.
+- **Validation Windows CI :** 132 tests réussis, aucun ignoré, PowerShell et paquet Windows validés : https://github.com/Sreleew/GTA_rankd/actions/runs/45702617567. Cela ne valide pas le GPU AMD physique.
 - **Comparaison des sources :** `docs/source-audit-v0.7.8-v0.8.0-2026-11-25.md`
 
 ## 1. Objectif du produit
@@ -24,6 +24,8 @@ Le projet doit rester local-first, sans abonnement ni API IA payante obligatoire
 - Import de vidéos locales et d'URLs de clips/VOD Twitch accessibles via yt-dlp.
 - Téléchargement de plages horaires avec progression et gestion des erreurs/reprises.
 - Analyse audio + transcription Whisper : énergie, densité de parole, expressions de réaction, classement heuristique et sélection manuelle des passages.
+- Score distinct d'accroche sur les cinq premières secondes, pondéré à 10 % du score global et affiché dans chaque carte de candidat. Sans Whisper, le score se replie sur l'énergie audio disponible.
+- Contrôle qualité post-export : vérification MP4/FFprobe, dimensions, durée, codec, audio attendu, détection de plages noires, images figées et silences prolongés, plus cohérence des sous-titres ASS et horodatages de transcription. Le rapport est visible sur la carte Short et ses alertes sont non bloquantes.
 - Génération de Shorts 1080 × 1920. Le rendu par défaut conserve l'image source complète, centrée, avec fond flouté. Le zoom dynamique est désactivé par défaut.
 - Transcription locale, sous-titres, filtre lexical de réactions et mode expérimental de voix dominante.
 - Hooks, titres, descriptions et hashtags générés localement avec Ollama/Qwen facultatif et fallback déterministe.
@@ -39,6 +41,7 @@ Le projet doit rester local-first, sans abonnement ni API IA payante obligatoire
 - Orchestration : `studio/web/worker.py`.
 - Analyse des moments forts : `studio/web/highlights.py`.
 - Rendu : `studio/web/short_renderer.py`, édition : `studio/web/short_editor.py`.
+- Contrôle qualité post-export : `studio/web/export_quality.py`.
 - Transcription : `studio/web/transcribe.py`, voix : `studio/web/speakers.py`.
 - Métadonnées : `studio/web/metadata.py` et `prompts/`.
 - Persistance : `studio/web/store.py`.
@@ -56,6 +59,7 @@ Le projet doit rester local-first, sans abonnement ni API IA payante obligatoire
 5. Les hooks, coupes de phrases, CTA et compositions doivent encore être jugés sur des Shorts réels. Éviter les CTA génériques en ouverture.
 6. Les compilations Best Of, chapitres et Hall of Fame figurent dans l'ancienne roadmap mais leur état fonctionnel n'a pas été confirmé dans la source v0.7.8.
 7. La publication sur les plateformes reste manuelle.
+8. Les alertes du contrôle qualité ne sont pas des rejets : certaines scènes sombres, statiques ou silencieuses peuvent être intentionnelles. Le rapport doit guider une revue, pas supprimer ou bloquer automatiquement un export.
 
 ## 5. Source de référence et état des branches
 
@@ -107,6 +111,8 @@ Le snapshot v0.7.8 canonique est maintenant créé, vérifié et enregistré dan
 - `docs/WORKING-AGREEMENT.md` : méthode de travail efficace, règles de tests et format de compte rendu à appliquer dans chaque conversation.
 - `docs/UPDATES.md` : guide de mise à jour et historique complet des versions.
 - `source/canonical-v0.7.8/` : archive source de référence, manifeste et SHA-256.
+- `source/apply-hotfix-v0.7.8-retention.py` et `source/apply-hotfix-v0.7.8-export-qc.py` : correctifs reproductibles appliqués après extraction de la source canonique.
+- `source/export-quality-patch-v0.7.8.diff.xz.b64` : patch compressé et contrôlé par SHA-256 qui ajoute le contrôle qualité post-export.
 - `tools/check_project_memory.py` : vérifie l'alignement du mémo avec la version et les notes.
 - `.github/workflows/audit-source.yml` : vérifie et extrait la source canonique, injecte les documents courants, teste, puis régénère le snapshot sans se relancer sur le commit de l'archive.
 - `.github/workflows/windows-smoke.yml` : teste la source canonique sur un runner Windows, exécute les tests PowerShell et vérifie le paquet de mise à jour.
@@ -158,8 +164,8 @@ Limite du score d'accroche : il s'agit d'un indicateur heuristique audio/texte s
 
 ## 9. Prochaines étapes priorisées
 
-1. Exécuter `docs/WINDOWS-HARDWARE-VALIDATION.md` sur le PC cible : AMF, Whisper Vulkan, Qwen, cycle Short complet et persistance après mise à jour.
-2. Ajouter un contrôle qualité d'export : durée, résolution, présence et niveau audio, écrans noirs/images figées, limites des sous-titres et cohérence du début/de la fin.
+1. Calibrer les seuils du contrôle qualité sur plusieurs vrais Shorts GTA, en mesurant les faux positifs sur des scènes sombres, pauses voulues et séquences sans musique.
+2. Exécuter `docs/WINDOWS-HARDWARE-VALIDATION.md` sur le PC cible : AMF, Whisper Vulkan, Qwen, cycle Short complet, rapport QC et persistance après mise à jour.
 3. Améliorer les coupes naturelles et la construction des hooks à partir des limites de phrases, sans CTA générique à l'ouverture.
 4. Développer le classement visuel des événements GTA (HUD, kill feed et changements de scène) avec un score explicable et une validation humaine.
 5. Réconcilier proprement les deux commits propres à `main` relevés lors du compare Git. Ne pas effectuer de fusion aveugle.
@@ -170,4 +176,4 @@ Limite du score d'accroche : il s'agit d'un indicateur heuristique audio/texte s
 
 ## 10. Message de reprise prêt à copier
 
-> Nous reprenons GTA Ranked Studio. Lis `docs/CONTINUATION.md` puis `docs/WORKING-AGREEMENT.md` dans `Sreleew/GTA_rankd`. Vérifie rapidement le HEAD de `feature/v0.7.8-shorts-retention` et le dernier état CI, sans refaire les audits déjà documentés. La source canonique v0.7.8 est dans `source/canonical-v0.7.8/`, avec manifeste et SHA-256. Le dernier audit Linux (run 45689877019) a réussi avec 128 tests et 1 ignoré. Le workflow Windows (run 45688998298) a réussi avec 129 tests sans ignoré, y compris PowerShell, la vérification du manifeste et le ZIP. Les audits repartent de l'archive canonique. Applique la méthode de `docs/WORKING-AGREEMENT.md` : changements groupés, tests proportionnés, mises à jour concrètes et bilan de fin. Rien n'est une Release stable et la RX 9060 XT n'a pas encore été validée. Le snapshot v0.8.0 actuel est corrompu car `part003` et `part004` sont identiques : ne l'utilise pas. Continue directement depuis GitHub sans me demander de ZIP, en préservant les données locales. Lis le mémo avant toute modification et actualise-le, les notes, le README et le changelog à chaque version. Laisse la CI vérifier les documents et leur présence dans le paquet. La publication est uniquement manuelle, depuis `main`, avec confirmation et création d'une brouillon. Ne fusionne pas vers `main` sans validation Windows et décision explicite.
+> Nous reprenons GTA Ranked Studio. Lis `docs/CONTINUATION.md` puis `docs/WORKING-AGREEMENT.md` dans `Sreleew/GTA_rankd`. Vérifie rapidement le HEAD de `feature/v0.7.8-shorts-retention` et le dernier état CI, sans refaire les audits déjà documentés. La source canonique v0.7.8 est dans `source/canonical-v0.7.8/`, avec manifeste et SHA-256. Le contrôle qualité post-export est intégré après le rendu : son rapport est non bloquant et visible sur chaque carte de Short. Le dernier audit Linux (run 45702617690) a réussi avec 131 tests et 1 ignoré. Le workflow Windows (run 45702617567) a réussi avec 132 tests sans ignoré, y compris PowerShell, la vérification du manifeste et le ZIP. Les audits repartent de l'archive canonique. Applique la méthode de `docs/WORKING-AGREEMENT.md` : changements groupés, tests proportionnés, mises à jour concrètes et bilan de fin. Rien n'est une Release stable et la RX 9060 XT n'a pas encore été validée. Le snapshot v0.8.0 actuel est corrompu car `part003` et `part004` sont identiques : ne l'utilise pas. Continue directement depuis GitHub sans me demander de ZIP, en préservant les données locales. Lis le mémo avant toute modification et actualise-le, les notes, le README et le changelog à chaque version. Laisse la CI vérifier les documents et leur présence dans le paquet. La publication est uniquement manuelle, depuis `main`, avec confirmation et création d'une brouillon. Ne fusionne pas vers `main` sans validation Windows et décision explicite.

@@ -45,6 +45,10 @@ Recommended improvements:
 The candidate scorer now estimates whether a moment starts with useful activity during its first five seconds. This is an explainable audio/transcript proxy, not a measurement of actual viewer retention or gameplay understanding. It contributes 10% of the existing score so the established audio, speech and reaction signals remain dominant. The UI displays it separately, SQLite stores it with a non-destructive migration, and scans remain usable without Whisper by falling back to audio-only evidence.
 
 ## C. Detection roadmap
+### Post-export quality diagnostics (implemented on the working branch)
+
+After rendering, FFprobe validates MP4 structure, output dimensions, duration, codec and expected audio-track presence. A single FFmpeg decode pass uses blackdetect, freezedetect and silencedetect to flag likely black frames, freezes and long silence. ASS events and transcript word timings are checked against the final duration. Alerts are intentionally non-blocking: dark, static or silent gameplay may be a valid creative choice, so results remain a human-review aid.
+
 
 Build a modular event pipeline:
 - cheap audio and transcript prefilter

@@ -118,3 +118,8 @@ Les actions de prévisualisation, téléchargement, miniature et copie des élé
 ## Classement des moments forts : score d'accroche
 
 Le classement ajoute un indicateur heuristique d'accroche sur les cinq premières secondes, visible séparément sur chaque candidat et pondéré à 10 % du score global. Lorsque Whisper est absent, l'analyse peut toujours faire remonter un passage à partir de l'énergie audio seule. La valeur est enregistrée avec une migration SQLite compatible avec les bases existantes.
+
+
+## v0.7.8 : contrôle qualité automatique post-export
+
+Après chaque rendu, GTA Ranked Studio vérifie la structure du MP4, sa durée, ses dimensions, son codec et la présence de la piste audio attendue. Une passe d'analyse vidéo/audio signale les écrans noirs, images potentiellement figées et silences prolongés. Les événements ASS et les horodatages de transcription sont comparés à la durée finale. Le rapport est visible sur la carte du Short. Les alertes restent non bloquantes : elles facilitent la revue sans rejeter les choix créatifs intentionnels.

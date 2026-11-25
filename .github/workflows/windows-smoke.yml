@@ -7,6 +7,8 @@ on:
       - ".github/workflows/windows-smoke.yml"
       - "source/canonical-v0.7.8/**"
       - "source/apply-hotfix-v0.7.8-retention.py"
+      - "source/apply-hotfix-v0.7.8-export-qc.py"
+      - "source/export-quality-patch-v0.7.8.diff.xz.b64"
       - "README.md"
       - "VERSION.txt"
       - "NOTES-v0.7.8.txt"
@@ -140,6 +142,8 @@ jobs:
         run: |
           python "$env:GITHUB_WORKSPACE\source\apply-hotfix-v0.7.8-retention.py" "$env:APP_ROOT"
           if ($LASTEXITCODE -ne 0) { throw "L'application du patch retention a échoué." }
+          python "$env:GITHUB_WORKSPACE\source\apply-hotfix-v0.7.8-export-qc.py" "$env:APP_ROOT"
+          if ($LASTEXITCODE -ne 0) { throw "L'application du patch qualité export a échoué." }
           Copy-Item "$env:GITHUB_WORKSPACE\README.md" "$env:APP_ROOT\README.md" -Force
           Copy-Item "$env:GITHUB_WORKSPACE\VERSION.txt" "$env:APP_ROOT\VERSION.txt" -Force
           Copy-Item "$env:GITHUB_WORKSPACE\NOTES-v0.7.8.txt" "$env:APP_ROOT\NOTES-v0.7.8.txt" -Force

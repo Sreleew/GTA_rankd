@@ -15,6 +15,7 @@ Application Windows locale pour analyser des clips et VOD GTA, repérer les pass
 - Miniatures issues d'images réelles du clip, habillage GTA Ranked et sound design.
 - File de traitement, progression, annulation, prévisualisation, validation et bibliothèque de clips.
 - Après validation, les actions Prévisualiser, Télécharger, Miniature et copie des métadonnées restent disponibles.
+- Contrôle qualité automatique post-export : validité MP4, durée, résolution, piste audio, écrans noirs, images figées, silences prolongés et horodatages des sous-titres. Les alertes guident une revue humaine et ne bloquent pas automatiquement le fichier.
 - Mises à jour via les GitHub Releases publiques de ce dépôt.
 
 ## Limites connues
