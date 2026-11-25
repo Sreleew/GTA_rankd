@@ -170,9 +170,11 @@ jobs:
                   raise SystemExit(f"Garde-fou de release manquant : {required}")
           publish = next((step for step in release_steps if step.get("uses", "").startswith("softprops/action-gh-release@")), None)
           publish_with = publish.get("with", {}) if publish else {}
-          if publish_with.get("draft") != "${{ github.event_name == 'workflow_dispatch' }}":
+          expected_draft = "$" + "{{ github.event_name == 'workflow_dispatch' }}"
+          expected_latest = "$" + "{{ github.event_name == 'push' }}"
+          if publish_with.get("draft") != expected_draft:
               raise SystemExit("La publication approuvée doit être publique, le déclenchement manuel doit rester en brouillon.")
-          if publish_with.get("make_latest") != "${{ github.event_name == 'push' }}":
+          if publish_with.get("make_latest") != expected_latest:
               raise SystemExit("La Release publique approuvée doit devenir la dernière version stable.")
 
           windows = yaml.load(Path(".github/workflows/windows-smoke.yml").read_text(encoding="utf-8"), Loader=loader)
