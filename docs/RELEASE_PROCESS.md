@@ -13,7 +13,7 @@ Un candidat de CI n'est pas une Release. Le bouton de mise à jour de GTA Ranked
 5. Valider manuellement sur le PC cible les changements qui touchent directement l'installation, l'encodage AMF, Whisper Vulkan ou Ollama/Qwen. Pour les autres changements, consigner explicitement ce qui reste à vérifier sur le matériel réel.
 6. Fusionner volontairement la PR après examen des deux validations et des données locales préservées.
 7. Pour publier une version stable, créer ou mettre à jour `.release-approval` sur `main` avec exactement le numéro de version approuvé, par exemple `0.7.8`. **Ce commit est l'autorisation explicite de publication publique.**
-8. Le workflow `Build and prepare GTA Ranked Studio release` vérifie que le marqueur correspond à `VERSION.txt`, que le tag n'existe pas, que l'archive canonique et chaque fichier correspondent au manifeste, exécute les tests Linux et construit puis vérifie le ZIP Windows.
+8. Le workflow `Build and publish GTA Ranked Studio` vérifie que le marqueur correspond à `VERSION.txt`, que le tag n'existe pas, que l'archive canonique et chaque fichier correspondent au manifeste, exécute les tests Linux et construit puis vérifie le ZIP Windows.
 9. Pour un commit `.release-approval`, GitHub crée et publie la Release stable directement, avec le ZIP et `SHA256SUMS.txt`. L'application peut alors détecter cette version via son bouton de mise à jour.
 
 La voie `workflow_dispatch` reste disponible pour préparer une Release brouillon : elle exige la version et une confirmation cochée, puis nécessite une publication manuelle depuis GitHub.
