@@ -105,7 +105,7 @@ jobs:
           version_roots = []
           for version_file in extract_root.rglob("VERSION.txt"):
               version_text = version_file.read_text(encoding="utf-8", errors="replace")
-              if re.search(r"^Version:\\s*0\\.8\\.0\\s*$", version_text, re.M):
+              if re.search(r"^Version:\s*0\.8\.0\s*$", version_text, re.M):
                   version_roots.append(version_file.parent)
           if len(version_roots) != 1:
               found = [(str(p), p.read_text(encoding="utf-8", errors="replace")) for p in extract_root.rglob("VERSION.txt")]
@@ -150,10 +150,10 @@ jobs:
               *changed,
           ]
           report_path = repository / "dist" / "v0.8.0-source-comparison.txt"
-          report_path.write_text("\\n".join(report) + "\\n", encoding="utf-8")
-          print("\\n".join(report))
+          report_path.write_text("\n".join(report) + "\n", encoding="utf-8")
+          print("\n".join(report))
           with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env:
-              env.write(f"V080_ROOT={v080_root}\\n")
+              env.write(f"V080_ROOT={v080_root}\n")
           PY
       - name: Build Windows update package
         run: python "$APP_ROOT/installer/build_release_package.py" --version "0.7.8" --output-dir "$GITHUB_WORKSPACE/dist"
