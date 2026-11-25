@@ -64,7 +64,7 @@ La source a été reconstruite depuis le snapshot v0.4.0 avec les correctifs cum
 - **128 tests réussis, 1 ignoré** ;
 - contrôle syntaxique JavaScript réussi ;
 - paquet Windows candidat construit et uploadé.
-- SHA-256 du ZIP candidat lors de cet audit : `358329a8aa7911cc56661033562be1a8914b8ee15e231a47e740bd9a7f522710`.
+- Le SHA-256 du paquet est consigné dans le fichier `SHA256SUMS.txt` de chaque artifact ; utiliser le checksum associé au run concerné plutôt qu'un hash recopié dans ce mémo.
 
 C'est un candidat validé par CI, pas une Release stable et pas une validation GPU sur Windows réel.
 
