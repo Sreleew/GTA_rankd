@@ -297,6 +297,24 @@ jobs:
           PY
       - name: Build Windows update package
         run: python "$APP_ROOT/installer/build_release_package.py" --version "0.7.8" --output-dir "$GITHUB_WORKSPACE/dist"
+      - name: Verify continuation memory is included in the Windows package
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - "$GITHUB_WORKSPACE/dist/GTA-Ranked-Studio-v0.7.8.zip" <<'PY'
+          import sys
+          import zipfile
+          required = {
+              "gta-ranked-studio/docs/CONTINUATION.md",
+              "gta-ranked-studio/tools/check_project_memory.py",
+              "gta-ranked-studio/docs/UPDATES.md",
+          }
+          with zipfile.ZipFile(sys.argv[1]) as archive:
+              missing = required - set(archive.namelist())
+          if missing:
+              raise SystemExit("Package is missing continuity files: " + ", ".join(sorted(missing)))
+          print("Continuation memo, checker and update history are included in the Windows ZIP.")
+          PY
       - name: Commit canonical v0.7.8 source snapshot to the working branch
         shell: bash
         run: |
