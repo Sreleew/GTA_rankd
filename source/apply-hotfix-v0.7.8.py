@@ -75,8 +75,8 @@ def patch_ui(root: Path) -> None:
 def patch_tests(root: Path) -> None:
     tests = root / 'tests/test_web.py'
     text = tests.read_text(encoding='utf-8-sig')
-    text = text.replace("assert '<script src=\\"/static/app.js?v=0.7.7\\"></script>' in html",
-                        "assert '<script src=\\"/static/app.js?v=0.7.8\\"></script>' in html")
+    text = text.replace("assert '<script src=\"/static/app.js?v=0.7.7\"></script>' in html",
+                        "assert '<script src=\"/static/app.js?v=0.7.8\"></script>' in html")
     text = text.replace('''        "streamer": "ExampleStreamer",
     })
     store.update_job(
