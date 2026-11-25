@@ -208,3 +208,35 @@ def test_pause_plan_rebases_captions_and_peak_to_the_joined_timeline() -> None:
     assert [word.text for word in rebased] == ["waited.", "Then", "he", "crashed!", "No"]
     assert rebased[1] == WordTiming(2.9, 3.1, "Then")
     assert map_timestamp_through_segments(20.0, segments) == 17.1
+
+def test_pause_detection_uses_all_speakers_not_only_caption_voice() -> None:
+    # The dominant speaker pauses while another character keeps talking.
+    # Filtering captions to the dominant speaker must not turn that dialogue
+    # into a false silence that the editor then removes from the video.
+    all_speakers = [
+        WordTiming(0.2, 0.5, "I"),
+        WordTiming(0.7, 1.0, "wait"),
+        WordTiming(2.0, 2.3, "hello"),
+        WordTiming(3.0, 3.3, "what"),
+        WordTiming(4.0, 4.3, "happened"),
+        WordTiming(5.0, 5.3, "Then"),
+        WordTiming(5.5, 5.8, "go!"),
+        WordTiming(15.0, 15.2, "wow"),
+        WordTiming(15.4, 15.8, "crazy!"),
+    ]
+    dominant_voice_only = [
+        all_speakers[0], all_speakers[1],
+        all_speakers[5], all_speakers[6],
+        all_speakers[7], all_speakers[8],
+    ]
+
+    safe_plan = plan_speech_pause_edits(
+        all_speakers, 20.0, 15.5, timestamp_mode="word_dtw",
+    )
+    filtered_plan = plan_speech_pause_edits(
+        dominant_voice_only, 20.0, 15.5, timestamp_mode="word_dtw",
+    )
+
+    assert safe_plan.removed_pauses == ()
+    assert filtered_plan.removed_pauses == ((1.55, 4.45),)
+

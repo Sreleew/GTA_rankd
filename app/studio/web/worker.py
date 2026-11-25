@@ -222,6 +222,10 @@ class JobRunner:
                 )
             excerpt_duration = max(0.0, trim_end - trim_start)
             render_words = rebase_word_timings(all_words, trim_start, trim_end) if all_words else []
+            # Pause detection must see every speaker. The dominant-voice filter below is
+            # only for captions; using its reduced transcript here could mistake dialogue
+            # from other speakers for silence and cut meaningful exchanges.
+            pause_detection_words = list(render_words)
             render_peak_timestamp = max(0.0, peak_timestamp - trim_start)
             speaker_filter: dict[str, Any] = {"mode": str(options.get("caption_voice_mode", "dominant")), "status": "not_requested"}
             if render_words and speaker_filter["mode"] == "dominant":
@@ -262,7 +266,7 @@ class JobRunner:
                 )
             ) and auto_trim_enabled and not source_range
             pause_plan = plan_speech_pause_edits(
-                render_words,
+                pause_detection_words,
                 excerpt_duration,
                 render_peak_timestamp,
                 timestamp_mode=str(transcript_result.get("timestamp_mode") or ""),
