@@ -75,3 +75,5 @@ jobs:
             dist/GTA-Ranked-Studio-v0.7.8.zip
             dist/SHA256SUMS.txt
           retention-days: 14
+
+# Re-run after correcting the v0.7.8 patch script quoting.
