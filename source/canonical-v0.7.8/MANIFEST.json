@@ -2,7 +2,7 @@
   "project": "GTA Ranked Studio",
   "version": "0.7.8",
   "archive": "GTA-Ranked-Studio-source-v0.7.8.tar.xz",
-  "archive_sha256": "cf47f04b736598270b9a07e35b350eb22351282b3cc6e38f19f2c50d499f8eea",
+  "archive_sha256": "0d712600b24f2d9bbbe41d77401648a934c80f13047c952a12d1e3eaf343cb5b",
   "file_count": 103,
   "files": [
     {
@@ -232,8 +232,8 @@
     },
     {
       "path": "docs/UPDATES.md",
-      "size": 7768,
-      "sha256": "438e089ec27e7b529659a0e0f28a9a384d81cdd7b394ffa211d4fb298c83318b"
+      "size": 9615,
+      "sha256": "65b75ea5522da4b4315ebfdeca14f272f2680522b5e74318a8a73a34c872b0aa"
     },
     {
       "path": "installer/apply_update.ps1",
