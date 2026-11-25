@@ -4,23 +4,13 @@ on:
   push:
     branches: [main]
     paths:
-      - "source/GTA-Ranked-Studio-source-v0.4.0.tar.xz"
-      - "source/apply-hotfix-v0.4.1.py"
-      - "source/apply-hotfix-v0.4.2.py"
-      - "source/apply-hotfix-v0.5.0.py"
-      - "source/apply-hotfix-v0.5.1.py"
-      - "source/apply-hotfix-v0.6.0.py"
-      - "source/apply-hotfix-v0.6.1.py"
-      - "source/apply-hotfix-v0.6.2.py"
-      - "source/v0.7.0-patch.part*.b64"
-      - "source/apply-hotfix-v0.7.1.py"
-      - "source/apply-hotfix-v0.7.2.py"
-      - "source/apply-hotfix-v0.7.3.py"
-      - "source/apply-hotfix-v0.7.4.py"
-      - "source/apply-hotfix-v0.7.5.py"
-      - "source/apply-hotfix-v0.7.6.py"
-      - "source/apply-hotfix-v0.7.7.py"
-      - "source/apply-hotfix-v0.7.8.py"
+      - "source/canonical-v0.7.8/**"
+      - "docs/CONTINUATION.md"
+      - "docs/UPDATES.md"
+      - "tools/check_project_memory.py"
+      - "README.md"
+      - "VERSION.txt"
+      - "NOTES-v0.7.8.txt"
       - "docs/CONTINUATION.md"
       - "docs/UPDATES.md"
       - "tools/check_project_memory.py"
@@ -57,44 +47,23 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Extract v0.4.0 base snapshot and apply cumulative fixes through v0.7.8
+      - name: Extract and verify canonical v0.7.8 source snapshot
         shell: bash
         run: |
           set -euo pipefail
-          SNAPSHOT="source/GTA-Ranked-Studio-source-v0.4.0.tar.xz"
-          EXPECTED_SHA256="bbf35740febed311d7788b42edb569a1b9afcfd89bee449d9dbf62d8b07162e9"
-
+          SNAPSHOT_DIR="source/canonical-v0.7.8"
+          SNAPSHOT="$SNAPSHOT_DIR/GTA-Ranked-Studio-source-v0.7.8.tar.xz"
           test -s "$SNAPSHOT"
-          echo "$EXPECTED_SHA256  $SNAPSHOT" | sha256sum --check -
-          file "$SNAPSHOT"
+          (cd "$SNAPSHOT_DIR" && sha256sum --check SHA256SUMS.txt)
           xz -t "$SNAPSHOT"
 
           mkdir -p source-checkout
           tar -xJf "$SNAPSHOT" -C source-checkout
           APP_ROOT="source-checkout/gta-ranked-studio"
           test -f "$APP_ROOT/VERSION.txt"
-          python source/apply-hotfix-v0.4.1.py "$APP_ROOT"
-          python source/apply-hotfix-v0.4.2.py "$APP_ROOT"
-          python source/apply-hotfix-v0.5.0.py "$APP_ROOT"
-          python source/apply-hotfix-v0.5.1.py "$APP_ROOT"
-          python source/apply-hotfix-v0.6.0.py "$APP_ROOT"
-          python source/apply-hotfix-v0.6.1.py "$APP_ROOT"
-          python source/apply-hotfix-v0.6.2.py "$APP_ROOT"
-          cat source/v0.7.0-patch.part*.b64 | base64 --decode | xz --decompress --stdout > source/apply-hotfix-v0.7.0.py
-          python -m py_compile source/apply-hotfix-v0.7.0.py
-          python source/apply-hotfix-v0.7.0.py "$APP_ROOT"
-          python source/apply-hotfix-v0.7.1.py "$APP_ROOT"
-          python source/apply-hotfix-v0.7.2.py "$APP_ROOT"
-          python source/apply-hotfix-v0.7.3.py "$APP_ROOT"
-          python source/apply-hotfix-v0.7.4.py "$APP_ROOT"
-          python source/apply-hotfix-v0.7.5.py "$APP_ROOT"
-          python source/apply-hotfix-v0.7.6.py "$APP_ROOT"
-          python source/apply-hotfix-v0.7.7.py "$APP_ROOT"
-          python source/apply-hotfix-v0.7.8.py "$APP_ROOT"
-
           APP_VERSION="$(sed -nE 's/^Version:[[:space:]]*([0-9]+(\.[0-9]+){2,3})[[:space:]]*$/\1/p' "$APP_ROOT/VERSION.txt" | head -n 1)"
           if [ "$APP_VERSION" != "0.7.8" ]; then
-            echo "Les correctifs doivent produire la version 0.7.8, version trouvée : ${APP_VERSION:-absente}."
+            echo "Le snapshot canonique doit être en v0.7.8, version trouvée : ${APP_VERSION:-absente}."
             exit 1
           fi
 
@@ -106,7 +75,7 @@ jobs:
             REQUESTED_VERSION="$APP_VERSION"
           fi
           if [ "$REQUESTED_VERSION" != "$APP_VERSION" ]; then
-            echo "Version demandée ($REQUESTED_VERSION) différente du paquet produit ($APP_VERSION)."
+            echo "Version demandée ($REQUESTED_VERSION) différente du snapshot canonique ($APP_VERSION)."
             exit 1
           fi
 
