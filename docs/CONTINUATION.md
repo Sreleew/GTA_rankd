@@ -4,13 +4,13 @@
 
 - **Dernière mise à jour :** 25 novembre 2026
 - **Version source de référence :** 0.7.8
-- **État :** v0.7.8 intégrée à `main` via la PR #2. La Release publique v0.7.8 est en cours de préparation via l'approbation explicite `.release-approval`. Tant que la Release n'est pas publiée, le bouton de mise à jour affiche encore v0.7.7.
+- **État :** v0.7.8 publiée en Release stable publique le 25 novembre 2026. Le bouton intégré de mise à jour peut désormais la détecter depuis GitHub Releases.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
-- **Branche fonctionnelle intégrée :** `feature/v0.7.8-shorts-retention` (PR #2 fusionnée). **Branche d'intégration du mécanisme de publication :** `chore/release-approval-gate-v0.7.8`.
-- **Dernière Release stable publique :** v0.7.7.
-- **État du dépôt `main` :** `VERSION.txt` indique désormais `0.7.8`. La Release stable publiée la plus récente reste `v0.7.7` jusqu'à la publication de `v0.7.8`.
-- **Dernier audit Linux réussi :** 138 tests réussis, 1 test PowerShell ignoré sous Linux : https://github.com/Sreleew/GTA_rankd/actions/runs/45709625425.
-- **Validation Windows CI :** 139 tests réussis, aucun ignoré, PowerShell et paquet Windows validés : https://github.com/Sreleew/GTA_rankd/actions/runs/45709625272. Cela ne valide pas le GPU AMD physique.
+- **Branche fonctionnelle intégrée :** `feature/v0.7.8-shorts-retention` (PR #2 fusionnée). Les PR #3, #4 et #5 ont intégré le flux de publication, le pin Python 3.11 et la normalisation des dates ZIP.
+- **Dernière Release stable publique :** [v0.7.8](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.7.8). Asset de mise à jour : `GTA-Ranked-Studio-v0.7.8.zip` + `SHA256SUMS.txt`.
+- **État du dépôt `main` :** `VERSION.txt` indique `0.7.8`. Le workflow stable publie uniquement après changement explicite de `.release-approval`.
+- **Dernier audit Linux v0.7.8 :** 138 tests réussis, 1 ignoré (PowerShell non disponible sous Linux) : https://github.com/Sreleew/GTA_rankd/actions/runs/45713882573.
+- **Validation Windows CI v0.7.8 :** 139 tests réussis, aucun ignoré, PowerShell et ZIP Windows validés : https://github.com/Sreleew/GTA_rankd/actions/runs/45713882963. Cela ne valide pas le GPU AMD physique.
 - **Source canonique :** `source/canonical-v0.7.8/`. `MANIFEST.json` et `SHA256SUMS.txt` font foi pour les fichiers et empreintes courants ; ne pas recopier un SHA d'archive ou un HEAD dans ce mémo, car ils changent à chaque reconstruction.
 - **Comparaison des sources :** `docs/source-audit-v0.7.8-v0.8.0-2026-11-25.md`
 
@@ -92,10 +92,13 @@ Le workflow de release lit l'archive canonique, vérifie le checksum et l'intég
 
 ### Intégration des branches et publication v0.7.8
 
-- La PR #2 a été fusionnée dans `main` : https://github.com/Sreleew/GTA_rankd/pull/2.
-- Les deux commits préexistants de `main` ont été conservés. La PR est passée de `dirty` à `clean` après intégration de `main` dans la branche candidate.
-- Les workflows Linux et Windows ont maintenant des déclencheurs `pull_request` vers `main`, et checkoutent la révision courante au lieu de forcer l'ancienne branche.
-- Le mécanisme `.release-approval` est en cours d'intégration : un changement de ce seul fichier sur `main` autorise la publication stable correspondante après validation complète. Ne pas modifier ce fichier avant d'avoir examiné les contrôles CI et la version cible.
+- PR #2 : intégration des fonctionnalités applicatives v0.7.8 : https://github.com/Sreleew/GTA_rankd/pull/2.
+- PR #3 : déclenchement de publication explicite et validations PR Linux/Windows : https://github.com/Sreleew/GTA_rankd/pull/3.
+- PR #4 : pin du workflow de publication sur Python 3.11 : https://github.com/Sreleew/GTA_rankd/pull/4.
+- PR #5 : normalisation à 1980-01-01 UTC des dates de la copie extraite avant packaging ZIP, tout en gardant les timestamps du tar canonique à 1970 pour sa reproductibilité : https://github.com/Sreleew/GTA_rankd/pull/5.
+- Release stable publiée et vérifiée : https://github.com/Sreleew/GTA_rankd/releases/tag/v0.7.8.
+- Workflow de publication réussi : https://github.com/Sreleew/GTA_rankd/actions/runs/45714213999.
+- Audit Linux : 138 passed, 1 skipped. CI Windows : 139 passed. Le package contient le ZIP et le checksum, sans les données locales.
 
 ### Snapshot v0.8.0 bloqué
 
@@ -173,12 +176,12 @@ Limite du score d'accroche : il s'agit d'un indicateur heuristique audio/texte s
 2. Exécuter `docs/WINDOWS-HARDWARE-VALIDATION.md` sur le PC cible : AMF, Whisper Vulkan, Qwen, cycle Short complet, rapport QC et persistance après mise à jour.
 3. Améliorer les coupes naturelles et la construction des hooks à partir des limites de phrases, sans CTA générique à l'ouverture.
 4. Développer le classement visuel des événements GTA (HUD, kill feed et changements de scène) avec un score explicable et une validation humaine.
-5. Terminer la PR du mécanisme `.release-approval` et attendre les validations Linux et Windows sur cette PR.
-6. Après fusion, créer `.release-approval` avec `0.7.8` sur `main` pour déclencher la publication stable et vérifier le ZIP/checksum de la Release.
-7. Sur le PC cible, exécuter `docs/WINDOWS-HARDWARE-VALIDATION.md`, puis confirmer que le bouton de mise à jour détecte v0.7.8 et que les réglages, projets et exports locaux sont conservés.
+5. Sur le PC cible, ouvrir **Paramètres > Mises à jour**, rechercher v0.7.8, installer et vérifier le redémarrage de l'application ainsi que la conservation des réglages, projets, bases et exports.
+6. Exécuter `docs/WINDOWS-HARDWARE-VALIDATION.md` sur la RX 9060 XT : AMF, Whisper Vulkan, Ollama/Qwen et cycle Short complet. La CI Windows ne remplace pas cette validation GPU physique.
+7. Continuer les améliorations de montage Shorts et de détection visuelle GTA sans modifier le tag v0.7.8 déjà publié.
 8. Restaurer le vrai fragment `part004` ou reconstruire la source v0.8.0 depuis un arbre complet ; ne pas utiliser les fragments actuels.
 9. À chaque lot, actualiser le mémo, les notes, le README et le changelog, puis laisser la CI reconstruire et contrôler le snapshot canonique.
 
 ## 10. Message de reprise prêt à copier
 
-> Nous reprenons GTA Ranked Studio. Lis `docs/CONTINUATION.md` puis `docs/WORKING-AGREEMENT.md` dans `Sreleew/GTA_rankd`. Vérifie rapidement le HEAD de `feature/v0.7.8-shorts-retention` et le dernier état CI, sans refaire les audits déjà documentés. La source canonique v0.7.8 est dans `source/canonical-v0.7.8/`, avec manifeste et SHA-256. Le contrôle qualité post-export est intégré après le rendu : son rapport est non bloquant et visible sur chaque carte de Short. Le dernier audit Linux (run 45709276369) a réussi avec 138 tests et 1 ignoré. Le workflow Windows (run 45709276379) a réussi avec 139 tests sans ignoré, y compris PowerShell, la vérification du manifeste et le ZIP. Les audits repartent de l'archive canonique. Applique la méthode de `docs/WORKING-AGREEMENT.md` : changements groupés, tests proportionnés, mises à jour concrètes et bilan de fin. Rien n'est une Release stable et la RX 9060 XT n'a pas encore été validée. Le snapshot v0.8.0 actuel est corrompu car `part003` et `part004` sont identiques : ne l'utilise pas. Continue directement depuis GitHub sans me demander de ZIP, en préservant les données locales. Lis le mémo avant toute modification et actualise-le, les notes, le README et le changelog à chaque version. Laisse la CI vérifier les documents et leur présence dans le paquet. La publication est uniquement manuelle, depuis `main`, avec confirmation et création d'une brouillon. Ne fusionne pas vers `main` sans validation Windows et décision explicite.
+> Nous reprenons GTA Ranked Studio depuis `main`. Lis `docs/CONTINUATION.md` puis `docs/WORKING-AGREEMENT.md`. La v0.7.8 est une Release stable publiée : https://github.com/Sreleew/GTA_rankd/releases/tag/v0.7.8. L'utilisateur peut l'installer depuis Paramètres > Mises à jour. Le ZIP de Release est `GTA-Ranked-Studio-v0.7.8.zip` et le checksum `SHA256SUMS.txt`. L'audit Linux a réussi avec 138 tests, 1 ignoré ; Windows avec 139 tests, aucun ignoré. Le workflow de publication a réussi : run 45714213999. Le contrôle qualité post-export est intégré et ses alertes sont non bloquantes. La RX 9060 XT n'a pas encore été validée physiquement pour AMF/Vulkan. La source canonique est dans `source/canonical-v0.7.8/`. Le snapshot v0.8.0 actuel est corrompu car `part003` et `part004` sont identiques : ne l'utilise pas. Continue directement depuis GitHub, préserve les données locales, lis le mémo et l'accord de travail avant de modifier, fais des commits groupés et valide les PR sous Linux et Windows avant fusion. Ne réutilise pas le tag v0.7.8 pour de nouveaux changements.
