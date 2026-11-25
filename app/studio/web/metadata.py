@@ -60,7 +60,7 @@ def _fallback_hook(transcript: str, note: str = "") -> str:
         return ""
     words = re.findall(r"[A-Za-z0-9’']+", source)
     if not words:
-        return "WAIT FOR THE REACTION"
+        return ""
     cues = {"what", "wait", "bro", "no", "oh", "why", "look", "listen", "insane", "crazy", "actually", "help", "stop", "how", "wtf", "omg", "nah", "clutch"}
     cue_index = next((i for i, word in enumerate(words) if word.lower() in cues), 0)
     start = max(0, cue_index - 2)

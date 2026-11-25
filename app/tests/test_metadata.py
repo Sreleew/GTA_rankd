@@ -211,3 +211,13 @@ def test_local_model_generic_engagement_hook_falls_back_to_clip_specific_text(mo
     assert result["hook_text"] == "THE POLICE CHASE ENDS WHEN HE"
     assert result["hook_text"] != "WAIT FOR THE REACTION"
 
+def test_fallback_hook_stays_empty_for_unusable_transcript() -> None:
+    from studio.web.metadata import _fallback_metadata
+
+    result = _fallback_metadata(
+        streamer="StreamerA", note="", source_url="", transcript="... !!!",
+        custom_hook="", custom_context="",
+    )
+
+    assert result["hook_text"] == ""
+
