@@ -73,43 +73,84 @@ jobs:
           import base64
           import hashlib
           import os
-          import re
           import tarfile
+          from collections import defaultdict
           from pathlib import Path, PurePosixPath
 
           repository = Path.cwd()
           parts = sorted((repository / "source").glob("v0.8.0-source.part*.b64"))
           if len(parts) != 17:
               raise SystemExit(f"Expected 17 v0.8.0 source segments, found {len(parts)}")
-          encoded = "".join(part.read_text(encoding="ascii").strip() for part in parts)
-          payload = base64.b64decode(encoded, validate=True)
+
+          segment_groups = defaultdict(list)
+          encoded_parts = []
+          for part in parts:
+              raw = part.read_text(encoding="ascii").strip()
+              encoded_parts.append(raw)
+              segment_groups[hashlib.sha256(raw.encode("ascii")).hexdigest()].append(part.name)
+          duplicates = [names for names in segment_groups.values() if len(names) > 1]
+
+          payload = base64.b64decode("".join(encoded_parts), validate=True)
           archive_path = repository / "dist" / "GTA-Ranked-Studio-source-v0.8.0.tar.xz"
           archive_path.parent.mkdir(parents=True, exist_ok=True)
           archive_path.write_bytes(payload)
+          report_path = repository / "dist" / "v0.8.0-source-comparison.txt"
+          report = [
+              "GTA Ranked Studio source comparison",
+              "v0.7.8: reconstructed from the v0.4.0 base plus cumulative hotfixes",
+              "v0.8.0: canonical source snapshot split across base64 segments",
+              f"Segments: {len(parts)}",
+              f"Unique segment contents: {len(segment_groups)}",
+              f"Decoded archive bytes: {len(payload)}",
+              f"Decoded archive SHA-256: {hashlib.sha256(payload).hexdigest()}",
+          ]
+          if duplicates:
+              report.extend(["", "BLOCKED: duplicate source segments detected."])
+              for names in duplicates:
+                  report.append("Duplicate content: " + ", ".join(names))
+              report.append("The v0.8.0 archive cannot be trusted or compared until the missing segment is restored.")
+              report_path.write_text("\n".join(report) + "\n", encoding="utf-8")
+              print("\n".join(report))
+              with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env:
+                  env.write("V080_SOURCE_STATUS=blocked\n")
+              raise SystemExit(0)
 
           extract_root = repository / "source-v0.8.0-extracted"
           extract_root.mkdir(parents=True, exist_ok=True)
-          with tarfile.open(archive_path, mode="r:xz") as archive:
-              members = archive.getmembers()
-              for member in members:
-                  name = PurePosixPath(member.name)
-                  if name.is_absolute() or ".." in name.parts:
-                      raise SystemExit(f"Unsafe archive path: {member.name}")
-                  if not (member.isfile() or member.isdir()):
-                      raise SystemExit(f"Unsupported archive entry: {member.name}")
-                  target = (extract_root / Path(*name.parts)).resolve()
-                  if target != extract_root.resolve() and extract_root.resolve() not in target.parents:
-                      raise SystemExit(f"Archive path escapes extraction root: {member.name}")
-              archive.extractall(extract_root)
+          try:
+              with tarfile.open(archive_path, mode="r:xz") as archive:
+                  members = archive.getmembers()
+                  for member in members:
+                      name = PurePosixPath(member.name)
+                      if name.is_absolute() or ".." in name.parts:
+                          raise ValueError(f"Unsafe archive path: {member.name}")
+                      if not (member.isfile() or member.isdir()):
+                          raise ValueError(f"Unsupported archive entry: {member.name}")
+                      target = (extract_root / Path(*name.parts)).resolve()
+                      if target != extract_root.resolve() and extract_root.resolve() not in target.parents:
+                          raise ValueError(f"Archive path escapes extraction root: {member.name}")
+                  archive.extractall(extract_root)
+          except Exception as exc:
+              report.extend(["", f"BLOCKED: v0.8.0 archive extraction failed: {type(exc).__name__}: {exc}"])
+              report_path.write_text("\n".join(report) + "\n", encoding="utf-8")
+              print("\n".join(report))
+              with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env:
+                  env.write("V080_SOURCE_STATUS=blocked\n")
+              raise SystemExit(0)
 
           version_roots = []
           for version_file in extract_root.rglob("VERSION.txt"):
               version_text = version_file.read_text(encoding="utf-8", errors="replace")
-              if re.search(r"^Version:\s*0\.8\.0\s*$", version_text, re.M):
+              if any(line.strip() == "Version: 0.8.0" for line in version_text.splitlines()):
                   version_roots.append(version_file.parent)
           if len(version_roots) != 1:
-              found = [(str(p), p.read_text(encoding="utf-8", errors="replace")) for p in extract_root.rglob("VERSION.txt")]
-              raise SystemExit(f"Could not identify exactly one v0.8.0 source root: {found}")
+              report.extend(["", f"BLOCKED: expected one v0.8.0 root, found {len(version_roots)}"])
+              report_path.write_text("\n".join(report) + "\n", encoding="utf-8")
+              print("\n".join(report))
+              with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env:
+                  env.write("V080_SOURCE_STATUS=blocked\n")
+              raise SystemExit(0)
+
           v080_root = version_roots[0]
           v078_root = Path(os.environ["APP_ROOT"]).resolve()
 
@@ -127,12 +168,7 @@ jobs:
           added = sorted(new_names - old_names)
           removed = sorted(old_names - new_names)
           changed = sorted(name for name in old_names & new_names if old_files[name] != new_files[name])
-
-          report = [
-              "GTA Ranked Studio source comparison",
-              "v0.7.8: reconstructed from the v0.4.0 base plus cumulative hotfixes",
-              f"v0.8.0: reconstructed from {len(parts)} canonical base64 segments",
-              f"v0.8.0 archive SHA-256: {hashlib.sha256(payload).hexdigest()}",
+          report.extend([
               f"v0.7.8 root: {v078_root}",
               f"v0.8.0 root: {v080_root}",
               f"File counts: v0.7.8={len(old_files)}, v0.8.0={len(new_files)}",
@@ -148,12 +184,11 @@ jobs:
               "",
               "MODIFIED",
               *changed,
-          ]
-          report_path = repository / "dist" / "v0.8.0-source-comparison.txt"
+          ])
           report_path.write_text("\n".join(report) + "\n", encoding="utf-8")
           print("\n".join(report))
           with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env:
-              env.write(f"V080_ROOT={v080_root}\n")
+              env.write("V080_SOURCE_STATUS=compared\n")
           PY
       - name: Build Windows update package
         run: python "$APP_ROOT/installer/build_release_package.py" --version "0.7.8" --output-dir "$GITHUB_WORKSPACE/dist"
