@@ -137,7 +137,7 @@ jobs:
           $appRoot = Join-Path $env:RUNNER_TEMP "gta-ranked-source\gta-ranked-studio"
           [System.IO.File]::AppendAllText($env:GITHUB_ENV, "APP_ROOT=$appRoot" + [Environment]::NewLine, [System.Text.UTF8Encoding]::new($false))
 
-      - name: Apply retention patch and inject current project documentation
+      - name: Apply application patches and inject current project documentation
         shell: pwsh
         run: |
           python "$env:GITHUB_WORKSPACE\source\apply-hotfix-v0.7.8-retention.py" "$env:APP_ROOT"
