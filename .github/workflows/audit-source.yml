@@ -2,7 +2,24 @@ name: Audit GTA Ranked Studio source
 
 on:
   push:
-    branches: [feature/v0.7.8-shorts-retention]
+    branches: [main, feature/v0.7.8-shorts-retention]
+    paths:
+      - ".github/workflows/audit-source.yml"
+      - ".github/workflows/release.yml"
+      - ".github/workflows/windows-smoke.yml"
+      - "docs/source-audit-v0.7.8-v0.8.0-2026-11-25.md"
+      - "source/apply-hotfix-v0.7.8.py"
+      - "source/apply-hotfix-v0.7.8-retention.py"
+      - "source/apply-hotfix-v0.7.8-export-qc.py"
+      - "source/export-quality-patch-v0.7.8.diff.xz.b64"
+      - "docs/CONTINUATION.md"
+      - "docs/UPDATES.md"
+      - "tools/check_project_memory.py"
+      - "README.md"
+      - "VERSION.txt"
+      - "NOTES-v0.7.8.txt"
+  pull_request:
+    branches: [main]
     paths:
       - ".github/workflows/audit-source.yml"
       - ".github/workflows/release.yml"
@@ -32,8 +49,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: feature/v0.7.8-shorts-retention
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -139,26 +154,35 @@ jobs:
           loader = yaml.BaseLoader
           release = yaml.load(Path(".github/workflows/release.yml").read_text(encoding="utf-8"), Loader=loader)
           triggers = release.get("on", {})
-          if set(triggers) != {"workflow_dispatch"}:
-              raise SystemExit("Le workflow de release doit être déclenché uniquement manuellement.")
+          if set(triggers) != {"push", "workflow_dispatch"}:
+              raise SystemExit("Le workflow de release doit proposer l'approbation explicite et le mode brouillon manuel.")
+          push = triggers["push"]
+          if push.get("branches") != ["main"] or push.get("paths") != [".release-approval"]:
+              raise SystemExit("La publication automatique doit être limitée à .release-approval sur main.")
           inputs = triggers["workflow_dispatch"].get("inputs", {})
           confirmation = inputs.get("confirm_publish", {})
           if confirmation.get("type") != "boolean" or confirmation.get("default") != "false" or confirmation.get("required") != "true":
-              raise SystemExit("La confirmation explicite de release doit être obligatoire et décochée par défaut.")
+              raise SystemExit("La confirmation explicite du mode brouillon doit être obligatoire et décochée par défaut.")
           release_steps = release["jobs"]["release"]["steps"]
-          release_script = "\n".join(step.get("run", "") for step in release_steps)
-          if "refs/heads/main" not in release_script or "CONFIRM_PUBLISH" not in release_script:
-              raise SystemExit("Les garde-fous main/confirmation sont absents du workflow de release.")
+          release_script = "\\n".join(step.get("run", "") for step in release_steps)
+          for required in ("refs/heads/main", "CONFIRM_PUBLISH", ".release-approval", "VERSION.txt"):
+              if required not in release_script:
+                  raise SystemExit(f"Garde-fou de release manquant : {required}")
           publish = next((step for step in release_steps if step.get("uses", "").startswith("softprops/action-gh-release@")), None)
-          if not publish or publish.get("with", {}).get("draft") != "true":
-              raise SystemExit("Le workflow doit créer une Release brouillon, jamais publier directement.")
+          publish_with = publish.get("with", {}) if publish else {}
+          expected_draft = "$" + "{{ github.event_name == 'workflow_dispatch' }}"
+          expected_latest = "$" + "{{ github.event_name == 'push' }}"
+          if publish_with.get("draft") != expected_draft:
+              raise SystemExit("La publication approuvée doit être publique, le déclenchement manuel doit rester en brouillon.")
+          if publish_with.get("make_latest") != expected_latest:
+              raise SystemExit("La Release publique approuvée doit devenir la dernière version stable.")
 
           windows = yaml.load(Path(".github/workflows/windows-smoke.yml").read_text(encoding="utf-8"), Loader=loader)
           job = windows.get("jobs", {}).get("windows-smoke", {})
           if job.get("runs-on") != "windows-latest":
               raise SystemExit("Le contrôle Windows doit utiliser windows-latest.")
           windows_steps = job.get("steps", [])
-          windows_script = "\n".join(step.get("run", "") for step in windows_steps)
+          windows_script = "\\n".join(step.get("run", "") for step in windows_steps)
           for required in ("python -m pytest -q", "node --check", "installer/build_release_package.py", "choco install ffmpeg"):
               if required not in windows_script:
                   raise SystemExit(f"Contrôle Windows manquant : {required}")
@@ -400,7 +424,8 @@ jobs:
               raise SystemExit("Package is missing continuity files: " + ", ".join(sorted(missing)))
           print("Continuation memo, checker and update history are included in the Windows ZIP.")
           PY
-      - name: Commit canonical v0.7.8 source snapshot to the working branch
+      - name: Commit canonical v0.7.8 source snapshot to the current branch
+        if: github.event_name != 'pull_request'
         shell: bash
         run: |
           set -euo pipefail

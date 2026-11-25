@@ -2,9 +2,25 @@ name: Windows runtime validation
 
 on:
   push:
-    branches: [feature/v0.7.8-shorts-retention]
+    branches: [main, feature/v0.7.8-shorts-retention]
     paths:
       - ".github/workflows/windows-smoke.yml"
+      - "source/canonical-v0.7.8/**"
+      - "source/apply-hotfix-v0.7.8-retention.py"
+      - "source/apply-hotfix-v0.7.8-export-qc.py"
+      - "source/export-quality-patch-v0.7.8.diff.xz.b64"
+      - "README.md"
+      - "VERSION.txt"
+      - "NOTES-v0.7.8.txt"
+      - "docs/CONTINUATION.md"
+      - "docs/UPDATES.md"
+      - "docs/implementation-plan-v0.7.8.md"
+      - "tools/check_project_memory.py"
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/windows-smoke.yml"
+      - ".github/workflows/release.yml"
       - "source/canonical-v0.7.8/**"
       - "source/apply-hotfix-v0.7.8-retention.py"
       - "source/apply-hotfix-v0.7.8-export-qc.py"
@@ -31,10 +47,8 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 35
     steps:
-      - name: Checkout working branch
+      - name: Checkout selected source revision
         uses: actions/checkout@v4
-        with:
-          ref: feature/v0.7.8-shorts-retention
 
       - name: Set up Python
         uses: actions/setup-python@v5

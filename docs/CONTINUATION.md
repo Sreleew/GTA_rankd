@@ -4,13 +4,13 @@
 
 - **Dernière mise à jour :** 25 novembre 2026
 - **Version source de référence :** 0.7.8
-- **État :** candidat reconstruit, testé et empaqueté par GitHub Actions. Pas encore une Release stable publiée.
+- **État :** v0.7.8 intégrée à `main` via la PR #2. La Release publique v0.7.8 est en cours de préparation via l'approbation explicite `.release-approval`. Tant que la Release n'est pas publiée, le bouton de mise à jour affiche encore v0.7.7.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
-- **Branche de travail :** `feature/v0.7.8-shorts-retention`
+- **Branche fonctionnelle intégrée :** `feature/v0.7.8-shorts-retention` (PR #2 fusionnée). **Branche d'intégration du mécanisme de publication :** `chore/release-approval-gate-v0.7.8`.
 - **Dernière Release stable publique :** v0.7.7.
-- **État du dépôt `main` :** son `VERSION.txt` indique encore v0.5.1, alors que son ancien workflow reconstruit la v0.7.7 publiée. Cette métadonnée est obsolète.
-- **Dernier audit Linux réussi :** 138 tests réussis, 1 test PowerShell ignoré sous Linux : https://github.com/Sreleew/GTA_rankd/actions/runs/45709276369.
-- **Validation Windows CI :** 139 tests réussis, aucun ignoré, PowerShell et paquet Windows validés : https://github.com/Sreleew/GTA_rankd/actions/runs/45709276379. Cela ne valide pas le GPU AMD physique.
+- **État du dépôt `main` :** `VERSION.txt` indique désormais `0.7.8`. La Release stable publiée la plus récente reste `v0.7.7` jusqu'à la publication de `v0.7.8`.
+- **Dernier audit Linux réussi :** 138 tests réussis, 1 test PowerShell ignoré sous Linux : https://github.com/Sreleew/GTA_rankd/actions/runs/45709625425.
+- **Validation Windows CI :** 139 tests réussis, aucun ignoré, PowerShell et paquet Windows validés : https://github.com/Sreleew/GTA_rankd/actions/runs/45709625272. Cela ne valide pas le GPU AMD physique.
 - **Source canonique :** `source/canonical-v0.7.8/`. `MANIFEST.json` et `SHA256SUMS.txt` font foi pour les fichiers et empreintes courants ; ne pas recopier un SHA d'archive ou un HEAD dans ce mémo, car ils changent à chaque reconstruction.
 - **Comparaison des sources :** `docs/source-audit-v0.7.8-v0.8.0-2026-11-25.md`
 
@@ -80,19 +80,22 @@ C'est un candidat validé par CI, pas une Release stable et pas une validation G
 - Source canonique reconstruite, déterministe et commitée dans `source/canonical-v0.7.8/`.
 - Archive : `GTA-Ranked-Studio-source-v0.7.8.tar.xz`.
 - Fichiers de contrôle : `MANIFEST.json` et `SHA256SUMS.txt`.
-- Le manifeste inventorie les fichiers et leurs SHA-256 individuels. L'archive contrôlée contient 103 fichiers.
+- Le manifeste inventorie les fichiers et leurs SHA-256 individuels. Le dernier snapshot contrôlé contient 106 fichiers.
 - Le mémo, son vérificateur et le changelog complet sont inclus dans l'archive et dans le ZIP Windows.
 - Aucun `config.yaml`, média, base SQLite, modèle local, log ou bytecode Python n'est inclus.
 - Ne jamais recopier le SHA-256 de l'archive dans ce mémo. `MANIFEST.json` et `SHA256SUMS.txt` dans le dossier canonique sont les seules sources de vérité, car le snapshot change après une mise à jour des documents.
 - Dernier workflow Linux validé : https://github.com/Sreleew/GTA_rankd/actions/runs/45689877019.
 - Dernier workflow Windows validé : https://github.com/Sreleew/GTA_rankd/actions/runs/45688998298.
 
-Le workflow de release lit l'archive canonique, vérifie le checksum et l'intégrité de chaque fichier du manifeste, puis lance les tests et le packaging. Il ne rejoue plus la chaîne de patchs depuis v0.4.0. Il ne se déclenche plus sur `push` : il exige un lancement manuel depuis `main`, une confirmation explicite, vérifie que le tag n'existe pas déjà et crée une Release brouillon. La publication publique finale reste une action manuelle sur GitHub.
+Le workflow de release lit l'archive canonique, vérifie le checksum et l'intégrité de chaque fichier du manifeste, puis lance les tests et le packaging. Il ne rejoue plus la chaîne de patchs depuis v0.4.0. La voie stable se déclenche uniquement quand `.release-approval` est créé ou modifié sur `main` : le numéro doit correspondre à `VERSION.txt`, le tag ne doit pas exister, et les tests/contrôles du ZIP sont rejoués avant publication publique. La voie `workflow_dispatch` exige une confirmation et reste limitée à une Release brouillon.
 
 
-### Divergence des branches relevée avant le sprint
+### Intégration des branches et publication v0.7.8
 
-Le compare Git du 25 novembre indiquait une branche de travail en avance de 38 commits et `main` en avance de 2 commits depuis leur base commune. Les deux commits propres à `main` modifiaient uniquement l'ancien `.github/workflows/audit-source.yml` (ajout du workflow initial et extension jusqu'au correctif v0.7.8). La branche de travail contient maintenant une version plus complète de ce workflow. Ne pas fusionner aveuglément : refaire le compare, vérifier le diff du workflow et intégrer les intentions utiles de façon explicite dans une PR. La dernière Release stable publique demeure v0.7.7 ; aucune v0.7.8 stable n'existe à ce stade.
+- La PR #2 a été fusionnée dans `main` : https://github.com/Sreleew/GTA_rankd/pull/2.
+- Les deux commits préexistants de `main` ont été conservés. La PR est passée de `dirty` à `clean` après intégration de `main` dans la branche candidate.
+- Les workflows Linux et Windows ont maintenant des déclencheurs `pull_request` vers `main`, et checkoutent la révision courante au lieu de forcer l'ancienne branche.
+- Le mécanisme `.release-approval` est en cours d'intégration : un changement de ce seul fichier sur `main` autorise la publication stable correspondante après validation complète. Ne pas modifier ce fichier avant d'avoir examiné les contrôles CI et la version cible.
 
 ### Snapshot v0.8.0 bloqué
 
@@ -153,7 +156,7 @@ La copie du fichier de configuration n'est valable que pour une installation neu
 - À chaque version, mettre à jour ensemble `VERSION.txt`, `NOTES-vX.Y.Z.txt`, `README.md`, `docs/UPDATES.md` et ce mémo.
 - Le contrôle CI doit échouer si la version du mémo ne correspond pas à `VERSION.txt`, si la date ou des sections essentielles manquent, ou si les notes de version sont absentes.
 - Le workflow de release doit partir de `source/canonical-vX.Y.Z/`, vérifier son `SHA256SUMS.txt` et confirmer que le paquet Windows contient le mémo, le vérificateur et le changelog.
-- Le workflow de publication n'a aucun déclencheur `push` : il exige `workflow_dispatch`, la branche `main` et une confirmation explicite. Il crée une Release brouillon, jamais une publication publique directe.
+- Le workflow de publication a deux voies : `.release-approval` sur `main` pour une publication stable explicitement autorisée, et `workflow_dispatch` avec confirmation pour une Release brouillon.
 - Le workflow d'audit ne surveille pas son propre dossier de snapshot canonique, ce qui évite une boucle de reconstruction sur le commit du bot.
 - Les runners Windows valident le parseur PowerShell et le package, mais ne remplacent pas les essais GPU sur la RX 9060 XT réelle.
 - À chaque mise à jour, ajouter au mémo les fonctionnalités livrées, les tests et résultats, la branche/commit, le statut CI/Release, les limites et les prochaines tâches.
@@ -170,9 +173,9 @@ Limite du score d'accroche : il s'agit d'un indicateur heuristique audio/texte s
 2. Exécuter `docs/WINDOWS-HARDWARE-VALIDATION.md` sur le PC cible : AMF, Whisper Vulkan, Qwen, cycle Short complet, rapport QC et persistance après mise à jour.
 3. Améliorer les coupes naturelles et la construction des hooks à partir des limites de phrases, sans CTA générique à l'ouverture.
 4. Développer le classement visuel des événements GTA (HUD, kill feed et changements de scène) avec un score explicable et une validation humaine.
-5. Réconcilier proprement les deux commits propres à `main` relevés lors du compare Git. Ne pas effectuer de fusion aveugle.
-6. Ouvrir une PR vers `main` seulement après validation CI Windows et validation matérielle, sans publier de Release automatiquement.
-7. Après intégration volontaire, préparer une Release brouillon par lancement manuel depuis `main`, puis vérifier le ZIP et le checksum avant publication manuelle.
+5. Terminer la PR du mécanisme `.release-approval` et attendre les validations Linux et Windows sur cette PR.
+6. Après fusion, créer `.release-approval` avec `0.7.8` sur `main` pour déclencher la publication stable et vérifier le ZIP/checksum de la Release.
+7. Sur le PC cible, exécuter `docs/WINDOWS-HARDWARE-VALIDATION.md`, puis confirmer que le bouton de mise à jour détecte v0.7.8 et que les réglages, projets et exports locaux sont conservés.
 8. Restaurer le vrai fragment `part004` ou reconstruire la source v0.8.0 depuis un arbre complet ; ne pas utiliser les fragments actuels.
 9. À chaque lot, actualiser le mémo, les notes, le README et le changelog, puis laisser la CI reconstruire et contrôler le snapshot canonique.
 

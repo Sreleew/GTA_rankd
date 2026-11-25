@@ -2,47 +2,42 @@
 
 ## Principe
 
-Une version n'est publiable que lorsque sa source canonique, les tests Linux, les tests Windows et le contrôle matériel prévu ont été validés. Un artifact GitHub Actions n'est pas une Release. Un candidat CI n'est pas une version stable.
+Un candidat de CI n'est pas une Release. Le bouton de mise à jour de GTA Ranked Studio recherche les GitHub Releases publiques de ce dépôt : une branche, un commit ou un artifact Actions ne suffit donc pas à rendre une version disponible dans l'application.
 
 ## Flux obligatoire
 
-1. Développer sur une branche de travail, jamais directement sur `main`.
-2. Mettre à jour le mémo, les notes, le README et le changelog lorsque le comportement produit change.
-3. Lancer le workflow `Audit GTA Ranked Studio source`. Il vérifie le checksum et chacun des fichiers de la source canonique v0.7.8, extrait cette base, injecte les documents courants, teste puis met à jour l'archive canonique et ses fichiers de contrôle. Il ne rejoue pas l'ancienne chaîne de hotfixes.
-4. Laisser le workflow `Windows runtime validation` tester l'archive canonique sur `windows-latest`, notamment le parseur Windows PowerShell 5.1, les tests Python, le JavaScript et le paquet de mise à jour.
-5. Valider manuellement le logiciel sur le PC cible : cycle complet d'un Short, FFmpeg AMF, Whisper Vulkan, Ollama/Qwen, persistance et mise à jour sans perte de données. Utiliser `docs/WINDOWS-HARDWARE-VALIDATION.md`.
-6. Examiner la comparaison Git entre la branche de travail et `main`. Résoudre explicitement les changements de workflows avant d'ouvrir ou de fusionner une PR.
-7. Fusionner volontairement dans `main` seulement après validation et décision explicite.
-8. Depuis `main`, lancer manuellement `Build and prepare GTA Ranked Studio release`, saisir la version canonique et cocher la confirmation. Le workflow refuse toute exécution depuis une autre branche, vérifie l'intégrité de chaque fichier source, rejoue les tests et vérifie le ZIP.
-9. Le workflow crée une **Release brouillon**, pas une publication publique. Vérifier les notes, le ZIP et `SHA256SUMS.txt`, puis publier la brouillon manuellement depuis GitHub.
+1. Développer sur une branche de travail et actualiser le mémo, les notes, le README et le changelog.
+2. Ouvrir une PR vers `main`. Les workflows Linux et Windows s'exécutent sur la révision de la PR.
+3. Vérifier l'audit Linux : source canonique, manifeste, fichiers, tests Python, JavaScript et paquet Windows.
+4. Vérifier le workflow Windows : extraction sécurisée, tests Python, PowerShell, JavaScript et ZIP de mise à jour.
+5. Valider manuellement sur le PC cible les changements qui touchent directement l'installation, l'encodage AMF, Whisper Vulkan ou Ollama/Qwen. Pour les autres changements, consigner explicitement ce qui reste à vérifier sur le matériel réel.
+6. Fusionner volontairement la PR après examen des deux validations et des données locales préservées.
+7. Pour publier une version stable, créer ou mettre à jour `.release-approval` sur `main` avec exactement le numéro de version approuvé, par exemple `0.7.8`. **Ce commit est l'autorisation explicite de publication publique.**
+8. Le workflow `Build and publish GTA Ranked Studio` vérifie que le marqueur correspond à `VERSION.txt`, que le tag n'existe pas, que l'archive canonique et chaque fichier correspondent au manifeste, exécute les tests Linux et construit puis vérifie le ZIP Windows.
+9. Pour un commit `.release-approval`, GitHub crée et publie la Release stable directement, avec le ZIP et `SHA256SUMS.txt`. L'application peut alors détecter cette version via son bouton de mise à jour.
+
+La voie `workflow_dispatch` reste disponible pour préparer une Release brouillon : elle exige la version et une confirmation cochée, puis nécessite une publication manuelle depuis GitHub.
 
 ## Garde-fous
 
-- Aucun déclencheur `push` ne publie de Release.
-- Une confirmation manuelle est obligatoire.
-- Le workflow de publication ne fonctionne que depuis `main`.
-- Un tag déjà existant bloque la préparation afin d'éviter l'écrasement d'une version.
+- Aucun push ordinaire ne déclenche de publication : seul un changement de `.release-approval` sur `main` le fait.
+- La version du marqueur doit correspondre exactement à `VERSION.txt`.
+- Le tag déjà existant bloque le workflow, afin de ne jamais écraser une version publiée.
+- La voie manuelle ne publie jamais directement : elle crée une brouillon.
 - Le manifeste, le checksum et chaque fichier de l'archive canonique sont vérifiés avant extraction.
-- Le paquet doit inclure le mémo, le vérificateur et l'historique des mises à jour.
-- Les configurations, secrets, bases, médias, exports, journaux, modèles locaux et environnements virtuels ne doivent jamais entrer dans le paquet.
+- Le ZIP est vérifié et exclut `config.yaml`, les secrets, bases, médias, exports, journaux et modèles locaux.
+- L'installateur doit préserver les réglages, projets, bases, exports et modèles existants.
 - Ne jamais utiliser les fragments v0.8.0 actuels : `part003` et `part004` sont dupliqués et l'archive reconstruite est invalide.
+
+## État v0.7.8 au 25 novembre 2026
+
+- Le candidat v0.7.8 et sa source canonique ont été intégrés dans `main` via la PR #2.
+- Dernière Release stable publique au début de la préparation : v0.7.7.
+- Audit Linux : 138 tests réussis, 1 test PowerShell ignoré sous Linux.
+- Validation Windows CI : 139 tests réussis, aucun ignoré ; tests PowerShell et ZIP Windows validés.
+- La RX 9060 XT physique n'a pas encore été utilisée pour valider AMF/Vulkan. Le code v0.7.8 n'a pas été modifié sur ces moteurs ; consigner cette limite et contrôler le premier cycle réel après mise à jour.
+- Le workflow de publication contient désormais deux voies : marqueur explicite pour publier une stable, lancement manuel pour produire une brouillon.
 
 ## Protection de `main`
 
-Le workflow de publication est maintenant verrouillé, mais les règles de protection de branche sont un réglage GitHub indépendant. Elles n'ont pas été modifiées pendant ce sprint. Avant la fusion de la PR, configurer dans les paramètres du dépôt :
-
-- exiger une Pull Request avant toute fusion sur `main` ;
-- exiger les contrôles Linux et Windows comme checks obligatoires ;
-- interdire les force-push et la suppression de `main` ;
-- exiger une conversation de revue résolue.
-
-Ne pas considérer la branche comme protégée tant que ces règles ne sont pas visibles et activées dans GitHub.
-
-## État actuel au 25 novembre 2026
-
-- Base de travail : v0.7.8 canonique sur `feature/v0.7.8-shorts-retention`.
-- La dernière Release publique stable est v0.7.7. Le `VERSION.txt` du dépôt `main` indique encore v0.5.1, car l'ancien workflow reconstruisait la v0.7.7 depuis les correctifs historiques. Il s'agit d'une métadonnée obsolète à corriger lors de l'intégration.
-- Les deux commits exclusifs de `main` relevés lors du compare Git concernent uniquement l'ancienne évolution du workflow d'audit. Le workflow de la branche de travail est plus complet, mais le diff doit être vérifié dans une PR. Ne pas fusionner aveuglément.
-- La validation Linux v0.7.8 a réussi avec 128 tests réussis et 1 ignoré.
-- Le workflow Windows vient d'être ajouté. Son premier résultat doit être examiné avant de considérer la validation Windows CI comme acquise.
-- Aucune Release stable n'a été publiée.
+La protection de branche reste un réglage GitHub indépendant. Vérifier dans les paramètres du dépôt que les PR et les contrôles obligatoires sont configurés ; ne pas supposer que `main` est protégée si l'interface GitHub ne le confirme pas.

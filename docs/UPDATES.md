@@ -8,13 +8,13 @@ La première installation d'une version qui contient le système d'update (v0.3.
 
 ## Côté publication
 
-Le dépôt public Sreleew/GTA_rankd est la source des releases stables.
+Le dépôt public Sreleew/GTA_rankd est la source des Releases stables. Le client de mise à jour consulte ces Releases, pas les branches ni les artifacts GitHub Actions.
 
-1. Synchroniser VERSION.txt, pyproject.toml et le fichier NOTES-vX.Y.Z.txt.
-2. Commit/push les modifications sur main.
-3. Soit pousser un tag vX.Y.Z, soit lancer le workflow manuel Build and publish GTA Ranked Studio depuis l'onglet Actions.
-4. Pour le workflow manuel, saisir le même numéro que VERSION.txt.
-5. Vérifier que la Release contient le ZIP GTA-Ranked-Studio-vX.Y.Z.zip et SHA256SUMS.txt.
+1. Synchroniser VERSION.txt, NOTES-vX.Y.Z.txt, README et la documentation.
+2. Ouvrir une PR vers main et vérifier les validations Linux et Windows.
+3. Après fusion, créer ou mettre à jour `.release-approval` sur main avec le même numéro que VERSION.txt. Ce commit constitue l'autorisation explicite de publication et déclenche le workflow.
+4. Le workflow vérifie la source canonique et le paquet, puis publie la Release stable contenant GTA-Ranked-Studio-vX.Y.Z.zip et SHA256SUMS.txt.
+5. En mode manuel depuis Actions, le workflow exige une confirmation et crée uniquement une Release brouillon.
 
 Le paquet est généré par installer/build_release_package.py. Le script exclut les environnements virtuels, les vidéos, les rendus, les bases de données, les journaux et les modèles/outils locaux.
 
