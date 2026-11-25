@@ -139,26 +139,33 @@ jobs:
           loader = yaml.BaseLoader
           release = yaml.load(Path(".github/workflows/release.yml").read_text(encoding="utf-8"), Loader=loader)
           triggers = release.get("on", {})
-          if set(triggers) != {"workflow_dispatch"}:
-              raise SystemExit("Le workflow de release doit être déclenché uniquement manuellement.")
+          if set(triggers) != {"push", "workflow_dispatch"}:
+              raise SystemExit("Le workflow de release doit proposer l'approbation explicite et le mode brouillon manuel.")
+          push = triggers["push"]
+          if push.get("branches") != ["main"] or push.get("paths") != [".release-approval"]:
+              raise SystemExit("La publication automatique doit être limitée à .release-approval sur main.")
           inputs = triggers["workflow_dispatch"].get("inputs", {})
           confirmation = inputs.get("confirm_publish", {})
           if confirmation.get("type") != "boolean" or confirmation.get("default") != "false" or confirmation.get("required") != "true":
-              raise SystemExit("La confirmation explicite de release doit être obligatoire et décochée par défaut.")
+              raise SystemExit("La confirmation explicite du mode brouillon doit être obligatoire et décochée par défaut.")
           release_steps = release["jobs"]["release"]["steps"]
-          release_script = "\n".join(step.get("run", "") for step in release_steps)
-          if "refs/heads/main" not in release_script or "CONFIRM_PUBLISH" not in release_script:
-              raise SystemExit("Les garde-fous main/confirmation sont absents du workflow de release.")
+          release_script = "\\n".join(step.get("run", "") for step in release_steps)
+          for required in ("refs/heads/main", "CONFIRM_PUBLISH", ".release-approval", "VERSION.txt"):
+              if required not in release_script:
+                  raise SystemExit(f"Garde-fou de release manquant : {required}")
           publish = next((step for step in release_steps if step.get("uses", "").startswith("softprops/action-gh-release@")), None)
-          if not publish or publish.get("with", {}).get("draft") != "true":
-              raise SystemExit("Le workflow doit créer une Release brouillon, jamais publier directement.")
+          publish_with = publish.get("with", {}) if publish else {}
+          if publish_with.get("draft") != "${{ github.event_name == 'workflow_dispatch' }}":
+              raise SystemExit("La publication approuvée doit être publique, le déclenchement manuel doit rester en brouillon.")
+          if publish_with.get("make_latest") != "${{ github.event_name == 'push' }}":
+              raise SystemExit("La Release publique approuvée doit devenir la dernière version stable.")
 
           windows = yaml.load(Path(".github/workflows/windows-smoke.yml").read_text(encoding="utf-8"), Loader=loader)
           job = windows.get("jobs", {}).get("windows-smoke", {})
           if job.get("runs-on") != "windows-latest":
               raise SystemExit("Le contrôle Windows doit utiliser windows-latest.")
           windows_steps = job.get("steps", [])
-          windows_script = "\n".join(step.get("run", "") for step in windows_steps)
+          windows_script = "\\n".join(step.get("run", "") for step in windows_steps)
           for required in ("python -m pytest -q", "node --check", "installer/build_release_package.py", "choco install ffmpeg"):
               if required not in windows_script:
                   raise SystemExit(f"Contrôle Windows manquant : {required}")
