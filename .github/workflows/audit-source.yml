@@ -5,6 +5,9 @@ on:
     branches: [feature/v0.7.8-shorts-retention]
     paths:
       - ".github/workflows/audit-source.yml"
+      - ".github/workflows/release.yml"
+      - ".github/workflows/windows-smoke.yml"
+      - "docs/source-audit-v0.7.8-v0.8.0-2026-11-25.md"
       - "source/apply-hotfix-v0.7.8.py"
       - "docs/CONTINUATION.md"
       - "docs/UPDATES.md"
@@ -12,16 +15,14 @@ on:
       - "README.md"
       - "VERSION.txt"
       - "NOTES-v0.7.8.txt"
-      - "source/canonical-v0.7.8/**"
   workflow_dispatch:
 
 permissions:
   contents: write
-  actions: write
 
 concurrency:
   group: gta-ranked-source-audit-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   reconstruct:
@@ -327,7 +328,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add source/canonical-v0.7.8/
           if ! git diff --cached --quiet; then
-            git commit -m "build: add canonical GTA Ranked Studio v0.7.8 source snapshot"
+            git commit -m "build: add canonical GTA Ranked Studio v0.7.8 source snapshot [skip ci]"
             git fetch origin "$GITHUB_REF_NAME"
             git rebase "origin/$GITHUB_REF_NAME"
             git push origin "HEAD:$GITHUB_REF_NAME"
