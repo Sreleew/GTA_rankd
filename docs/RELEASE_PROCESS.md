@@ -30,7 +30,8 @@ Une version n'est publiable que lorsque sa source canonique, les tests Linux, le
 ## État actuel au 25 novembre 2026
 
 - Base de travail : v0.7.8 canonique sur `feature/v0.7.8-shorts-retention`.
-- `main` contient encore v0.5.1. Les deux commits exclusifs de `main` relevés lors de l'audit concernent uniquement une ancienne évolution du workflow d'audit. Ne pas fusionner aveuglément.
+- La dernière Release publique stable est v0.7.7. Le `VERSION.txt` du dépôt `main` indique encore v0.5.1, car l'ancien workflow reconstruisait la v0.7.7 depuis les correctifs historiques. Il s'agit d'une métadonnée obsolète à corriger lors de l'intégration.
+- Les deux commits exclusifs de `main` relevés lors du compare Git concernent uniquement l'ancienne évolution du workflow d'audit. Le workflow de la branche de travail est plus complet, mais le diff doit être vérifié dans une PR. Ne pas fusionner aveuglément.
 - La validation Linux v0.7.8 a réussi avec 128 tests réussis et 1 ignoré.
 - Le workflow Windows vient d'être ajouté. Son premier résultat doit être examiné avant de considérer la validation Windows CI comme acquise.
 - Aucune Release stable n'a été publiée.
