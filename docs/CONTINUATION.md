@@ -87,7 +87,7 @@ Le workflow de release lit l'archive canonique, vérifie le checksum et l'intég
 
 ### Divergence des branches relevée avant le sprint
 
-Le compare Git du 25 novembre indiquait une branche de travail en avance de 38 commits et \`main\` en avance de 2 commits depuis leur base commune. Les deux commits propres à \`main\` modifiaient uniquement l'ancien \`.github/workflows/audit-source.yml\` (ajout du workflow initial et extension jusqu'au correctif v0.7.8). La branche de travail contient maintenant une version plus complète de ce workflow. Ne pas fusionner aveuglément : refaire le compare, vérifier le diff du workflow et intégrer les intentions utiles de façon explicite dans une PR. La dernière Release stable publique demeure v0.7.7 ; aucune v0.7.8 stable n'existe à ce stade.
+Le compare Git du 25 novembre indiquait une branche de travail en avance de 38 commits et `main` en avance de 2 commits depuis leur base commune. Les deux commits propres à `main` modifiaient uniquement l'ancien `.github/workflows/audit-source.yml` (ajout du workflow initial et extension jusqu'au correctif v0.7.8). La branche de travail contient maintenant une version plus complète de ce workflow. Ne pas fusionner aveuglément : refaire le compare, vérifier le diff du workflow et intégrer les intentions utiles de façon explicite dans une PR. La dernière Release stable publique demeure v0.7.7 ; aucune v0.7.8 stable n'existe à ce stade.
 
 ### Snapshot v0.8.0 bloqué
 
