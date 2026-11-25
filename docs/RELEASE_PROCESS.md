@@ -32,10 +32,11 @@ La voie `workflow_dispatch` reste disponible pour préparer une Release brouillo
 ## État v0.7.8 au 25 novembre 2026
 
 - Le candidat v0.7.8 et sa source canonique ont été intégrés dans `main` via la PR #2.
-- Dernière Release stable publique au début de la préparation : v0.7.7.
-- Audit Linux : 138 tests réussis, 1 test PowerShell ignoré sous Linux.
-- Validation Windows CI : 139 tests réussis, aucun ignoré ; tests PowerShell et ZIP Windows validés.
-- La RX 9060 XT physique n'a pas encore été utilisée pour valider AMF/Vulkan. Le code v0.7.8 n'a pas été modifié sur ces moteurs ; consigner cette limite et contrôler le premier cycle réel après mise à jour.
+- **Release stable publique :** [v0.7.8](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.7.8), publiée le 25 novembre 2026. Assets présents : `GTA-Ranked-Studio-v0.7.8.zip` et `SHA256SUMS.txt`.
+- **Workflow de publication :** https://github.com/Sreleew/GTA_rankd/actions/runs/45714213999, terminé avec succès.
+- **Audit Linux :** 138 tests réussis, 1 test PowerShell ignoré sous Linux : https://github.com/Sreleew/GTA_rankd/actions/runs/45713882573.
+- **Validation Windows CI :** 139 tests réussis, aucun ignoré ; tests PowerShell et ZIP Windows validés : https://github.com/Sreleew/GTA_rankd/actions/runs/45713882963.
+- La RX 9060 XT physique n'a pas encore été utilisée pour valider AMF/Vulkan. Le code v0.7.8 n'a pas été modifié sur ces moteurs ; contrôler le premier cycle réel après mise à jour.
 - Le workflow de publication contient désormais deux voies : marqueur explicite pour publier une stable, lancement manuel pour produire une brouillon.
 
 ## Protection de `main`
