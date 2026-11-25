@@ -52,7 +52,7 @@ def main() -> int:
         print("ERREUR: la date de mise à jour du mémo est absente ou ambiguë.")
         return 1
     date_parts = date_lines[0][len(date_prefix):].split()
-    if len(date_parts) != 4 or not date_parts[0].isdigit() or not date_parts[3].isdigit():
+    if len(date_parts) != 3 or not date_parts[0].isdigit() or not date_parts[2].isdigit():
         print("ERREUR: date de mise à jour invalide dans docs/CONTINUATION.md.")
         return 1
 
