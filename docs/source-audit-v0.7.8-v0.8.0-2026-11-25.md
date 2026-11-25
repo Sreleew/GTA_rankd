@@ -43,6 +43,19 @@ Le sprint ajoute maintenant :
 
 Le premier résultat Windows doit encore être inspecté. Un runner Windows hébergé ne valide pas le matériel AMD local : AMF, Whisper Vulkan et Ollama/Qwen doivent être vérifiés séparément sur le PC cible.
 
+## Validation Windows et évolution du pipeline d'audit
+
+Le premier workflow Windows, [run 45688998298](https://github.com/Sreleew/GTA_rankd/actions/runs/45688998298), s'est terminé avec succès :
+- source canonique et 103 fichiers vérifiés par SHA-256 ;
+- dépendances Windows installées et FFmpeg disponible ;
+- **129 tests réussis, aucun ignoré**, dont le test du parseur PowerShell ;
+- contrôle syntaxique JavaScript réussi ;
+- ZIP Windows construit, contenu contrôlé, données locales/sensibles exclues et checksum vérifié.
+
+Ce résultat valide un runner Windows hébergé. Il ne valide pas la RX 9060 XT locale ni les performances AMF/Vulkan réelles.
+
+Le workflow d'audit a ensuite été simplifié pour prendre directement `source/canonical-v0.7.8/` comme base. Il vérifie le checksum de l'archive et celui de chaque fichier du manifeste avant extraction. Les prochains audits ne rejouent donc plus la longue chaîne de hotfixes depuis v0.4.0.
+
 ## v0.8.0 : intégrité du snapshot
 
 Le snapshot v0.8.0 est réparti en 17 segments Base64 :
