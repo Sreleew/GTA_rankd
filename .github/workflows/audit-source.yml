@@ -65,6 +65,96 @@ jobs:
           trap 'rm -f config.yaml' EXIT
           python -m pytest -q
           node --check studio/web/static/app.js
+      - name: Reconstruct and compare canonical v0.8.0 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import base64
+          import hashlib
+          import os
+          import re
+          import tarfile
+          from pathlib import Path, PurePosixPath
+
+          repository = Path.cwd()
+          parts = sorted((repository / "source").glob("v0.8.0-source.part*.b64"))
+          if len(parts) != 17:
+              raise SystemExit(f"Expected 17 v0.8.0 source segments, found {len(parts)}")
+          encoded = "".join(part.read_text(encoding="ascii").strip() for part in parts)
+          payload = base64.b64decode(encoded, validate=True)
+          archive_path = repository / "dist" / "GTA-Ranked-Studio-source-v0.8.0.tar.xz"
+          archive_path.parent.mkdir(parents=True, exist_ok=True)
+          archive_path.write_bytes(payload)
+
+          extract_root = repository / "source-v0.8.0-extracted"
+          extract_root.mkdir(parents=True, exist_ok=True)
+          with tarfile.open(archive_path, mode="r:xz") as archive:
+              members = archive.getmembers()
+              for member in members:
+                  name = PurePosixPath(member.name)
+                  if name.is_absolute() or ".." in name.parts:
+                      raise SystemExit(f"Unsafe archive path: {member.name}")
+                  if not (member.isfile() or member.isdir()):
+                      raise SystemExit(f"Unsupported archive entry: {member.name}")
+                  target = (extract_root / Path(*name.parts)).resolve()
+                  if target != extract_root.resolve() and extract_root.resolve() not in target.parents:
+                      raise SystemExit(f"Archive path escapes extraction root: {member.name}")
+              archive.extractall(extract_root)
+
+          version_roots = []
+          for version_file in extract_root.rglob("VERSION.txt"):
+              version_text = version_file.read_text(encoding="utf-8", errors="replace")
+              if re.search(r"^Version:\\s*0\\.8\\.0\\s*$", version_text, re.M):
+                  version_roots.append(version_file.parent)
+          if len(version_roots) != 1:
+              found = [(str(p), p.read_text(encoding="utf-8", errors="replace")) for p in extract_root.rglob("VERSION.txt")]
+              raise SystemExit(f"Could not identify exactly one v0.8.0 source root: {found}")
+          v080_root = version_roots[0]
+          v078_root = Path(os.environ["APP_ROOT"]).resolve()
+
+          def inventory(root):
+              result = {}
+              for path in root.rglob("*"):
+                  if path.is_file():
+                      relative = path.relative_to(root).as_posix()
+                      result[relative] = hashlib.sha256(path.read_bytes()).hexdigest()
+              return result
+
+          old_files = inventory(v078_root)
+          new_files = inventory(v080_root)
+          old_names, new_names = set(old_files), set(new_files)
+          added = sorted(new_names - old_names)
+          removed = sorted(old_names - new_names)
+          changed = sorted(name for name in old_names & new_names if old_files[name] != new_files[name])
+
+          report = [
+              "GTA Ranked Studio source comparison",
+              "v0.7.8: reconstructed from the v0.4.0 base plus cumulative hotfixes",
+              f"v0.8.0: reconstructed from {len(parts)} canonical base64 segments",
+              f"v0.8.0 archive SHA-256: {hashlib.sha256(payload).hexdigest()}",
+              f"v0.7.8 root: {v078_root}",
+              f"v0.8.0 root: {v080_root}",
+              f"File counts: v0.7.8={len(old_files)}, v0.8.0={len(new_files)}",
+              f"Added in v0.8.0: {len(added)}",
+              f"Removed from v0.7.8: {len(removed)}",
+              f"Modified: {len(changed)}",
+              "",
+              "ADDED",
+              *added,
+              "",
+              "REMOVED",
+              *removed,
+              "",
+              "MODIFIED",
+              *changed,
+          ]
+          report_path = repository / "dist" / "v0.8.0-source-comparison.txt"
+          report_path.write_text("\\n".join(report) + "\\n", encoding="utf-8")
+          print("\\n".join(report))
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env:
+              env.write(f"V080_ROOT={v080_root}\\n")
+          PY
       - name: Build Windows update package
         run: python "$APP_ROOT/installer/build_release_package.py" --version "0.7.8" --output-dir "$GITHUB_WORKSPACE/dist"
       - name: Upload tested source and Windows update package
@@ -74,6 +164,14 @@ jobs:
           path: |
             dist/GTA-Ranked-Studio-v0.7.8.zip
             dist/SHA256SUMS.txt
+          retention-days: 14
+      - name: Upload v0.8.0 source and comparison report
+        uses: actions/upload-artifact@v4
+        with:
+          name: gta-ranked-studio-v0.7.8-v0.8.0-source-comparison
+          path: |
+            dist/GTA-Ranked-Studio-source-v0.8.0.tar.xz
+            dist/v0.8.0-source-comparison.txt
           retention-days: 14
 
 # Re-run after correcting the v0.7.8 patch script quoting.
