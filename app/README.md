@@ -1,60 +1,38 @@
 # GTA Ranked Studio
 
-Application Windows locale pour analyser des clips et VOD GTA, repérer les passages intéressants et produire des Shorts verticaux avec leurs éléments de publication.
+Application Windows locale pour analyser des clips et VOD GTA, repérer les moments intéressants et produire des Shorts verticaux prêts à publier.
 
-**Dernière version stable : 0.7.8**, publiée le 25 novembre 2026. Pour l'installer depuis une version antérieure, ouvrir **Paramètres > Mises à jour**, puis cliquer sur **Rechercher une mise à jour**.
+**Version stable : 0.7.8.**
 
 ## Fonctionnalités principales
 
 - Import de vidéos locales et de clips/VOD Twitch accessibles via yt-dlp, avec plage horaire facultative.
-- Détection audio + transcription Whisper, classement des moments forts et estimation de l'accroche sur les cinq premières secondes.
-- Le classement reste fonctionnel sans Whisper : l'énergie audio seule peut suffire à faire ressortir un passage.
-- Shorts verticaux 1080 × 1920, conservation de l'image source complète et fond flouté par défaut.
-- Transcription locale, sous-titres, filtre de réactions et mode expérimental de voix dominante.
-- Hooks, titres, descriptions et hashtags générés par Ollama/Qwen local si installé, avec fallback déterministe.
-- Miniatures issues d'images réelles du clip, habillage GTA Ranked et sound design.
+- Analyse audio et transcription Whisper locale pour classer les moments forts.
+- Score d'accroche distinct sur les cinq premières secondes, avec repli audio si Whisper n'est pas disponible.
+- Création de Shorts verticaux 1080 × 1920, sous-titres, hooks et textes sociaux.
+- Miniatures créées à partir de vraies images du clip.
+- Métadonnées générées par Ollama/Qwen local si disponible, avec solution de repli déterministe.
 - File de traitement, progression, annulation, prévisualisation, validation et bibliothèque de clips.
-- Après validation, les actions Prévisualiser, Télécharger, Miniature et copie des métadonnées restent disponibles.
-- Contrôle qualité automatique post-export : validité MP4, durée, résolution, piste audio, écrans noirs, images figées, silences prolongés et horodatages des sous-titres. Les alertes guident une revue humaine et ne bloquent pas automatiquement le fichier.
-- Mises à jour via les GitHub Releases publiques de ce dépôt.
+- Après validation, les actions Prévisualiser, Télécharger, Miniature et Copier les métadonnées restent disponibles.
+- Contrôle qualité post-export non bloquant : validité MP4, durée, résolution, codec, audio, écrans noirs, images figées, silences et cohérence des sous-titres.
 
-## Limites connues
+L'application prépare les contenus, mais ne publie pas automatiquement vers YouTube, TikTok ou Instagram.
 
-La détection des moments forts repose sur l'audio et le texte : elle ne comprend pas encore les événements visuels du gameplay. Le filtre lexical des réactions ne sépare pas les voix lorsque le streamer et les personnages sont mélangés. La diarisation reste expérimentale. La publication sur les plateformes est manuelle.
+## Installation et mise à jour
 
-## Architecture
+Pour une première installation, lancer `INSTALL.bat`.
 
-- Interface locale : FastAPI + HTML/CSS/JavaScript.
-- Encodage : FFmpeg H.264 AMD AMF si disponible, fallback libx264.
-- Transcription : whisper.cpp local, Vulkan si disponible, fallback CPU.
-- Métadonnées : Ollama/Qwen en local, facultatif.
-- Téléchargements : yt-dlp pour les URLs accessibles.
-- Profil matériel de référence : Windows et AMD Radeon RX 9060 XT 16 Go. Les performances GPU doivent être validées sur la machine Windows cible.
+Pour mettre à jour une installation existante, ouvrir **Paramètres > Mises à jour**, cliquer sur **Rechercher une mise à jour**, puis sur **Télécharger et installer**. L'application se ferme et redémarre après installation.
 
-Les médias, transcriptions, rendus, modèles, paramètres et bases restent locaux. Ne jamais publier `config.yaml`, vidéos, bases SQLite, modèles téléchargés, .venv, logs ou secrets.
+La mise à jour préserve les réglages, projets, bases, modèles, médias et exports locaux. Ne jamais remplacer manuellement `config.yaml` pendant une mise à jour.
 
-## Développement
+## Configuration locale
 
-```powershell
-Copy-Item config.yaml.default config.yaml
-python -m pip install -r requirements.txt
-python tools/check_project_memory.py
-python -m pytest -q
-node --check studio/web/static/app.js
-```
+- Windows 10/11.
+- Python 3.11.
+- FFmpeg pour le rendu vidéo.
+- AMD H.264 AMF si disponible, avec repli libx264.
+- whisper.cpp avec Vulkan si disponible, avec repli CPU.
+- Ollama/Qwen local facultatif.
 
-Construire un ZIP avec `python installer/build_release_package.py --version 0.7.8 --output-dir dist`.
-
-## Validation et publication
-
-Le workflow `Windows runtime validation` vérifie la source canonique sur Windows, exécute les tests PowerShell et construit le paquet de mise à jour. Il ne remplace pas les tests matériels sur la RX 9060 XT.
-
-Une publication stable est déclenchée uniquement par un commit explicite qui crée ou met à jour `.release-approval` sur `main`, avec un numéro identique à `VERSION.txt`. Le workflow vérifie la source canonique, les tests et le ZIP avant de publier. Le lancement manuel reste disponible pour produire une Release brouillon.
-
-- [Mémo de continuité](docs/CONTINUATION.md)
-- [Processus de validation et de publication](docs/RELEASE_PROCESS.md)
-- [Checklist de validation Windows et AMD](docs/WINDOWS-HARDWARE-VALIDATION.md)
-
-## Reprise du projet
-
-**Lire en premier [docs/CONTINUATION.md](docs/CONTINUATION.md).** Ce mémo maître doit être mis à jour à chaque version avec les fonctionnalités, commits, résultats de tests, limites et prochaines tâches. Le contrôle `tools/check_project_memory.py` vérifie que le mémo et les notes correspondent à `VERSION.txt`.
+Les performances AMF et Vulkan doivent être vérifiées sur le PC cible. Une validation CI Windows ne prouve pas que le GPU AMD physique est utilisé.
