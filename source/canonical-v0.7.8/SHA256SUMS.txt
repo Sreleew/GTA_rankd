@@ -1,1 +1,1 @@
-0d712600b24f2d9bbbe41d77401648a934c80f13047c952a12d1e3eaf343cb5b  GTA-Ranked-Studio-source-v0.7.8.tar.xz
+703f147f675ff5b6196d733b8eaa57992524d1c273cbac9a64e37fc3e88f2339  GTA-Ranked-Studio-source-v0.7.8.tar.xz
