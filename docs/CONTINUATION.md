@@ -7,8 +7,9 @@
 - **État :** candidat reconstruit, testé et empaqueté par GitHub Actions. Pas encore une Release stable publiée.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
 - **Branche de travail :** `feature/v0.7.8-shorts-retention`
-- **Base publique au dernier audit :** `main`, v0.7.7
-- **Dernier audit :** https://github.com/Sreleew/GTA_rankd/actions/runs/45666500907
+- **Base publique au dernier audit :** `main`, v0.5.1
+- **Dernier audit Linux :** https://github.com/Sreleew/GTA_rankd/actions/runs/45673431003
+- **Validation Windows :** workflow ajouté, premier résultat encore à examiner.
 - **Comparaison des sources :** `docs/source-audit-v0.7.8-v0.8.0-2026-11-25.md`
 
 ## 1. Objectif du produit
@@ -77,10 +78,10 @@ C'est un candidat validé par CI, pas une Release stable et pas une validation G
 - Le mémo, son vérificateur et le changelog complet sont inclus dans l'archive et dans le ZIP Windows.
 - Aucun `config.yaml`, média, base SQLite, modèle local, log ou bytecode Python n'est inclus.
 - SHA-256 de l'archive canonique au dernier audit : `0d712600b24f2d9bbbe41d77401648a934c80f13047c952a12d1e3eaf343cb5b`. Le manifeste et `SHA256SUMS.txt` du dépôt restent la référence de vérité.
-- Workflow validé : https://github.com/Sreleew/GTA_rankd/actions/runs/45672998549.
+- Dernier workflow Linux validé : https://github.com/Sreleew/GTA_rankd/actions/runs/45673431003.
 - La CI a reconstruit la version, passé 128 tests avec 1 test ignoré, généré le ZIP Windows et vérifié la présence des fichiers de continuité dans le paquet.
 
-Le workflow de release lit désormais cette archive canonique, vérifie son checksum et sa version, puis lance les tests et le packaging. Il ne rejoue plus toute la chaîne de patchs depuis v0.4.0. Une publication stable ne doit être déclenchée qu'après validation Windows réelle et intégration volontaire sur `main`.
+Le workflow de release lit l'archive canonique, vérifie le checksum et l'intégrité de chaque fichier du manifeste, puis lance les tests et le packaging. Il ne rejoue plus la chaîne de patchs depuis v0.4.0. Il ne se déclenche plus sur `push` : il exige un lancement manuel depuis `main`, une confirmation explicite, vérifie que le tag n'existe pas déjà et crée une Release brouillon. La publication publique finale reste une action manuelle sur GitHub.
 
 ### Snapshot v0.8.0 bloqué
 
@@ -100,8 +101,11 @@ Le snapshot v0.7.8 canonique est maintenant créé, vérifié et enregistré dan
 - `docs/UPDATES.md` : guide de mise à jour et historique complet des versions.
 - `source/canonical-v0.7.8/` : archive source de référence, manifeste et SHA-256.
 - `tools/check_project_memory.py` : vérifie l'alignement du mémo avec la version et les notes.
-- `.github/workflows/audit-source.yml` : reconstruit, teste et actualise le snapshot canonique.
-- `.github/workflows/release.yml` : publie depuis la source canonique vérifiée après contrôle de la mémoire.
+- `.github/workflows/audit-source.yml` : reconstruit et teste la source, puis actualise le snapshot canonique sans se relancer sur le commit de l'archive.
+- `.github/workflows/windows-smoke.yml` : teste la source canonique sur un runner Windows, exécute les tests PowerShell et vérifie le paquet de mise à jour.
+- `.github/workflows/release.yml` : prépare une Release brouillon depuis `main` après déclenchement manuel et confirmation.
+- `docs/RELEASE_PROCESS.md` : procédure contrôlée d'intégration et de publication.
+- `docs/WINDOWS-HARDWARE-VALIDATION.md` : protocole de test sur le PC AMD cible.
 - `installer/build_release_package.py` : crée le ZIP de mise à jour.
 - `studio/web/` : application et interface.
 - `tests/` : tests de régression.
@@ -133,21 +137,24 @@ La copie du fichier de configuration n'est valable que pour une installation neu
 - À chaque version, mettre à jour ensemble `VERSION.txt`, `NOTES-vX.Y.Z.txt`, `README.md`, `docs/UPDATES.md` et ce mémo.
 - Le contrôle CI doit échouer si la version du mémo ne correspond pas à `VERSION.txt`, si la date ou des sections essentielles manquent, ou si les notes de version sont absentes.
 - Le workflow de release doit partir de `source/canonical-vX.Y.Z/`, vérifier son `SHA256SUMS.txt` et confirmer que le paquet Windows contient le mémo, le vérificateur et le changelog.
-- Une fusion de cette branche vers `main` peut déclencher le workflow de publication, car les chemins de source canonique sont surveillés. Ne pas fusionner avant les tests Windows et la décision explicite de publier.
+- Le workflow de publication n'a aucun déclencheur `push` : il exige `workflow_dispatch`, la branche `main` et une confirmation explicite. Il crée une Release brouillon, jamais une publication publique directe.
+- Le workflow d'audit ne surveille pas son propre dossier de snapshot canonique, ce qui évite une boucle de reconstruction sur le commit du bot.
+- Les runners Windows valident le parseur PowerShell et le package, mais ne remplacent pas les essais GPU sur la RX 9060 XT réelle.
 - À chaque mise à jour, ajouter au mémo les fonctionnalités livrées, les tests et résultats, la branche/commit, le statut CI/Release, les limites et les prochaines tâches.
 - Toujours distinguer « implémenté », « testé en CI », « testé sous Windows réel » et « publié ».
 
 ## 9. Prochaines étapes priorisées
 
-1. Faire relire la source canonique v0.7.8 et le workflow de release. Le snapshot avec manifeste et checksum est déjà commité.
-2. Tester sous Windows le cycle complet création > validation > fermeture/réouverture du Short et la persistance des fichiers et métadonnées.
-3. Valider sur la machine réelle AMD AMF, Whisper Vulkan, Qwen et la qualité du rendu/son.
-4. Corriger les éventuels problèmes détectés sous Windows sans écraser les données utilisateur.
-5. Après validation, intégrer volontairement la branche de travail à `main`, en sachant que cela peut déclencher une publication automatique.
-6. Restaurer le vrai fragment `part004` ou reconstruire la source v0.8.0 depuis un arbre complet ; ne pas utiliser les fragments actuels.
-7. Commencer les évolutions depuis le snapshot canonique v0.7.8 : améliorer le scoring, les coupes naturelles, les hooks, puis l'analyse visuelle du gameplay.
-8. À chaque version, mettre à jour le mémo, les notes, le README et le changelog, puis laisser la CI reconstruire le snapshot et vérifier que le ZIP le contient.
+1. Examiner le premier résultat de `.github/workflows/windows-smoke.yml`. Corriger les erreurs de compatibilité Windows ou de dépendances jusqu'à obtenir une exécution complète.
+2. Exécuter `docs/WINDOWS-HARDWARE-VALIDATION.md` sur le PC cible : AMF, Whisper Vulkan, Qwen, cycle Short complet et persistance après mise à jour.
+3. Corriger les problèmes réellement observés sans écraser les données utilisateur, puis relancer les audits Linux et Windows.
+4. Réconcilier proprement les deux commits propres à `main` relevés lors du compare Git. Ils concernaient l'ancienne version du workflow d'audit ; ne pas effectuer de fusion aveugle.
+5. Ouvrir une PR vers `main` seulement après validation CI Windows et validation matérielle, sans publier de Release automatiquement.
+6. Après intégration volontaire, préparer une Release brouillon par lancement manuel depuis `main`, puis vérifier le ZIP et le checksum avant publication manuelle.
+7. Restaurer le vrai fragment `part004` ou reconstruire la source v0.8.0 depuis un arbre complet ; ne pas utiliser les fragments actuels.
+8. Commencer les évolutions produit depuis le snapshot canonique v0.7.8 : contrôle qualité export, coupes naturelles, hooks et scoring audio/texte, puis analyse visuelle du gameplay.
+9. À chaque version, mettre à jour le mémo, les notes, le README et le changelog, puis laisser la CI reconstruire le snapshot et vérifier le paquet.
 
 ## 10. Message de reprise prêt à copier
 
-> Nous reprenons GTA Ranked Studio. Lis d'abord `docs/CONTINUATION.md` dans le dépôt `Sreleew/GTA_rankd`, puis vérifie le HEAD de la branche `feature/v0.7.8-shorts-retention`, les commits, les Releases et les workflows GitHub récents. La source canonique v0.7.8 est dans `source/canonical-v0.7.8/`, avec manifeste et SHA-256 ; la CI l'a validée avec 128 tests réussis et 1 ignoré. Le candidat n'est pas encore une Release stable et n'a pas été validé sur Windows réel. Le snapshot v0.8.0 actuel est corrompu car `part003` et `part004` sont identiques : ne l'utilise pas. Continue directement depuis GitHub sans me demander de ZIP, en préservant les données locales. Lis le mémo avant toute modification et actualise-le, les notes, le README et le changelog à chaque version. Laisse la CI vérifier les documents et leur présence dans le paquet. Ne publie rien et ne fusionne pas vers `main` sans validation Windows et décision de publication.
+> Nous reprenons GTA Ranked Studio. Lis d'abord `docs/CONTINUATION.md` dans le dépôt `Sreleew/GTA_rankd`, puis vérifie le HEAD de la branche `feature/v0.7.8-shorts-retention`, les commits, les Releases et les workflows GitHub récents. La source canonique v0.7.8 est dans `source/canonical-v0.7.8/`, avec manifeste et SHA-256. Le dernier audit Linux (run 45673431003) a réussi avec 128 tests et 1 ignoré. Le workflow Windows vérifie maintenant le parseur PowerShell, les tests et le ZIP, mais son premier résultat reste à examiner. Rien n'est une Release stable et la RX 9060 XT n'a pas encore été validée. Le snapshot v0.8.0 actuel est corrompu car `part003` et `part004` sont identiques : ne l'utilise pas. Continue directement depuis GitHub sans me demander de ZIP, en préservant les données locales. Lis le mémo avant toute modification et actualise-le, les notes, le README et le changelog à chaque version. Laisse la CI vérifier les documents et leur présence dans le paquet. La publication est uniquement manuelle, depuis `main`, avec confirmation et création d'une brouillon. Ne fusionne pas vers `main` sans validation Windows et décision explicite.
