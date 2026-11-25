@@ -32,6 +32,17 @@ Le paquet est un **candidat validé par CI**, pas une Release GitHub publiée.
 
 Workflow : [audit v0.7.8, run 45645972995](https://github.com/Sreleew/GTA_rankd/actions/runs/45645972995)
 
+## Mise à jour du sprint de stabilisation du 25 novembre 2026
+
+Le workflow Linux le plus récent, [run 45673431003](https://github.com/Sreleew/GTA_rankd/actions/runs/45673431003), a terminé avec succès : reconstruction v0.7.8, 128 tests réussis, 1 ignoré, contrôle JavaScript, génération du snapshot canonique et du ZIP Windows candidat.
+
+Le sprint ajoute maintenant :
+- un workflow Windows séparé qui contrôle le SHA-256 de l'archive, chaque fichier du manifeste, lance l'ensemble des tests sur `windows-latest`, vérifie réellement les scripts PowerShell et construit le ZIP Windows ;
+- un workflow de release exclusivement manuel, réservé à `main`, qui exige une confirmation et crée une Release brouillon au lieu de publier directement ;
+- une procédure de publication et une checklist de validation matérielle pour la RX 9060 XT.
+
+Le premier résultat Windows doit encore être inspecté. Un runner Windows hébergé ne valide pas le matériel AMD local : AMF, Whisper Vulkan et Ollama/Qwen doivent être vérifiés séparément sur le PC cible.
+
 ## v0.8.0 : intégrité du snapshot
 
 Le snapshot v0.8.0 est réparti en 17 segments Base64 :
