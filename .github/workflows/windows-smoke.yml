@@ -6,6 +6,14 @@ on:
     paths:
       - ".github/workflows/windows-smoke.yml"
       - "source/canonical-v0.7.8/**"
+      - "source/apply-hotfix-v0.7.8-retention.py"
+      - "README.md"
+      - "VERSION.txt"
+      - "NOTES-v0.7.8.txt"
+      - "docs/CONTINUATION.md"
+      - "docs/UPDATES.md"
+      - "docs/implementation-plan-v0.7.8.md"
+      - "tools/check_project_memory.py"
   workflow_dispatch:
 
 permissions:
@@ -126,6 +134,19 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "La vérification ou l'extraction de la source a échoué." }
           $appRoot = Join-Path $env:RUNNER_TEMP "gta-ranked-source\gta-ranked-studio"
           [System.IO.File]::AppendAllText($env:GITHUB_ENV, "APP_ROOT=$appRoot" + [Environment]::NewLine, [System.Text.UTF8Encoding]::new($false))
+
+      - name: Apply retention patch and inject current project documentation
+        shell: pwsh
+        run: |
+          python "$env:GITHUB_WORKSPACE\source\apply-hotfix-v0.7.8-retention.py" "$env:APP_ROOT"
+          if ($LASTEXITCODE -ne 0) { throw "L'application du patch retention a échoué." }
+          Copy-Item "$env:GITHUB_WORKSPACE\README.md" "$env:APP_ROOT\README.md" -Force
+          Copy-Item "$env:GITHUB_WORKSPACE\VERSION.txt" "$env:APP_ROOT\VERSION.txt" -Force
+          Copy-Item "$env:GITHUB_WORKSPACE\NOTES-v0.7.8.txt" "$env:APP_ROOT\NOTES-v0.7.8.txt" -Force
+          Copy-Item "$env:GITHUB_WORKSPACE\docs\CONTINUATION.md" "$env:APP_ROOT\docs\CONTINUATION.md" -Force
+          Copy-Item "$env:GITHUB_WORKSPACE\docs\UPDATES.md" "$env:APP_ROOT\docs\UPDATES.md" -Force
+          Copy-Item "$env:GITHUB_WORKSPACE\docs\implementation-plan-v0.7.8.md" "$env:APP_ROOT\docs\implementation-plan-v0.7.8.md" -Force
+          Copy-Item "$env:GITHUB_WORKSPACE\tools\check_project_memory.py" "$env:APP_ROOT\tools\check_project_memory.py" -Force
 
       - name: Install application and test dependencies
         shell: pwsh

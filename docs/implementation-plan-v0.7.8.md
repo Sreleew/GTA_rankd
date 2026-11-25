@@ -40,6 +40,10 @@ Recommended improvements:
 5. Use transcript boundaries and short audio handles to avoid cutting in the middle of a phrase.
 6. Add an export QA report: duration, resolution, audio presence/peak, black/frozen frames, caption bounds, and opening/ending checks.
 
+### First-seconds retention signal (implemented on the working branch)
+
+The candidate scorer now estimates whether a moment starts with useful activity during its first five seconds. This is an explainable audio/transcript proxy, not a measurement of actual viewer retention or gameplay understanding. It contributes 10% of the existing score so the established audio, speech and reaction signals remain dominant. The UI displays it separately, SQLite stores it with a non-destructive migration, and scans remain usable without Whisper by falling back to audio-only evidence.
+
 ## C. Detection roadmap
 
 Build a modular event pipeline:

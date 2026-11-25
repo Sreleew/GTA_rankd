@@ -7,7 +7,8 @@ Application Windows locale pour analyser des clips et VOD GTA, repérer les pass
 ## Fonctionnalités principales
 
 - Import de vidéos locales et de clips/VOD Twitch accessibles via yt-dlp, avec plage horaire facultative.
-- Détection heuristique audio + transcription Whisper et classement des passages à revoir.
+- Détection audio + transcription Whisper, classement des moments forts et estimation de l'accroche sur les cinq premières secondes.
+- Le classement reste fonctionnel sans Whisper : l'énergie audio seule peut suffire à faire ressortir un passage.
 - Shorts verticaux 1080 × 1920, conservation de l'image source complète et fond flouté par défaut.
 - Transcription locale, sous-titres, filtre de réactions et mode expérimental de voix dominante.
 - Hooks, titres, descriptions et hashtags générés par Ollama/Qwen local si installé, avec fallback déterministe.

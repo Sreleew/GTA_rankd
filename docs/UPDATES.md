@@ -113,3 +113,8 @@ Les actions de prévisualisation, téléchargement, miniature et copie des élé
 ## Mémoire de continuité obligatoire
 
 À chaque nouvelle version, mettre à jour docs/CONTINUATION.md, README.md, docs/UPDATES.md et NOTES-vX.Y.Z.txt. Le contrôle python tools/check_project_memory.py doit réussir avant la construction d'une release. Le mémo est la première source à lire pour reprendre le projet dans une nouvelle conversation.
+
+
+## Classement des moments forts : score d'accroche
+
+Le classement ajoute un indicateur heuristique d'accroche sur les cinq premières secondes, visible séparément sur chaque candidat et pondéré à 10 % du score global. Lorsque Whisper est absent, l'analyse peut toujours faire remonter un passage à partir de l'énergie audio seule. La valeur est enregistrée avec une migration SQLite compatible avec les bases existantes.

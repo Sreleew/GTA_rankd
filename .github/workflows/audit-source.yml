@@ -103,6 +103,8 @@ jobs:
           print(f"Racine application : {app_root}")
           PY
           echo "APP_ROOT=source-checkout/gta-ranked-studio" >> "$GITHUB_ENV"
+      - name: Apply opening-retention scoring patch
+        run: python source/apply-hotfix-v0.7.8-retention.py "$APP_ROOT"
       - name: Inject current project documentation and validate memory
         shell: bash
         run: |
@@ -113,6 +115,7 @@ jobs:
           cp NOTES-v0.7.8.txt "$APP_ROOT/NOTES-v0.7.8.txt"
           cp docs/CONTINUATION.md "$APP_ROOT/docs/CONTINUATION.md"
           cp docs/UPDATES.md "$APP_ROOT/docs/UPDATES.md"
+          cp docs/implementation-plan-v0.7.8.md "$APP_ROOT/docs/implementation-plan-v0.7.8.md"
           cp tools/check_project_memory.py "$APP_ROOT/tools/check_project_memory.py"
           python "$APP_ROOT/tools/check_project_memory.py" --root "$APP_ROOT"
       - name: Install FFmpeg and application test dependencies

@@ -151,17 +151,22 @@ La copie du fichier de configuration n'est valable que pour une installation neu
 - À chaque mise à jour, ajouter au mémo les fonctionnalités livrées, les tests et résultats, la branche/commit, le statut CI/Release, les limites et les prochaines tâches.
 - Toujours distinguer « implémenté », « testé en CI », « testé sous Windows réel » et « publié ».
 
+- Score distinct d'accroche sur les cinq premières secondes, pondéré à 10 % du score global et affiché dans chaque carte de candidat.
+- Sans transcription Whisper, le scan peut classer les candidats sur l'énergie audio seule au lieu de plafonner artificiellement le score disponible.
+
+Limite du score d'accroche : il s'agit d'un indicateur heuristique audio/texte sur les cinq premières secondes, pas d'une mesure réelle de rétention YouTube/TikTok ni d'une compréhension visuelle du gameplay.
+
 ## 9. Prochaines étapes priorisées
 
-1. Garder les workflows Linux et Windows verts après chaque lot de changements pertinent, sans relancer des audits identiques après chaque micro-édition. Le premier audit Windows a réussi avec 129 tests sans ignoré.
-2. Exécuter `docs/WINDOWS-HARDWARE-VALIDATION.md` sur le PC cible : AMF, Whisper Vulkan, Qwen, cycle Short complet et persistance après mise à jour.
-3. Corriger les problèmes réellement observés sans écraser les données utilisateur, puis relancer les audits Linux et Windows.
-4. Réconcilier proprement les deux commits propres à `main` relevés lors du compare Git. Ils concernaient l'ancienne version du workflow d'audit ; ne pas effectuer de fusion aveugle.
-5. Ouvrir une PR vers `main` seulement après validation CI Windows et validation matérielle, sans publier de Release automatiquement.
-6. Après intégration volontaire, préparer une Release brouillon par lancement manuel depuis `main`, puis vérifier le ZIP et le checksum avant publication manuelle.
-7. Restaurer le vrai fragment `part004` ou reconstruire la source v0.8.0 depuis un arbre complet ; ne pas utiliser les fragments actuels.
-8. Commencer les évolutions produit depuis le snapshot canonique v0.7.8 : contrôle qualité export, coupes naturelles, hooks et scoring audio/texte, puis analyse visuelle du gameplay.
-9. À chaque version, mettre à jour le mémo, les notes, le README et le changelog, puis laisser la CI reconstruire le snapshot et vérifier le paquet.
+1. Exécuter `docs/WINDOWS-HARDWARE-VALIDATION.md` sur le PC cible : AMF, Whisper Vulkan, Qwen, cycle Short complet et persistance après mise à jour.
+2. Ajouter un contrôle qualité d'export : durée, résolution, présence et niveau audio, écrans noirs/images figées, limites des sous-titres et cohérence du début/de la fin.
+3. Améliorer les coupes naturelles et la construction des hooks à partir des limites de phrases, sans CTA générique à l'ouverture.
+4. Développer le classement visuel des événements GTA (HUD, kill feed et changements de scène) avec un score explicable et une validation humaine.
+5. Réconcilier proprement les deux commits propres à `main` relevés lors du compare Git. Ne pas effectuer de fusion aveugle.
+6. Ouvrir une PR vers `main` seulement après validation CI Windows et validation matérielle, sans publier de Release automatiquement.
+7. Après intégration volontaire, préparer une Release brouillon par lancement manuel depuis `main`, puis vérifier le ZIP et le checksum avant publication manuelle.
+8. Restaurer le vrai fragment `part004` ou reconstruire la source v0.8.0 depuis un arbre complet ; ne pas utiliser les fragments actuels.
+9. À chaque lot, actualiser le mémo, les notes, le README et le changelog, puis laisser la CI reconstruire et contrôler le snapshot canonique.
 
 ## 10. Message de reprise prêt à copier
 

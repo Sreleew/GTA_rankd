@@ -6,3 +6,9 @@ Conservation des actions après validation d'un Short :
 - Copier le post reste disponible avant et après validation.
 - La validation ne modifie que le statut éditorial et l'entrée Clip Library.
 - Aucun changement des médias, modèles, réglages, projets ou données locales.
+
+Amélioration du classement des moments forts :
+- Nouveau signal d'accroche sur les cinq premières secondes, pondéré à 10 % pour mieux départager les départs actifs sans remplacer les critères audio/texte.
+- Affichage du score d'accroche sur chaque carte de candidat.
+- Le scan audio seul fonctionne lorsque Whisper est absent, au lieu de plafonner artificiellement le score à cause des signaux de transcription indisponibles.
+- Migration SQLite non destructive pour les bases existantes.
