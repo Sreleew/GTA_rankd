@@ -5,6 +5,7 @@ on:
     branches: [feature/v0.7.8-shorts-retention]
     paths:
       - ".github/workflows/audit-source.yml"
+      - "source/apply-hotfix-v0.7.8.py"
   workflow_dispatch:
 
 permissions:
@@ -21,7 +22,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Reconstruct stable v0.7.7 source
+      - name: Reconstruct stable v0.7.7 and apply v0.7.8
         shell: bash
         run: |
           set -euo pipefail
@@ -47,14 +48,30 @@ jobs:
           python source/apply-hotfix-v0.7.5.py "$APP_ROOT"
           python source/apply-hotfix-v0.7.6.py "$APP_ROOT"
           python source/apply-hotfix-v0.7.7.py "$APP_ROOT"
-          test "$(sed -nE 's/^Version:[[:space:]]*([0-9]+(\.[0-9]+){2,3})[[:space:]]*$/\1/p' "$APP_ROOT/VERSION.txt" | head -n1)" = "0.7.7"
+          python source/apply-hotfix-v0.7.8.py "$APP_ROOT"
+          test "$(sed -nE 's/^Version:[[:space:]]*([0-9]+(\.[0-9]+){2,3})[[:space:]]*$/\1/p' "$APP_ROOT/VERSION.txt" | head -n1)" = "0.7.8"
           echo "APP_ROOT=$APP_ROOT" >> "$GITHUB_ENV"
-      - name: Package reconstructed source for audit
-        run: tar -czf gta-ranked-studio-source-v0.7.7.tar.gz -C source-checkout gta-ranked-studio
-      - uses: actions/upload-artifact@v4
+      - name: Install FFmpeg and application test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends ffmpeg
+          python -m pip install --disable-pip-version-check -r "$APP_ROOT/requirements.txt"
+      - name: Run complete test suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$APP_ROOT"
+          cp config.yaml.default config.yaml
+          trap 'rm -f config.yaml' EXIT
+          python -m pytest -q
+          node --check studio/web/static/app.js
+      - name: Build Windows update package
+        run: python "$APP_ROOT/installer/build_release_package.py" --version "0.7.8" --output-dir "$GITHUB_WORKSPACE/dist"
+      - name: Upload tested source and Windows update package
+        uses: actions/upload-artifact@v4
         with:
-          name: gta-ranked-studio-source-v0.7.7
-          path: gta-ranked-studio-source-v0.7.7.tar.gz
-          retention-days: 7
-
-# Trigger source reconstruction audit.
+          name: gta-ranked-studio-v0.7.8-candidate
+          path: |
+            dist/GTA-Ranked-Studio-v0.7.8.zip
+            dist/SHA256SUMS.txt
+          retention-days: 14
