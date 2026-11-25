@@ -10,7 +10,7 @@
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
 - **Source active :** `app/`. Modifier directement les fichiers Python, JavaScript, CSS, HTML, tests et installateur présents dans ce dossier.
 - **Mise à jour intégrée :** l'application consulte les Releases GitHub. Le ZIP v0.7.8 et `SHA256SUMS.txt` sont publiés.
-- **Tests de la base nettoyée :** Linux 138 réussis, 1 ignoré ; Windows 139 réussis. **Tests du montage intelligent :** Linux 143 réussis, 1 ignoré ; Windows 144 réussis, aucun ignoré. Le rendu FFmpeg réel avec coupe audio/vidéo concaténée est couvert.
+- **Tests de la base nettoyée :** Linux 138 réussis, 1 ignoré ; Windows 139 réussis. **Tests du montage intelligent :** Linux 146 réussis, 1 ignoré ; Windows 147 réussis, aucun ignoré. Le rendu FFmpeg réel avec coupe audio/vidéo concaténée est couvert.
 - **Workflow de publication v0.7.8 :** https://github.com/Sreleew/GTA_rankd/actions/runs/45714213999.
 - **Validation matérielle :** le PC AMD Radeon RX 9060 XT n'a pas encore été validé physiquement pour AMF/Vulkan après mise à jour.
 
