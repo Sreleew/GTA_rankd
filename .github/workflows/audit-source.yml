@@ -2,7 +2,24 @@ name: Audit GTA Ranked Studio source
 
 on:
   push:
-    branches: [feature/v0.7.8-shorts-retention]
+    branches: [main, feature/v0.7.8-shorts-retention]
+    paths:
+      - ".github/workflows/audit-source.yml"
+      - ".github/workflows/release.yml"
+      - ".github/workflows/windows-smoke.yml"
+      - "docs/source-audit-v0.7.8-v0.8.0-2026-11-25.md"
+      - "source/apply-hotfix-v0.7.8.py"
+      - "source/apply-hotfix-v0.7.8-retention.py"
+      - "source/apply-hotfix-v0.7.8-export-qc.py"
+      - "source/export-quality-patch-v0.7.8.diff.xz.b64"
+      - "docs/CONTINUATION.md"
+      - "docs/UPDATES.md"
+      - "tools/check_project_memory.py"
+      - "README.md"
+      - "VERSION.txt"
+      - "NOTES-v0.7.8.txt"
+  pull_request:
+    branches: [main]
     paths:
       - ".github/workflows/audit-source.yml"
       - ".github/workflows/release.yml"
@@ -32,8 +49,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: feature/v0.7.8-shorts-retention
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -407,7 +422,8 @@ jobs:
               raise SystemExit("Package is missing continuity files: " + ", ".join(sorted(missing)))
           print("Continuation memo, checker and update history are included in the Windows ZIP.")
           PY
-      - name: Commit canonical v0.7.8 source snapshot to the working branch
+      - name: Commit canonical v0.7.8 source snapshot to the current branch
+        if: github.event_name != 'pull_request'
         shell: bash
         run: |
           set -euo pipefail
