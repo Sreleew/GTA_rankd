@@ -1,0 +1,18 @@
+GTA Ranked Studio v0.5.0
+
+Améliorations des Moments forts :
+- Les passages candidats sont désormais évalués sur plusieurs durées (25, 35, 45 et 60 secondes).
+- Les candidats retenus sont classés par score et ne se chevauchent plus, avec un intervalle minimal entre deux passages.
+- Le pipeline Shorts existant reste utilisé pour chaque passage sélectionné.
+
+Montage webcam :
+- Possibilité d'extraire la webcam intégrée à la VOD depuis l'un des quatre coins de l'image.
+- La webcam est superposée au gameplay dans le rendu vertical 9:16.
+- Le choix du coin est fait au moment de l'analyse et conservé lors de la création du Short.
+
+Windows :
+- FFmpeg, FFprobe, Whisper et les diagnostics sont lancés sans créer de fenêtre console parasite.
+- Les sorties et erreurs restent capturées pour les journaux locaux.
+
+Les vidéos, modèles IA, projets, réglages et données locales sont préservés.
+La sélection webcam est basée sur une zone prédéfinie dans un coin de l'image, pas sur une détection automatique de visage.

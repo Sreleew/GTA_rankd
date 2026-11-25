@@ -1,0 +1,446 @@
+from pathlib import Path
+
+from fastapi.testclient import TestClient
+
+from studio.config import load_config
+from studio.web.app import create_app, safe_upload_name
+from studio.web.short_renderer import build_filter_complex, build_render_command
+from studio.web.app import _validate_edit_options
+from studio.web.store import Store
+
+
+def test_safe_upload_name_rejects_unsupported_extensions():
+    assert safe_upload_name(r"C:\\fake path\\GTA moment.MP4") == "GTA_moment.mp4"
+    try:
+        safe_upload_name("document.pdf")
+    except Exception as exc:
+        assert "Format non pris en charge" in str(exc)
+    else:
+        raise AssertionError("A PDF should be rejected")
+
+
+def test_default_vertical_filter_preserves_the_complete_landscape_source():
+    graph = build_filter_complex(1080, 1920)
+    assert "split=2[bgsrc][fgsrc]" in graph
+    assert "force_original_aspect_ratio=decrease" in graph
+    assert "boxblur" in graph
+    assert "overlay=(W-w)/2:(H-h)/2" in graph
+    assert "zoompan" not in graph
+
+
+def test_blur_layout_keeps_the_full_landscape_source_visible():
+    graph = build_filter_complex(1080, 1920, layout="blur", dynamic_zoom=False)
+    assert "boxblur" in graph
+    assert "overlay=(W-w)/2:(H-h)/2" in graph
+
+
+def test_edit_options_are_validated_and_clamped_by_api():
+    options = _validate_edit_options("fill", 50, 40, True, 8, True, True, "Wait for it", "A chase", True)
+    assert options["layout"] == "fill"
+    assert options["crop_x"] == 50
+    assert options["dynamic_zoom"] is True
+    assert options["auto_trim_enabled"] is True
+    try:
+        _validate_edit_options("invalid", 50, 50, True, 8, True, True, "", "")
+    except Exception as exc:
+        assert "cadrage" in str(exc).lower()
+    else:
+        raise AssertionError("Invalid layout should be rejected")
+
+
+def test_render_command_uses_argument_list_and_amf(tmp_path: Path):
+    # On teste la construction sans lancer FFmpeg sur cette machine de test.
+    command = build_render_command(
+        "ffmpeg", tmp_path / "input.mp4", tmp_path / "output.mp4", encoder="h264_amf", has_audio=True,
+        trim_start=4.5, trim_duration=24.0,
+    )
+    assert isinstance(command, list)
+    assert "h264_amf" in command
+    assert any(part.startswith("loudnorm=I=-14:TP=-1.5:LRA=11") for part in command)
+    assert "-filter_complex" in command
+    assert command[command.index("-ss") + 1] == "4.500"
+    assert command[command.index("-t") + 1] == "24.000"
+
+
+def test_store_creates_and_updates_job(tmp_path: Path):
+    store = Store(tmp_path / "test.sqlite")
+    store.create_job({"id": "job1", "source_kind": "upload", "source_path": "clip.mp4"})
+    job = store.get_job("job1")
+    assert job is not None
+    assert job["status"] == "queued"
+    store.update_job("job1", status="ready", progress=100, message="Prêt")
+    updated = store.get_job("job1")
+    assert updated["status"] == "ready"
+    assert store.get_dashboard()["to_review"] == 1
+
+
+def test_api_health_and_upload_acknowledgement(tmp_path: Path):
+    source_root = Path(__file__).resolve().parents[1]
+    config_text = (source_root / "config.yaml").read_text(encoding="utf-8")
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(config_text.replace("database: data/clip_bank.sqlite", f"database: {tmp_path.as_posix()}/clip_bank.sqlite")
+                                  .replace("inbox_shorts: inbox/shorts", f"inbox_shorts: {tmp_path.as_posix()}/inbox")
+                                  .replace("output_shorts: out/shorts", f"output_shorts: {tmp_path.as_posix()}/out/shorts")
+                                  .replace("output_bestof: out/bestof", f"output_bestof: {tmp_path.as_posix()}/out/bestof")
+                                  .replace("logs: logs", f"logs: {tmp_path.as_posix()}/logs")
+                                  .replace("temp: work/tmp", f"temp: {tmp_path.as_posix()}/tmp")
+                                  .replace("fonts: assets/fonts", f"fonts: {tmp_path.as_posix()}/fonts")
+                                  .replace("prompts: prompts", f"prompts: {tmp_path.as_posix()}/prompts")
+                                  .replace("models: models/whisper", f"models: {tmp_path.as_posix()}/models")
+                                  .replace("tools: tools", f"tools: {tmp_path.as_posix()}/tools"), encoding="utf-8")
+    config = load_config(config_path)
+    app = create_app(config)
+    client = TestClient(app)
+    health = client.get("/api/health")
+    assert health.status_code == 200
+    assert health.json()["local_only"] is True
+    model_status = client.get("/api/models/status?refresh=true")
+    assert model_status.status_code == 200
+    assert "whisper_diagnostic" in model_status.json()
+    assert model_status.json()["whisper_diagnostic"]["available"] is False
+    rejected = client.post("/api/shorts/upload", files={"file": ("clip.mp4", b"not real video", "video/mp4")}, data={"rights_confirmed": "false"})
+    assert rejected.status_code == 400
+
+
+def test_whisper_vulkan_verify_endpoint_persists_a_binary_bound_marker(tmp_path: Path, monkeypatch):
+    import studio.web.app as app_module
+    config_path = _make_isolated_app_config(tmp_path)
+    tools_dir = tmp_path / "tools" / "whisper.cpp"
+    tools_dir.mkdir(parents=True, exist_ok=True)
+    binary = tools_dir / "whisper-cli.exe"
+    binary.write_bytes(b"fake-vulkan-cli")
+    model = tmp_path / "models" / "whisper" / "ggml-large-v3-turbo.bin"
+    model.parent.mkdir(parents=True, exist_ok=True)
+    model.write_bytes(b"m" * (1024 * 1024))
+    monkeypatch.setattr(app_module, "probe_whisper_vulkan", lambda *args, **kwargs: {
+        "verified": True, "backend": "Vulkan0", "gpu_model": "AMD Radeon RX 9060 XT",
+        "model_buffer_mb": 1536.0, "reason": "Vulkan0 confirmed.",
+    })
+    app = create_app(load_config(config_path))
+    client = TestClient(app)
+    response = client.post("/api/models/whisper/verify")
+    assert response.status_code == 200, response.text
+    assert response.json()["verified"] is True
+    status = client.get("/api/models/status?refresh=true")
+    diagnostic = status.json()["whisper_diagnostic"]
+    assert diagnostic["vulkan_verified"] is True
+    assert diagnostic["vulkan_detected"] is True
+    assert diagnostic["gpu_model"] == "AMD Radeon RX 9060 XT"
+    binary.write_bytes(b"updated-cli-with-different-binary")
+    stale = client.get("/api/models/status?refresh=true").json()["whisper_diagnostic"]
+    assert stale["vulkan_verified"] is False
+
+def test_whisper_gpu_button_uses_fresh_script_and_visible_feedback():
+    from pathlib import Path
+
+    static = Path(__file__).resolve().parents[1] / "studio" / "web" / "static"
+    html = (static / "index.html").read_text(encoding="utf-8")
+    js = (static / "app.js").read_text(encoding="utf-8")
+    assert '<script src="/static/app.js?v=0.7.8"></script>' in html
+    assert '<button type="button" class="mini-button" id="verify-whisper-gpu"' in html
+    assert "/api/models/whisper/verify" in js
+    assert "if (verifyGpuButton) verifyGpuButton.addEventListener('click', verifyWhisperGpu);" in js
+    assert "Test Vulkan en cours" in js
+    assert "state.whisperGpuProbeRunning" in js
+
+def test_ollama_verify_endpoint_checks_model_and_runs_local_inference(tmp_path: Path, monkeypatch):
+    import json
+    import studio.web.app as app_module
+
+    config_path = _make_isolated_app_config(tmp_path)
+    app = create_app(load_config(config_path))
+    client = TestClient(app)
+    calls = []
+
+    class FakeResponse:
+        def __init__(self, payload):
+            self.payload = json.dumps(payload).encode("utf-8")
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            return False
+        def read(self):
+            return self.payload
+
+    def fake_urlopen(request, timeout=0):
+        url = request if isinstance(request, str) else request.full_url
+        calls.append((url, timeout))
+        if url.endswith("/api/tags"):
+            return FakeResponse({"models": [{"name": "qwen2.5:7b-instruct"}]})
+        if url.endswith("/api/generate"):
+            body = json.loads(request.data.decode("utf-8"))
+            assert body["model"] == "qwen2.5:7b-instruct"
+            assert body["stream"] is False
+            assert body["options"]["num_predict"] <= 8
+            return FakeResponse({"response": "OK", "done": True})
+        raise AssertionError(f"Unexpected Ollama URL: {url}")
+
+    monkeypatch.setattr(app_module.urllib.request, "urlopen", fake_urlopen)
+    response = client.post("/api/models/ollama/verify")
+    assert response.status_code == 200, response.text
+    assert response.json()["verified"] is True
+    assert response.json()["model"] == "qwen2.5:7b-instruct"
+    assert any(url.endswith("/api/tags") for url, _ in calls)
+    assert any(url.endswith("/api/generate") for url, _ in calls)
+
+
+def test_ollama_verify_endpoint_explains_when_model_is_missing(tmp_path: Path, monkeypatch):
+    import json
+    import studio.web.app as app_module
+
+    config_path = _make_isolated_app_config(tmp_path)
+    app = create_app(load_config(config_path))
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            return False
+        def read(self):
+            return json.dumps({"models": []}).encode("utf-8")
+
+    monkeypatch.setattr(app_module.urllib.request, "urlopen", lambda *args, **kwargs: FakeResponse())
+    response = TestClient(app).post("/api/models/ollama/verify")
+    assert response.status_code == 409
+    assert "ollama pull qwen2.5:7b-instruct" in response.json()["detail"]
+
+
+def test_ollama_verify_button_has_a_dedicated_visible_handler():
+    static = Path(__file__).resolve().parents[1] / "studio" / "web" / "static"
+    html = (static / "index.html").read_text(encoding="utf-8")
+    js = (static / "app.js").read_text(encoding="utf-8")
+    assert '<script src="/static/app.js?v=0.7.8"></script>' in html
+    assert '<button type="button" class="mini-button" id="verify-ollama"' in html
+    assert "#refresh-models-secondary" in js
+    assert "/api/models/ollama/verify" in js
+    assert "event.target.closest('#verify-ollama, #refresh-models-secondary')" in js
+    assert "verifyOllamaModel(ollamaButton)" in js
+    assert "document.addEventListener('click'" in js
+    assert "Test Qwen en cours..." in js
+    assert "state.ollamaVerificationResult" in js
+
+def test_validated_short_keeps_media_and_metadata_actions():
+    static = Path(__file__).resolve().parents[1] / "studio" / "web" / "static"
+    js = (static / "app.js").read_text(encoding="utf-8")
+    assert "const mediaActions = [" in js
+    assert "const metadataActions =" in js
+    assert "if (job.status === 'validated')" in js
+    assert '${mediaActions}${metadataActions}' in js
+    assert 'data-action="copy-title"' in js
+    assert 'data-action="copy-description"' in js
+    assert 'data-action="copy-hashtags"' in js
+    assert 'data-action="copy-social"' in js
+    assert "['copy-title', 'copy-description', 'copy-hashtags', 'copy-social'].includes(action)" in js
+    assert "metadata.quality_report" in js
+    assert "Contrôle qualité" in js
+
+
+def test_root_page_disables_stale_html_cache():
+    from studio.web.app import create_app
+    from studio.config import load_config
+    from fastapi.testclient import TestClient
+
+    config_path = Path(__file__).resolve().parents[1] / "config.yaml"
+    client = TestClient(create_app(load_config(config_path)))
+    response = client.get("/")
+    assert response.status_code == 200
+    assert response.headers["cache-control"] == "no-store, no-cache, must-revalidate, max-age=0"
+
+def test_clip_enters_library_only_after_atomic_validation(tmp_path: Path):
+    store = Store(tmp_path / "validation.sqlite")
+    store.create_job({
+        "id": "approved-job",
+        "source_kind": "upload",
+        "source_path": str(tmp_path / "source.mp4"),
+        "source_hash": "abc123",
+        "streamer": "ExampleStreamer",
+        "metadata": {"title": "Titre test", "description": "Description test", "hashtags": ["#GTA", "#Gaming"]},
+    })
+    store.update_job(
+        "approved-job",
+        status="ready",
+        progress=100,
+        duration=12.5,
+        output_path=str(tmp_path / "render.mp4"),
+        thumbnail_path=str(tmp_path / "thumbnail.jpg"),
+    )
+
+    assert store.list_clips() == []
+    validated = store.validate_job_and_add_to_clip_bank("approved-job")
+    assert validated is not None
+    assert validated["status"] == "validated"
+    assert validated["metadata"] == {"title": "Titre test", "description": "Description test", "hashtags": ["#GTA", "#Gaming"]}
+    clips = store.list_clips()
+    assert len(clips) == 1
+    assert clips[0]["job_id"] == "approved-job"
+    assert clips[0]["status"] == "validated"
+    assert store.validate_job_and_add_to_clip_bank("approved-job") is None
+
+
+def test_dynamic_zoom_is_a_smooth_punch_in_not_a_hard_step():
+    graph = build_filter_complex(1080, 1920, dynamic_zoom=True, peak_timestamp=4.0, zoom_percent=10)
+    assert "sin(PI*(in_time-3.550)/1.300)" in graph
+    assert "(0.100)" in graph
+
+
+def test_render_command_mixes_optional_original_whoosh(tmp_path: Path):
+    sfx = tmp_path / "whoosh.wav"
+    sfx.write_bytes(b"fake-wav-for-command-builder")
+    command = build_render_command(
+        "ffmpeg", tmp_path / "input.mp4", tmp_path / "output.mp4",
+        encoder="libx264", has_audio=True, sound_effect_path=sfx, sound_effect_offset=2.35,
+    )
+    graph = command[command.index("-filter_complex") + 1]
+    assert str(sfx.resolve()) in command
+    assert "adelay=2350:all=1" in graph
+    assert "amix=inputs=2" in graph
+    assert command[command.index("-map", command.index("-filter_complex")) + 1] == "[v]"
+
+
+def test_highlight_url_api_only_accepts_twitch_vods_or_clips(tmp_path: Path):
+    source_root = Path(__file__).resolve().parents[1]
+    config_text = (source_root / "config.yaml").read_text(encoding="utf-8")
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(
+        config_text.replace("database: data/clip_bank.sqlite", f"database: {tmp_path.as_posix()}/clip_bank.sqlite")
+        .replace("inbox_shorts: inbox/shorts", f"inbox_shorts: {tmp_path.as_posix()}/inbox")
+        .replace("output_shorts: out/shorts", f"output_shorts: {tmp_path.as_posix()}/out/shorts")
+        .replace("output_bestof: out/bestof", f"output_bestof: {tmp_path.as_posix()}/out/bestof")
+        .replace("logs: logs", f"logs: {tmp_path.as_posix()}/logs")
+        .replace("temp: work/tmp", f"temp: {tmp_path.as_posix()}/tmp")
+        .replace("fonts: assets/fonts", f"fonts: {tmp_path.as_posix()}/fonts")
+        .replace("prompts: prompts", f"prompts: {tmp_path.as_posix()}/prompts")
+        .replace("models: models/whisper", f"models: {tmp_path.as_posix()}/models")
+        .replace("tools: tools", f"tools: {tmp_path.as_posix()}/tools"),
+        encoding="utf-8",
+    )
+    app = create_app(load_config(config_path))
+    client = TestClient(app)
+    denied = client.post(
+        "/api/highlights/scan/url",
+        data={"url": "https://www.youtube.com/watch?v=example", "rights_confirmed": "true"},
+    )
+    assert denied.status_code == 400
+    no_rights = client.post(
+        "/api/highlights/scan/url",
+        data={"url": "https://www.twitch.tv/videos/12345", "rights_confirmed": "false"},
+    )
+    assert no_rights.status_code == 400
+    one_sided_range = client.post(
+        "/api/highlights/scan/url",
+        data={"url": "https://www.twitch.tv/videos/12345", "rights_confirmed": "true", "window_start": "30"},
+    )
+    assert one_sided_range.status_code == 400
+    scans = client.get("/api/highlights")
+    assert scans.status_code == 200
+    assert scans.json() == []
+
+
+def _make_isolated_app_config(tmp_path: Path) -> Path:
+    source_root = Path(__file__).resolve().parents[1]
+    config_text = (source_root / "config.yaml").read_text(encoding="utf-8")
+    config_path = tmp_path / "config.yaml"
+    replacements = {
+        "database: data/clip_bank.sqlite": f"database: {tmp_path.as_posix()}/clip_bank.sqlite",
+        "inbox_shorts: inbox/shorts": f"inbox_shorts: {tmp_path.as_posix()}/inbox",
+        "output_shorts: out/shorts": f"output_shorts: {tmp_path.as_posix()}/out/shorts",
+        "output_bestof: out/bestof": f"output_bestof: {tmp_path.as_posix()}/out/bestof",
+        "logs: logs": f"logs: {tmp_path.as_posix()}/logs",
+        "temp: work/tmp": f"temp: {tmp_path.as_posix()}/tmp",
+        "fonts: assets/fonts": f"fonts: {tmp_path.as_posix()}/fonts",
+        "prompts: prompts": f"prompts: {tmp_path.as_posix()}/prompts",
+        "models: models/whisper": f"models: {tmp_path.as_posix()}/models",
+        "tools: tools": f"tools: {tmp_path.as_posix()}/tools",
+    }
+    for old, new in replacements.items():
+        config_text = config_text.replace(old, new)
+    config_path.write_text(config_text, encoding="utf-8")
+    return config_path
+
+
+def test_highlight_url_accepts_blank_optional_range_and_queues_scan(tmp_path: Path):
+    app = create_app(load_config(_make_isolated_app_config(tmp_path)))
+    submitted: list[str] = []
+    app.state.highlight_scanner.submit = lambda scan_id: submitted.append(scan_id)
+    client = TestClient(app)
+    response = client.post(
+        "/api/highlights/scan/url",
+        data={
+            "url": "https://www.twitch.tv/videos/123456",
+            "streamer": "TestStreamer",
+            "rights_confirmed": "true",
+            "window_start": "",
+            "window_end": "",
+        },
+    )
+    assert response.status_code == 202, response.text
+    scan_id = response.json()["id"]
+    scan = app.state.store.get_highlight_scan(scan_id)
+    assert scan is not None
+    assert scan["source_kind"] == "url"
+    assert scan["window_start"] is None
+    assert scan["window_end"] is None
+    assert submitted == [scan_id]
+
+
+def test_highlight_candidate_creates_short_with_source_range(tmp_path: Path):
+    app = create_app(load_config(_make_isolated_app_config(tmp_path)))
+    source = tmp_path / "long-vod.mp4"
+    source.write_bytes(b"test-media-placeholder")
+    scan_id = "completed-scan"
+    candidate_id = "candidate-1"
+    app.state.store.create_highlight_scan({
+        "id": scan_id,
+        "source_kind": "upload",
+        "source_path": str(source),
+        "source_title": "Long VOD",
+        "streamer": "TestStreamer",
+        "rights_confirmed": True,
+    })
+    app.state.store.update_highlight_scan(scan_id, status="completed", progress=100)
+    app.state.store.save_highlight_candidates(scan_id, [{
+        "id": candidate_id,
+        "rank": 1,
+        "start_time": 125.0,
+        "end_time": 160.0,
+        "media_start": 125.0,
+        "media_end": 160.0,
+        "score": 88.0,
+        "audio_score": 0.9,
+        "speech_score": 0.8,
+        "reaction_score": 0.7,
+        "reasons": ["Pic d'énergie audio"],
+        "transcript": "BRO WHAT",
+    }])
+    submitted: list[str] = []
+    app.state.runner.submit = lambda job_id: submitted.append(job_id)
+    client = TestClient(app)
+    response = client.post(f"/api/highlights/{scan_id}/candidates/{candidate_id}/create-short")
+    assert response.status_code == 202, response.text
+    job_id = response.json()["id"]
+    job = app.state.store.get_job(job_id)
+    assert job is not None
+    assert job["source_path"] == str(source.resolve())
+    assert job["source_url"] is None
+    assert job["metadata"]["options"]["source_range"] == {"start": 125.0, "end": 160.0}
+    assert job["metadata"]["highlight_score"] == 88.0
+    candidate = app.state.store.get_highlight_candidate(scan_id, candidate_id)
+    assert candidate is not None and candidate["created_job_id"] == job_id
+    assert submitted == [job_id]
+
+
+def test_queued_short_and_highlight_scan_can_be_cancelled_via_api(tmp_path: Path):
+    app = create_app(load_config(_make_isolated_app_config(tmp_path)))
+    store = app.state.store
+    store.create_job({"id": "cancel-short", "source_kind": "upload", "source_path": "missing.mp4"})
+    store.create_highlight_scan({"id": "cancel-scan", "source_kind": "upload", "source_path": "missing.mp4"})
+    client = TestClient(app)
+
+    short_response = client.post("/api/jobs/cancel-short/cancel")
+    scan_response = client.post("/api/highlights/cancel-scan/cancel")
+
+    assert short_response.status_code == 200
+    assert scan_response.status_code == 200
+    assert store.get_job("cancel-short")["status"] == "cancelled"
+    assert store.get_highlight_scan("cancel-scan")["status"] == "cancelled"
+

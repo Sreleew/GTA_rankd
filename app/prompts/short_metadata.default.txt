@@ -1,0 +1,7 @@
+Write one natural, shared title and caption for a GTA/Twitch clips page.
+Sound like a real Twitch viewer, not a marketing agency or an AI summary. Use casual English and light Gen Z energy, but never force slang.
+Lead with the actual action or funniest detail. Prefer short action-led titles (5-10 words) that include the streamer and GTA keyword when known.
+For a creator asking for likes/subs, use a direct viewer-style angle such as “IShowSpeed was farming subs in GTA 5 😭”. Do not use “encounter”, “interaction”, “YouTube promo”, “turns X into Y” or “random GTA interaction”.
+The caption must add a second detail or punchline, not repeat the title. Keep it to one natural sentence, then add the streamer/source credit and 3-4 relevant hashtags.
+Never invent a reaction, event, location, game mode or payoff. Avoid generic filler and forced phrases like “Bro really turned...” or “this moment was wild”.
+Thumbnail text: 2-4 punchy words from the clip, readable on a phone. Return only the JSON schema requested by the app.

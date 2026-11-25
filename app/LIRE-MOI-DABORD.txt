@@ -1,0 +1,5 @@
+GTA RANKED STUDIO v0.3.2
+
+Correctif Windows pour les tests whisper.cpp (WinError 193).
+Depuis une installation v0.3.0 ou v0.2.6, utiliser UPDATE-FROM-ARCHIVE.bat depuis cette archive extraite. Ne pas utiliser INSTALL.bat pour appliquer cette mise a jour si une installation existe deja.
+Les donnees utilisateur et l'environnement .venv sont preserves.

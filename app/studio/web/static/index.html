@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#101113">
+  <title>GTA Ranked Studio</title>
+  <link rel="stylesheet" href="/static/styles.css?v=0.4.0">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="#dashboard" aria-label="GTA Ranked Studio accueil">
+        <div class="brand-mark">GR</div>
+        <div><strong>GTA RANKED</strong><span>STUDIO</span></div>
+      </a>
+      <div class="side-label">WORKSPACE</div>
+      <nav class="nav-list">
+        <button class="nav-item active" data-page="dashboard"><span class="nav-icon">◫</span> Vue d'ensemble</button>
+        <button class="nav-item" data-page="shorts"><span class="nav-icon">▣</span> Créer un Short <span class="nav-count" id="nav-review-count">0</span></button>
+        <button class="nav-item" data-page="highlights"><span class="nav-icon">✦</span> Moments forts</button>
+        <button class="nav-item" data-page="library"><span class="nav-icon">▤</span> Clip library</button>
+        <button class="nav-item" data-page="bestof"><span class="nav-icon">▥</span> Daily Best Of <span class="soon">Bientôt</span></button>
+      </nav>
+      <div class="side-label settings-label">SYSTEM</div>
+      <nav class="nav-list">
+        <button class="nav-item" data-page="settings"><span class="nav-icon">⚙</span> Paramètres</button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="local-status"><span class="pulse"></span><div><strong>Traitement local</strong><small>Aucun upload cloud</small></div></div>
+        <div class="version">GTA RANKED STUDIO <span>v0.4.0</span></div>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div><div class="eyebrow">YOUR CONTENT WORKSPACE</div><h1 id="page-title">Vue d'ensemble</h1></div>
+        <div class="topbar-right"><div class="local-pill"><span></span> LOCAL ONLY</div><div class="avatar">GR</div></div>
+      </header>
+
+      <section class="page active" id="page-dashboard">
+        <div class="welcome-row">
+          <div><h2>Let's make something <em>ranked.</em></h2><p>Ton atelier local pour transformer les meilleurs moments GTA VI en contenu.</p></div>
+          <button class="button button-primary" data-go="shorts"><span>＋</span> Nouveau Short</button>
+        </div>
+        <div class="stats-grid">
+          <article class="stat-card"><div class="stat-top"><span>CLIPS TRAITÉS</span><span class="stat-icon">▣</span></div><strong id="stat-total">0</strong><small>Depuis le lancement</small></article>
+          <article class="stat-card"><div class="stat-top"><span>EN COURS</span><span class="stat-icon amber">◷</span></div><strong id="stat-processing">0</strong><small>Dans la file de traitement</small></article>
+          <article class="stat-card"><div class="stat-top"><span>À VALIDER</span><span class="stat-icon violet">◉</span></div><strong id="stat-review">0</strong><small>En attente de ton feu vert</small></article>
+          <article class="stat-card"><div class="stat-top"><span>VALIDÉS</span><span class="stat-icon green">✓</span></div><strong id="stat-validated">0</strong><small>Dans ton clip bank</small></article>
+        </div>
+        <div class="content-grid">
+          <section class="panel jobs-panel"><div class="panel-heading"><div><div class="eyebrow">RECENT ACTIVITY</div><h3>Derniers traitements</h3></div><button class="text-button" data-go="shorts">Voir tous les clips <span>↗</span></button></div><div id="recent-jobs" class="job-list"><div class="empty-state">Aucun clip pour le moment. Ajoute ton premier fichier pour commencer.</div></div></section>
+          <section class="panel system-panel"><div class="panel-heading"><div><div class="eyebrow">LOCAL ENVIRONMENT</div><h3>État du système</h3></div><span class="live-label"><i></i> LIVE</span></div><div id="system-checks" class="system-checks"><div class="system-check"><span class="check-dot pending"></span><span>Vérification des outils...</span></div></div><div class="gpu-card"><div class="gpu-head"><span>GPU CONFIGURÉ</span><span class="gpu-chip">AMD</span></div><strong id="gpu-name">AMD Radeon RX 9060 XT</strong><small>16 GB VRAM · Local processing</small></div></section>
+        </div>
+      </section>
+
+      <section class="page" id="page-shorts">
+        <div class="section-intro"><div><div class="eyebrow">SHORTS WORKFLOW / STEP 01</div><h2>Transformer un clip</h2><p>Importe une vidéo ou colle une URL. Le montage conserve toute l’image d’origine au centre du format 9:16, avec un fond flouté pour remplir l’écran. Le zoom dynamique est désactivé par défaut.</p></div><div class="format-pill"><span>▯</span> 9:16 · 1080 × 1920</div></div>
+        <div class="create-layout">
+          <section class="panel create-panel">
+            <div class="panel-heading"><div><div class="eyebrow">NEW SHORT</div><h3>Source du clip</h3></div><span class="step-number">01</span></div>
+            <div class="source-tabs"><button class="source-tab active" data-source-tab="file">Importer un fichier</button><button class="source-tab" data-source-tab="url">Coller une URL</button></div>
+            <form id="upload-form">
+              <div class="dropzone" id="dropzone"><input type="file" id="clip-file" name="file" accept=".mp4,.mov,.mkv,.webm,.m4v,video/mp4,video/quicktime,video/webm" hidden><div class="upload-icon">↑</div><strong>Dépose ton clip ici</strong><span>ou <button type="button" class="inline-link" id="browse-file">parcourir les fichiers</button></span><small>MP4, MOV, MKV ou WEBM · max. 2 Go</small><div class="selected-file" id="selected-file"></div></div>
+              <div class="form-grid"><label>Streamer <span>OPTIONNEL</span><input type="text" name="streamer" placeholder="ex. Kai Cenat"></label><label>Note de contexte <span>OPTIONNEL</span><input type="text" name="note" placeholder="Pourquoi ce moment est intéressant ?"></label></div>
+              <label class="rights-check"><input type="checkbox" name="rights_confirmed" required><span>Je confirme disposer des droits ou autorisations nécessaires pour utiliser cette vidéo et son audio.</span></label>
+
+              <details class="edit-options" open>
+                <summary>Personnaliser le montage <span>CADRAGE · RYTHME · CAPTIONS</span></summary>
+                <div class="edit-options-grid">
+                  <label>Format vidéo<select name="layout"><option value="fill">Plein écran recadré 9:16</option><option value="blur" selected>Vidéo entière + fond flouté</option></select><small>Toute l’image d’origine est conservée, sans zoom ni recadrage.</small></label>
+                  <label>Position horizontale <output data-crop-output>50 %</output><input type="range" name="crop_x" min="0" max="100" value="50" data-crop-slider><small>Déplace le cadrage vers la gauche ou la droite.</small></label>
+                  <label>Position verticale <output data-crop-output>50 %</output><input type="range" name="crop_y" min="0" max="100" value="50" data-crop-slider><small>Déplace le cadrage vers le haut ou le bas.</small></label>
+                  <label>Puissance du zoom <output data-zoom-output>0 %</output><input type="range" name="zoom_percent" min="0" max="20" value="0" data-zoom-slider><small>Zoom progressif avant et après le pic audio détecté.</small></label>
+                </div>
+                <div class="edit-toggles">
+                  <label><input type="checkbox" name="auto_trim_enabled" checked data-option-checkbox> Recadrer automatiquement les clips de plus de 45 s</label>
+                  <label><input type="checkbox" name="dynamic_zoom" data-option-checkbox> Zoom dynamique</label>
+                  <label><input type="checkbox" name="captions_enabled" checked data-option-checkbox> Sous-titres anglais (mot à mot si DTW disponible)</label>
+                  <label>Voix à sous-titrer <select name="caption_voice_mode"><option value="dominant" selected>Voix dominante uniquement (bêta)</option><option value="all">Toutes les voix</option></select><small>Si les voix sont difficiles à distinguer, toutes les paroles sont conservées.</small></label>
+                  <label><input type="checkbox" name="brand_enabled" checked data-option-checkbox> Signature GTA Ranked + handle</label>
+                  <label><input type="checkbox" name="sfx_enabled" checked data-option-checkbox> Whoosh discret au moment fort</label>
+                </div>
+                <div class="form-grid edit-text-grid">
+                  <label>Hook personnalisé <span>OPTIONNEL · 8 MOTS MAX</span><input type="text" name="hook_text" maxlength="100" placeholder="ex. BRO THOUGHT HE WAS SAFE..."></label>
+                  <label>Contexte à afficher <span>OPTIONNEL · 10 MOTS MAX</span><input type="text" name="context_text" maxlength="150" placeholder="ex. One wrong move during the police chase"></label>
+                </div>
+              </details>
+              <button class="button button-primary submit-button" type="submit" id="upload-submit">Générer le rendu Short <span>→</span></button>
+            </form>
+            <form id="url-form" class="hidden">
+              <label class="full-label">URL de la vidéo ou du clip<input type="url" name="url" placeholder="https://www.twitch.tv/..." required></label>
+              <div class="form-grid"><label>Streamer <span>OPTIONNEL</span><input type="text" name="streamer" placeholder="ex. Kai Cenat"></label><label>Note de contexte <span>OPTIONNEL</span><input type="text" name="note" placeholder="Pourquoi ce moment est intéressant ?"></label></div>
+              <label class="rights-check"><input type="checkbox" name="rights_confirmed" required><span>Je confirme disposer des droits ou autorisations nécessaires pour télécharger et utiliser cette source.</span></label>
+
+              <details class="edit-options" open>
+                <summary>Personnaliser le montage <span>CADRAGE · RYTHME · CAPTIONS</span></summary>
+                <div class="edit-options-grid">
+                  <label>Format vidéo<select name="layout"><option value="fill">Plein écran recadré 9:16</option><option value="blur" selected>Vidéo entière + fond flouté</option></select><small>Toute l’image d’origine est conservée, sans zoom ni recadrage.</small></label>
+                  <label>Position horizontale <output data-crop-output>50 %</output><input type="range" name="crop_x" min="0" max="100" value="50" data-crop-slider><small>Déplace le cadrage vers la gauche ou la droite.</small></label>
+                  <label>Position verticale <output data-crop-output>50 %</output><input type="range" name="crop_y" min="0" max="100" value="50" data-crop-slider><small>Déplace le cadrage vers le haut ou le bas.</small></label>
+                  <label>Puissance du zoom <output data-zoom-output>0 %</output><input type="range" name="zoom_percent" min="0" max="20" value="0" data-zoom-slider><small>Zoom progressif avant et après le pic audio détecté.</small></label>
+                </div>
+                <div class="edit-toggles">
+                  <label><input type="checkbox" name="auto_trim_enabled" checked data-option-checkbox> Recadrer automatiquement les clips de plus de 45 s</label>
+                  <label><input type="checkbox" name="dynamic_zoom" data-option-checkbox> Zoom dynamique</label>
+                  <label><input type="checkbox" name="captions_enabled" checked data-option-checkbox> Sous-titres anglais (mot à mot si DTW disponible)</label>
+                  <label>Voix à sous-titrer <select name="caption_voice_mode"><option value="dominant" selected>Voix dominante uniquement (bêta)</option><option value="all">Toutes les voix</option></select><small>Si les voix sont difficiles à distinguer, toutes les paroles sont conservées.</small></label>
+                  <label><input type="checkbox" name="brand_enabled" checked data-option-checkbox> Signature GTA Ranked + handle</label>
+                  <label><input type="checkbox" name="sfx_enabled" checked data-option-checkbox> Whoosh discret au moment fort</label>
+                </div>
+                <div class="form-grid edit-text-grid">
+                  <label>Hook personnalisé <span>OPTIONNEL · 8 MOTS MAX</span><input type="text" name="hook_text" maxlength="100" placeholder="ex. BRO THOUGHT HE WAS SAFE..."></label>
+                  <label>Contexte à afficher <span>OPTIONNEL · 10 MOTS MAX</span><input type="text" name="context_text" maxlength="150" placeholder="ex. One wrong move during the police chase"></label>
+                </div>
+              </details>
+              <button class="button button-primary submit-button" type="submit">Télécharger et générer <span>→</span></button>
+              <p class="form-note">Le téléchargement utilise yt-dlp installé localement. Les sites peuvent limiter ou interdire certains téléchargements.</p>
+            </form>
+          </section>
+          <aside class="panel pipeline-panel"><div class="eyebrow">AUTOMATION PIPELINE</div><h3>Ce que le studio fait pour toi</h3><div class="pipeline-step done"><span class="pipeline-n">01</span><div><strong>Import & analyse</strong><small>Vérification du fichier et de sa durée</small></div></div><div class="pipeline-step active"><span class="pipeline-n">02</span><div><strong>Vertical crop & motion</strong><small>Plein écran 9:16 + zoom autour du pic audio</small></div></div><div class="pipeline-step"><span class="pipeline-n">03</span><div><strong>Captions & overlays</strong><small>Whisper local, hook, contexte et branding</small></div></div><div class="pipeline-step"><span class="pipeline-n">04</span><div><strong>Audio & export</strong><small>Normalisation -14 LUFS, whoosh léger, fondu et MP4</small></div></div><div class="pipeline-step"><span class="pipeline-n">05</span><div><strong>Review & validate</strong><small>Prévisualise puis valide ton rendu</small></div></div><div class="pipeline-note"><span>ⓘ</span><p>Le modèle Whisper est téléchargeable depuis Paramètres. Sans lui, le rendu plein écran fonctionne quand même, avec hook et branding.</p></div></aside>
+        </div>
+        <section class="panel output-panel"><div class="panel-heading"><div><div class="eyebrow">YOUR QUEUE</div><h3>File de traitement & validation</h3></div><button class="text-button" id="refresh-jobs">↻ Actualiser</button></div><div id="all-jobs" class="job-list"><div class="empty-state">Tes clips apparaîtront ici après leur import.</div></div></section>
+      </section>
+
+      <section class="page" id="page-highlights">
+        <div class="section-intro">
+          <div><div class="eyebrow">HIGHLIGHT DISCOVERY / STEP 01</div><h2>Détecter les moments forts</h2><p>Analyse une VOD complète, une plage horaire précise ou un clip Twitch. Le studio classe les passages prometteurs, puis tu choisis ceux à transformer en Shorts.</p></div>
+          <div class="format-pill"><span>✦</span> VOD + Twitch clips</div>
+        </div>
+        <div class="create-layout">
+          <section class="panel create-panel">
+            <div class="panel-heading"><div><div class="eyebrow">NEW SCAN</div><h3>Choisir une source</h3></div><span class="step-number">01</span></div>
+            <div class="source-tabs"><button class="highlight-source-tab source-tab active" data-highlight-source-tab="file">Fichier vidéo local</button><button class="highlight-source-tab source-tab" data-highlight-source-tab="url">URL Twitch</button></div>
+            <form id="highlight-upload-form">
+              <label class="full-label">VOD ou clip vidéo<input type="file" id="highlight-file" name="file" accept=".mp4,.mov,.mkv,.webm,.m4v,video/*" required></label>
+              <div class="form-grid"><label>Streamer <span>OPTIONNEL</span><input type="text" name="streamer" placeholder="ex. Kai Cenat"></label><label>Note de contexte <span>OPTIONNEL</span><input type="text" name="note" placeholder="ex. GTA VI, course-poursuite"></label></div>
+              <div class="form-grid"><label>Début de l'analyse <span>SECONDES · OPTIONNEL</span><input type="number" name="window_start" min="0" step="1" placeholder="0"></label><label>Fin de l'analyse <span>SECONDES · OPTIONNEL</span><input type="number" name="window_end" min="1" step="1" placeholder="Fin de la vidéo"></label></div>
+              <small class="form-note">Laisse début et fin vides pour analyser toute la vidéo. Les temps sont en secondes : 3 600 = 01:00:00. Pour une longue VOD, sélectionne 30 à 90 minutes. Limite : 3 heures par analyse, fichier local jusqu'à 10 Go.</small>
+              <label class="rights-check"><input type="checkbox" name="rights_confirmed" required><span>Je confirme disposer des droits ou autorisations nécessaires pour analyser cette vidéo.</span></label>
+              <button class="button button-primary submit-button" type="submit">Analyser les moments forts <span>→</span></button>
+            </form>
+            <form id="highlight-url-form" class="hidden">
+              <label class="full-label">URL Twitch<input type="url" name="url" placeholder="https://www.twitch.tv/videos/... ou https://clips.twitch.tv/..." required></label>
+              <div class="form-grid"><label>Streamer <span>OPTIONNEL</span><input type="text" name="streamer" placeholder="ex. Kai Cenat"></label><label>Note de contexte <span>OPTIONNEL</span><input type="text" name="note" placeholder="ex. GTA VI, réaction"></label></div>
+              <div class="form-grid"><label>Début de la VOD <span>SECONDES · OPTIONNEL</span><input type="number" name="window_start" min="0" step="1" placeholder="0"></label><label>Fin de la VOD <span>SECONDES · OPTIONNEL</span><input type="number" name="window_end" min="1" step="1" placeholder="Fin de la vidéo"></label></div>
+              <small class="form-note">Les temps sont en secondes : 3 600 = 01:00:00. Pour une VOD, sélectionne une plage afin d'éviter un téléchargement massif. Pour un clip Twitch, laisse les deux champs vides. Les VODs privées ou réservées aux abonnés peuvent ne pas être accessibles par URL : importe un fichier local auquel tu as accès.</small>
+              <label class="rights-check"><input type="checkbox" name="rights_confirmed" required><span>Je confirme disposer des droits ou autorisations nécessaires pour télécharger et analyser cette source.</span></label>
+              <button class="button button-primary submit-button" type="submit">Télécharger et analyser <span>→</span></button>
+            </form>
+          </section>
+          <aside class="panel pipeline-panel"><div class="eyebrow">LOCAL ANALYSIS</div><h3>Comment les passages sont classés</h3><div class="pipeline-step done"><span class="pipeline-n">01</span><div><strong>Import de la source</strong><small>Fichier local ou VOD/clip Twitch via yt-dlp</small></div></div><div class="pipeline-step active"><span class="pipeline-n">02</span><div><strong>Analyse audio</strong><small>Niveaux sonores, pics et variations d'énergie</small></div></div><div class="pipeline-step"><span class="pipeline-n">03</span><div><strong>Transcription Whisper</strong><small>Dialogue et indices de réaction, par blocs de 5 minutes</small></div></div><div class="pipeline-step"><span class="pipeline-n">04</span><div><strong>Classement des passages</strong><small>Seuls les passages au score supérieur à 80/100 sont proposés, sans limite de quantité</small></div></div><div class="pipeline-step"><span class="pipeline-n">05</span><div><strong>Créer un Short</strong><small>Tu choisis les passages à envoyer dans le workflow Shorts</small></div></div><div class="pipeline-note"><span>ⓘ</span><p>Première version : classement local basé sur l'énergie audio, la densité de parole et les mots de réaction. L'analyse visuelle du gameplay et le classement par IA viendront dans une étape ultérieure.</p></div></aside>
+        </div>
+        <section class="panel output-panel highlight-results-panel"><div class="panel-heading"><div><div class="eyebrow">YOUR SCANS</div><h3>Analyses et passages candidats</h3></div><button class="text-button" id="refresh-highlights">↻ Actualiser</button></div><div id="highlight-scans" class="highlight-scan-list"><div class="empty-state">Aucune analyse pour le moment. Ajoute une VOD ou un clip Twitch pour commencer.</div></div></section>
+      </section>
+
+      <section class="page" id="page-library">
+        <div class="section-intro"><div><div class="eyebrow">CONTENT DATABASE</div><h2>Clip library</h2><p>Retrouve les clips traités et validés. La base locale servira également au classement du Daily Best Of.</p></div></div>
+        <section class="panel"><div class="panel-heading"><div><h3>Bibliothèque</h3><small class="muted">Clips ajoutés à la base locale</small></div></div><div id="clip-library" class="job-list"><div class="empty-state">Aucun clip enregistré.</div></div></section>
+      </section>
+
+      <section class="page" id="page-bestof">
+        <div class="section-intro"><div><div class="eyebrow">DAILY COMPILATION / NEXT MILESTONE</div><h2>Daily Best Of</h2><p>Le moteur de scoring, la sélection et l'assemblage horizontal seront ajoutés après la validation du pipeline Shorts.</p></div><div class="format-pill">16:9 · 1920 × 1080</div></div>
+        <section class="panel coming-panel"><div class="coming-icon">✦</div><h3>Ton épisode du jour, automatiquement classé.</h3><p>Les clips validés seront analysés, notés et assemblés dans une vidéo de 9 à 11 minutes. Tu pourras inclure, exclure et réordonner les séquences avant le rendu final.</p><span class="coming-badge">EN DÉVELOPPEMENT</span></section>
+      </section>
+
+      <section class="page" id="page-settings">
+        <div class="section-intro"><div><div class="eyebrow">CONFIGURATION LOCALE</div><h2>Paramètres</h2><p>Les paramètres techniques restent dans config.yaml. Cette page affiche l'environnement détecté.</p></div></div>
+        <section class="panel settings-grid"><div><span class="setting-label">GPU</span><strong id="settings-gpu">AMD Radeon RX 9060 XT</strong></div><div><span class="setting-label">VRAM</span><strong>16 GB</strong></div><div><span class="setting-label">Encodeur vidéo</span><strong>AMD AMF / CPU fallback</strong></div><div><span class="setting-label">Traitement</span><strong>Local · Windows</strong></div><div><span class="setting-label">LLM</span><strong>Ollama · Qwen 2.5 7B</strong></div><div><span class="setting-label">Transcription</span><strong>whisper.cpp · Vulkan</strong></div></section>
+        <section class="panel update-panel">
+          <div class="panel-heading"><div><div class="eyebrow">LOGICIEL</div><h3>Mises à jour</h3></div><span class="status-pill" id="update-current-version">Version installée</span></div>
+          <p id="update-check-status">Vérifie si une nouvelle version de GTA Ranked Studio est disponible sur GitHub.</p>
+          <div class="update-release-notes hidden" id="update-release-notes"></div>
+          <div class="update-actions">
+            <button class="mini-button" id="check-updates">Rechercher une mise à jour</button>
+            <button class="button button-primary hidden" id="install-update">Télécharger et installer</button>
+          </div>
+          <small class="update-footnote">Les mises à jour téléchargent uniquement le code de l’application. Tes vidéos, modèles IA, réglages et projets restent sur ton PC. Une sauvegarde du code précédent est conservée avant installation.</small>
+        </section>
+        <section class="panel model-settings-panel">
+          <div class="panel-heading"><div><div class="eyebrow">LOCAL AI MODELS</div><h3>Modèles IA sur ton PC</h3></div><button class="text-button" id="refresh-models">↻ Actualiser</button></div>
+          <div class="model-row"><div><strong>Moteur whisper.cpp · Vulkan</strong><p id="whisper-engine-status">Vérification du moteur...</p><small id="whisper-engine-details">Le Studio vérifie le backend par un vrai chargement du modèle, pas par --list-devices.</small></div><div class="model-actions"><button type="button" class="mini-button" id="verify-whisper-gpu" aria-describedby="whisper-engine-details">Tester le GPU</button><a class="mini-button" href="https://github.com/jiang1997/whisper.cpp-release/releases" target="_blank" rel="noopener">Build Vulkan ↗</a></div></div>
+          <div class="model-row"><div><strong>Modèle Whisper large-v3-turbo</strong><p id="whisper-model-status">Vérification du modèle...</p><small>Modèle anglais local d'environ 1,6 Go. Le téléchargement ne se fait qu'une fois. Aucun média n'est envoyé dans le cloud.</small></div><div class="model-actions"><button class="button button-primary" id="download-whisper-model">Télécharger le modèle</button><button class="mini-button hidden" id="cancel-whisper-download">Annuler</button></div></div>
+          <div class="model-progress hidden" id="whisper-progress-wrap"><div class="model-progress-track"><span id="whisper-progress-bar"></span></div><small id="whisper-progress-label">0 %</small></div>
+          <div class="model-row"><div><strong>Ollama · Qwen 2.5 7B</strong><p id="ollama-model-status">Vérification d'Ollama...</p><small id="ollama-model-details">Génération locale des hooks, titres, descriptions et hashtags.</small></div><div class="model-actions"><a class="mini-button" href="https://ollama.com/download/windows" target="_blank" rel="noopener">Installer Ollama ↗</a><button type="button" class="mini-button" id="verify-ollama" aria-describedby="ollama-model-details">Vérifier</button></div></div>
+          <div class="command-note">Après installation d'Ollama, ouvre un terminal et exécute : <code>ollama pull qwen2.5:7b-instruct</code>. L'inférence reste locale.</div>
+        </section>
+        <section class="panel privacy-panel"><div class="privacy-shield">⌑</div><div><h3>Tes médias restent sur ton ordinateur.</h3><p>Le serveur écoute uniquement sur 127.0.0.1. Il n'y a ni compte utilisateur distant, ni stockage cloud, ni publication automatique.</p></div></section>
+      </section>
+      <footer class="footer"><span>GTA RANKED STUDIO</span><span>LOCAL VIDEO WORKSPACE · BUILT FOR CREATORS</span></footer>
+    </main>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="/static/app.js?v=0.7.8"></script>
+</body>
+</html>
