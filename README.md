@@ -2,7 +2,7 @@
 
 Application Windows locale pour analyser des clips et VOD GTA, repérer les passages intéressants et produire des Shorts verticaux avec leurs éléments de publication.
 
-**Version intégrée : 0.7.8.** Les nouvelles fonctions sont intégrées à `main`. La disponibilité dans le logiciel dépend de la publication de la GitHub Release `v0.7.8`, détectée depuis **Paramètres > Mises à jour**.
+**Dernière version stable : 0.7.8**, publiée le 25 novembre 2026. Pour l'installer depuis une version antérieure, ouvrir **Paramètres > Mises à jour**, puis cliquer sur **Rechercher une mise à jour**.
 
 ## Fonctionnalités principales
 
