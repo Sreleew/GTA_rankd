@@ -165,3 +165,49 @@ def test_local_model_formulaic_promo_copy_falls_back_to_human_title(monkeypatch)
     assert result["title"] == "IShowSpeed was farming subs in GTA 5 😭"
     assert result["description"].splitlines()[0] == "Still found time to ask everyone for a like 💀"
     assert "YouTube promo" not in result["description"]
+
+def test_fallback_does_not_invent_generic_hook_without_transcript_or_context() -> None:
+    from studio.web.metadata import _fallback_metadata
+
+    result = _fallback_metadata(
+        streamer="StreamerA", note="", source_url="", transcript="",
+        custom_hook="", custom_context="",
+    )
+
+    assert result["hook_text"] == ""
+
+
+def test_local_model_generic_engagement_hook_falls_back_to_clip_specific_text(monkeypatch):
+    import io
+    import json
+    from studio.web import metadata as metadata_module
+
+    payload = {
+        "response": json.dumps({
+            "title": "The police chase ends in a disaster in GTA 5 😭",
+            "description": "He really did not see that coming.",
+            "hashtags": ["#GTA5", "#GTAClips"],
+            "hook_text": "WAIT FOR THE REACTION",
+            "thumbnail_text": "CHASE GONE WRONG",
+        })
+    }
+
+    class FakeResponse(io.BytesIO):
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            self.close()
+
+    monkeypatch.setattr(
+        metadata_module.urllib.request,
+        "urlopen",
+        lambda request, timeout: FakeResponse(json.dumps(payload).encode("utf-8")),
+    )
+    result = metadata_module.generate_short_metadata(
+        streamer="StreamerA", source_title="GTA 5",
+        transcript="The police chase ends when he crashes into a gas station.",
+    )
+
+    assert result["hook_text"] == "THE POLICE CHASE ENDS WHEN HE"
+    assert result["hook_text"] != "WAIT FOR THE REACTION"
+
