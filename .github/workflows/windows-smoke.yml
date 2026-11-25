@@ -99,7 +99,6 @@ jobs:
           if (-not (Test-Path $notes -PathType Leaf)) { throw "Notes de version absentes : $notes" }
           New-Item -ItemType Directory -Path (Join-Path $appRoot "docs") -Force | Out-Null
           New-Item -ItemType Directory -Path (Join-Path $appRoot "tools") -Force | Out-Null
-          Copy-Item (Join-Path $env:GITHUB_WORKSPACE "README.md") (Join-Path $appRoot "README.md") -Force
           Copy-Item (Join-Path $env:GITHUB_WORKSPACE "VERSION.txt") (Join-Path $appRoot "VERSION.txt") -Force
           Copy-Item $notes (Join-Path $appRoot "NOTES-v$rootVersion.txt") -Force
           Copy-Item (Join-Path $env:GITHUB_WORKSPACE "docs\CONTINUATION.md") (Join-Path $appRoot "docs\CONTINUATION.md") -Force
