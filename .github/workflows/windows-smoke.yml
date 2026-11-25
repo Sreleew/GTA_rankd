@@ -184,7 +184,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: gta-ranked-studio-windows-validation
-          path: |
-            dist-windows/GTA-Ranked-Studio-v0.7.8.zip
-            dist-windows/SHA256SUMS.txt
+          path: dist-windows/
           retention-days: 14
