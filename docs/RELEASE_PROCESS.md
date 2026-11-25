@@ -8,7 +8,7 @@ Une version n'est publiable que lorsque sa source canonique, les tests Linux, le
 
 1. Développer sur une branche de travail, jamais directement sur `main`.
 2. Mettre à jour le mémo, les notes, le README et le changelog lorsque le comportement produit change.
-3. Lancer le workflow `Audit GTA Ranked Studio source`. Il reconstruit et teste la source, puis met à jour l'archive canonique et ses fichiers de contrôle.
+3. Lancer le workflow `Audit GTA Ranked Studio source`. Il vérifie le checksum et chacun des fichiers de la source canonique v0.7.8, extrait cette base, injecte les documents courants, teste puis met à jour l'archive canonique et ses fichiers de contrôle. Il ne rejoue pas l'ancienne chaîne de hotfixes.
 4. Laisser le workflow `Windows runtime validation` tester l'archive canonique sur `windows-latest`, notamment le parseur Windows PowerShell 5.1, les tests Python, le JavaScript et le paquet de mise à jour.
 5. Valider manuellement le logiciel sur le PC cible : cycle complet d'un Short, FFmpeg AMF, Whisper Vulkan, Ollama/Qwen, persistance et mise à jour sans perte de données. Utiliser `docs/WINDOWS-HARDWARE-VALIDATION.md`.
 6. Examiner la comparaison Git entre la branche de travail et `main`. Résoudre explicitement les changements de workflows avant d'ouvrir ou de fusionner une PR.
