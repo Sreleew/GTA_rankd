@@ -103,7 +103,6 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$APP_ROOT/docs" "$APP_ROOT/tools"
-          cp README.md "$APP_ROOT/README.md"
           cp VERSION.txt "$APP_ROOT/VERSION.txt"
           cp "NOTES-v$APP_VERSION.txt" "$APP_ROOT/NOTES-v$APP_VERSION.txt"
           cp docs/CONTINUATION.md "$APP_ROOT/docs/CONTINUATION.md"
