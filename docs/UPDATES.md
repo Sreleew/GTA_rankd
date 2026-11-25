@@ -1,5 +1,13 @@
 # Mises à jour GTA Ranked Studio
 
+## v0.7.8 : disponible en mise à jour stable
+
+La version stable **v0.7.8** est publiée depuis le 25 novembre 2026. Dans l'application, ouvrir **Paramètres > Mises à jour**, cliquer sur **Rechercher une mise à jour**, puis choisir **Télécharger et installer**. L'application se ferme et redémarre après installation.
+
+La Release contient `GTA-Ranked-Studio-v0.7.8.zip` et son contrôle d'intégrité `SHA256SUMS.txt`. Le package exclut la configuration personnelle, les bases de données, les médias et les exports locaux.
+
+Lien de la Release : https://github.com/Sreleew/GTA_rankd/releases/tag/v0.7.8.
+
 ## Côté utilisateur
 
 Dans GTA Ranked Studio, ouvrir **Paramètres > Mises à jour**, cliquer sur **Rechercher une mise à jour**, puis sur **Télécharger et installer** si une version est proposée. L'application se ferme et se relance après installation.
