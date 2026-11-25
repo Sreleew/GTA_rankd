@@ -113,7 +113,7 @@ jobs:
               raise SystemExit("La confirmation du mode brouillon doit être obligatoire et décochée par défaut.")
           steps = release["jobs"]["release"]["steps"]
           script = "\n".join(step.get("run", "") for step in steps)
-          for required in ("refs/heads/main", ".release-approval", "VERSION.txt", "app/VERSION.txt", "app/installer/build_release_package.py"):
+          for required in ("refs/heads/main", ".release-approval", "VERSION.txt", "app/VERSION.txt", "installer/build_release_package.py", "APP_ROOT=$GITHUB_WORKSPACE/app"):
               if required not in script:
                   raise SystemExit(f"Garde-fou de release manquant : {required}")
           setup = next((step for step in steps if step.get("uses") == "actions/setup-python@v5"), None)
