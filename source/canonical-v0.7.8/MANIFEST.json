@@ -2,8 +2,8 @@
   "project": "GTA Ranked Studio",
   "version": "0.7.8",
   "archive": "GTA-Ranked-Studio-source-v0.7.8.tar.xz",
-  "archive_sha256": "17806a91faa32fc50523a1879ea04bfcc18076e294397f3e22ae962de46f35ea",
-  "file_count": 103,
+  "archive_sha256": "b6185f1f17f48f488663f74d3f73be71edb391c482696f547e91dc190e91c3d0",
+  "file_count": 104,
   "files": [
     {
       "path": ".gitignore",
@@ -107,13 +107,13 @@
     },
     {
       "path": "NOTES-v0.7.8.txt",
-      "size": 478,
-      "sha256": "eacf985bfbbd59e7e269ca384f93b647e016441f58cc7f5c9c387d6ceecad12f"
+      "size": 976,
+      "sha256": "71f179300b7b73fb13dca5338bf1718094b7a2179bc657cb02a2b55d158019e6"
     },
     {
       "path": "README.md",
-      "size": 3687,
-      "sha256": "ad6014a6a85908c356a53b298f68ba0a3c39364ce43fa37effc947d9957d4a21"
+      "size": 3845,
+      "sha256": "667693d47d96ece30d46d7ab9020ac95e9ca1d220478f38bb870cfbf727e3da3"
     },
     {
       "path": "README_M0.txt",
@@ -227,13 +227,18 @@
     },
     {
       "path": "docs/CONTINUATION.md",
-      "size": 16232,
-      "sha256": "732a9e3b887de715e2ba7f79a1e1cc1b48be7aee9c3f6281f10fac6e727cbc7b"
+      "size": 16601,
+      "sha256": "9bcb9fedc243aa7783c379352d71f3f37d75d35082010cbe2d547efccedd9964"
     },
     {
       "path": "docs/UPDATES.md",
-      "size": 9615,
-      "sha256": "65b75ea5522da4b4315ebfdeca14f272f2680522b5e74318a8a73a34c872b0aa"
+      "size": 10046,
+      "sha256": "53b7fcca70f47341e844f1563960dab5a21e52e5776c2b25b2f8a90ce8c190d6"
+    },
+    {
+      "path": "docs/implementation-plan-v0.7.8.md",
+      "size": 4042,
+      "sha256": "9e7ef61d93cebe2b05b6b195fc3984ac74121d37501fe74507c06bd99802ad10"
     },
     {
       "path": "installer/apply_update.ps1",
@@ -347,8 +352,8 @@
     },
     {
       "path": "studio/web/highlights.py",
-      "size": 26333,
-      "sha256": "1816053768b03dc609e558c8efdc9ac2b1bc240599178d7912ab2f6a58a92a0f"
+      "size": 28724,
+      "sha256": "75499923c0c50555e8d4c03743d93db463520a3829f1fde2ace6b278722b0992"
     },
     {
       "path": "studio/web/metadata.py",
@@ -377,8 +382,8 @@
     },
     {
       "path": "studio/web/static/app.js",
-      "size": 36110,
-      "sha256": "9db23b4b142d415c81affefd5f90f6f75b6a96d861c60cb31c1953333cd5520b"
+      "size": 36174,
+      "sha256": "d9d9984befba2b34969a11281e5c0c404904c182ad05d22f00bc7fdfbbed3ce3"
     },
     {
       "path": "studio/web/static/index.html",
@@ -392,8 +397,8 @@
     },
     {
       "path": "studio/web/store.py",
-      "size": 19252,
-      "sha256": "3ecb1bc53dd2be643bb104c12659c2e07f8cb40679e0a3772c48da6990123387"
+      "size": 19759,
+      "sha256": "a14519c71f7c22afbdccd31e2496c22d81cd4c06c5d761c66a0da7f2a324499b"
     },
     {
       "path": "studio/web/transcribe.py",
@@ -422,8 +427,8 @@
     },
     {
       "path": "tests/test_highlights.py",
-      "size": 6500,
-      "sha256": "eeb357ad51084e8a8fd817b71a62f0132a75523701ccb3cfec5b1d44b10b8ebb"
+      "size": 9800,
+      "sha256": "da3167907f72b9deedcd4fd5210f8e3134d1a120f7b99e809325a642f7c68e20"
     },
     {
       "path": "tests/test_install_update_strategy.py",
