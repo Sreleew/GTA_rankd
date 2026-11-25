@@ -56,3 +56,5 @@ jobs:
           name: gta-ranked-studio-source-v0.7.7
           path: gta-ranked-studio-source-v0.7.7.tar.gz
           retention-days: 7
+
+# Trigger source reconstruction audit.
