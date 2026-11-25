@@ -1,0 +1,558 @@
+{
+  "project": "GTA Ranked Studio",
+  "version": "0.7.8",
+  "archive": "GTA-Ranked-Studio-source-v0.7.8.tar.xz",
+  "archive_sha256": "852ad9872ec0724df65b0f452e73cd60980adcb14a39e016f287ece5d8a573b0",
+  "file_count": 106,
+  "files": [
+    {
+      "path": ".gitignore",
+      "size": 373,
+      "sha256": "51f03b7dda36e807bba13c53b788f2499227cae98b2976de5711c2a361587623"
+    },
+    {
+      "path": "GUIDE_INSTALLATION_FR.md",
+      "size": 7362,
+      "sha256": "9603bc5f97bff7ac318328e8b81df0935f0f5032ef5e11658893c965a1c4267c"
+    },
+    {
+      "path": "INSTALL.bat",
+      "size": 1162,
+      "sha256": "dc27e05127d2fe1d0e26bd7c6780f5a2899cc3fd03cffa89435522f755214c6a"
+    },
+    {
+      "path": "LIRE-MOI-DABORD.txt",
+      "size": 352,
+      "sha256": "2b165254fe33368721b358d0a542fdde55aa174a32d3cc9e54d1443cd122440a"
+    },
+    {
+      "path": "NOTES-v0.4.0.txt",
+      "size": 1071,
+      "sha256": "d29a5ea76456ba5d6855d3b4bde20369f548ab1ee3faa3b07aa92e79954b4a2e"
+    },
+    {
+      "path": "NOTES-v0.4.1.txt",
+      "size": 502,
+      "sha256": "78dd9f499c2fe3c132cf97313205e6d996d62dbcfd20ddab33ca6b4845d9fb1f"
+    },
+    {
+      "path": "NOTES-v0.4.2.txt",
+      "size": 597,
+      "sha256": "e04db99c31ccbeb217287551cb9bca297282bfcac02943a25dba0b6a522d95de"
+    },
+    {
+      "path": "NOTES-v0.5.0.txt",
+      "size": 1041,
+      "sha256": "451698c51b5853a9391fcc54a810d112222cca481102682cf6043cb73b15a4e9"
+    },
+    {
+      "path": "NOTES-v0.5.1.txt",
+      "size": 713,
+      "sha256": "bd16918a059bd4e576021fbfb0af4d17c7702a09b9b0bc2a6ee72c338f6e8577"
+    },
+    {
+      "path": "NOTES-v0.6.0.txt",
+      "size": 1401,
+      "sha256": "73e667c52f3ec006a3ad2ae4b9ebff969ecbe110eb2da1a032e7b4638b0ffee0"
+    },
+    {
+      "path": "NOTES-v0.6.1.txt",
+      "size": 217,
+      "sha256": "104adf9d722eff3b9fcc77385a7c9a60494f53d973c8d3b597eeda64f9c39099"
+    },
+    {
+      "path": "NOTES-v0.6.2.txt",
+      "size": 768,
+      "sha256": "bf6731214f63bc0b7c93447ffd5cad414c70354a0dc30931ea645a730dac9fda"
+    },
+    {
+      "path": "NOTES-v0.7.0.txt",
+      "size": 1304,
+      "sha256": "9110490a2478829c596e64436559bd0591128dba24576b147d6c14d70d6b7290"
+    },
+    {
+      "path": "NOTES-v0.7.1.txt",
+      "size": 1202,
+      "sha256": "c396bd85d661e5f8c91f78165b03fc32dea0c59b040a1f56d8176b12bc4d330c"
+    },
+    {
+      "path": "NOTES-v0.7.2.txt",
+      "size": 1235,
+      "sha256": "e83ba4730e1cee51742e6d04b51a0bd376296de0da6cdb72fcc8b987f355953a"
+    },
+    {
+      "path": "NOTES-v0.7.3.txt",
+      "size": 1074,
+      "sha256": "fadc7066b43108693e3b8866c6ac466df585a041cfbf34295b0ed58911286eb0"
+    },
+    {
+      "path": "NOTES-v0.7.4.txt",
+      "size": 844,
+      "sha256": "620e0008a90ad745eb79389675fde872f7f30f218f3a8d0dde43a1f91bb9dbd4"
+    },
+    {
+      "path": "NOTES-v0.7.5.txt",
+      "size": 497,
+      "sha256": "ec749a6fd13fc497e530a8dce8f6c2a958e8ad8394f4abd43365c950b9953648"
+    },
+    {
+      "path": "NOTES-v0.7.6.txt",
+      "size": 594,
+      "sha256": "748d43d959e4d7b101705c4d36af884d90098fb5a5df6d9acb8738079b0586ab"
+    },
+    {
+      "path": "NOTES-v0.7.7.txt",
+      "size": 879,
+      "sha256": "6805275518a536441f44aab1f0dafa109b61cba186c96d0fa0aa182747c00899"
+    },
+    {
+      "path": "NOTES-v0.7.8.txt",
+      "size": 1518,
+      "sha256": "245c43aa013f7483b3b6c2155b4173f1dddf48c11391b0c902c3ff05ebbef2e9"
+    },
+    {
+      "path": "README.md",
+      "size": 4109,
+      "sha256": "339288c1205e7e2d8bbfb5ac93247ff0835cb9f17c963e2a17cbd583be539e4a"
+    },
+    {
+      "path": "README_M0.txt",
+      "size": 80,
+      "sha256": "171782e02c01d11d566a735daff9b094e3089d318be68abc46b5adf391b6db7c"
+    },
+    {
+      "path": "REPAIR.bat",
+      "size": 666,
+      "sha256": "8623b4fc0316d2c87b51188ea362ba4f7db2fce1f6d55496ecd3b8799a5b6993"
+    },
+    {
+      "path": "START-STUDIO.bat",
+      "size": 243,
+      "sha256": "83fe44fb0797e9cb26140dbf3412663b406afa88d978a6bd209dc12c18b040aa"
+    },
+    {
+      "path": "START-STUDIO.vbs",
+      "size": 603,
+      "sha256": "a0ca4d1612b2a35f4abafcdf834a8e7d406c16219107e66363e31f01ff1ebdff"
+    },
+    {
+      "path": "STOP-STUDIO.bat",
+      "size": 363,
+      "sha256": "ee3afe77ba616f50f783d88a47b8ac395f7699bb2970cb218bdb64e3f53e7eb4"
+    },
+    {
+      "path": "UPDATE-FROM-ARCHIVE.bat",
+      "size": 910,
+      "sha256": "2964b8011615669d0dca8af6d193c9b277b87572651385f4a4a425812a7fee00"
+    },
+    {
+      "path": "VERIFICATION-v0.4.0.md",
+      "size": 1640,
+      "sha256": "c655a7b4095030d1b1b244f5e3b79bafc526bd6e6e42f610153891bd017f0d57"
+    },
+    {
+      "path": "VERIFICATION-v0.4.1.md",
+      "size": 524,
+      "sha256": "5fe3de8af40bcf3d8a7080b85561e178b03fe7bf2a5af326e59be0108b7277a4"
+    },
+    {
+      "path": "VERIFICATION-v0.4.2.md",
+      "size": 362,
+      "sha256": "4b52c31b8099a6beeaa27d5514d4804e56fc2b71e33b0db27200339853602918"
+    },
+    {
+      "path": "VERIFICATION-v0.5.0.md",
+      "size": 580,
+      "sha256": "dda84500d37aced211b3056d254b09c53e19e90f28f9f49c9cdc1276bdcdfcdf"
+    },
+    {
+      "path": "VERIFICATION-v0.5.1.md",
+      "size": 511,
+      "sha256": "586818b3cc1264e2b63275595fba6901ccbbe73238db50de7ec3fba3542960dc"
+    },
+    {
+      "path": "VERIFICATION-v0.6.0.md",
+      "size": 837,
+      "sha256": "892086abc5092e3901c6644cda2996b3b1709e06d8399c6aa3d90f45fe7e4f9e"
+    },
+    {
+      "path": "VERIFICATION-v0.6.1.md",
+      "size": 247,
+      "sha256": "dc1f86ad325c7011f426767d1e27c3ae50aa66bde7cfce97fc12f6f1c722e7c2"
+    },
+    {
+      "path": "VERIFICATION-v0.6.2.md",
+      "size": 506,
+      "sha256": "4fc10474d5bccb8affec01759f88a41fe8cb7009666713748a968efe25fc5ecc"
+    },
+    {
+      "path": "VERIFICATION-v0.7.0.md",
+      "size": 751,
+      "sha256": "caba8d41ced3860f02a4468e8dced2ddb19fe91447882b7e128ad2afc7bc67cc"
+    },
+    {
+      "path": "VERIFICATION-v0.7.1.md",
+      "size": 646,
+      "sha256": "09b4970557f9d4d65528c5c0c9f4803387c29b3986fad1fce1c1c562c2a0790c"
+    },
+    {
+      "path": "VERIFICATION-v0.7.2.md",
+      "size": 661,
+      "sha256": "34a6b0502ceee213f86116d474db6952e285ea261f0c4589ed640f727f891597"
+    },
+    {
+      "path": "VERIFICATION-v0.7.3.md",
+      "size": 395,
+      "sha256": "b5c18c9d73e4357fc3f3d372e1fa134594253e46baf6a5dae296192a7813328d"
+    },
+    {
+      "path": "VERSION.txt",
+      "size": 33,
+      "sha256": "4c2f965403d5cef72f33edf7786f377cbb7f08a47726f4ce3ad29b0e70caaaa5"
+    },
+    {
+      "path": "assets/fonts/README.txt",
+      "size": 241,
+      "sha256": "7529400670db47d6ac24157f0ac6a2f2e7772e2cf2a67b5f90b8bd394692d636"
+    },
+    {
+      "path": "assets/sfx/soft_whoosh.wav",
+      "size": 40364,
+      "sha256": "2e8304140c198c3dd72c93df4eac52f9261a7ff444c924d2a1edede6bfe54a23"
+    },
+    {
+      "path": "config.yaml.default",
+      "size": 2728,
+      "sha256": "eb07d1955912c699a21d9ae94a94a68f19150c19353c43fd0760ed179097ee0e"
+    },
+    {
+      "path": "docs/CONTINUATION.md",
+      "size": 18361,
+      "sha256": "ac7d022100ec32ce1cd618b1e1fd894adca9b502f17f1e02fcd595f23272ce10"
+    },
+    {
+      "path": "docs/UPDATES.md",
+      "size": 10619,
+      "sha256": "e8ad9b750483a80ad63aa52042832ca7f6f26fb4a17d553066a6670662c1bc4a"
+    },
+    {
+      "path": "docs/implementation-plan-v0.7.8.md",
+      "size": 4588,
+      "sha256": "f8edd8bf90296ffc389626f74152f4aa480ba124bc3c815eaf51e4d1e822ada9"
+    },
+    {
+      "path": "installer/apply_update.ps1",
+      "size": 12097,
+      "sha256": "a7608b63837f1eb0e1e9ee7076c199926d335b743fd667301439d243ab4182ee"
+    },
+    {
+      "path": "installer/build_release_package.py",
+      "size": 3653,
+      "sha256": "60ace2c412994400ca37052c373788d0d634f7657168b2d0681495b45a205d79"
+    },
+    {
+      "path": "installer/check-script.ps1",
+      "size": 1251,
+      "sha256": "50f3a7d84375e3bc095b77498daa3319d870a6d77b119fc947a077aaa47ec989"
+    },
+    {
+      "path": "installer/check_python.py",
+      "size": 317,
+      "sha256": "17d46602a8975a312b360a7cb165cd8072a07929819bd8b055e323a86dcf6aeb"
+    },
+    {
+      "path": "installer/check_runtime.py",
+      "size": 3192,
+      "sha256": "ba436ec66ce6b0e813ad6f1279384c4333557864de90b4ed30c83dec7078796d"
+    },
+    {
+      "path": "installer/install.ps1",
+      "size": 27835,
+      "sha256": "c24e7f8bc7f40fd158ee702e4925790ad0c300de6f4b2844ce3f65148fcdc019"
+    },
+    {
+      "path": "installer/update_from_archive.ps1",
+      "size": 11622,
+      "sha256": "afca940b40cc4638386258a00c32fdcf68aad1b36e21c89789636cb0e8781be4"
+    },
+    {
+      "path": "models/whisper/.gitkeep",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "prompts/bestof_metadata.default.txt",
+      "size": 666,
+      "sha256": "3be176b020f3c787d4f694311b33f76dcfab58d1ee55d3070f9fb22c0d2921d8"
+    },
+    {
+      "path": "prompts/short_metadata.default.txt",
+      "size": 1061,
+      "sha256": "1247df99a89fe89c510205830d0467431fd4b2de51addc644daa07b6154310b7"
+    },
+    {
+      "path": "pyproject.toml",
+      "size": 855,
+      "sha256": "6227057fcb2f680c60bc18e7f2ceb3ec264df5faaf22b06d3a6c4d8f0a624e5e"
+    },
+    {
+      "path": "requirements.txt",
+      "size": 195,
+      "sha256": "f23967b56a1d559e4c259c2cef231cae15d96d666b8dbc0fde55d7892dce9690"
+    },
+    {
+      "path": "studio/__init__.py",
+      "size": 67,
+      "sha256": "bcad01e66de46ab8cbedaa2960c7966214ae2d7d118bc8b9cc3643ad69ac0043"
+    },
+    {
+      "path": "studio/__main__.py",
+      "size": 130,
+      "sha256": "e6b437d39efadce175428e0f4da4bf4c352e5bef1845032aef33bbd918160281"
+    },
+    {
+      "path": "studio/cli.py",
+      "size": 4553,
+      "sha256": "cadcb96f753e9ba7a5b97c72549f68b993bd4e9fe6386e30026a2c433b079d3b"
+    },
+    {
+      "path": "studio/config.py",
+      "size": 2216,
+      "sha256": "ba0b67925b12beb0bdae03555c8caf861983a5e4ed59daa95625fcc878482dc4"
+    },
+    {
+      "path": "studio/desktop_launcher.py",
+      "size": 3284,
+      "sha256": "f2fbee6305e135aa4c5df2671840880385f08f18eb7136fe9b391c79674eceac"
+    },
+    {
+      "path": "studio/doctor.py",
+      "size": 14566,
+      "sha256": "3f1adf61bb4b361eaca81f5252ae9df9f4baf9d7621a1eb21fc79c7463fa99b7"
+    },
+    {
+      "path": "studio/logging_setup.py",
+      "size": 2041,
+      "sha256": "6cc82d26a652978c980a742b4272f69add3b4cd785a4376eda1ae3f7324b2789"
+    },
+    {
+      "path": "studio/process.py",
+      "size": 3520,
+      "sha256": "ec14da0bd32ccb59369cc9d0b3b2d68ae99dfb7085a725b2620660746391aa87"
+    },
+    {
+      "path": "studio/web/__init__.py",
+      "size": 51,
+      "sha256": "c11c3bc76276365163062e8a00e1800fdd5b594003a462210f49f593af0eb224"
+    },
+    {
+      "path": "studio/web/app.py",
+      "size": 40336,
+      "sha256": "05e52ebe348011a4f7261cc42f7bcdf5dd3dce111c5fd31db419a425e8b8d924"
+    },
+    {
+      "path": "studio/web/export_quality.py",
+      "size": 12940,
+      "sha256": "06b21979aa38736de7a5cdfd70bd48e04f6155d4084290af7612609a264d5c88"
+    },
+    {
+      "path": "studio/web/highlights.py",
+      "size": 28724,
+      "sha256": "75499923c0c50555e8d4c03743d93db463520a3829f1fde2ace6b278722b0992"
+    },
+    {
+      "path": "studio/web/metadata.py",
+      "size": 17508,
+      "sha256": "8d0be53801ed9ea93e8efadccf5346cb5d97fb79a06725594c60ea3595b83169"
+    },
+    {
+      "path": "studio/web/model_manager.py",
+      "size": 8241,
+      "sha256": "0446df2b605b68b59fc0da25e93493612bd0f1871280a3aa5c2e766a3827bcca"
+    },
+    {
+      "path": "studio/web/short_editor.py",
+      "size": 21742,
+      "sha256": "98e625c9cfebd4065d262bca8e814e8e9abbe891ec18e528bf844634f5b9d4c0"
+    },
+    {
+      "path": "studio/web/short_renderer.py",
+      "size": 19465,
+      "sha256": "8cf74232b13804694168ff49f3dcd57d3ce4c0a8aea6ac3127e37419174c4731"
+    },
+    {
+      "path": "studio/web/speakers.py",
+      "size": 6999,
+      "sha256": "9d9c9843c9d6c862006248416507be4b84f695c305f248e72f4abf90527837d5"
+    },
+    {
+      "path": "studio/web/static/app.js",
+      "size": 36789,
+      "sha256": "243d382da3653c6b11d66221447396efff0208b0287bca8c631652b30f2f3e98"
+    },
+    {
+      "path": "studio/web/static/index.html",
+      "size": 26604,
+      "sha256": "79e3d96d02e11c9b3a1df86e4034f6ff6063e9c8bfc4019f0e40b3654033b582"
+    },
+    {
+      "path": "studio/web/static/styles.css",
+      "size": 21268,
+      "sha256": "a30d95400a245f404d80b22c53e42c497242c00057062096a0f9e3bb3b0057b4"
+    },
+    {
+      "path": "studio/web/store.py",
+      "size": 19759,
+      "sha256": "a14519c71f7c22afbdccd31e2496c22d81cd4c06c5d761c66a0da7f2a324499b"
+    },
+    {
+      "path": "studio/web/transcribe.py",
+      "size": 20029,
+      "sha256": "57f3e769f38f0a3be6468cfff61acca064975266e17fbaa82f9805d451c95d68"
+    },
+    {
+      "path": "studio/web/updater.py",
+      "size": 13389,
+      "sha256": "d944778d76eb28e9e586e5445a178d51de0ba4a3776ffadfd46c83928abf057f"
+    },
+    {
+      "path": "studio/web/worker.py",
+      "size": 25667,
+      "sha256": "66537bb023880fcc9b7d612dd331760737bcef3d8f631cfaf976f3d745c8d1d6"
+    },
+    {
+      "path": "tests/test_config.py",
+      "size": 1141,
+      "sha256": "e6f2310222c2c0a2a2b056ab355cbc0b2733169fc920a1391a9932ed62bf54f1"
+    },
+    {
+      "path": "tests/test_dependency_metadata.py",
+      "size": 913,
+      "sha256": "9fb8c8f8365f8fa92079a62caaadda6c92cc72137a2af8cab3d3d0bb39ab6f71"
+    },
+    {
+      "path": "tests/test_export_quality.py",
+      "size": 6971,
+      "sha256": "bb86a944e7c9800122a7421e796b591578ad36011fa5d2627c1d1edfcfaeb39a"
+    },
+    {
+      "path": "tests/test_highlights.py",
+      "size": 9800,
+      "sha256": "da3167907f72b9deedcd4fd5210f8e3134d1a120f7b99e809325a642f7c68e20"
+    },
+    {
+      "path": "tests/test_install_update_strategy.py",
+      "size": 4064,
+      "sha256": "98dc980690d14d82e6b8f04daf07991579da59d75c8766154676597f4a67f671"
+    },
+    {
+      "path": "tests/test_installer_script.py",
+      "size": 10051,
+      "sha256": "0dd604adf0433badfce74cbae3a547170b17a87a321443495cbbf6b379dc51af"
+    },
+    {
+      "path": "tests/test_metadata.py",
+      "size": 7999,
+      "sha256": "19fc4fd21615b66d3b7cdca199bc59b3c43694d2508ec37ecb1813f733866d37"
+    },
+    {
+      "path": "tests/test_model_manager.py",
+      "size": 2110,
+      "sha256": "b11d714fd060fa0b38209a28c3b5736701d8ea37a09568c07e6511744d7aac39"
+    },
+    {
+      "path": "tests/test_probe_timeout.py",
+      "size": 1794,
+      "sha256": "d2ddfe89452c64def891ff4fb49ee8a6a2abd5e5d8006bcc8382ee14178a4c3c"
+    },
+    {
+      "path": "tests/test_process.py",
+      "size": 1616,
+      "sha256": "d07409f954709045b22a4c739bc85059cda4c47287a1b7d05aab0cb8433e3509"
+    },
+    {
+      "path": "tests/test_render_integration.py",
+      "size": 3978,
+      "sha256": "c7c0c816505a3068f672a09f0783e463c62e28e8337b367f6cde3aae27890948"
+    },
+    {
+      "path": "tests/test_runtime_check.py",
+      "size": 3292,
+      "sha256": "77777be8165076a08b5fd2f3bf22d56853cd968583f7c39ee563df5ea8a9f249"
+    },
+    {
+      "path": "tests/test_runtime_version.py",
+      "size": 1856,
+      "sha256": "c2b3e8c684c619a874846db724051a8d6954220e66834122879dbcac58240cb1"
+    },
+    {
+      "path": "tests/test_short_editor.py",
+      "size": 5931,
+      "sha256": "eaa38f3cb862907cc43d215c0dfc1abcb8e5989e124a9a89680ced3b7827a4d2"
+    },
+    {
+      "path": "tests/test_speakers.py",
+      "size": 1974,
+      "sha256": "16ecca170f45c0f7b10342a85050e5d564ca4d392985ad68f82e328527d282cb"
+    },
+    {
+      "path": "tests/test_transcribe.py",
+      "size": 8218,
+      "sha256": "e55d8fff38fbc0e34014a53993de3e7a670fe1c05eb84e989e8eb60987b44c23"
+    },
+    {
+      "path": "tests/test_twitch_download_ranges.py",
+      "size": 730,
+      "sha256": "ad9dbea7e7261c70d0930e9ad1140fa91323cc7d677afa51d8b86677640796c3"
+    },
+    {
+      "path": "tests/test_updates.py",
+      "size": 6761,
+      "sha256": "307ac97b83647440b2721da1f84b7a2b42fd1feff2124e4cf9ea289b77f9c624"
+    },
+    {
+      "path": "tests/test_voice_mode_ui.py",
+      "size": 379,
+      "sha256": "a7bc5c5d50d95a1e743f8a0d8af336b7c6d42889a0d79040d56990d0361d6e6d"
+    },
+    {
+      "path": "tests/test_web.py",
+      "size": 20439,
+      "sha256": "21e27beb70ec2daa6fd4358b16c9466d20a81a43d8e890a118e62469821c600c"
+    },
+    {
+      "path": "tests/test_webcam_renderer.py",
+      "size": 601,
+      "sha256": "fba1b3e032f713f25b1c6b5cc87b8990c23955e1abcd35f3ab7ab648123c1d6e"
+    },
+    {
+      "path": "tools/check_project_memory.py",
+      "size": 3022,
+      "sha256": "4a56967badc6a1333e6abbbcb59f994be6d8bc5585a913cae2eac33bdbf9ae79"
+    },
+    {
+      "path": "tools/whisper.cpp/.gitkeep",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "exclusions": [
+    ".git",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".venv",
+    "__pycache__",
+    "build",
+    "config.yaml",
+    "credentials.json",
+    "data",
+    "dist",
+    "inbox",
+    "logs",
+    "node_modules",
+    "out",
+    "secrets.json",
+    "work"
+  ]
+}
