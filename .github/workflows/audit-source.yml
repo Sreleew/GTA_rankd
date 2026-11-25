@@ -310,6 +310,8 @@ jobs:
           git add source/canonical-v0.7.8/
           if ! git diff --cached --quiet; then
             git commit -m "build: add canonical GTA Ranked Studio v0.7.8 source snapshot"
+            git fetch origin "$GITHUB_REF_NAME"
+            git rebase "origin/$GITHUB_REF_NAME"
             git push origin "HEAD:$GITHUB_REF_NAME"
           else
             echo "Canonical v0.7.8 source snapshot is already up to date."
