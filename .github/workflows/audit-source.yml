@@ -126,8 +126,8 @@ jobs:
           windows = yaml.load(Path(".github/workflows/windows-smoke.yml").read_text(encoding="utf-8"), Loader=loader)
           windows_steps = windows.get("jobs", {}).get("windows-smoke", {}).get("steps", [])
           windows_script = "\n".join(step.get("run", "") for step in windows_steps)
-          if "app/installer/build_release_package.py" not in windows_script or "app/studio/web/static/app.js" not in windows_script:
-              raise SystemExit("La validation Windows doit tester directement app/.")
+          if "build_release_package.py" not in windows_script or "node --check studio/web/static/app.js" not in windows_script:
+              raise SystemExit("La validation Windows doit construire le paquet et vérifier le JavaScript de app/.")
           if "source/canonical" in windows_script or "apply-hotfix" in windows_script:
               raise SystemExit("La validation Windows ne doit plus extraire une archive ni appliquer de patchs.")
           print("Garde-fous de publication et validation Windows vérifiés.")
@@ -196,7 +196,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: gta-ranked-studio-v0.7.8-linux-validated-package
-          path: |
-            dist/GTA-Ranked-Studio-v0.7.8.zip
-            dist/SHA256SUMS.txt
+          path: dist/
           retention-days: 14
