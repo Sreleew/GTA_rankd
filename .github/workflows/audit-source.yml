@@ -180,6 +180,8 @@ jobs:
           python_setup = next((step for step in release_steps if step.get("uses") == "actions/setup-python@v5"), None)
           if not python_setup or python_setup.get("with", {}).get("python-version") != "3.11":
               raise SystemExit("Le workflow de release doit épingler Python 3.11, version prise en charge par le projet.")
+          if "1980-01-01 00:00:00 UTC" not in release_script:
+              raise SystemExit("Le workflow de release doit normaliser les dates source avant la création du ZIP.")
           windows = yaml.load(Path(".github/workflows/windows-smoke.yml").read_text(encoding="utf-8"), Loader=loader)
           job = windows.get("jobs", {}).get("windows-smoke", {})
           if job.get("runs-on") != "windows-latest":
