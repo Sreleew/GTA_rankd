@@ -80,6 +80,42 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends ffmpeg
           python -m pip install --disable-pip-version-check -r "$APP_ROOT/requirements.txt"
+      - name: Verify release workflow safety gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import yaml
+
+          loader = yaml.BaseLoader
+          release = yaml.load(Path(".github/workflows/release.yml").read_text(encoding="utf-8"), Loader=loader)
+          triggers = release.get("on", {})
+          if set(triggers) != {"workflow_dispatch"}:
+              raise SystemExit("Le workflow de release doit être déclenché uniquement manuellement.")
+          inputs = triggers["workflow_dispatch"].get("inputs", {})
+          confirmation = inputs.get("confirm_publish", {})
+          if confirmation.get("type") != "boolean" or confirmation.get("default") != "false" or confirmation.get("required") != "true":
+              raise SystemExit("La confirmation explicite de release doit être obligatoire et décochée par défaut.")
+          release_steps = release["jobs"]["release"]["steps"]
+          release_script = "\n".join(step.get("run", "") for step in release_steps)
+          if "refs/heads/main" not in release_script or "CONFIRM_PUBLISH" not in release_script:
+              raise SystemExit("Les garde-fous main/confirmation sont absents du workflow de release.")
+          publish = next((step for step in release_steps if step.get("uses", "").startswith("softprops/action-gh-release@")), None)
+          if not publish or publish.get("with", {}).get("draft") != "true":
+              raise SystemExit("Le workflow doit créer une Release brouillon, jamais publier directement.")
+
+          windows = yaml.load(Path(".github/workflows/windows-smoke.yml").read_text(encoding="utf-8"), Loader=loader)
+          job = windows.get("jobs", {}).get("windows-smoke", {})
+          if job.get("runs-on") != "windows-latest":
+              raise SystemExit("Le contrôle Windows doit utiliser windows-latest.")
+          windows_steps = job.get("steps", [])
+          windows_script = "\n".join(step.get("run", "") for step in windows_steps)
+          for required in ("python -m pytest -q", "node --check", "installer/build_release_package.py", "choco install ffmpeg"):
+              if required not in windows_script:
+                  raise SystemExit(f"Contrôle Windows manquant : {required}")
+          print("Garde-fous release et validation Windows vérifiés.")
+          PY
       - name: Run complete test suite
         shell: bash
         run: |
