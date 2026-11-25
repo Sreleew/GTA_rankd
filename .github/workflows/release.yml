@@ -1,4 +1,4 @@
-name: Build and prepare GTA Ranked Studio release
+name: Build and publish GTA Ranked Studio
 
 on:
   # Une publication publique ne part que d'un commit explicite d'approbation.
