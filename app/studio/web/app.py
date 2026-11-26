@@ -321,7 +321,8 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
             raise HTTPException(status_code=409, detail="Le média source n'est plus disponible sur ce PC.")
         media_start = float(candidate["media_start"])
         media_end = float(candidate["media_end"])
-        if media_end <= media_start or media_end - media_start > 60:
+        max_short_seconds = float(config.get("shorts", "max_input_duration_seconds", default=165))
+        if media_end <= media_start or media_end - media_start > max_short_seconds:
             raise HTTPException(status_code=409, detail="La durée du passage candidat est invalide pour un Short.")
         job_id = uuid.uuid4().hex
         options = {
