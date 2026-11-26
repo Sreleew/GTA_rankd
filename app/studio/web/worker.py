@@ -312,7 +312,7 @@ class JobRunner:
                 height=int(self.config.get("encoding", "height_short", default=1920)),
                 layout=str(options.get("layout", self.config.get("shorts", "layout", default="smart"))),
                 webcam_zone=str(options.get("webcam_zone", "none")),
-                crop_x=int(options.get("crop_x", self.config.get("shorts", "default_crop_x", default=72))),
+                crop_x=int(options.get("crop_x", self.config.get("shorts", "default_crop_x", default=80))),
                 crop_y=int(options.get("crop_y", 50)),
                 ass_file=ass_path,
                 fonts_dir=self.config.path_for("paths", "fonts"),
