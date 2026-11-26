@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import array
-import json
 import logging
 import math
 import queue
@@ -10,10 +9,8 @@ import re
 import shutil
 import threading
 import time
-import uuid
 import wave
 from pathlib import Path
-from statistics import median
 from typing import Any
 
 from studio.config import AppConfig
