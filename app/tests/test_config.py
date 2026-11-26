@@ -39,7 +39,7 @@ def test_legacy_default_short_profile_upgrades_in_memory_without_rewriting_user_
 def test_legacy_short_profile_keeps_user_customized_limits(tmp_path):
     project_root = Path(__file__).resolve().parents[1]
     source = (project_root / "config.yaml.default").read_text(encoding="utf-8")
-    source = source.replace("version: 0.8.1", "version: 0.8.0")
+    source = source.replace("version: 0.8.2", "version: 0.8.0")
     source = source.replace("max_input_duration_seconds: 165", "max_input_duration_seconds: 90")
     source = source.replace("peak_trim_threshold_seconds: 165", "peak_trim_threshold_seconds: 45")
     source = source.replace("auto_trim_min_seconds: 60", "auto_trim_min_seconds: 20")
