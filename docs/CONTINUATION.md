@@ -4,7 +4,7 @@
 
 - **Dernière mise à jour :** 26 novembre 2026
 - **Version stable publiée :** 0.8.1
-- **État :** v0.8.1 est fusionnée dans `main` et publiée. L'audit de maintenance est terminé ; le pipeline Shorts reste la priorité fonctionnelle.
+- **État :** v0.8.1 est fusionnée dans `main` et publiée. Le travail fonctionnel suivant est isolé dans la PR #11 : aligner les coupes automatiques sur les frontières de phrases et pauses naturelles.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
 - **Dernière Release stable :** [v0.8.1](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.1)
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
@@ -13,6 +13,8 @@
 - **Tests v0.8.1 :** Linux 150 réussis, 1 ignoré (PowerShell non disponible sous Linux) ; Windows 151 réussis.
 - **Sécurité et packaging :** Ruff et pip-audit réussis sur Linux et Windows, aucune vulnérabilité connue ; ZIP Windows et SHA-256 vérifiés.
 - **PR de maintenance :** [#10](https://github.com/Sreleew/GTA_rankd/pull/10), fusionnée dans `main`.
+- **PR coupes naturelles :** [#11](https://github.com/Sreleew/GTA_rankd/pull/11), branche `feature/natural-cut-boundaries`, en attente de fusion. Le départ du Short préfère une frontière après ponctuation ou pause de 0,75 s ; fallback temporel conservé si aucune frontière fiable n'existe.
+- **CI PR #11 :** Linux 152 réussis + 1 ignoré ; Windows 153 réussis. Ruff, pip-audit, ZIP et SHA-256 validés.
 - **Release v0.8.1 :** [publication officielle](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.1), workflow https://github.com/Sreleew/GTA_rankd/actions/runs/45842590841.
 - **PR de livraison v0.7.9 :** [#8](https://github.com/Sreleew/GTA_rankd/pull/8), fusionnée dans `main`.
 - **PR cadrage intelligent v0.8.0 :** [#9](https://github.com/Sreleew/GTA_rankd/pull/9), fusionnée dans `main` et publiée.
@@ -172,6 +174,7 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 ## 10. Journal de travail récent
 
 - **v0.8.1 publiée :** séparation runtime/dev, retrait du scaffold Best Of non relié, suppression des duplications documentaires et rapports historiques, exclusion des outils développeur et données locales du ZIP, contrôle Ruff/pip-audit, analyse PowerShell, tests Linux/Windows et vérification ZIP/SHA-256. PR #10 fusionnée et Release stable publiée.
+- **Amélioration Short en cours :** PR #11 ajoute un début de coupe aligné sur une phrase ou une pause naturelle, avec un test pour chaque cas ; pas de changement à la durée cible, au pic, au payoff ou aux actions après validation. La fonctionnalité n'est pas encore fusionnée ni publiée.
 
 - **v0.7.9 publiée :** refonte des miniatures verticales, sélection de phrases plus complètes pour les hooks/titres, garde-fous contre les événements inventés dans les métadonnées, raccords audio plus doux et conservation des clips Twitch sélectionnés.
 - **Intégration :** PR #8 fusionnée dans `main`, Release stable [v0.7.9](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.7.9).
