@@ -31,8 +31,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: gta-ranked-windows-smoke
-  cancel-in-progress: false
+  group: gta-ranked-windows-smoke-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   windows-smoke:
