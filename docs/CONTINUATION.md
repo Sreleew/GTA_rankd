@@ -3,16 +3,19 @@
 > Lire ce document en premier dans chaque nouvelle conversation sur le projet. Il décrit l'état réellement livré et la structure source actuelle.
 
 - **Dernière mise à jour :** 26 novembre 2026
-- **Version source de référence :** 0.7.9
-- **État :** v0.7.9 est la Release stable publiée depuis `main`. La source applicative est maintenue directement dans `app/`.
+- **Version source de référence :** 0.8.0
+- **État :** v0.8.0 est préparée sur la PR #9 ; v0.7.9 reste la dernière Release stable tant que l'approbation de publication n'a pas été déclenchée. La source applicative est maintenue directement dans `app/`.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
 - **Dernière Release stable :** [v0.7.9](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.7.9)
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
 - **Source active :** `app/`. Modifier directement les fichiers Python, JavaScript, CSS, HTML, tests et installateur présents dans ce dossier.
 - **Mise à jour intégrée :** l'application consulte les Releases GitHub. Le ZIP v0.7.9 et `SHA256SUMS.txt` sont publiés par le workflow de release.
-- **Tests v0.7.9 :** Linux 144 réussis, 1 ignoré (PowerShell non disponible sous Linux) ; Windows 145 réussis.
-- **PR de livraison :** [#8](https://github.com/Sreleew/GTA_rankd/pull/8), fusionnée dans `main`.
+- **Tests v0.8.0 candidate :** Linux 147 réussis, 1 ignoré (PowerShell non disponible sous Linux) ; Windows 148 réussis.
+- **PR de livraison v0.7.9 :** [#8](https://github.com/Sreleew/GTA_rankd/pull/8), fusionnée dans `main`.
+- **PR cadrage intelligent v0.8.0 :** [#9](https://github.com/Sreleew/GTA_rankd/pull/9), validations Linux et Windows réussies, en attente de fusion.
 - **Workflow de publication v0.7.9 :** https://github.com/Sreleew/GTA_rankd/actions/runs/45793843538.
+- **CI Linux v0.8.0 candidate :** https://github.com/Sreleew/GTA_rankd/actions/runs/45796472429.
+- **CI Windows v0.8.0 candidate :** https://github.com/Sreleew/GTA_rankd/actions/runs/45796473363.
 - **Validation matérielle :** le PC AMD Radeon RX 9060 XT n'a pas encore été validé physiquement pour AMF/Vulkan après mise à jour.
 
 ## 1. Objectif du produit
@@ -69,6 +72,8 @@ Le projet doit rester local-first, sans abonnement ni API IA payante obligatoire
 - **Base propre intégrée :** PR #6 fusionnée dans `main`.
 - **Montage intelligent intégré :** PR #7 fusionnée dans `main`.
 - **Refonte créative intégrée :** PR #8 fusionnée dans `main`, version v0.7.9.
+- **Cadrage vertical intelligent (PR #9) :** nouveau layout 9:16 par défaut, panneau gameplay agrandi à 42 % de la hauteur, focus horizontal par défaut à 80 %, hook en haut et sous-titres en zone basse. Le mode préserve les sources portrait et garde les modes `fill`/`blur` disponibles.
+- **Contrôle documentaire :** correction de `tools/check_project_memory.py` pour reconnaître les sections 9 à 12 du mémo, évitant les échecs CI dus à l'ancien plan de sections.
 - **Chantier cadrage vertical intelligent (en cours) :** nouvelle composition 9:16 avec panneau gameplay agrandi, focus horizontal réglable (position par défaut à 80 %), hook au-dessus et sous-titres dans une zone basse dédiée. Le mode est activé par défaut pour les nouveaux imports, URLs et passages issus du classement. Les modes « plein écran recadré » et « vidéo entière + fond flouté » restent disponibles. En attente des tests CI et de la validation sur des clips réels.
 
 - **Source de développement :** `app/`. Ne pas décompresser l'archive de release pour développer.
