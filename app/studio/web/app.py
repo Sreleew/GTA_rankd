@@ -326,7 +326,7 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         job_id = uuid.uuid4().hex
         scan_metadata = scan.get("metadata") or {}
         options = {
-            "layout": "smart", "crop_x": 72, "crop_y": 50, "dynamic_zoom": False, "zoom_percent": 0,
+            "layout": "smart", "crop_x": 80, "crop_y": 50, "dynamic_zoom": False, "zoom_percent": 0,
             "captions_enabled": True, "caption_voice_mode": "dominant",
             "brand_enabled": True, "auto_trim_enabled": False, "sfx_enabled": True,
             "hook_text": "", "context_text": "",
@@ -416,7 +416,7 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         note: Annotated[str, Form()] = "",
         rights_confirmed: Annotated[bool, Form()] = False,
         layout: Annotated[str, Form()] = "smart",
-        crop_x: Annotated[int, Form()] = 72,
+        crop_x: Annotated[int, Form()] = 80,
         crop_y: Annotated[int, Form()] = 50,
         dynamic_zoom: Annotated[bool, Form()] = True,
         zoom_percent: Annotated[int, Form()] = 8,
