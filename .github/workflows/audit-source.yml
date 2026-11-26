@@ -80,7 +80,7 @@ jobs:
         run: |
           set -euo pipefail
           ruff check app/studio app/installer app/tests tools
-          python -m pip-audit -r app/requirements.txt
+          pip-audit -r app/requirements.txt
 
       - name: Verify repository structure and metadata
         shell: bash
