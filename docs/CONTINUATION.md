@@ -3,7 +3,7 @@
 > Lire ce document en premier dans chaque nouvelle conversation sur le projet. Il décrit l'état réellement livré et la structure source actuelle.
 
 - **Dernière mise à jour :** 26 novembre 2026
-- **Version source de référence :** 0.7.9 (prochain lot : cadrage intelligent en validation)
+- **Version source de référence :** 0.7.9
 - **État :** v0.7.9 est la Release stable publiée depuis `main`. La source applicative est maintenue directement dans `app/`.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
 - **Dernière Release stable :** [v0.7.9](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.7.9)
