@@ -4,18 +4,19 @@
 
 - **Dernière mise à jour :** 26 novembre 2026
 - **Version source de référence :** 0.8.0
-- **État :** v0.8.0 est fusionnée dans `main` et approuvée pour publication ; le workflow de Release est déclenché par `.release-approval`. La source applicative est maintenue directement dans `app/`.
+- **État :** v0.8.0 est publiée comme Release stable depuis `main`. La source applicative est maintenue directement dans `app/`.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
 - **Dernière Release stable :** [v0.8.0](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.0)
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
 - **Source active :** `app/`. Modifier directement les fichiers Python, JavaScript, CSS, HTML, tests et installateur présents dans ce dossier.
 - **Mise à jour intégrée :** l'application consulte les Releases GitHub. Le ZIP v0.7.9 et `SHA256SUMS.txt` sont publiés par le workflow de release.
-- **Tests v0.8.0 candidate :** Linux 147 réussis, 1 ignoré (PowerShell non disponible sous Linux) ; Windows 148 réussis.
+- **Tests v0.8.0 :** Linux 147 réussis, 1 ignoré (PowerShell non disponible sous Linux) ; Windows 148 réussis.
 - **PR de livraison v0.7.9 :** [#8](https://github.com/Sreleew/GTA_rankd/pull/8), fusionnée dans `main`.
 - **PR cadrage intelligent v0.8.0 :** [#9](https://github.com/Sreleew/GTA_rankd/pull/9), validations Linux et Windows réussies, en attente de fusion.
 - **Workflow de publication v0.7.9 :** https://github.com/Sreleew/GTA_rankd/actions/runs/45793843538.
-- **CI Linux v0.8.0 candidate :** https://github.com/Sreleew/GTA_rankd/actions/runs/45796472429.
-- **CI Windows v0.8.0 candidate :** https://github.com/Sreleew/GTA_rankd/actions/runs/45796473363.
+- **Workflow de publication v0.8.0 :** https://github.com/Sreleew/GTA_rankd/actions/runs/45797395932.
+- **CI Linux v0.8.0 :** https://github.com/Sreleew/GTA_rankd/actions/runs/45796472429.
+- **CI Windows v0.8.0 :** https://github.com/Sreleew/GTA_rankd/actions/runs/45796473363.
 - **Validation matérielle :** le PC AMD Radeon RX 9060 XT n'a pas encore été validé physiquement pour AMF/Vulkan après mise à jour.
 
 ## 1. Objectif du produit
@@ -72,7 +73,7 @@ Le projet doit rester local-first, sans abonnement ni API IA payante obligatoire
 - **Base propre intégrée :** PR #6 fusionnée dans `main`.
 - **Montage intelligent intégré :** PR #7 fusionnée dans `main`.
 - **Refonte créative intégrée :** PR #8 fusionnée dans `main`, version v0.7.9.
-- **Cadrage vertical intelligent (PR #9) :** fusionné dans `main` pour v0.8.0. Layout 9:16 par défaut, panneau gameplay agrandi à 42 % de la hauteur, focus horizontal par défaut à 80 %, hook en haut et sous-titres en zone basse. Les sources portrait restent proportionnelles et les modes `fill`/`blur` restent disponibles.
+- **Cadrage vertical intelligent (PR #9) :** fusionné dans `main` et publié en v0.8.0. Layout 9:16 par défaut, panneau gameplay agrandi à 42 % de la hauteur, focus horizontal par défaut à 80 %, hook en haut et sous-titres en zone basse. Les sources portrait restent proportionnelles et les modes `fill`/`blur` restent disponibles.
 - **Contrôle documentaire :** correction de `tools/check_project_memory.py` pour reconnaître les sections 9 à 12 du mémo, évitant les échecs CI dus à l'ancien plan de sections.
 - **Validation restante :** les tests synthétiques Linux/Windows passent. Vérifier le cadrage sur plusieurs vrais clips Twitch, notamment les HUD et les facecams dont la position varie, puis confirmer AMF/Vulkan sur le PC AMD.
 
@@ -153,11 +154,11 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **v0.7.9 publiée :** refonte des miniatures verticales, sélection de phrases plus complètes pour les hooks/titres, garde-fous contre les événements inventés dans les métadonnées, raccords audio plus doux et conservation des clips Twitch sélectionnés.
 - **Intégration :** PR #8 fusionnée dans `main`, Release stable [v0.7.9](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.7.9).
 - **Validation :** Linux 144 réussis + 1 ignoré ; Windows 145 réussis. ZIP et SHA-256 publiés.
-- **À vérifier sur le PC utilisateur :** cycle réel de mise à jour depuis v0.7.8, préservation des données, rendu d'un Short et fonctionnement matériel AMD AMF/Vulkan sur RX 9060 XT.
+- **À vérifier sur le PC utilisateur :** mise à jour depuis v0.7.9, préservation des données, rendu d'un Short avec cadrage intelligent et fonctionnement matériel AMD AMF/Vulkan sur RX 9060 XT.
 
 ## 11. Prochaines étapes priorisées
 
-1. Après publication, installer v0.8.0 depuis **Paramètres > Mises à jour**, puis vérifier que les réglages, projets, bases et exports sont conservés.
+1. Installer v0.8.0 depuis **Paramètres > Mises à jour**, puis vérifier que les réglages, projets, bases et exports sont conservés.
 2. Exécuter `docs/WINDOWS-HARDWARE-VALIDATION.md` sur la RX 9060 XT : AMF, Whisper Vulkan, Ollama/Qwen et cycle Short complet.
 3. Calibrer le contrôle qualité sur plusieurs vrais Shorts GTA, en mesurant les faux positifs sur les scènes sombres, pauses voulues et séquences sans musique.
 4. Améliorer les coupes naturelles et la construction des hooks à partir des limites de phrases, sans CTA générique à l'ouverture.
@@ -167,4 +168,4 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 
 ## 12. Message de reprise prêt à copier
 
-> Nous reprenons GTA Ranked Studio. Lis `docs/CONTINUATION.md` puis `docs/WORKING-AGREEMENT.md`. La source de développement est directement dans `app/`, et non dans une archive. La v0.8.0 vient d'être fusionnée et approuvée pour publication : https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.0. Les workflows Linux, Windows et Release doivent tous tester/construire directement depuis `app/`, sans hotfix ni extraction d'archive. Préserve les données locales. Modifie uniquement les fichiers nécessaires, ajoute les tests pertinents, valide sous Linux et Windows pour les changements transversaux. La RX 9060 XT n'a pas encore été validée physiquement pour AMF/Vulkan. L'utilisateur souhaite que toute modification demandée soit intégrée et publiée directement dès que les contrôles sont réussis. Travailler directement dans GitHub, éviter les audits redondants, préserver une qualité élevée et maintenir ce mémo à jour à chaque lot.
+> Nous reprenons GTA Ranked Studio. Lis `docs/CONTINUATION.md` puis `docs/WORKING-AGREEMENT.md`. La source de développement est directement dans `app/`, et non dans une archive. La v0.8.0 est la Release stable actuelle : https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.0. Les workflows Linux, Windows et Release doivent tous tester/construire directement depuis `app/`, sans hotfix ni extraction d'archive. Préserve les données locales. Modifie uniquement les fichiers nécessaires, ajoute les tests pertinents, valide sous Linux et Windows pour les changements transversaux. La RX 9060 XT n'a pas encore été validée physiquement pour AMF/Vulkan. L'utilisateur souhaite que toute modification demandée soit intégrée et publiée directement dès que les contrôles sont réussis. Travailler directement dans GitHub, éviter les audits redondants, préserver une qualité élevée et maintenir ce mémo à jour à chaque lot.
