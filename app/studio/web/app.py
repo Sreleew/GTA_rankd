@@ -324,7 +324,6 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         if media_end <= media_start or media_end - media_start > 60:
             raise HTTPException(status_code=409, detail="La durée du passage candidat est invalide pour un Short.")
         job_id = uuid.uuid4().hex
-        scan_metadata = scan.get("metadata") or {}
         options = {
             "layout": "smart", "crop_x": 80, "crop_y": 50, "dynamic_zoom": False, "zoom_percent": 0,
             "captions_enabled": True, "caption_voice_mode": "dominant",
