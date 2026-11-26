@@ -147,7 +147,7 @@ def _fallback_metadata(
     mentions_subscribe = any(term in compact for term in ("subscribe", "sub button", "sub to", "subscribers"))
     mentions_like = "like" in compact or "like button" in compact
 
-    if not raw_text and not note.strip() and not custom_hook.strip():
+    if not raw_text and not note.strip() and not custom_hook.strip() and not custom_context.strip():
         # Without usable speech or editorial context, do not invent a quote or
         # pretend to understand the clip. Keep the publishing copy honest.
         title = f"{creator} GTA clip" if creator else "GTA clip"
