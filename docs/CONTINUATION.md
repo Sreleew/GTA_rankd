@@ -3,7 +3,7 @@
 > Lire ce document en premier dans chaque nouvelle conversation sur le projet. Il décrit l'état réellement livré et la structure source actuelle.
 
 - **Dernière mise à jour :** 26 novembre 2026
-- **Version source de référence :** 0.7.9
+- **Version source de référence :** 0.7.9 (prochain lot : cadrage intelligent en validation)
 - **État :** v0.7.9 est la Release stable publiée depuis `main`. La source applicative est maintenue directement dans `app/`.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
 - **Dernière Release stable :** [v0.7.9](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.7.9)
@@ -69,6 +69,7 @@ Le projet doit rester local-first, sans abonnement ni API IA payante obligatoire
 - **Base propre intégrée :** PR #6 fusionnée dans `main`.
 - **Montage intelligent intégré :** PR #7 fusionnée dans `main`.
 - **Refonte créative intégrée :** PR #8 fusionnée dans `main`, version v0.7.9.
+- **Chantier cadrage vertical intelligent (en cours) :** nouvelle composition 9:16 avec panneau gameplay agrandi, focus horizontal réglable, hook au-dessus et sous-titres dans une zone basse dédiée. La version de secours « vidéo entière + fond flouté » reste disponible. En attente des tests CI avant intégration.
 
 - **Source de développement :** `app/`. Ne pas décompresser l'archive de release pour développer.
 - **Archive de provenance v0.7.8 :** `archive/releases/v0.7.8/`. La conserver intacte.
@@ -156,7 +157,8 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 3. Calibrer le contrôle qualité sur plusieurs vrais Shorts GTA, en mesurant les faux positifs sur les scènes sombres, pauses voulues et séquences sans musique.
 4. Améliorer les coupes naturelles et la construction des hooks à partir des limites de phrases, sans CTA générique à l'ouverture.
 5. Développer le classement visuel des événements GTA (HUD, kill feed et changements de scène) avec un score explicable et une validation humaine.
-6. Garder les futures améliorations dans `app/` et produire les packages depuis cette source directe.
+6. Valider le nouveau cadrage intelligent sur plusieurs clips paysage et portrait, notamment avec facecam intégrée à droite, puis ajuster le focus par défaut si nécessaire.
+7. Garder les futures améliorations dans `app/` et produire les packages depuis cette source directe.
 
 ## 12. Message de reprise prêt à copier
 
