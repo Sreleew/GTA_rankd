@@ -51,8 +51,8 @@ def _validate_edit_options(
     auto_trim_enabled: bool = True, sfx_enabled: bool = True,
     caption_voice_mode: str = "dominant",
 ) -> dict:
-    if layout not in {"fill", "blur"}:
-        raise HTTPException(status_code=400, detail="Le cadrage doit être 'fill' ou 'blur'.")
+    if layout not in {"fill", "blur", "smart"}:
+        raise HTTPException(status_code=400, detail="Le cadrage doit être 'smart', 'fill' ou 'blur'.")
     if not 0 <= int(crop_x) <= 100 or not 0 <= int(crop_y) <= 100:
         raise HTTPException(status_code=400, detail="La position du cadrage doit être comprise entre 0 et 100.")
     if not 0 <= int(zoom_percent) <= 20:
@@ -326,7 +326,7 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         job_id = uuid.uuid4().hex
         scan_metadata = scan.get("metadata") or {}
         options = {
-            "layout": "blur", "crop_x": 50, "crop_y": 50, "dynamic_zoom": False, "zoom_percent": 0,
+            "layout": "smart", "crop_x": 72, "crop_y": 50, "dynamic_zoom": False, "zoom_percent": 0,
             "captions_enabled": True, "caption_voice_mode": "dominant",
             "brand_enabled": True, "auto_trim_enabled": False, "sfx_enabled": True,
             "hook_text": "", "context_text": "",
@@ -415,8 +415,8 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         streamer: Annotated[str, Form()] = "",
         note: Annotated[str, Form()] = "",
         rights_confirmed: Annotated[bool, Form()] = False,
-        layout: Annotated[str, Form()] = "fill",
-        crop_x: Annotated[int, Form()] = 50,
+        layout: Annotated[str, Form()] = "smart",
+        crop_x: Annotated[int, Form()] = 72,
         crop_y: Annotated[int, Form()] = 50,
         dynamic_zoom: Annotated[bool, Form()] = True,
         zoom_percent: Annotated[int, Form()] = 8,
