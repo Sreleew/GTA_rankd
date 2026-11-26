@@ -56,7 +56,7 @@
       </section>
 
       <section class="page" id="page-shorts">
-        <div class="section-intro"><div><div class="eyebrow">SHORTS WORKFLOW / STEP 01</div><h2>Transformer un clip</h2><p>Importe une vidéo ou colle une URL. Le montage conserve toute l’image d’origine au centre du format 9:16, avec un fond flouté pour remplir l’écran. Le zoom dynamique est désactivé par défaut.</p></div><div class="format-pill"><span>▯</span> 9:16 · 1080 × 1920</div></div>
+        <div class="section-intro"><div><div class="eyebrow">SHORTS WORKFLOW / STEP 01</div><h2>Transformer un clip</h2><p>Importe une vidéo ou colle une URL. Le cadrage intelligent agrandit le gameplay dans une vraie zone centrale, avec le hook au-dessus et les sous-titres en dessous. Le fond flouté reste disponible en secours.</p></div><div class="format-pill"><span>▯</span> 9:16 · 1080 × 1920</div></div>
         <div class="create-layout">
           <section class="panel create-panel">
             <div class="panel-heading"><div><div class="eyebrow">NEW SHORT</div><h3>Source du clip</h3></div><span class="step-number">01</span></div>
@@ -69,9 +69,9 @@
               <details class="edit-options" open>
                 <summary>Personnaliser le montage <span>CADRAGE · RYTHME · CAPTIONS</span></summary>
                 <div class="edit-options-grid">
-                  <label>Format vidéo<select name="layout"><option value="fill">Plein écran recadré 9:16</option><option value="blur" selected>Vidéo entière + fond flouté</option></select><small>Toute l’image d’origine est conservée, sans zoom ni recadrage.</small></label>
-                  <label>Position horizontale <output data-crop-output>50 %</output><input type="range" name="crop_x" min="0" max="100" value="50" data-crop-slider><small>Déplace le cadrage vers la gauche ou la droite.</small></label>
-                  <label>Position verticale <output data-crop-output>50 %</output><input type="range" name="crop_y" min="0" max="100" value="50" data-crop-slider><small>Déplace le cadrage vers le haut ou le bas.</small></label>
+                  <label>Format vidéo<select name="layout"><option value="smart" selected>Cadrage intelligent 9:16</option><option value="fill">Plein écran recadré 9:16</option><option value="blur">Vidéo entière + fond flouté</option></select><small>Gameplay agrandi au centre, hook en haut et sous-titres en bas. Le fond flouté préserve l’image entière.</small></label>
+                  <label>Focus horizontal <output data-crop-output>72 %</output><input type="range" name="crop_x" min="0" max="100" value="72" data-crop-slider><small>Décale le cadrage pour garder le streamer ou l’action dans l’image.</small></label>
+                  <label>Position verticale <output data-crop-output>50 %</output><input type="range" name="crop_y" min="0" max="100" value="50" data-crop-slider><small>Ajuste le cadrage vertical du gameplay si nécessaire.</small></label>
                   <label>Puissance du zoom <output data-zoom-output>0 %</output><input type="range" name="zoom_percent" min="0" max="20" value="0" data-zoom-slider><small>Zoom progressif avant et après le pic audio détecté.</small></label>
                 </div>
                 <div class="edit-toggles">
