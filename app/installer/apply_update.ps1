@@ -1,4 +1,4 @@
-﻿#requires -Version 5.1
+﻿﻿#requires -Version 5.1
 [CmdletBinding()]
 param(
     [Parameter(Mandatory=$true)][string]$ProjectRoot,
@@ -49,7 +49,7 @@ function Get-PackageVersion {
 }
 
 try {
-    Write-UpdateLog '=== GTA Ranked Studio updater v0.3.6 ==='
+    Write-UpdateLog '=== GTA Ranked Studio updater ==='
     Write-UpdateLog "PowerShell version: $($PSVersionTable.PSVersion)"
     Write-UpdateLog "ProjectRoot: $ProjectRoot"
     Write-UpdateLog "ArchivePath: $ArchivePath"
@@ -84,7 +84,7 @@ try {
 
     $packageVersion = Get-PackageVersion -Folder $packageRoot
     if ($packageVersion -ne $ExpectedVersion) { throw "Version attendue $ExpectedVersion, version du paquet $packageVersion." }
-    foreach ($directoryName in @('studio', 'installer', 'tests')) {
+    foreach ($directoryName in @('studio', 'installer', 'docs')) {
         if (-not (Test-Path -LiteralPath (Join-Path $packageRoot $directoryName) -PathType Container)) {
             throw "Le paquet est incomplet : dossier $directoryName absent."
         }
@@ -98,14 +98,12 @@ try {
     $rootFiles = @(
         'INSTALL.bat', 'UPDATE-FROM-ARCHIVE.bat', 'REPAIR.bat',
         'START-STUDIO.bat', 'START-STUDIO.vbs', 'STOP-STUDIO.bat',
-        'pyproject.toml', 'requirements.txt', '.gitignore', 'README.md', 'README_M0.txt',
-        'GUIDE_INSTALLATION_FR.md', 'LIRE-MOI-DABORD.txt', 'config.yaml.default',
-        'VERSION.txt', 'NOTES-v0.3.4.txt', 'VERIFICATION-v0.3.4.md',
-        'NOTES-v0.3.5.txt', 'VERIFICATION-v0.3.5.md',
-        'NOTES-v0.3.6.txt', 'VERIFICATION-v0.3.6.md', 'NOTES-v0.4.1.txt', 'VERIFICATION-v0.4.1.md', 'NOTES-v0.4.2.txt', 'VERIFICATION-v0.4.2.md', 'NOTES-v0.5.0.txt', 'VERIFICATION-v0.5.0.md', 'NOTES-v0.5.1.txt', 'VERIFICATION-v0.5.1.md', 'NOTES-v0.6.0.txt', 'VERIFICATION-v0.6.0.md', 'NOTES-v0.6.1.txt', 'VERIFICATION-v0.6.1.md', 'NOTES-v0.6.2.txt', 'VERIFICATION-v0.6.2.md', 'NOTES-v0.7.0.txt', 'VERIFICATION-v0.7.0.md', 'NOTES-v0.7.1.txt', 'VERIFICATION-v0.7.1.md', 'NOTES-v0.7.2.txt', 'VERIFICATION-v0.7.2.md', 'NOTES-v0.7.3.txt', 'VERIFICATION-v0.7.3.md', 'NOTES-v0.4.0.txt', 'VERIFICATION-v0.4.0.md'
+        'pyproject.toml', 'requirements.txt', '.gitignore', 'README.md',
+        'GUIDE_INSTALLATION_FR.md', 'LIRE-MOI-DABORD.txt',
+        'config.yaml.default', 'VERSION.txt'
     )
 
-    foreach ($directoryName in @('studio', 'installer', 'tests')) {
+    foreach ($directoryName in @('studio', 'installer', 'docs')) {
         $target = Join-Path $ProjectRoot $directoryName
         if (Test-Path -LiteralPath $target -PathType Container) {
             Copy-Item -LiteralPath $target -Destination $backupRoot -Recurse -Force
@@ -121,7 +119,7 @@ try {
     }
 
     Write-UpdateLog 'Installation des nouveaux fichiers applicatifs.'
-    foreach ($directoryName in @('studio', 'installer', 'tests')) {
+    foreach ($directoryName in @('studio', 'installer', 'docs')) {
         $target = Join-Path $ProjectRoot $directoryName
         $replacedDirectories += $directoryName
         if (Test-Path -LiteralPath $target) { Remove-Item -LiteralPath $target -Recurse -Force }
@@ -136,23 +134,53 @@ try {
         }
     }
 
-    # Dépendances : ne réinstaller que si le manifeste a réellement changé.
+    # Comparer les deux sources de dépendances : requirements.txt et pyproject.toml.
     $oldRequirements = Join-Path $backupRoot 'requirements.txt'
     $newRequirements = Join-Path $ProjectRoot 'requirements.txt'
+    $oldProject = Join-Path $backupRoot 'pyproject.toml'
+    $newProject = Join-Path $ProjectRoot 'pyproject.toml'
     $venvPython = Join-Path $ProjectRoot '.venv\Scripts\python.exe'
+
+    if (-not (Test-Path -LiteralPath $venvPython -PathType Leaf)) {
+        throw 'Environnement Python absent après mise à jour : .venv\Scripts\python.exe est introuvable.'
+    }
+    if (-not (Test-Path -LiteralPath $newRequirements -PathType Leaf) -or -not (Test-Path -LiteralPath $newProject -PathType Leaf)) {
+        throw 'Manifestes de dépendances absents après mise à jour.'
+    }
+
     $requirementsChanged = $true
-    if ((Test-Path -LiteralPath $oldRequirements) -and (Test-Path -LiteralPath $newRequirements)) {
+    if ((Test-Path -LiteralPath $oldRequirements -PathType Leaf) -and (Test-Path -LiteralPath $oldProject -PathType Leaf)) {
         $oldHash = (Get-FileHash -LiteralPath $oldRequirements -Algorithm SHA256).Hash
         $newHash = (Get-FileHash -LiteralPath $newRequirements -Algorithm SHA256).Hash
-        $requirementsChanged = ($oldHash -ne $newHash)
+        $oldProjectHash = (Get-FileHash -LiteralPath $oldProject -Algorithm SHA256).Hash
+        $newProjectHash = (Get-FileHash -LiteralPath $newProject -Algorithm SHA256).Hash
+        $requirementsChanged = ($oldHash -ne $newHash) -or ($oldProjectHash -ne $newProjectHash)
     }
-    if ($requirementsChanged -and (Test-Path -LiteralPath $venvPython -PathType Leaf) -and (Test-Path -LiteralPath $newRequirements -PathType Leaf)) {
-        Write-UpdateLog 'Le manifeste Python a changé : vérification des dépendances.'
-        & $venvPython -m pip install --disable-pip-version-check -r $newRequirements 2>&1 | ForEach-Object { Write-UpdateLog ([string]$_) }
-        if ($LASTEXITCODE -ne 0) { throw "La mise à jour des dépendances Python a échoué (code $LASTEXITCODE)." }
+
+    if ($requirementsChanged) {
+        Write-UpdateLog 'Les manifestes Python ont changé : mise à jour de l’environnement runtime.'
+        & $venvPython -m pip install --disable-pip-version-check --prefer-binary -e $ProjectRoot 2>&1 | ForEach-Object { Write-UpdateLog ([string]$_) }
+        if ($LASTEXITCODE -ne 0) {
+            throw "La mise à jour des dépendances Python a échoué (code $LASTEXITCODE)."
+        }
     }
     else {
-        Write-UpdateLog 'Dépendances Python inchangées : aucune installation pip nécessaire.'
+        Write-UpdateLog 'Manifestes Python inchangés : aucune installation pip nécessaire.'
+    }
+
+    & $venvPython -m pip check 2>&1 | ForEach-Object { Write-UpdateLog ([string]$_) }
+    if ($LASTEXITCODE -ne 0) {
+        throw 'pip check a détecté une incohérence après la mise à jour.'
+    }
+
+    $runtimeCheck = Join-Path $ProjectRoot 'installer\check_runtime.py'
+    if (-not (Test-Path -LiteralPath $runtimeCheck -PathType Leaf)) {
+        throw 'Le smoke test runtime est absent après mise à jour.'
+    }
+    Write-UpdateLog 'Contrôle runtime des modules applicatifs après mise à jour.'
+    & $venvPython $runtimeCheck 2>&1 | ForEach-Object { Write-UpdateLog ([string]$_) }
+    if ($LASTEXITCODE -ne 0) {
+        throw 'Le contrôle runtime après mise à jour a échoué.'
     }
 
     # Les prompts par défaut sont actualisés sans écraser les prompts actifs.

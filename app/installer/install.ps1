@@ -189,7 +189,7 @@ function Copy-ApplicationUpdate {
     # Seuls les dossiers de code sont remplaces. Les dossiers utilisateur
     # (.venv, data, inbox, out, models, work, logs, tools, assets, prompts)
     # ne sont jamais supprimes pendant une mise a jour.
-    foreach ($directoryName in @('studio', 'installer', 'tests')) {
+    foreach ($directoryName in @('studio', 'installer', 'docs')) {
         $sourceDirectory = Join-Path $From $directoryName
         if (Test-Path -LiteralPath $sourceDirectory -PathType Container) {
             $destinationDirectory = Join-Path $To $directoryName
@@ -201,10 +201,11 @@ function Copy-ApplicationUpdate {
     }
 
     $rootFiles = @(
-        'INSTALL.bat', 'UPDATE-FROM-ARCHIVE.bat', 'REPAIR.bat', 'START-STUDIO.bat', 'START-STUDIO.vbs',
-        'STOP-STUDIO.bat', 'pyproject.toml', 'requirements.txt', '.gitignore',
-        'README.md', 'README_M0.txt', 'GUIDE_INSTALLATION_FR.md',
-        'LIRE-MOI-DABORD.txt', 'config.yaml.default', 'VERSION.txt', 'NOTES-v0.3.2.txt', 'VERIFICATION-v0.3.2.md', 'NOTES-v0.3.5.txt', 'VERIFICATION-v0.3.5.md', 'NOTES-v0.3.6.txt', 'VERIFICATION-v0.3.6.md', 'NOTES-v0.4.1.txt', 'VERIFICATION-v0.4.1.md', 'NOTES-v0.4.2.txt', 'VERIFICATION-v0.4.2.md', 'NOTES-v0.5.0.txt', 'VERIFICATION-v0.5.0.md', 'NOTES-v0.5.1.txt', 'VERIFICATION-v0.5.1.md', 'NOTES-v0.6.0.txt', 'VERIFICATION-v0.6.0.md', 'NOTES-v0.6.1.txt', 'VERIFICATION-v0.6.1.md', 'NOTES-v0.6.2.txt', 'VERIFICATION-v0.6.2.md', 'NOTES-v0.7.0.txt', 'VERIFICATION-v0.7.0.md', 'NOTES-v0.7.1.txt', 'VERIFICATION-v0.7.1.md', 'NOTES-v0.7.2.txt', 'VERIFICATION-v0.7.2.md', 'NOTES-v0.7.3.txt', 'VERIFICATION-v0.7.3.md', 'NOTES-v0.4.0.txt', 'VERIFICATION-v0.4.0.md'
+        'INSTALL.bat', 'UPDATE-FROM-ARCHIVE.bat', 'REPAIR.bat',
+        'START-STUDIO.bat', 'START-STUDIO.vbs', 'STOP-STUDIO.bat',
+        'pyproject.toml', 'requirements.txt', '.gitignore',
+        'README.md', 'GUIDE_INSTALLATION_FR.md', 'LIRE-MOI-DABORD.txt',
+        'config.yaml.default', 'VERSION.txt'
     )
     foreach ($fileName in $rootFiles) {
         $sourceFile = Join-Path $From $fileName
@@ -263,24 +264,24 @@ function Initialize-ProjectFiles {
     }
 
     foreach ($relativeDirectory in @(
-        'logs', 'data', 'inbox\shorts', 'inbox\bestof', 'out\shorts',
-        'out\bestof', 'models\whisper', 'tools\whisper.cpp', 'work\tmp',
+        'logs', 'data', 'inbox\shorts', 'out\shorts', 'models\whisper', 'tools\whisper.cpp', 'work\tmp',
         '.install-state', 'assets\fonts'
     )) {
         New-Item -ItemType Directory -Path (Join-Path $ProjectRoot $relativeDirectory) -Force | Out-Null
-    }
-    $urlsFile = Join-Path $ProjectRoot 'inbox\urls.txt'
-    if (-not (Test-Path -LiteralPath $urlsFile -PathType Leaf)) {
-        Set-Content -LiteralPath $urlsFile -Value '# Une URL Twitch ou YouTube par ligne. Les lignes commencant par # sont ignorees.' -Encoding UTF8
     }
 }
 
 function Get-DependencyFingerprint {
     $requirementsFile = Join-Path $ProjectRoot 'requirements.txt'
-    if (-not (Test-Path -LiteralPath $requirementsFile -PathType Leaf)) {
-        throw 'requirements.txt est introuvable : impossible de verifier les dependances.'
+    $pyprojectFile = Join-Path $ProjectRoot 'pyproject.toml'
+    foreach ($manifest in @($requirementsFile, $pyprojectFile)) {
+        if (-not (Test-Path -LiteralPath $manifest -PathType Leaf)) {
+            throw "Manifeste de dependances absent : $manifest"
+        }
     }
-    return (Get-FileHash -LiteralPath $requirementsFile -Algorithm SHA256).Hash.ToLowerInvariant()
+    $requirementsHash = (Get-FileHash -LiteralPath $requirementsFile -Algorithm SHA256).Hash
+    $pyprojectHash = (Get-FileHash -LiteralPath $pyprojectFile -Algorithm SHA256).Hash
+    return ($requirementsHash + ':' + $pyprojectHash).ToLowerInvariant()
 }
 
 function Test-PythonRuntime {
@@ -310,70 +311,35 @@ function Install-OrReuseDependencies {
         $oldFingerprint = (Get-Content -LiteralPath $stampPath -Raw -ErrorAction SilentlyContinue).Trim()
     }
 
-    $canSkipInstall = $false
-    $stampExists = Test-Path -LiteralPath $stampPath -PathType Leaf
-    # Empreinte du manifeste v0.2.5. La v0.2.6 ajoute uniquement httpx2 au groupe
-    # de test pour utiliser le client recommandé par Starlette récent.
-    $knownV025Fingerprint = '7baf73c0b67162ca6c5f30e6e3ba9341f32ea2010934120f4acd73cbcb1f21d0'
-    $canMigrateV025Environment = ($oldFingerprint -eq $knownV025Fingerprint) -and ($fingerprint -ne $knownV025Fingerprint)
-
-    if ($canMigrateV025Environment) {
-        Write-Step 'Mise a jour incrementale du client de test HTTPX2'
-        Write-Host 'Les dependances existantes sont conservees. Seul HTTPX2 et ses dependances manquantes seront ajoutes.' -ForegroundColor Gray
-        & $PythonExe -m pip install --disable-pip-version-check --prefer-binary 'httpx2>=2.16.2,<3'
-        if ($LASTEXITCODE -ne 0) {
-            throw 'Installation de HTTPX2 echouee. Les paquets deja presents sont conserves. Verifie Internet puis relance INSTALL.bat.'
-        }
-        if (-not (Test-PipConsistency -PythonExe $PythonExe)) {
-            throw 'pip check detecte des dependances incoherentes apres la mise a jour HTTPX2.'
-        }
-        if (-not (Test-PythonRuntime -PythonExe $PythonExe)) {
-            throw 'Le controle runtime FastAPI / HTTPX2 a echoue apres la mise a jour.'
-        }
-        Set-Content -LiteralPath $stampPath -Value $fingerprint -Encoding ASCII
-        Write-InstallLog 'Environnement v0.2.5 migre en ajoutant uniquement HTTPX2 et ses dependances manquantes.'
-        Write-Host 'Environnement existant mis a jour. Les autres dependances Python ont ete reutilisees.' -ForegroundColor Green
-        return
-    }
-
     if ($oldFingerprint -eq $fingerprint) {
-        Write-Step 'Verification des dependances deja installees'
+        Write-Step 'Verification des dependances runtime existantes'
         if ((Test-PipConsistency -PythonExe $PythonExe) -and (Test-PythonRuntime -PythonExe $PythonExe)) {
-            $canSkipInstall = $true
-            if (-not $stampExists) {
-                Set-Content -LiteralPath $stampPath -Value $fingerprint -Encoding ASCII
-                Write-InstallLog 'Environnement existant adopte apres validation des dependances.'
-            }
+            Write-Host 'Environnement runtime deja present et verifie : aucun telechargement Python.' -ForegroundColor Green
+            Write-InstallLog 'Dependances runtime reutilisees : empreinte, pip check et imports valides.'
+            return
         }
     }
 
-    if ($canSkipInstall) {
-        Write-Host 'Dependances deja presentes et verifiees : aucun telechargement Python.' -ForegroundColor Green
-        Write-InstallLog 'Dependances reutilisees : empreinte valide, pip check et imports/TestClient OK.'
-        return
-    }
-
-    Write-Step 'Installation incrementale des dependances Python'
-    Write-Host 'Les paquets deja installes et compatibles sont conserves par pip.' -ForegroundColor Gray
+    Write-Step 'Installation incrementale des dependances runtime'
+    Write-Host 'Seules les dependances de production sont installees. Les outils pytest restent dans la CI.' -ForegroundColor Gray
     $cacheResult = & $PythonExe -m pip cache dir 2>$null
     if ($LASTEXITCODE -eq 0 -and $cacheResult) {
         Write-InstallLog "Cache pip reutilise : $($cacheResult | Select-Object -Last 1)"
     }
 
-    & $PythonExe -m pip install --disable-pip-version-check --prefer-binary -e '.[dev]'
+    & $PythonExe -m pip install --disable-pip-version-check --prefer-binary -e .
     if ($LASTEXITCODE -ne 0) {
-        throw 'Installation incrementale des dependances echouee. Verifie la connexion Internet et consulte logs\install.log.'
+        throw 'Installation des dependances runtime echouee. Verifie la connexion Internet et consulte logs\install.log.'
     }
-
     if (-not (Test-PipConsistency -PythonExe $PythonExe)) {
         throw 'pip check detecte des dependances Python incoherentes. Consulte logs\install.log.'
     }
     if (-not (Test-PythonRuntime -PythonExe $PythonExe)) {
-        throw 'Le test FastAPI TestClient / HTTPX2 a echoue apres installation. Consulte logs\install.log.'
+        throw 'Le smoke test runtime a echoue apres installation. Consulte logs\install.log.'
     }
 
     Set-Content -LiteralPath $stampPath -Value $fingerprint -Encoding ASCII
-    Write-InstallLog 'Empreinte des dependances enregistree.'
+    Write-InstallLog 'Dependances runtime verifiees et empreinte enregistree.'
 }
 
 function New-DesktopShortcut {
@@ -522,12 +488,6 @@ try {
 
     Install-OrReuseDependencies -PythonExe $venvPython
 
-    Write-Step 'Execution des tests automatiques'
-    & $venvPython -m pytest -q
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Les tests automatiques ont echoue. Consulte logs\install.log et la sortie au-dessus.'
-    }
-
     Write-Step 'Diagnostic local'
     & $venvPython -m studio doctor
     $doctorExitCode = $LASTEXITCODE
@@ -548,7 +508,7 @@ try {
         ffprobe = $media.Ffprobe
         shortcut = $shortcutPath
         dependencies_reused = (Test-Path -LiteralPath (Join-Path $ProjectRoot '.install-state\requirements.sha256'))
-        tests_passed = $true
+        runtime_check_passed = $true
         doctor_exit_code = $doctorExitCode
     }
     $reportPath = Join-Path $ProjectRoot 'logs\installation-report.json'

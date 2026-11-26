@@ -3,8 +3,9 @@
 > Lire ce document en premier dans chaque nouvelle conversation sur le projet. Il décrit l'état réellement livré et la structure source actuelle.
 
 - **Dernière mise à jour :** 26 novembre 2026
-- **Version source de référence :** 0.8.0
-- **État :** v0.8.0 est publiée comme Release stable depuis `main`. La source applicative est maintenue directement dans `app/`.
+- **Version stable publiée :** 0.8.0
+- **Version candidate de maintenance :** 0.8.1, branche `maintenance/full-repository-cleanup`, non publiée
+- **État :** v0.8.0 reste la Release stable de `main`. Le chantier v0.8.1 est isolé sur `maintenance/full-repository-cleanup` et ne sera publié qu'après validations Linux et Windows.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
 - **Dernière Release stable :** [v0.8.0](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.0)
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
@@ -12,7 +13,7 @@
 - **Mise à jour intégrée :** l'application consulte les Releases GitHub. Le ZIP v0.7.9 et `SHA256SUMS.txt` sont publiés par le workflow de release.
 - **Tests v0.8.0 :** Linux 147 réussis, 1 ignoré (PowerShell non disponible sous Linux) ; Windows 148 réussis.
 - **PR de livraison v0.7.9 :** [#8](https://github.com/Sreleew/GTA_rankd/pull/8), fusionnée dans `main`.
-- **PR cadrage intelligent v0.8.0 :** [#9](https://github.com/Sreleew/GTA_rankd/pull/9), validations Linux et Windows réussies, en attente de fusion.
+- **PR cadrage intelligent v0.8.0 :** [#9](https://github.com/Sreleew/GTA_rankd/pull/9), fusionnée dans `main` et publiée.
 - **Workflow de publication v0.7.9 :** https://github.com/Sreleew/GTA_rankd/actions/runs/45793843538.
 - **Workflow de publication v0.8.0 :** https://github.com/Sreleew/GTA_rankd/actions/runs/45797395932.
 - **CI Linux v0.8.0 :** https://github.com/Sreleew/GTA_rankd/actions/runs/45796472429.
@@ -54,8 +55,8 @@ Le projet doit rester local-first, sans abonnement ni API IA payante obligatoire
 - **Persistance :** `app/studio/web/store.py`.
 - **Mise à jour :** `app/studio/web/updater.py` et `app/installer/`.
 - **Tests :** `app/tests/`.
-- **Documentation du dépôt :** `docs/`. Les documents nécessaires à l'application sont synchronisés dans `app/docs/` lors de la validation et du packaging.
-- **Configuration :** `VERSION.txt` et `app/VERSION.txt` doivent rester synchronisés. Les notes de version racine sont copiées dans `app/` avant la construction du package.
+- **Documentation canonique :** `docs/` à la racine. Le constructeur de ZIP injecte les documents requis directement depuis cette source, sans copie de travail sous `app/docs/`.
+- **Métadonnées :** `VERSION.txt`, `app/VERSION.txt`, `app/pyproject.toml` et `app/config.yaml.default` doivent annoncer la même version. Les notes de version racine et leur copie applicative candidate doivent être identiques.
 - **Profil matériel :** Windows 10/11, AMD Radeon RX 9060 XT 16 Go, FFmpeg H.264 AMF avec fallback libx264, whisper.cpp Vulkan avec fallback CPU, Ollama/Qwen facultatif.
 
 ## 4. Limites connues
@@ -82,8 +83,8 @@ Le projet doit rester local-first, sans abonnement ni API IA payante obligatoire
 - **Fichiers de contrôle :** manifeste et SHA-256 de l'archive de provenance.
 - **Anciennes chaînes de correctifs :** retirées de la racine active. Les tags et l'historique Git conservent les commits historiques ; ne pas réintroduire l'ancienne chaîne de reconstruction.
 - **Ancienne tentative v0.8.0 :** les fragments incomplets ont été retirés de la racine active. Ne pas restaurer ni reconstruire cette tentative par supposition.
-- **CI Linux :** `Audit GTA Ranked Studio application`, teste directement `app/`.
-- **CI Windows :** `Windows runtime validation`, teste directement `app/`, PowerShell et le ZIP.
+- **CI Linux :** `Audit GTA Ranked Studio application`, teste la source `app/`, le mémo racine et le package.
+- **CI Windows :** `Windows runtime validation`, teste la source `app/`, tous les scripts PowerShell et le ZIP.
 - **Publication :** `Build and publish GTA Ranked Studio`, construit le ZIP à partir de `app/` ; aucune extraction d'archive ni application de hotfix.
 
 ## 6. Fichiers importants
@@ -93,13 +94,15 @@ Le projet doit rester local-first, sans abonnement ni API IA payante obligatoire
 - `app/tests/` : tests de régression.
 - `app/config.yaml.default` : configuration initiale, jamais une configuration personnelle.
 - `VERSION.txt` : numéro de release racine, à synchroniser avec `app/VERSION.txt`.
-- `NOTES-vX.Y.Z.txt` : notes racine, copiées dans `app/` au moment de la validation et du packaging.
+- `NOTES-vX.Y.Z.txt` : notes racine et copie `app/NOTES-vX.Y.Z.txt`, synchronisées dans le dépôt pour contrôler la version. Elles ne sont pas embarquées dans le ZIP utilisateur.
 - `docs/CONTINUATION.md` : ce mémo maître.
 - `docs/WORKING-AGREEMENT.md` : méthode de travail.
 - `docs/RELEASE_PROCESS.md` : procédure de test et de publication.
 - `docs/UPDATES.md` : guide utilisateur et historique.
 - `docs/WINDOWS-HARDWARE-VALIDATION.md` : protocole de validation sur le PC AMD.
-- `tools/check_project_memory.py` : copie de référence du vérificateur de mémoire, synchronisée dans `app/tools/` avant packaging.
+- `tools/check_project_memory.py` : vérificateur canonique unique des versions, de la configuration et du mémo.
+- `tools/verify_release_package.py` : contrôle commun du contenu, des exclusions, des chemins et du SHA-256 du ZIP.
+- `docs/PROJECT-MAP.md` : carte rapide des modules et chemins de validation.
 - `archive/releases/v0.7.8/` : archive historique figée, pas une base de développement.
 - `.github/workflows/audit-source.yml` : tests Linux et packaging à partir de `app/`.
 - `.github/workflows/windows-smoke.yml` : tests Windows et packaging à partir de `app/`.
@@ -113,12 +116,26 @@ Ne jamais publier `config.yaml`, vidéos, rendus personnels, bases SQLite, modè
 Depuis PowerShell, à la racine du dépôt :
 
 ```powershell
+py -3.11 -m pip install -e "app[dev]"
+py -3.11 tools/check_project_memory.py --root .
+ruff check app/studio app/installer app/tests tools
+pip-audit -r app/requirements.txt
+$createdConfig = $false
+if (-not (Test-Path app/config.yaml)) {
+    Copy-Item app/config.yaml.default app/config.yaml
+    $createdConfig = $true
+}
+try {
+    py -3.11 -m pytest -q -c app/pyproject.toml app/tests
+}
+finally {
+    if ($createdConfig) { Remove-Item app/config.yaml -Force }
+}
 Set-Location app
-py -3.11 -m pip install -r requirements.txt
-python tools/check_project_memory.py
-python -m pytest -q
 node --check studio/web/static/app.js
-python installer/build_release_package.py --version 0.7.9 --output-dir dist
+py -3.11 installer/build_release_package.py --version 0.8.1 --output-dir dist
+Set-Location ..
+py -3.11 tools/verify_release_package.py --package app/dist/GTA-Ranked-Studio-v0.8.1.zip --checksum app/dist/SHA256SUMS.txt --version 0.8.1
 ```
 
 Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquement si aucun fichier de configuration personnel n'existe. Ne jamais écraser un `config.yaml` existant.
@@ -132,7 +149,7 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - Lancer les tests ciblés pendant le développement ; exécuter Linux et Windows avant une modification transversale, un packaging ou une installation.
 - Maintenir synchronisés `VERSION.txt` et `app/VERSION.txt`, ainsi que les notes de release racine et `app/`.
 - **Obligation prioritaire :** mettre à jour `docs/CONTINUATION.md` à chaque lot de modifications, avant le compte rendu final. Y consigner brièvement les remarques/décisions de l'utilisateur, la méthode de travail, les fichiers ou fonctionnalités modifiés, les commits/PR/releases, les tests et les limites. Garder le document concis, factuel et à jour.
-- Les workflows synchronisent les documents racine dans le package applicatif avant de tester et publier.
+- Les workflows vérifient les documents racine et le constructeur les injecte directement dans le ZIP. Aucun snapshot documentaire n'est copié sous `app/`.
 - Préserver la configuration, les bases, projets, médias, exports et modèles locaux.
 - L'utilisateur a demandé que toute modification demandée soit menée jusqu'à l'intégration et la publication stable, sans s'arrêter à une branche ou une PR. En cas d'échec CI ou de blocage technique, corriger ou expliquer le blocage.
 - Ne jamais présenter un test prévu comme réussi. Distinguer code modifié, tests CI et validation matérielle réelle.
@@ -143,6 +160,7 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Livrer du propre et du fonctionnel.** Privilégier une base saine, un périmètre ciblé, des tests utiles et une vraie vérification des régressions. Ne pas sacrifier la qualité pour aller plus vite.
 - **Éviter les lenteurs inutiles.** Ne pas refaire de longs audits ni relire tout l'historique à chaque demande. Lire le mémo, le HEAD, les contrôles utiles et seulement les fichiers concernés.
 - **Aller jusqu'au résultat utilisable.** Pour une modification demandée, travailler sur une branche, tester, fusionner dans `main` et publier une Release stable lorsque les validations passent. Si un contrôle bloque, le corriger ou expliquer précisément pourquoi la livraison est arrêtée.
+- **Découpage du travail :** pour les gros chantiers, avancer par lots courts, cohérents et contrôlables, avec des points de reprise explicites. Éviter les réponses monolithiques qui risquent d'expirer.
 - **Priorité produit actuelle :** le parcours Twitch clip → Short prêt à publier. L'utilisateur fournit principalement une URL de clip Twitch ; améliorer la sélection/montage, le rythme, les sous-titres, le hook, la miniature, le titre et la description. Ne pas disperser le travail sur des fonctions secondaires sans demande.
 - **Direction des miniatures :** rendu propre, esthétique, lisible et immédiatement compréhensible, construit autour d'une vraie image du clip. Le visuel doit donner envie de cliquer sans surcharge, faux événement ou texte tronqué.
 - **Évaluer sur des exemples réels.** Quand l'utilisateur envoie un clip ou un Short généré, examiner concrètement le rendu avant de décider des corrections. Distinguer les observations réelles des hypothèses.
@@ -150,6 +168,8 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Communication :** être direct et concis, donner les résultats concrets et signaler clairement ce qui reste non testé. Une seule prochaine action prioritaire dans le bilan.
 
 ## 10. Journal de travail récent
+
+- **Audit v0.8.1 en cours :** séparation runtime/dev, suppression du scaffold Best Of et des duplications documentaires, retrait des notes historiques et outils développeur du ZIP, linter Ruff, audit pip-audit, contrôle PowerShell et ZIP renforcé. Aucun résultat de test de cette candidate n'est encore déclaré réussi.
 
 - **v0.7.9 publiée :** refonte des miniatures verticales, sélection de phrases plus complètes pour les hooks/titres, garde-fous contre les événements inventés dans les métadonnées, raccords audio plus doux et conservation des clips Twitch sélectionnés.
 - **Intégration :** PR #8 fusionnée dans `main`, Release stable [v0.7.9](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.7.9).
@@ -159,13 +179,14 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 
 ## 11. Prochaines étapes priorisées
 
-1. Installer v0.8.0 depuis **Paramètres > Mises à jour**, puis vérifier que les réglages, projets, bases et exports sont conservés.
-2. Exécuter `docs/WINDOWS-HARDWARE-VALIDATION.md` sur la RX 9060 XT : AMF, Whisper Vulkan, Ollama/Qwen et cycle Short complet.
-3. Calibrer le contrôle qualité sur plusieurs vrais Shorts GTA, en mesurant les faux positifs sur les scènes sombres, pauses voulues et séquences sans musique.
-4. Améliorer les coupes naturelles et la construction des hooks à partir des limites de phrases, sans CTA générique à l'ouverture.
-5. Développer le classement visuel des événements GTA (HUD, kill feed et changements de scène) avec un score explicable et une validation humaine.
-6. Valider le nouveau cadrage intelligent sur plusieurs clips paysage et portrait, notamment avec facecam intégrée à droite, puis ajuster le focus par défaut si nécessaire.
-7. Garder les futures améliorations dans `app/` et produire les packages depuis cette source directe.
+1. Terminer l'audit v0.8.1 par lots, exécuter les tests Linux et Windows, vérifier le package et publier seulement après réussite de tous les contrôles.
+2. Mettre à jour depuis **Paramètres > Mises à jour**, puis vérifier que les réglages, projets, bases et exports sont conservés.
+3. Exécuter `docs/WINDOWS-HARDWARE-VALIDATION.md` sur la RX 9060 XT : AMF, Whisper Vulkan, Ollama/Qwen et cycle Short complet.
+4. Calibrer le contrôle qualité sur plusieurs vrais Shorts GTA, en mesurant les faux positifs sur les scènes sombres, pauses voulues et séquences sans musique.
+5. Améliorer les coupes naturelles et la construction des hooks à partir des limites de phrases, sans CTA générique à l'ouverture.
+6. Développer le classement visuel des événements GTA (HUD, kill feed et changements de scène) avec un score explicable et une validation humaine.
+7. Valider le nouveau cadrage intelligent sur plusieurs clips paysage et portrait, notamment avec facecam intégrée à droite, puis ajuster le focus par défaut si nécessaire.
+8. Garder les futures améliorations dans `app/` et produire les packages depuis cette source directe.
 
 ## 12. Message de reprise prêt à copier
 

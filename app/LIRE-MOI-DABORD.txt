@@ -1,5 +1,14 @@
-GTA RANKED STUDIO v0.3.2
+GTA RANKED STUDIO v0.8.1
 
-Correctif Windows pour les tests whisper.cpp (WinError 193).
-Depuis une installation v0.3.0 ou v0.2.6, utiliser UPDATE-FROM-ARCHIVE.bat depuis cette archive extraite. Ne pas utiliser INSTALL.bat pour appliquer cette mise a jour si une installation existe deja.
-Les donnees utilisateur et l'environnement .venv sont preserves.
+PREMIERE INSTALLATION
+1. Extraire l'archive complète dans un dossier permanent.
+2. Lancer INSTALL.bat.
+3. Utiliser le raccourci GTA Ranked Studio créé sur le Bureau.
+
+MISE A JOUR
+Ouvrir Paramètres > Mises à jour > Rechercher une mise à jour, puis télécharger et installer.
+
+IMPORTANT
+Ne pas supprimer le dossier d'installation existant et ne pas remplacer config.yaml manuellement. Les réglages, projets, bases, modèles, médias et exports sont conservés pendant les mises à jour.
+
+Pour un diagnostic local, lancer START-STUDIO.bat puis consulter le menu Diagnostic et les journaux du dossier logs.

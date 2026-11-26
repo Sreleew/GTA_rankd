@@ -1,1 +1,0 @@
-GTA Ranked Studio v0.2.6. Voir LIRE-MOI-DABORD.txt et GUIDE_INSTALLATION_FR.md.

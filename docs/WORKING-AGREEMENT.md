@@ -12,7 +12,7 @@ Livrer des changements concrets, propres et testés sans passer un temps disprop
 - `app/studio/` contient le backend et l'interface.
 - `app/installer/` contient les scripts d'installation, de mise à jour et de packaging.
 - `app/tests/` contient les tests.
-- `docs/` à la racine contient la mémoire du projet et le processus de travail.
+- `docs/` à la racine contient la mémoire du projet et le processus de travail. C'est la source documentaire canonique, injectée directement dans les ZIP par le constructeur.
 - `archive/releases/v0.7.8/` est une archive historique immuable. Ne jamais développer à partir de cette archive.
 - Les anciennes chaînes de correctifs ne font plus partie du processus de développement.
 
@@ -29,7 +29,8 @@ Livrer des changements concrets, propres et testés sans passer un temps disprop
 9. **Terminer par un bilan exploitable.** Indiquer les fichiers modifiés, branche et commit, tests réellement exécutés, limites et prochaine action.
 10. **Préserver les données et les versions.** Ne jamais publier `config.yaml`, secrets, bases, vidéos, rendus, modèles ou exports. Ne jamais modifier un tag publié.
 11. **Livrer jusqu'à publication.** Quand l'utilisateur demande une modification et souhaite un résultat utilisable, aller jusqu'à l'intégration dans `main`, la création de la Release stable et la mise à disposition du package. Ne pas s'arrêter à un commit, une branche ou une PR. Si une validation échoue ou si un blocage technique empêche la publication, corriger le problème ou expliquer précisément le blocage.
-12. **Mettre la mémoire à jour à chaque lot.** Après chaque lot de modifications, mettre à jour `docs/CONTINUATION.md` avant de terminer : remarques et décisions utilisateur, méthode de travail, changements réellement livrés, branche/PR/commit/Release, tests et limites. Rester concis, factuel et supprimer ou remplacer les informations devenues obsolètes. C'est une étape obligatoire, pas une tâche documentaire facultative.
+12. **Découper les gros chantiers.** Organiser les tâches longues en lots autonomes avec des validations et points de reprise. Éviter les réponses ou modifications monolithiques susceptibles d'expirer.
+13. **Mettre la mémoire à jour à chaque lot.** Après chaque lot de modifications, mettre à jour `docs/CONTINUATION.md` avant de terminer : remarques et décisions utilisateur, méthode de travail, changements réellement livrés, branche/PR/commit/Release, tests et limites. Rester concis, factuel et supprimer ou remplacer les informations devenues obsolètes. C'est une étape obligatoire, pas une tâche documentaire facultative.
 
 ## Flux de développement
 
@@ -46,7 +47,7 @@ Livrer des changements concrets, propres et testés sans passer un temps disprop
 
 - **Lecture seule :** lire le fichier ciblé et son contexte immédiat.
 - **Changement de code ciblé :** tests du module, syntaxe Python/JavaScript et tests de régression associés.
-- **Changement transversal :** suite complète Linux, validation Windows et contrôle du ZIP.
+- **Changement transversal :** suite complète Linux, validation Windows, Ruff, pip-audit, compilation Python, contrôle JavaScript et vérification du ZIP.
 - **Changement d'installation ou de rendu matériel :** tests automatisés puis validation manuelle sur Windows et le matériel cible. Un runner CI Windows ne prouve pas que la RX 9060 XT utilise réellement AMF ou Vulkan.
 - **Documentation seule :** vérifier le mémo et les liens, sans audit complet si les documents du package ne sont pas modifiés.
 

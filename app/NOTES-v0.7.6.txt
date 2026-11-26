@@ -1,8 +1,0 @@
-GTA Ranked Studio v0.7.6
-
-Vérification Ollama et Qwen :
-- Remplace le rafraîchissement silencieux du bouton « Vérifier » par un contrôle dédié.
-- Vérifie que le serveur Ollama local répond sur /api/tags et que le modèle Qwen configuré est installé.
-- Exécute une courte inférence locale non streamée via /api/generate (8 tokens maximum) avec keep_alive de 5 minutes.
-- Affiche l'état de progression, le résultat et les erreurs dans la ligne Ollama, sans les envoyer dans la ligne Whisper.
-- Le test est explicite et ne s'exécute pas lors des rafraîchissements périodiques.

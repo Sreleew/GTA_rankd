@@ -1,8 +1,0 @@
-GTA Ranked Studio v0.4.1
-
-Correctif de l'analyse des VOD longues :
-- FFprobe dispose désormais d'un délai calculé selon la taille du média téléchargé.
-- Le délai dispose d'un minimum de 5 minutes et est plafonné à 30 minutes.
-- L'écran indique l'étape d'inspection de la vidéo avant l'analyse audio.
-- La limite de 3 heures par analyse et la transcription Whisper par blocs de 5 minutes sont conservées.
-- Les vidéos, modèles IA, projets, réglages et données locaux sont préservés.

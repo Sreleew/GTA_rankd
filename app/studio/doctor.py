@@ -87,9 +87,7 @@ def _check_packages() -> Check:
         "Uvicorn": "uvicorn",
         "python-multipart": "multipart",
         "Pillow": "PIL",
-        "Watchdog": "watchdog",
         "yt-dlp": "yt_dlp",
-        "pytest": "pytest",
     }
     missing = [display for display, module in package_map.items() if importlib.util.find_spec(module) is None]
     if missing:
@@ -111,9 +109,7 @@ def _check_binary(name: str, executable: str, args: tuple[str, ...] = ("-version
 def _ensure_project_directories(config: AppConfig) -> list[Check]:
     directory_keys = (
         "inbox_shorts",
-        "inbox_bestof",
         "output_shorts",
-        "output_bestof",
         "logs",
         "temp",
         "fonts",
@@ -130,17 +126,6 @@ def _ensure_project_directories(config: AppConfig) -> list[Check]:
         except (OSError, ValueError) as exc:
             checks.append(Check(f"Dossier {key}", "FAIL", str(exc), required=True))
 
-    try:
-        urls_file = config.path_for("paths", "inbox_urls")
-        urls_file.parent.mkdir(parents=True, exist_ok=True)
-        if not urls_file.exists():
-            urls_file.write_text(
-                "# Une URL Twitch ou YouTube par ligne. Les lignes commençant par # sont ignorées.\n",
-                encoding="utf-8",
-            )
-        checks.append(Check("Fichier inbox/urls.txt", "OK", str(urls_file)))
-    except OSError as exc:
-        checks.append(Check("Fichier inbox/urls.txt", "FAIL", str(exc), required=True))
     return checks
 
 

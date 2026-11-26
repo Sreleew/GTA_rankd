@@ -1,56 +1,70 @@
 # GTA Ranked Studio
 
-Application Windows locale pour analyser des clips et VOD GTA, repérer les moments intéressants et produire des Shorts verticaux prêts à publier.
+Application Windows locale pour transformer des clips et VOD GTA en Shorts verticaux prêts à relire et publier.
 
-**Dernière version stable : v0.8.0.** La mise à jour est proposée dans l'application depuis **Paramètres > Mises à jour**.
+**Dernière version stable : v0.8.0. La v0.8.1 est préparée sur la branche de maintenance.**
 
-[Consulter la Release v0.8.0](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.0)
+[Consulter la Release stable v0.8.0](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.0)
 
 ## Fonctionnalités
 
 - Import de vidéos locales et de clips/VOD Twitch accessibles via yt-dlp.
-- Détection audio et transcription Whisper locale pour classer les moments forts.
+- Analyse audio et transcription Whisper locale pour classer les moments forts.
 - Score d'accroche distinct sur les cinq premières secondes.
-- Création de Shorts 1080 × 1920 avec cadrage intelligent : gameplay agrandi, hook en haut, sous-titres en bas et focus horizontal réglable. Les modes plein écran et fond flouté restent disponibles.
-- Sous-titres, hooks, titres et descriptions éditorialement vérifiés contre les phrases ASR incomplètes.
-- Miniatures verticales plus épurées, composées à partir d'images réelles du clip, avec titre court et lisible.
-- Métadonnées générées avec Ollama/Qwen local si installé, avec solution de repli sans IA.
-- Contrôle qualité après export : MP4, durée, résolution, codec, audio, écrans noirs, images figées, silences et horodatages des sous-titres.
-- Prévisualisation, téléchargement, miniature et copie des métadonnées toujours disponibles après validation.
+- Shorts 1080 × 1920 avec cadrage intelligent, hook, sous-titres et réglage du focus.
+- Miniature basée sur une capture réelle du clip.
+- Métadonnées locales avec Ollama/Qwen facultatif et fallback sans IA.
+- Contrôle qualité post-export et revue humaine.
+- Prévisualisation, téléchargement, miniature et copie des métadonnées disponibles après validation.
 
-Les traitements vidéo et IA restent locaux. Les médias, modèles, bases, réglages et exports ne sont pas envoyés vers un service cloud par le pipeline.
+Le pipeline reste local-first. Les médias, modèles, bases de données, réglages et exports ne sont pas envoyés vers un service cloud.
 
-## Organisation du dépôt
+## Structure
 
-- `app/` : **source de code active et unique** de l'application, tests, installateur, interface et scripts.
-- `docs/` : mémoire projet, méthode de travail, feuille de route et processus de publication.
-- `archive/releases/v0.7.8/` : archive source figée conservée comme provenance de la Release v0.7.8. Elle n'est pas utilisée pour développer.
-- `.github/workflows/` : tests Linux/Windows et publication contrôlée des Releases.
+- `app/` : source applicative, tests, installateur et package.
+- `docs/` : documentation canonique du projet. Le package de release l'embarque depuis ce dossier.
+- `tools/` : vérificateurs de cohérence et d'intégrité de release.
+- `archive/releases/v0.7.8/` : archive historique de provenance, conservée en lecture seule.
 
-Le code se modifie directement dans `app/`. Il n'y a plus de chaîne de reconstruction par correctifs historiques pour développer une fonctionnalité.
+Les dossiers `Best Of` et l'ancien flux d'URL par fichier texte ont été retirés : ils n'étaient reliés à aucun moteur de production.
 
-## Développement local
+## Installation et mise à jour
+
+Pour une première installation, extraire l'archive puis lancer `app/INSTALL.bat`. Pour une installation existante, utiliser **Paramètres > Mises à jour**.
+
+La mise à jour préserve les données locales. Ne jamais remplacer manuellement `config.yaml`.
+
+## Développement et vérification
 
 Dans PowerShell :
 
 ```powershell
-Set-Location app
-py -3.11 -m pip install -r requirements.txt
-python tools/check_project_memory.py
-python -m pytest -q
-node --check studio/web/static/app.js
-python installer/build_release_package.py --version 0.8.0 --output-dir dist
+py -3.11 -m pip install -e "app[dev]"
+py -3.11 tools/check_project_memory.py --root .
+ruff check app/studio app/installer app/tests tools
+pip-audit -r app/requirements.txt
+
+$createdConfig = $false
+if (-not (Test-Path app/config.yaml)) {
+    Copy-Item app/config.yaml.default app/config.yaml
+    $createdConfig = $true
+}
+try {
+    Set-Location app
+    py -3.11 -m pytest -q
+    node --check studio/web/static/app.js
+}
+finally {
+    if ($createdConfig) { Remove-Item config.yaml -Force }
+    Set-Location ..
+}
+
+py -3.11 app/installer/build_release_package.py --version 0.8.1 --output-dir app/dist
+py -3.11 tools/verify_release_package.py --package app/dist/GTA-Ranked-Studio-v0.8.1.zip --checksum app/dist/SHA256SUMS.txt --version 0.8.1
 ```
 
-Pour une nouvelle installation, utiliser `app/INSTALL.bat`. Ne jamais remplacer un `config.yaml` existant par le fichier modèle pendant une mise à jour.
+Les dépendances utilisateur sont limitées au runtime. Pytest, HTTPX2, Ruff et pip-audit restent dans les environnements de développement et CI.
 
 ## Validation et publication
 
-Chaque PR vers `main` déclenche l'audit Linux et la validation Windows sur le code de `app/`. Le workflow de publication reconstruit le ZIP à partir de cette même source et vérifie son intégrité ainsi que l'exclusion des données locales.
-
-Une Release stable n'est publiée qu'après un changement explicite de `.release-approval` sur `main`, avec une version identique à `VERSION.txt`. Le lancement manuel depuis GitHub Actions reste limité à une Release brouillon.
-
-- [Mémo de continuité](docs/CONTINUATION.md)
-- [Méthode de travail](docs/WORKING-AGREEMENT.md)
-- [Processus de publication](docs/RELEASE_PROCESS.md)
-- [Validation matérielle Windows/AMD](docs/WINDOWS-HARDWARE-VALIDATION.md)
+Chaque PR passe la suite Linux et Windows. Le workflow de release reconstruit le ZIP depuis `app/`, y injecte la documentation canonique, vérifie les exclusions de données locales et valide le SHA-256. La publication stable nécessite la version exacte dans `.release-approval`.
