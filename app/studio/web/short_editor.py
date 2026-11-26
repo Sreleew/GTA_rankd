@@ -359,7 +359,7 @@ def apply_thumbnail_overlay(
 
     # The gameplay is the hero. Keep the full 16:9 frame visible so the streamer
     # webcam and the surrounding game context are not cropped away.
-    panel_x, panel_y, panel_w, panel_h = 38, 390, 1004, 650
+    panel_x, panel_y, panel_w, panel_h = 38, 410, 1004, 600
     shadow = Image.new("RGBA", (width, height), (0, 0, 0, 0))
     shadow_draw = ImageDraw.Draw(shadow, "RGBA")
     shadow_draw.rounded_rectangle((panel_x - 10, panel_y + 14, panel_x + panel_w + 10, panel_y + panel_h + 14),
