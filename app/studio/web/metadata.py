@@ -186,6 +186,26 @@ def _last_complete_phrase(transcript: str) -> str:
     return ""
 
 
+def _has_unsupported_event_claim(title: str, transcript: str, note: str = "") -> bool:
+    """Reject strong event verbs that the source text does not actually support."""
+    source_tokens = set(re.findall(r"[A-Za-z0-9']+", f"{transcript} {note}".lower()))
+    title_tokens = set(re.findall(r"[A-Za-z0-9']+", str(title or "").lower()))
+    claims = {
+        "back": {"back"},
+        "stole": {"steal", "stole", "stolen", "stealing"},
+        "stolen": {"steal", "stole", "stolen", "stealing"},
+        "stealing": {"steal", "stole", "stolen", "stealing"},
+        "returned": {"return", "returned", "returning", "back"},
+        "recovered": {"recover", "recovered", "recovering"},
+        "won": {"win", "won", "winning"},
+        "lost": {"lose", "lost", "losing"},
+        "crashed": {"crash", "crashed", "crashing"},
+        "exploded": {"explode", "exploded", "explosion"},
+        "arrested": {"arrest", "arrested", "arresting"},
+    }
+    return any(token in title_tokens and not (allowed & source_tokens) for token, allowed in claims.items())
+
+
 def _fallback_metadata(
     *, streamer: str, note: str, source_url: str, transcript: str,
     custom_hook: str, custom_context: str, source_title: str = "",
@@ -292,6 +312,7 @@ def generate_short_metadata(
         "when supplied, and 3-4 useful search hashtags. Prefer #GTA, #GTA5 or #GTARP as appropriate, plus the "
         "creator tag when known. Thumbnail text: 2-4 punchy words, readable on a phone, not a sentence. Never use a transcript fragment as the thumbnail headline. "
         "If a spoken phrase is incomplete or has no clear ending, do not quote it in the title, description, hook or thumbnail. "
+        "Do not claim that a car was stolen, returned, recovered, won, lost, crashed or exploded unless the transcript or note explicitly supports that event. "
         "Prefer an action-led summary only when the action is explicitly supported by the transcript or supplied context; otherwise use a short neutral GTA moment title and an empty hook. "
         "Hook text: 3-6 words for the opening 2.6 seconds, grounded in a complete thought from the transcript. context_card must be empty "
         "unless a custom context was supplied. Return valid JSON only with title, description, hashtags, "
@@ -344,6 +365,7 @@ def generate_short_metadata(
             or (known_creator and known_creator.lower() not in title.lower())
             or _has_incomplete_quote(title)
             or ("said" in title.lower() and not _last_complete_phrase(transcript))
+            or _has_unsupported_event_claim(title, transcript, note)
             or (promo_detected and _is_formulaic_promo_copy(title))
         )
         if invalid_title:
