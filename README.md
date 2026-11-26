@@ -2,7 +2,7 @@
 
 Application Windows locale pour analyser des clips et VOD GTA, repérer les moments intéressants et produire des Shorts verticaux prêts à publier.
 
-**Dernière version stable : v0.7.9. La prochaine version préparée est v0.8.0.** La mise à jour est proposée dans l'application depuis **Paramètres > Mises à jour**.
+**Version approuvée pour publication : v0.8.0.** La dernière version stable disponible reste v0.7.9 jusqu'à la fin du workflow. La mise à jour sera proposée dans l'application depuis **Paramètres > Mises à jour**. La mise à jour est proposée dans l'application depuis **Paramètres > Mises à jour**.
 
 [Consulter la Release v0.7.9](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.7.9)
 
