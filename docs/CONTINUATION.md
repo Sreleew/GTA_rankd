@@ -4,14 +4,14 @@
 
 - **Dernière mise à jour :** 26 novembre 2026
 - **Version source de référence :** 0.7.9
-- **État :** v0.7.8 reste la dernière Release stable publiée ; v0.7.9 est la version candidate préparée pour publication après validation CI. Le code applicatif est maintenu directement dans `app/`.
+- **État :** v0.7.9 est la Release stable préparée depuis `main`. La source applicative est maintenue directement dans `app/`.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
-- **Dernière Release stable :** [v0.7.8](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.7.8)
+- **Dernière Release stable :** [v0.7.9](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.7.9)
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
 - **Source active :** `app/`. Modifier directement les fichiers Python, JavaScript, CSS, HTML, tests et installateur présents dans ce dossier.
-- **Mise à jour intégrée :** l'application consulte les Releases GitHub. Le ZIP v0.7.8 et `SHA256SUMS.txt` sont publiés.
-- **Tests v0.7.8 :** Linux 138 réussis, 1 ignoré ; Windows 139 réussis. Les résultats de v0.7.9 seront consignés après CI.
-- **Workflow de publication v0.7.8 :** https://github.com/Sreleew/GTA_rankd/actions/runs/45714213999.
+- **Mise à jour intégrée :** l'application consulte les Releases GitHub. Le ZIP v0.7.9 et `SHA256SUMS.txt` sont publiés par le workflow de release.
+- **Tests v0.7.9 :** Linux 144 réussis, 1 ignoré (PowerShell non disponible sous Linux) ; Windows 145 réussis.
+- **PR de livraison :** [#8](https://github.com/Sreleew/GTA_rankd/pull/8), fusionnée dans `main`.
 - **Validation matérielle :** le PC AMD Radeon RX 9060 XT n'a pas encore été validé physiquement pour AMF/Vulkan après mise à jour.
 
 ## 1. Objectif du produit
@@ -60,14 +60,14 @@ Le projet doit rester local-first, sans abonnement ni API IA payante obligatoire
 3. La diarisation est expérimentale : en cas d'ambiguïté, préserver les sous-titres plutôt que supprimer la mauvaise voix.
 4. La CI Linux et le runner Windows ne valident pas les performances AMF/Vulkan sur la RX 9060 XT physique.
 5. Les hooks, coupes de phrases, CTA et compositions doivent encore être jugés sur de vrais Shorts. Éviter les CTA génériques en ouverture.
-6. Les compilations Best Of, chapitres et Hall of Fame figurent dans d'anciennes feuilles de route, mais leur état fonctionnel n'a pas été confirmé en v0.7.8.
+6. Les compilations Best Of, chapitres et Hall of Fame figurent dans d'anciennes feuilles de route, mais leur état fonctionnel n'a pas été confirmé en v0.7.9.
 7. Les alertes qualité ne sont pas des rejets : certaines scènes sombres, statiques ou silencieuses sont intentionnelles.
 
 ## 5. Source de référence et état des branches
 
 - **Base propre intégrée :** PR #6 fusionnée dans `main`.
 - **Montage intelligent intégré :** PR #7 fusionnée dans `main`.
-- **Refonte créative en cours :** branche `feature/shorts-creative-refresh`, candidate v0.7.9.
+- **Refonte créative intégrée :** PR #8 fusionnée dans `main`, version v0.7.9.
 
 - **Source de développement :** `app/`. Ne pas décompresser l'archive de release pour développer.
 - **Archive de provenance v0.7.8 :** `archive/releases/v0.7.8/`. La conserver intacte.
@@ -139,4 +139,4 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 
 ## 10. Message de reprise prêt à copier
 
-> Nous reprenons GTA Ranked Studio. Lis `docs/CONTINUATION.md` puis `docs/WORKING-AGREEMENT.md`. La source de développement est directement dans `app/`, et non dans une archive. La v0.7.9 est la version candidate à publier après validation Linux/Windows ; v0.7.8 reste la Release stable actuelle jusqu'à sa publication. Les workflows Linux, Windows et Release doivent tous tester/construire directement depuis `app/`, sans hotfix ni extraction d'archive. Préserve les données locales. Modifie uniquement les fichiers nécessaires, ajoute les tests pertinents, valide sous Linux et Windows pour les changements transversaux. La RX 9060 XT n'a pas encore été validée physiquement pour AMF/Vulkan. L'utilisateur souhaite que toute modification demandée soit intégrée et publiée directement dès que les contrôles sont réussis.
+> Nous reprenons GTA Ranked Studio. Lis `docs/CONTINUATION.md` puis `docs/WORKING-AGREEMENT.md`. La source de développement est directement dans `app/`, et non dans une archive. La v0.7.9 est la Release stable actuelle : https://github.com/Sreleew/GTA_rankd/releases/tag/v0.7.9. Les workflows Linux, Windows et Release doivent tous tester/construire directement depuis `app/`, sans hotfix ni extraction d'archive. Préserve les données locales. Modifie uniquement les fichiers nécessaires, ajoute les tests pertinents, valide sous Linux et Windows pour les changements transversaux. La RX 9060 XT n'a pas encore été validée physiquement pour AMF/Vulkan. L'utilisateur souhaite que toute modification demandée soit intégrée et publiée directement dès que les contrôles sont réussis.
