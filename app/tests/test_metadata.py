@@ -239,3 +239,16 @@ def test_incomplete_title_does_not_discard_a_complete_thumbnail_phrase(monkeypat
     assert "got my lambo" in result["title"].lower()
     assert result["hook_text"] == "GOT MY LAMBO"
     assert result["thumbnail_text"] == "YEAH HUH SHIT GOT MY LAMBO"
+
+
+
+def test_title_rejects_an_unstated_lambo_recovery_claim():
+    from studio.web.metadata import _has_unsupported_event_claim
+
+    transcript = "yeah huh shit got my lambo"
+    assert _has_unsupported_event_claim(
+        "Tminnzy got his Lambo back in GTA 5 😭", transcript,
+    )
+    assert not _has_unsupported_event_claim(
+        "Tminnzy got his Lambo back in GTA 5 😭", transcript + " back",
+    )
