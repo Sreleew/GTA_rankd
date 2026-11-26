@@ -17,7 +17,7 @@ from studio.config import AppConfig
 from studio.process import ProcessingCancelled, check_cancelled, set_current_cancel_event
 from studio.web.metadata import generate_short_metadata
 from studio.web.short_editor import (
-    apply_thumbnail_overlay, create_ass_file, parse_srt, rebase_word_timings, select_thumbnail_timestamp,
+    apply_thumbnail_overlay, create_ass_file, rebase_word_timings, select_thumbnail_timestamp,
     select_excerpt_range, write_srt_file,
 )
 from studio.web.short_renderer import MediaError, probe_media, render_vertical_short
