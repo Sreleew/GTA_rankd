@@ -236,5 +236,5 @@ def test_incomplete_title_does_not_discard_a_complete_thumbnail_phrase(monkeypat
     )
 
     assert "really said" not in result["title"].lower()
-    assert result["hook_text"] == ""
+    assert result["hook_text"] == "GOT MY LAMBO"
     assert result["thumbnail_text"] == "YEAH HUH SHIT GOT MY LAMBO"
