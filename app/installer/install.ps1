@@ -1,4 +1,4 @@
-﻿#requires -Version 5.1
+﻿﻿#requires -Version 5.1
 <#
   GTA Ranked Studio - installateur Windows, incremental et reutilisable.
   - Reutilise le .venv existant et les paquets deja installes.
@@ -291,8 +291,14 @@ function Test-PythonRuntime {
         Write-InstallLog 'Le script de verification Python check_runtime.py est absent.'
         return $false
     }
-    & $PythonExe $checkScript
-    return ($LASTEXITCODE -eq 0)
+    $output = & $PythonExe $checkScript 2>&1
+    $exitCode = $LASTEXITCODE
+    foreach ($line in $output) {
+        $message = [string]$line
+        Write-Host $message
+        Write-InstallLog "Smoke test runtime: $message"
+    }
+    return ($exitCode -eq 0)
 }
 
 function Test-PipConsistency {
