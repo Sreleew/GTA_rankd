@@ -1,0 +1,21 @@
+GTA Ranked Studio v0.6.0
+
+Sous-titrage des voix :
+- Nouveau mode « Voix dominante uniquement (bêta) » pour les Shorts issus d'une VOD ou d'un clip.
+- Le moteur local de diarisation est installé à la demande lors de la première utilisation.
+- Si les voix sont trop proches ou si le filtrage est incertain, toutes les paroles sont conservées.
+- Le mode « Toutes les voix » reste disponible.
+
+Hooks et montage :
+- Un hook court, spécifique et fondé sur la transcription apparaît au début du Short.
+- Le score de détection n'est plus affiché comme hook ou carte de contexte.
+- La carte de contexte reste masquée sauf saisie personnalisée.
+- La génération de métadonnées Ollama est limitée à une tentative courte, avec fallback local.
+
+Téléchargements :
+- Les VOD Twitch utilisent une qualité maximale de 1080p pour les Shorts 1080 × 1920.
+- Téléchargements HLS plus robustes avec davantage de tentatives et de fragments concurrents.
+- Le téléchargement du modèle Whisper reprend une partie .part existante quand le serveur supporte HTTP Range.
+
+Les vidéos, modèles déjà installés, projets, réglages et données locales sont préservés.
+Le moteur de diarisation tiers est bêta, CPU-only et installé séparément à la première utilisation. L'identification automatique de la voix du streamer n'est pas garantie ; en cas de doute, toutes les voix sont conservées.

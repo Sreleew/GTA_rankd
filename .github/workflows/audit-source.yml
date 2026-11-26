@@ -1,148 +1,96 @@
-name: Audit GTA Ranked Studio source
+name: Audit GTA Ranked Studio application
 
 on:
   push:
-    branches: [main, feature/v0.7.8-shorts-retention]
+    branches: [main, chore/clean-source-layout]
     paths:
+      - "app/**"
       - ".github/workflows/audit-source.yml"
-      - ".github/workflows/release.yml"
       - ".github/workflows/windows-smoke.yml"
-      - "docs/source-audit-v0.7.8-v0.8.0-2026-11-25.md"
-      - "source/apply-hotfix-v0.7.8.py"
-      - "source/apply-hotfix-v0.7.8-retention.py"
-      - "source/apply-hotfix-v0.7.8-export-qc.py"
-      - "source/export-quality-patch-v0.7.8.diff.xz.b64"
-      - "docs/CONTINUATION.md"
-      - "docs/UPDATES.md"
-      - "tools/check_project_memory.py"
+      - ".github/workflows/release.yml"
       - "README.md"
       - "VERSION.txt"
-      - "NOTES-v0.7.8.txt"
+      - "NOTES-v*.txt"
+      - "docs/**"
+      - "tools/check_project_memory.py"
   pull_request:
     branches: [main]
     paths:
+      - "app/**"
       - ".github/workflows/audit-source.yml"
-      - ".github/workflows/release.yml"
       - ".github/workflows/windows-smoke.yml"
-      - "docs/source-audit-v0.7.8-v0.8.0-2026-11-25.md"
-      - "source/apply-hotfix-v0.7.8.py"
-      - "source/apply-hotfix-v0.7.8-retention.py"
-      - "source/apply-hotfix-v0.7.8-export-qc.py"
-      - "source/export-quality-patch-v0.7.8.diff.xz.b64"
-      - "docs/CONTINUATION.md"
-      - "docs/UPDATES.md"
-      - "tools/check_project_memory.py"
+      - ".github/workflows/release.yml"
       - "README.md"
       - "VERSION.txt"
-      - "NOTES-v0.7.8.txt"
+      - "NOTES-v*.txt"
+      - "docs/**"
+      - "tools/check_project_memory.py"
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: gta-ranked-source-audit-${{ github.ref }}
+  group: gta-ranked-linux-audit-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  reconstruct:
+  audit:
+    name: Test direct application source and build Windows update package
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Checkout selected revision
+        uses: actions/checkout@v4
+
+      - name: Set up project Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Verify and extract canonical v0.7.8 source
+          cache: pip
+          cache-dependency-path: app/requirements.txt
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Verify source layout and synchronize release metadata
         shell: bash
         run: |
           set -euo pipefail
-          SNAPSHOT_DIR="source/canonical-v0.7.8"
-          SNAPSHOT="$SNAPSHOT_DIR/GTA-Ranked-Studio-source-v0.7.8.tar.xz"
-          python - "$SNAPSHOT_DIR" "$SNAPSHOT" "source-checkout" <<'PY'
-          import hashlib
-          import json
-          import sys
-          import tarfile
-          from pathlib import Path, PurePosixPath
+          test -f app/studio/web/app.py
+          test -f app/studio/web/updater.py
+          test -f app/installer/build_release_package.py
+          test -f app/tests/test_web.py
+          ROOT_VERSION="$(sed -nE 's/^Version:[[:space:]]*([0-9]+(\.[0-9]+){2,3})[[:space:]]*$/\1/p' VERSION.txt | head -n 1)"
+          APP_VERSION="$(sed -nE 's/^Version:[[:space:]]*([0-9]+(\.[0-9]+){2,3})[[:space:]]*$/\1/p' app/VERSION.txt | head -n 1)"
+          if [[ -z "$ROOT_VERSION" || "$ROOT_VERSION" != "$APP_VERSION" ]]; then
+            echo "Les versions racine ($ROOT_VERSION) et application ($APP_VERSION) doivent être identiques."
+            exit 1
+          fi
+          test -s "NOTES-v$ROOT_VERSION.txt"
+          mkdir -p app/docs app/tools
+          cp VERSION.txt app/VERSION.txt
+          cp "NOTES-v$ROOT_VERSION.txt" "app/NOTES-v$ROOT_VERSION.txt"
+          cp docs/CONTINUATION.md app/docs/CONTINUATION.md
+          cp docs/UPDATES.md app/docs/UPDATES.md
+          cp docs/implementation-plan-v0.7.8.md app/docs/implementation-plan-v0.7.8.md
+          cp tools/check_project_memory.py app/tools/check_project_memory.py
+          python app/tools/check_project_memory.py --root app
+          echo "APP_VERSION=$ROOT_VERSION" >> "$GITHUB_ENV"
+          echo "Application source: app/ (v$ROOT_VERSION)"
 
-          snapshot_dir = Path(sys.argv[1])
-          archive_path = Path(sys.argv[2])
-          output_root = Path(sys.argv[3])
-          manifest = json.loads((snapshot_dir / "MANIFEST.json").read_text(encoding="utf-8"))
-          checksum_fields = (snapshot_dir / "SHA256SUMS.txt").read_text(encoding="utf-8").split()
-          if len(checksum_fields) < 2:
-              raise SystemExit("SHA256SUMS.txt invalide.")
-          archive_sha = hashlib.sha256(archive_path.read_bytes()).hexdigest()
-          if archive_sha != manifest.get("archive_sha256") or archive_sha != checksum_fields[0]:
-              raise SystemExit("Le SHA-256 de la source canonique est invalide.")
-          if manifest.get("version") != "0.7.8":
-              raise SystemExit("Le manifeste ne décrit pas la version v0.7.8.")
-
-          expected = {item["path"]: item for item in manifest.get("files", [])}
-          if len(expected) != manifest.get("file_count"):
-              raise SystemExit("Le nombre de fichiers du manifeste est incohérent.")
-
-          output_root.mkdir(parents=True, exist_ok=True)
-          actual = {}
-          with tarfile.open(archive_path, mode="r:xz") as archive:
-              for member in archive.getmembers():
-                  path = PurePosixPath(member.name)
-                  if not member.isfile() or path.is_absolute() or ".." in path.parts:
-                      raise SystemExit(f"Entrée d'archive non sûre : {member.name}")
-                  if len(path.parts) < 2 or path.parts[0] != "gta-ranked-studio":
-                      raise SystemExit(f"Chemin d'archive inattendu : {member.name}")
-                  relative = PurePosixPath(*path.parts[1:]).as_posix()
-                  source = archive.extractfile(member)
-                  if source is None:
-                      raise SystemExit(f"Fichier illisible : {member.name}")
-                  data = source.read()
-                  actual[relative] = {
-                      "size": len(data),
-                      "sha256": hashlib.sha256(data).hexdigest(),
-                  }
-                  target = output_root.joinpath(*path.parts)
-                  target.parent.mkdir(parents=True, exist_ok=True)
-                  target.write_bytes(data)
-
-          if set(actual) != set(expected):
-              missing = sorted(set(expected) - set(actual))
-              unexpected = sorted(set(actual) - set(expected))
-              raise SystemExit(f"Inventaire différent. Manquants={missing}; inattendus={unexpected}")
-          for name, item in expected.items():
-              if actual[name]["size"] != item["size"] or actual[name]["sha256"] != item["sha256"]:
-                  raise SystemExit(f"SHA-256 fichier invalide : {name}")
-
-          app_root = output_root / "gta-ranked-studio"
-          version_file = app_root / "VERSION.txt"
-          if not version_file.is_file() or "Version: 0.7.8" not in version_file.read_text(encoding="utf-8-sig"):
-              raise SystemExit("La source canonique n'est pas en v0.7.8.")
-          print(f"Source canonique v0.7.8 vérifiée : {len(actual)} fichiers.")
-          print(f"SHA-256 archive : {archive_sha}")
-          print(f"Racine application : {app_root}")
-          PY
-          echo "APP_ROOT=source-checkout/gta-ranked-studio" >> "$GITHUB_ENV"
-      - name: Apply opening-retention scoring patch
-        run: python source/apply-hotfix-v0.7.8-retention.py "$APP_ROOT"
-      - name: Apply post-export quality-control patch
-        run: python source/apply-hotfix-v0.7.8-export-qc.py "$APP_ROOT"
-      - name: Inject current project documentation and validate memory
+      - name: Install FFmpeg and application dependencies
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p "$APP_ROOT/docs" "$APP_ROOT/tools"
-          cp README.md "$APP_ROOT/README.md"
-          cp VERSION.txt "$APP_ROOT/VERSION.txt"
-          cp NOTES-v0.7.8.txt "$APP_ROOT/NOTES-v0.7.8.txt"
-          cp docs/CONTINUATION.md "$APP_ROOT/docs/CONTINUATION.md"
-          cp docs/UPDATES.md "$APP_ROOT/docs/UPDATES.md"
-          cp docs/implementation-plan-v0.7.8.md "$APP_ROOT/docs/implementation-plan-v0.7.8.md"
-          cp tools/check_project_memory.py "$APP_ROOT/tools/check_project_memory.py"
-          python "$APP_ROOT/tools/check_project_memory.py" --root "$APP_ROOT"
-      - name: Install FFmpeg and application test dependencies
-        run: |
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends ffmpeg
-          python -m pip install --disable-pip-version-check -r "$APP_ROOT/requirements.txt"
+          ffmpeg -version
+          ffprobe -version
+          python -m pip install --disable-pip-version-check -r app/requirements.txt
+
       - name: Verify release workflow safety gates
         shell: bash
         run: |
@@ -155,321 +103,97 @@ jobs:
           release = yaml.load(Path(".github/workflows/release.yml").read_text(encoding="utf-8"), Loader=loader)
           triggers = release.get("on", {})
           if set(triggers) != {"push", "workflow_dispatch"}:
-              raise SystemExit("Le workflow de release doit proposer l'approbation explicite et le mode brouillon manuel.")
+              raise SystemExit("Le workflow de release doit exiger l'approbation et garder le mode brouillon manuel.")
           push = triggers["push"]
           if push.get("branches") != ["main"] or push.get("paths") != [".release-approval"]:
-              raise SystemExit("La publication automatique doit être limitée à .release-approval sur main.")
+              raise SystemExit("La publication stable doit être limitée au marqueur .release-approval sur main.")
           inputs = triggers["workflow_dispatch"].get("inputs", {})
-          confirmation = inputs.get("confirm_publish", {})
-          if confirmation.get("type") != "boolean" or confirmation.get("default") != "false" or confirmation.get("required") != "true":
-              raise SystemExit("La confirmation explicite du mode brouillon doit être obligatoire et décochée par défaut.")
-          release_steps = release["jobs"]["release"]["steps"]
-          release_script = "\\n".join(step.get("run", "") for step in release_steps)
-          for required in ("refs/heads/main", "CONFIRM_PUBLISH", ".release-approval", "VERSION.txt"):
-              if required not in release_script:
+          confirm = inputs.get("confirm_publish", {})
+          if confirm.get("type") != "boolean" or confirm.get("default") != "false" or confirm.get("required") != "true":
+              raise SystemExit("La confirmation du mode brouillon doit être obligatoire et décochée par défaut.")
+          steps = release["jobs"]["release"]["steps"]
+          script = "\n".join(step.get("run", "") for step in steps)
+          for required in ("refs/heads/main", ".release-approval", "VERSION.txt", "app/VERSION.txt", "installer/build_release_package.py", "APP_ROOT=$GITHUB_WORKSPACE/app"):
+              if required not in script:
                   raise SystemExit(f"Garde-fou de release manquant : {required}")
-          publish = next((step for step in release_steps if step.get("uses", "").startswith("softprops/action-gh-release@")), None)
-          publish_with = publish.get("with", {}) if publish else {}
-          expected_draft = "$" + "{{ github.event_name == 'workflow_dispatch' }}"
-          expected_latest = "$" + "{{ github.event_name == 'push' }}"
-          if publish_with.get("draft") != expected_draft:
-              raise SystemExit("La publication approuvée doit être publique, le déclenchement manuel doit rester en brouillon.")
-          if publish_with.get("make_latest") != expected_latest:
-              raise SystemExit("La Release publique approuvée doit devenir la dernière version stable.")
+          setup = next((step for step in steps if step.get("uses") == "actions/setup-python@v5"), None)
+          if not setup or setup.get("with", {}).get("python-version") != "3.11":
+              raise SystemExit("Le workflow de release doit utiliser Python 3.11.")
+          if any("source/canonical" in str(step.get("run", "")) or "apply-hotfix" in str(step.get("run", "")) for step in steps):
+              raise SystemExit("La publication ne doit plus reconstruire l'application à partir d'archives ou de correctifs.")
 
-          python_setup = next((step for step in release_steps if step.get("uses") == "actions/setup-python@v5"), None)
-          if not python_setup or python_setup.get("with", {}).get("python-version") != "3.11":
-              raise SystemExit("Le workflow de release doit épingler Python 3.11, version prise en charge par le projet.")
-          if "1980-01-01 00:00:00 UTC" not in release_script:
-              raise SystemExit("Le workflow de release doit normaliser les dates source avant la création du ZIP.")
           windows = yaml.load(Path(".github/workflows/windows-smoke.yml").read_text(encoding="utf-8"), Loader=loader)
-          job = windows.get("jobs", {}).get("windows-smoke", {})
-          if job.get("runs-on") != "windows-latest":
-              raise SystemExit("Le contrôle Windows doit utiliser windows-latest.")
-          windows_steps = job.get("steps", [])
-          windows_script = "\\n".join(step.get("run", "") for step in windows_steps)
-          for required in ("python -m pytest -q", "node --check", "installer/build_release_package.py", "choco install ffmpeg"):
-              if required not in windows_script:
-                  raise SystemExit(f"Contrôle Windows manquant : {required}")
-          print("Garde-fous release et validation Windows vérifiés.")
+          windows_steps = windows.get("jobs", {}).get("windows-smoke", {}).get("steps", [])
+          windows_script = "\n".join(step.get("run", "") for step in windows_steps)
+          if "build_release_package.py" not in windows_script or "node --check studio/web/static/app.js" not in windows_script:
+              raise SystemExit("La validation Windows doit construire le paquet et vérifier le JavaScript de app/.")
+          if "source/canonical" in windows_script or "apply-hotfix" in windows_script:
+              raise SystemExit("La validation Windows ne doit plus extraire une archive ni appliquer de patchs.")
+          print("Garde-fous de publication et validation Windows vérifiés.")
           PY
-      - name: Run complete test suite
+
+      - name: Run complete Linux test suite and frontend syntax check
         shell: bash
         run: |
           set -euo pipefail
-          cd "$APP_ROOT"
+          cd app
           cp config.yaml.default config.yaml
           trap 'rm -f config.yaml' EXIT
+          python tools/check_project_memory.py
           python -m pytest -q
           node --check studio/web/static/app.js
-      - name: Reconstruct and compare canonical v0.8.0 source
-        shell: bash
-        run: |
-          set -euo pipefail
-          python - <<'PY'
-          import base64
-          import hashlib
-          import os
-          import tarfile
-          from collections import defaultdict
-          from pathlib import Path, PurePosixPath
 
-          repository = Path.cwd()
-          parts = sorted((repository / "source").glob("v0.8.0-source.part*.b64"))
-          if len(parts) != 17:
-              raise SystemExit(f"Expected 17 v0.8.0 source segments, found {len(parts)}")
-
-          segment_groups = defaultdict(list)
-          encoded_parts = []
-          for part in parts:
-              raw = part.read_text(encoding="ascii").strip()
-              encoded_parts.append(raw)
-              segment_groups[hashlib.sha256(raw.encode("ascii")).hexdigest()].append(part.name)
-          duplicates = [names for names in segment_groups.values() if len(names) > 1]
-
-          payload = base64.b64decode("".join(encoded_parts), validate=True)
-          archive_path = repository / "dist" / "GTA-Ranked-Studio-source-v0.8.0.tar.xz"
-          archive_path.parent.mkdir(parents=True, exist_ok=True)
-          archive_path.write_bytes(payload)
-          report_path = repository / "dist" / "v0.8.0-source-comparison.txt"
-          report = [
-              "GTA Ranked Studio source comparison",
-              "v0.7.8: reconstructed from the v0.4.0 base plus cumulative hotfixes",
-              "v0.8.0: canonical source snapshot split across base64 segments",
-              f"Segments: {len(parts)}",
-              f"Unique segment contents: {len(segment_groups)}",
-              f"Decoded archive bytes: {len(payload)}",
-              f"Decoded archive SHA-256: {hashlib.sha256(payload).hexdigest()}",
-          ]
-          if duplicates:
-              report.extend(["", "BLOCKED: duplicate source segments detected."])
-              for names in duplicates:
-                  report.append("Duplicate content: " + ", ".join(names))
-              report.append("The v0.8.0 archive cannot be trusted or compared until the missing segment is restored.")
-              report_path.write_text("\n".join(report) + "\n", encoding="utf-8")
-              print("\n".join(report))
-              with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env:
-                  env.write("V080_SOURCE_STATUS=blocked\n")
-              raise SystemExit(0)
-
-          extract_root = repository / "source-v0.8.0-extracted"
-          extract_root.mkdir(parents=True, exist_ok=True)
-          try:
-              with tarfile.open(archive_path, mode="r:xz") as archive:
-                  members = archive.getmembers()
-                  for member in members:
-                      name = PurePosixPath(member.name)
-                      if name.is_absolute() or ".." in name.parts:
-                          raise ValueError(f"Unsafe archive path: {member.name}")
-                      if not (member.isfile() or member.isdir()):
-                          raise ValueError(f"Unsupported archive entry: {member.name}")
-                      target = (extract_root / Path(*name.parts)).resolve()
-                      if target != extract_root.resolve() and extract_root.resolve() not in target.parents:
-                          raise ValueError(f"Archive path escapes extraction root: {member.name}")
-                  archive.extractall(extract_root)
-          except Exception as exc:
-              report.extend(["", f"BLOCKED: v0.8.0 archive extraction failed: {type(exc).__name__}: {exc}"])
-              report_path.write_text("\n".join(report) + "\n", encoding="utf-8")
-              print("\n".join(report))
-              with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env:
-                  env.write("V080_SOURCE_STATUS=blocked\n")
-              raise SystemExit(0)
-
-          version_roots = []
-          for version_file in extract_root.rglob("VERSION.txt"):
-              version_text = version_file.read_text(encoding="utf-8", errors="replace")
-              if any(line.strip() == "Version: 0.8.0" for line in version_text.splitlines()):
-                  version_roots.append(version_file.parent)
-          if len(version_roots) != 1:
-              report.extend(["", f"BLOCKED: expected one v0.8.0 root, found {len(version_roots)}"])
-              report_path.write_text("\n".join(report) + "\n", encoding="utf-8")
-              print("\n".join(report))
-              with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env:
-                  env.write("V080_SOURCE_STATUS=blocked\n")
-              raise SystemExit(0)
-
-          v080_root = version_roots[0]
-          v078_root = Path(os.environ["APP_ROOT"]).resolve()
-
-          def inventory(root):
-              result = {}
-              for path in root.rglob("*"):
-                  if path.is_file():
-                      relative = path.relative_to(root).as_posix()
-                      result[relative] = hashlib.sha256(path.read_bytes()).hexdigest()
-              return result
-
-          old_files = inventory(v078_root)
-          new_files = inventory(v080_root)
-          old_names, new_names = set(old_files), set(new_files)
-          added = sorted(new_names - old_names)
-          removed = sorted(old_names - new_names)
-          changed = sorted(name for name in old_names & new_names if old_files[name] != new_files[name])
-          report.extend([
-              f"v0.7.8 root: {v078_root}",
-              f"v0.8.0 root: {v080_root}",
-              f"File counts: v0.7.8={len(old_files)}, v0.8.0={len(new_files)}",
-              f"Added in v0.8.0: {len(added)}",
-              f"Removed from v0.7.8: {len(removed)}",
-              f"Modified: {len(changed)}",
-              "",
-              "ADDED",
-              *added,
-              "",
-              "REMOVED",
-              *removed,
-              "",
-              "MODIFIED",
-              *changed,
-          ])
-          report_path.write_text("\n".join(report) + "\n", encoding="utf-8")
-          print("\n".join(report))
-          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env:
-              env.write("V080_SOURCE_STATUS=compared\n")
-          PY
-      - name: Build deterministic canonical v0.7.8 source snapshot
-        shell: bash
-        run: |
-          set -euo pipefail
-          python - "$APP_ROOT" "$GITHUB_WORKSPACE/dist/canonical-v0.7.8" <<'PY'
-          import hashlib
-          import io
-          import json
-          import stat
-          import sys
-          import tarfile
-          from pathlib import Path
-
-          root = Path(sys.argv[1]).resolve()
-          output = Path(sys.argv[2]).resolve()
-          output.mkdir(parents=True, exist_ok=True)
-          archive_path = output / "GTA-Ranked-Studio-source-v0.7.8.tar.xz"
-          excluded_dirs = {".git", ".venv", "__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache", "build", "dist", "data", "inbox", "out", "logs", "work", "node_modules"}
-          excluded_suffixes = {".pyc", ".pyo", ".sqlite", ".sqlite3", ".db", ".log", ".pem", ".key"}
-          excluded_names = {"config.yaml", "secrets.json", "credentials.json"}
-
-          def include(path):
-              relative = path.relative_to(root)
-              parts = relative.parts
-              if any(part in excluded_dirs for part in parts):
-                  return False
-              if path.name in excluded_names or path.name.startswith(".env"):
-                  return False
-              if path.suffix.lower() in excluded_suffixes:
-                  return False
-              if parts[:2] in (("models", "whisper"), ("tools", "whisper.cpp")) and path.name != ".gitkeep":
-                  return False
-              if len(parts) >= 3 and parts[:2] == ("assets", "fonts") and path.suffix.lower() in {".ttf", ".otf", ".woff", ".woff2"}:
-                  return False
-              return True
-
-          entries = []
-          with tarfile.open(archive_path, mode="w:xz", preset=9) as archive:
-              for path in sorted(root.rglob("*"), key=lambda item: item.relative_to(root).as_posix()):
-                  if not path.is_file() or not include(path):
-                      continue
-                  relative = path.relative_to(root).as_posix()
-                  data = path.read_bytes()
-                  info = tarfile.TarInfo("gta-ranked-studio/" + relative)
-                  info.size = len(data)
-                  info.mtime = 0
-                  info.uid = 0
-                  info.gid = 0
-                  info.uname = ""
-                  info.gname = ""
-                  info.mode = 0o755 if path.stat().st_mode & stat.S_IXUSR else 0o644
-                  archive.addfile(info, io.BytesIO(data))
-                  entries.append({
-                      "path": relative,
-                      "size": len(data),
-                      "sha256": hashlib.sha256(data).hexdigest(),
-                  })
-
-          archive_bytes = archive_path.read_bytes()
-          archive_sha = hashlib.sha256(archive_bytes).hexdigest()
-          manifest = {
-              "project": "GTA Ranked Studio",
-              "version": "0.7.8",
-              "archive": archive_path.name,
-              "archive_sha256": archive_sha,
-              "file_count": len(entries),
-              "files": entries,
-              "exclusions": sorted(excluded_dirs | excluded_names),
-          }
-          (output / "MANIFEST.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-          (output / "SHA256SUMS.txt").write_text(archive_sha + "  " + archive_path.name + "\n", encoding="utf-8")
-          with tarfile.open(archive_path, mode="r:xz") as check:
-              bad = [member.name for member in check.getmembers() if member.isfile() and check.extractfile(member) is None]
-              if bad:
-                  raise SystemExit("Archive validation failed: " + ", ".join(bad))
-          prohibited = [entry["path"] for entry in entries if entry["path"] == "config.yaml" or entry["path"].endswith((".sqlite", ".db", ".log", ".pyc"))]
-          if prohibited:
-              raise SystemExit("Prohibited files found in canonical source: " + ", ".join(prohibited))
-          print("Canonical v0.7.8 source:", archive_path)
-          print("Files:", len(entries))
-          print("SHA-256:", archive_sha)
-          PY
       - name: Build Windows update package
-        run: python "$APP_ROOT/installer/build_release_package.py" --version "0.7.8" --output-dir "$GITHUB_WORKSPACE/dist"
-      - name: Verify continuation memory is included in the Windows package
         shell: bash
         run: |
           set -euo pipefail
-          python - "$GITHUB_WORKSPACE/dist/GTA-Ranked-Studio-v0.7.8.zip" <<'PY'
+          python app/installer/build_release_package.py --version "$APP_VERSION" --output-dir "$GITHUB_WORKSPACE/dist"
+
+      - name: Verify update package integrity and user-data exclusions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - "$GITHUB_WORKSPACE/dist/GTA-Ranked-Studio-v$APP_VERSION.zip" "$GITHUB_WORKSPACE/dist/SHA256SUMS.txt" "$APP_VERSION" <<'PY'
+          import hashlib
           import sys
           import zipfile
-          required = {
-              "gta-ranked-studio/docs/CONTINUATION.md",
-              "gta-ranked-studio/tools/check_project_memory.py",
-              "gta-ranked-studio/docs/UPDATES.md",
-          }
-          with zipfile.ZipFile(sys.argv[1]) as archive:
-              missing = required - set(archive.namelist())
-          if missing:
-              raise SystemExit("Package is missing continuity files: " + ", ".join(sorted(missing)))
-          print("Continuation memo, checker and update history are included in the Windows ZIP.")
-          PY
-      - name: Commit canonical v0.7.8 source snapshot to the current branch
-        if: github.event_name != 'pull_request'
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p source/canonical-v0.7.8
-          cp dist/canonical-v0.7.8/GTA-Ranked-Studio-source-v0.7.8.tar.xz source/canonical-v0.7.8/
-          cp dist/canonical-v0.7.8/MANIFEST.json source/canonical-v0.7.8/
-          cp dist/canonical-v0.7.8/SHA256SUMS.txt source/canonical-v0.7.8/
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add source/canonical-v0.7.8/
-          if ! git diff --cached --quiet; then
-            git commit -m "build: add canonical GTA Ranked Studio v0.7.8 source snapshot [skip ci]"
-            git fetch origin "$GITHUB_REF_NAME"
-            git rebase "origin/$GITHUB_REF_NAME"
-            git push origin "HEAD:$GITHUB_REF_NAME"
-          else
-            echo "Canonical v0.7.8 source snapshot is already up to date."
-          fi
-      - name: Upload canonical v0.7.8 source snapshot
-        uses: actions/upload-artifact@v4
-        with:
-          name: gta-ranked-studio-canonical-source-v0.7.8
-          path: dist/canonical-v0.7.8/
-          retention-days: 90
-      - name: Upload tested source and Windows update package
-        uses: actions/upload-artifact@v4
-        with:
-          name: gta-ranked-studio-v0.7.8-candidate
-          path: |
-            dist/GTA-Ranked-Studio-v0.7.8.zip
-            dist/SHA256SUMS.txt
-          retention-days: 14
-      - name: Upload v0.8.0 source and comparison report
-        uses: actions/upload-artifact@v4
-        with:
-          name: gta-ranked-studio-v0.7.8-v0.8.0-source-comparison
-          path: |
-            dist/GTA-Ranked-Studio-source-v0.8.0.tar.xz
-            dist/v0.8.0-source-comparison.txt
-          retention-days: 14
+          from pathlib import PurePosixPath
 
-# Re-run after correcting the v0.7.8 patch script quoting.
+          package, checksum_file, version = sys.argv[1:]
+          required = {
+              "gta-ranked-studio/VERSION.txt",
+              "gta-ranked-studio/installer/apply_update.ps1",
+              "gta-ranked-studio/studio/web/updater.py",
+              "gta-ranked-studio/docs/CONTINUATION.md",
+              "gta-ranked-studio/docs/UPDATES.md",
+              "gta-ranked-studio/tools/check_project_memory.py",
+          }
+          with zipfile.ZipFile(package) as archive:
+              names = set(archive.namelist())
+              missing = required - names
+              if missing:
+                  raise SystemExit("Fichiers requis absents : " + ", ".join(sorted(missing)))
+              if archive.testzip():
+                  raise SystemExit("Le ZIP de mise à jour est corrompu.")
+              version_text = archive.read("gta-ranked-studio/VERSION.txt").decode("utf-8-sig")
+              if f"Version: {version}" not in version_text:
+                  raise SystemExit("La version du ZIP ne correspond pas à la version source.")
+              forbidden = []
+              for name in names:
+                  path = PurePosixPath(name)
+                  if path.name in {"config.yaml", "secrets.json", "credentials.json"} or path.name.startswith(".env") or path.suffix.lower() in {".sqlite", ".sqlite3", ".db", ".log", ".pyc", ".pem", ".key"}:
+                      forbidden.append(name)
+              if forbidden:
+                  raise SystemExit("Données locales ou fichiers sensibles présents : " + ", ".join(sorted(forbidden)))
+          digest = hashlib.sha256(open(package, "rb").read()).hexdigest()
+          if digest not in open(checksum_file, encoding="utf-8").read():
+              raise SystemExit("Le checksum SHA-256 du ZIP ne correspond pas.")
+          print(f"ZIP Windows v{version} vérifié, données locales exclues.")
+          PY
+
+      - name: Upload tested Windows update package
+        uses: actions/upload-artifact@v4
+        with:
+          name: gta-ranked-studio-v0.7.8-linux-validated-package
+          path: dist/
+          retention-days: 14

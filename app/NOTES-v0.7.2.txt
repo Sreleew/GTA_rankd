@@ -1,0 +1,16 @@
+GTA Ranked Studio v0.7.2
+
+Miniatures :
+- La sélection de la capture ne dépend plus uniquement du pic audio ; plusieurs images du segment sont évaluées rapidement en basse résolution.
+- Le score privilégie une scène de gameplay nette et détaillée, pénalise les écrans vides, les ciels uniformes et les transitions, puis extrait une seule image en pleine résolution.
+- Le timestamp préféré est choisi à partir des mots-clés du transcript (like, subscribe, YouTube, police, crash, etc.) et reste distinct du pic audio utilisé pour le montage.
+
+Titres et accroches :
+- L'éditeur résume maintenant le clip entier plutôt que de citer automatiquement les premiers mots.
+- Les citations tronquées par Whisper ou coupées en plein milieu d'une phrase sont rejetées.
+- Le fallback détecte les séquences de promotion YouTube/abonnement et produit un titre, une légende et une accroche cohérents avec le passage.
+
+Performance :
+- Un seul passage FFmpeg léger échantillonne les images en 480 px ; une seule extraction pleine résolution est conservée.
+- Aucun nouvel appel Ollama ; le timeout local reste limité à huit secondes.
+- Le rendu vidéo, le choix du pic audio et les options de montage restent inchangés.

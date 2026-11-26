@@ -1,0 +1,17 @@
+GTA Ranked Studio v0.7.1
+
+Miniatures GTA :
+- La miniature est désormais extraite d'une vraie image de la vidéo source au moment fort, et non d'une image du rendu vertical.
+- Nouveau poster vertical 1080x1920 : la capture 16:9 complète est conservée dans un grand cadre de gameplay, avec un fond cinématique assombri, une headline condensée et des repères de marque.
+- Le texte de miniature est limité à quatre mots pour rester lisible sur téléphone.
+
+Texte de publication :
+- Un seul titre et une seule légende partagés entre YouTube Shorts, TikTok et Instagram Reels.
+- Style plus naturel et spécifique au clip, avec mots-clés GTA et streamer quand connus, argot léger sans formule artificielle.
+- Suppression des phrases génériques comme « Watch the full moment ».
+- Un seul bouton « Copier le post » et un seul fichier publication.txt à côté du rendu.
+
+Performance :
+- Toujours un appel Ollama maximum, timeout de 8 secondes, puis fallback local immédiat.
+- La miniature utilise une extraction FFmpeg d'une seule image et un traitement Pillow, sans réencoder la vidéo.
+- Les traitements Shorts et Moments forts conservent leur fonctionnement et leur bouton d'annulation.

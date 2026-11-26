@@ -1,0 +1,7 @@
+GTA Ranked Studio v0.7.5
+
+Diagnostic GPU Vulkan :
+- Corrige le cache statique du JavaScript : le bouton « Tester le GPU » utilise désormais un identifiant d'asset propre à la version.
+- Déclare explicitement le bouton comme type=button pour empêcher toute soumission de formulaire involontaire.
+- Rend la liaison du clic tolérante et garde le statut « Test en cours » visible pendant les actualisations automatiques.
+- Aucun changement du moteur Whisper, du modèle, d'Ollama ou de Qwen.

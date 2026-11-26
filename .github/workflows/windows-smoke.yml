@@ -2,35 +2,28 @@ name: Windows runtime validation
 
 on:
   push:
-    branches: [main, feature/v0.7.8-shorts-retention]
+    branches: [main, chore/clean-source-layout]
     paths:
+      - "app/**"
       - ".github/workflows/windows-smoke.yml"
-      - "source/canonical-v0.7.8/**"
-      - "source/apply-hotfix-v0.7.8-retention.py"
-      - "source/apply-hotfix-v0.7.8-export-qc.py"
-      - "source/export-quality-patch-v0.7.8.diff.xz.b64"
+      - ".github/workflows/audit-source.yml"
+      - ".github/workflows/release.yml"
       - "README.md"
       - "VERSION.txt"
-      - "NOTES-v0.7.8.txt"
-      - "docs/CONTINUATION.md"
-      - "docs/UPDATES.md"
-      - "docs/implementation-plan-v0.7.8.md"
+      - "NOTES-v*.txt"
+      - "docs/**"
       - "tools/check_project_memory.py"
   pull_request:
     branches: [main]
     paths:
+      - "app/**"
       - ".github/workflows/windows-smoke.yml"
+      - ".github/workflows/audit-source.yml"
       - ".github/workflows/release.yml"
-      - "source/canonical-v0.7.8/**"
-      - "source/apply-hotfix-v0.7.8-retention.py"
-      - "source/apply-hotfix-v0.7.8-export-qc.py"
-      - "source/export-quality-patch-v0.7.8.diff.xz.b64"
       - "README.md"
       - "VERSION.txt"
-      - "NOTES-v0.7.8.txt"
-      - "docs/CONTINUATION.md"
-      - "docs/UPDATES.md"
-      - "docs/implementation-plan-v0.7.8.md"
+      - "NOTES-v*.txt"
+      - "docs/**"
       - "tools/check_project_memory.py"
   workflow_dispatch:
 
@@ -55,7 +48,7 @@ jobs:
         with:
           python-version: "3.11"
           cache: pip
-          cache-dependency-path: source/canonical-v0.7.8/GTA-Ranked-Studio-source-v0.7.8.tar.xz
+          cache-dependency-path: app/requirements.txt
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -73,100 +66,49 @@ jobs:
           } else {
             $ffmpegPath = Split-Path $ffmpeg.FullName -Parent
           }
-          if (-not $ffmpegPath) {
-            throw "FFmpeg installé mais ffmpeg.exe introuvable."
-          }
+          if (-not $ffmpegPath) { throw "FFmpeg installé mais ffmpeg.exe introuvable." }
           Add-Content -Path $env:GITHUB_PATH -Value $ffmpegPath
           $env:Path = "$ffmpegPath;$env:Path"
           ffmpeg -version
           ffprobe -version
 
-      - name: Verify and safely extract canonical source
+      - name: Verify source layout and synchronize release metadata
         shell: pwsh
         run: |
-          @'
-          import hashlib
-          import json
-          import sys
-          import tarfile
-          from pathlib import Path, PurePosixPath
-
-          archive_path = Path(sys.argv[1])
-          snapshot_dir = archive_path.parent
-          manifest_path = snapshot_dir / "MANIFEST.json"
-          sums_path = snapshot_dir / "SHA256SUMS.txt"
-          destination = Path(sys.argv[2])
-
-          manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-          expected_archive_sha = manifest["archive_sha256"]
-          actual_archive_sha = hashlib.sha256(archive_path.read_bytes()).hexdigest()
-          checksum_fields = sums_path.read_text(encoding="utf-8").split()
-          if not checksum_fields or checksum_fields[0] != expected_archive_sha or actual_archive_sha != expected_archive_sha:
-              raise SystemExit("SHA-256 de l'archive invalide.")
-          if manifest.get("version") != "0.7.8":
-              raise SystemExit("La version du manifeste n'est pas 0.7.8.")
-
-          expected = {item["path"]: item for item in manifest["files"]}
-          if len(expected) != manifest.get("file_count"):
-              raise SystemExit("Le nombre de fichiers du manifeste est incohérent.")
-
-          destination.mkdir(parents=True, exist_ok=True)
-          actual = {}
-          with tarfile.open(archive_path, "r:xz") as archive:
-              for member in archive.getmembers():
-                  path = PurePosixPath(member.name)
-                  if not member.isfile() or path.is_absolute() or ".." in path.parts:
-                      raise SystemExit(f"Entrée d'archive non autorisée : {member.name}")
-                  if len(path.parts) < 2 or path.parts[0] != "gta-ranked-studio":
-                      raise SystemExit(f"Chemin d'archive inattendu : {member.name}")
-                  relative = PurePosixPath(*path.parts[1:]).as_posix()
-                  source = archive.extractfile(member)
-                  if source is None:
-                      raise SystemExit(f"Fichier illisible : {member.name}")
-                  data = source.read()
-                  actual[relative] = {
-                      "size": len(data),
-                      "sha256": hashlib.sha256(data).hexdigest(),
-                  }
-                  target = destination.joinpath(*path.parts)
-                  target.parent.mkdir(parents=True, exist_ok=True)
-                  target.write_bytes(data)
-
-          if set(actual) != set(expected):
-              raise SystemExit("L'inventaire de l'archive diffère du manifeste.")
-          for name, item in expected.items():
-              if actual[name]["size"] != item["size"] or actual[name]["sha256"] != item["sha256"]:
-                  raise SystemExit(f"Hash de fichier invalide : {name}")
-
-          app_root = destination / "gta-ranked-studio"
-          if not (app_root / "VERSION.txt").is_file():
-              raise SystemExit("VERSION.txt absent après extraction.")
-          version_text = (app_root / "VERSION.txt").read_text(encoding="utf-8-sig")
-          if "Version: 0.7.8" not in version_text:
-              raise SystemExit("La source extraite n'est pas en v0.7.8.")
-          print(f"Source canonique vérifiée : {len(actual)} fichiers.")
-          print(f"Application : {app_root}")
-          '@ | python - "$env:GITHUB_WORKSPACE\source\canonical-v0.7.8\GTA-Ranked-Studio-source-v0.7.8.tar.xz" "$env:RUNNER_TEMP\gta-ranked-source"
-          if ($LASTEXITCODE -ne 0) { throw "La vérification ou l'extraction de la source a échoué." }
-          $appRoot = Join-Path $env:RUNNER_TEMP "gta-ranked-source\gta-ranked-studio"
+          $appRoot = Join-Path $env:GITHUB_WORKSPACE "app"
+          foreach ($required in @(
+            "studio\web\app.py",
+            "studio\web\updater.py",
+            "installer\build_release_package.py",
+            "tests\test_web.py"
+          )) {
+            if (-not (Test-Path (Join-Path $appRoot $required) -PathType Leaf)) {
+              throw "Fichier source requis absent : $required"
+            }
+          }
+          $rootVersionText = Get-Content (Join-Path $env:GITHUB_WORKSPACE "VERSION.txt") -Raw
+          $appVersionText = Get-Content (Join-Path $appRoot "VERSION.txt") -Raw
+          if ($rootVersionText -notmatch '(?m)^Version:\s*([0-9]+(?:\.[0-9]+){2,3})\s*$') {
+            throw "VERSION.txt racine invalide."
+          }
+          $rootVersion = $Matches[1]
+          if ($appVersionText -notmatch '(?m)^Version:\s*([0-9]+(?:\.[0-9]+){2,3})\s*$' -or $Matches[1] -ne $rootVersion) {
+            throw "La version racine et la version de app/ doivent être identiques."
+          }
+          $notes = Join-Path $env:GITHUB_WORKSPACE "NOTES-v$rootVersion.txt"
+          if (-not (Test-Path $notes -PathType Leaf)) { throw "Notes de version absentes : $notes" }
+          New-Item -ItemType Directory -Path (Join-Path $appRoot "docs") -Force | Out-Null
+          New-Item -ItemType Directory -Path (Join-Path $appRoot "tools") -Force | Out-Null
+          Copy-Item (Join-Path $env:GITHUB_WORKSPACE "VERSION.txt") (Join-Path $appRoot "VERSION.txt") -Force
+          Copy-Item $notes (Join-Path $appRoot "NOTES-v$rootVersion.txt") -Force
+          Copy-Item (Join-Path $env:GITHUB_WORKSPACE "docs\CONTINUATION.md") (Join-Path $appRoot "docs\CONTINUATION.md") -Force
+          Copy-Item (Join-Path $env:GITHUB_WORKSPACE "docs\UPDATES.md") (Join-Path $appRoot "docs\UPDATES.md") -Force
+          Copy-Item (Join-Path $env:GITHUB_WORKSPACE "docs\implementation-plan-v0.7.8.md") (Join-Path $appRoot "docs\implementation-plan-v0.7.8.md") -Force
+          Copy-Item (Join-Path $env:GITHUB_WORKSPACE "tools\check_project_memory.py") (Join-Path $appRoot "tools\check_project_memory.py") -Force
+          [System.IO.File]::AppendAllText($env:GITHUB_ENV, "APP_VERSION=$rootVersion" + [Environment]::NewLine, [System.Text.UTF8Encoding]::new($false))
           [System.IO.File]::AppendAllText($env:GITHUB_ENV, "APP_ROOT=$appRoot" + [Environment]::NewLine, [System.Text.UTF8Encoding]::new($false))
 
-      - name: Apply application patches and inject current project documentation
-        shell: pwsh
-        run: |
-          python "$env:GITHUB_WORKSPACE\source\apply-hotfix-v0.7.8-retention.py" "$env:APP_ROOT"
-          if ($LASTEXITCODE -ne 0) { throw "L'application du patch retention a échoué." }
-          python "$env:GITHUB_WORKSPACE\source\apply-hotfix-v0.7.8-export-qc.py" "$env:APP_ROOT"
-          if ($LASTEXITCODE -ne 0) { throw "L'application du patch qualité export a échoué." }
-          Copy-Item "$env:GITHUB_WORKSPACE\README.md" "$env:APP_ROOT\README.md" -Force
-          Copy-Item "$env:GITHUB_WORKSPACE\VERSION.txt" "$env:APP_ROOT\VERSION.txt" -Force
-          Copy-Item "$env:GITHUB_WORKSPACE\NOTES-v0.7.8.txt" "$env:APP_ROOT\NOTES-v0.7.8.txt" -Force
-          Copy-Item "$env:GITHUB_WORKSPACE\docs\CONTINUATION.md" "$env:APP_ROOT\docs\CONTINUATION.md" -Force
-          Copy-Item "$env:GITHUB_WORKSPACE\docs\UPDATES.md" "$env:APP_ROOT\docs\UPDATES.md" -Force
-          Copy-Item "$env:GITHUB_WORKSPACE\docs\implementation-plan-v0.7.8.md" "$env:APP_ROOT\docs\implementation-plan-v0.7.8.md" -Force
-          Copy-Item "$env:GITHUB_WORKSPACE\tools\check_project_memory.py" "$env:APP_ROOT\tools\check_project_memory.py" -Force
-
-      - name: Install application and test dependencies
+      - name: Install application dependencies
         shell: pwsh
         run: |
           python -m pip install --disable-pip-version-check -r "$env:APP_ROOT\requirements.txt"
@@ -176,19 +118,23 @@ jobs:
         shell: pwsh
         run: |
           Set-Location $env:APP_ROOT
-          Copy-Item config.yaml.default config.yaml
-          python tools/check_project_memory.py
-          if ($LASTEXITCODE -ne 0) { throw "Le contrôle du mémo a échoué." }
-          python -m pytest -q
-          if ($LASTEXITCODE -ne 0) { throw "La suite de tests Windows a échoué." }
-          node --check studio/web/static/app.js
-          if ($LASTEXITCODE -ne 0) { throw "Le contrôle syntaxique JavaScript a échoué." }
+          Copy-Item config.yaml.default config.yaml -Force
+          try {
+            python tools/check_project_memory.py
+            if ($LASTEXITCODE -ne 0) { throw "Le contrôle du mémo a échoué." }
+            python -m pytest -q
+            if ($LASTEXITCODE -ne 0) { throw "La suite de tests Windows a échoué." }
+            node --check studio/web/static/app.js
+            if ($LASTEXITCODE -ne 0) { throw "Le contrôle syntaxique JavaScript a échoué." }
+          }
+          finally {
+            Remove-Item config.yaml -Force -ErrorAction SilentlyContinue
+          }
 
       - name: Build Windows update package
         shell: pwsh
         run: |
-          Set-Location $env:APP_ROOT
-          python installer/build_release_package.py --version 0.7.8 --output-dir "$env:GITHUB_WORKSPACE\dist-windows"
+          python "$env:APP_ROOT\installer\build_release_package.py" --version "$env:APP_VERSION" --output-dir "$env:GITHUB_WORKSPACE\dist-windows"
           if ($LASTEXITCODE -ne 0) { throw "La construction du paquet Windows a échoué." }
 
       - name: Verify Windows package contents and exclusions
@@ -198,47 +144,44 @@ jobs:
           import hashlib
           import sys
           import zipfile
-          from pathlib import Path, PurePosixPath
+          from pathlib import PurePosixPath
 
-          package_path = Path(sys.argv[1])
+          package_path, checksum_path, version = sys.argv[1:]
           required = {
-              "gta-ranked-studio/docs/CONTINUATION.md",
-              "gta-ranked-studio/tools/check_project_memory.py",
-              "gta-ranked-studio/docs/UPDATES.md",
               "gta-ranked-studio/VERSION.txt",
+              "gta-ranked-studio/installer/apply_update.ps1",
+              "gta-ranked-studio/studio/web/updater.py",
+              "gta-ranked-studio/docs/CONTINUATION.md",
+              "gta-ranked-studio/docs/UPDATES.md",
+              "gta-ranked-studio/tools/check_project_memory.py",
           }
-          forbidden_names = {"config.yaml", "secrets.json", "credentials.json"}
-          forbidden_suffixes = {".sqlite", ".sqlite3", ".db", ".log", ".pyc", ".pem", ".key"}
           with zipfile.ZipFile(package_path) as archive:
               names = set(archive.namelist())
               missing = required - names
               if missing:
                   raise SystemExit("Fichiers requis absents : " + ", ".join(sorted(missing)))
-              bad = []
+              if archive.testzip():
+                  raise SystemExit("ZIP Windows corrompu.")
+              version_text = archive.read("gta-ranked-studio/VERSION.txt").decode("utf-8-sig")
+              if f"Version: {version}" not in version_text:
+                  raise SystemExit("Version du ZIP incorrecte.")
+              forbidden = []
               for name in names:
                   path = PurePosixPath(name)
-                  if path.name in forbidden_names or path.name.startswith(".env") or path.suffix.lower() in forbidden_suffixes:
-                      bad.append(name)
-                  if path.parts[:2] in (("gta-ranked-studio", "data"), ("gta-ranked-studio", "inbox"), ("gta-ranked-studio", "out"), ("gta-ranked-studio", "logs")) and not path.name.endswith(".gitkeep"):
-                      bad.append(name)
-              if bad:
-                  raise SystemExit("Fichiers locaux/sensibles détectés : " + ", ".join(sorted(set(bad))))
-              corrupt = archive.testzip()
-              if corrupt:
-                  raise SystemExit(f"Entrée ZIP corrompue : {corrupt}")
-              digest = hashlib.sha256(package_path.read_bytes()).hexdigest()
-          checksum_path = package_path.with_name("SHA256SUMS.txt")
-          if digest not in checksum_path.read_text(encoding="utf-8"):
-              raise SystemExit("Le checksum du paquet ne correspond pas.")
-          print("Paquet Windows vérifié et données utilisateur exclues.")
-          '@ | python - "$env:GITHUB_WORKSPACE\dist-windows\GTA-Ranked-Studio-v0.7.8.zip"
-          if ($LASTEXITCODE -ne 0) { throw "La validation du ZIP Windows a échoué." }
+                  if path.name in {"config.yaml", "secrets.json", "credentials.json"} or path.name.startswith(".env") or path.suffix.lower() in {".sqlite", ".sqlite3", ".db", ".log", ".pyc", ".pem", ".key"}:
+                      forbidden.append(name)
+              if forbidden:
+                  raise SystemExit("Fichiers locaux/sensibles détectés : " + ", ".join(sorted(forbidden)))
+          digest = hashlib.sha256(open(package_path, "rb").read()).hexdigest()
+          if digest not in open(checksum_path, encoding="utf-8").read():
+              raise SystemExit("Checksum du ZIP incorrect.")
+          print("ZIP Windows vérifié et données personnelles exclues.")
+          '@ | python - "$env:GITHUB_WORKSPACE\dist-windows\GTA-Ranked-Studio-v$env:APP_VERSION.zip" "$env:GITHUB_WORKSPACE\dist-windows\SHA256SUMS.txt" "$env:APP_VERSION"
+          if ($LASTEXITCODE -ne 0) { throw "La vérification du paquet Windows a échoué." }
 
       - name: Upload Windows validation package
         uses: actions/upload-artifact@v4
         with:
-          name: gta-ranked-studio-v0.7.8-windows-validation
-          path: |
-            dist-windows/GTA-Ranked-Studio-v0.7.8.zip
-            dist-windows/SHA256SUMS.txt
+          name: gta-ranked-studio-windows-validation
+          path: dist-windows/
           retention-days: 14

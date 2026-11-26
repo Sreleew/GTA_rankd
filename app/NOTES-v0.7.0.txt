@@ -1,0 +1,17 @@
+GTA Ranked Studio v0.7.0
+
+Publication multi-plateforme :
+- Génération locale de titres, descriptions et hashtags distincts pour YouTube Shorts, TikTok et Instagram Reels.
+- Un seul appel Ollama local, sans retry, avec délai court ; fallback déterministe immédiat si le modèle est absent ou trop lent.
+- Fichiers youtube_shorts.txt, tiktok.txt et instagram.txt créés à côté du rendu pour copier/coller plus vite.
+- Miniature éditoriale GTA originale générée depuis une vraie image extraite du Short, sans appel image IA ni seconde passe vidéo.
+- Identité graphique répétable : label GTA Ranked, cadres d'accent jaune, titres condensés contrastés et footer de série.
+
+Contrôle de la file :
+- Bouton d'annulation pour les traitements Shorts et les analyses Moments forts, y compris pendant FFmpeg, Whisper et les téléchargements.
+- Une tâche en attente peut être annulée sans démarrer ; une tâche active interrompt son sous-processus et est marquée annulée.
+
+Optimisation :
+- Génération de miniature par Pillow, traitement image unique et export JPEG optimisé.
+- Métadonnées locales bornées à 8 secondes et sans nouvelle tentative pour préserver le débit de production.
+- Aucune modification des médias source, des modèles téléchargés ou des projets existants.
