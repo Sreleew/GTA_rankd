@@ -268,7 +268,8 @@ def apply_thumbnail_overlay(
 
     creator = re.sub(r"\s+", " ", str(streamer or "")).strip()[:30]
     game = re.sub(r"[^A-Za-z0-9 ]", "", str(game_label or "GTA")).upper()[:18] or "GTA"
-    words = _clean_ass_text(text).split()[:max_words]
+    raw_words = _clean_ass_text(text).split()
+    words = raw_words[:max_words]
     incomplete_endings = {
         "a", "an", "and", "are", "as", "at", "because", "but", "by", "for",
         "from", "got", "had", "has", "have", "he", "her", "him", "his",
@@ -276,6 +277,13 @@ def apply_thumbnail_overlay(
         "she", "so", "that", "the", "their", "them", "then", "there", "they",
         "this", "to", "was", "we", "were", "with", "you", "your",
     }
+    # If the first words are filler and the phrase continues, prefer its
+    # meaningful ending rather than cutting the headline in the middle.
+    if words and words[-1].strip(".,!?;:").lower() in incomplete_endings and len(raw_words) > len(words):
+        words = raw_words[-max_words:]
+    filler_openers = {"yeah", "yea", "huh", "uh", "um", "bro", "man", "shit", "like"}
+    while len(words) > 1 and words[0].strip(".,!?;:").lower() in filler_openers:
+        words = words[1:]
     if not words or words[-1].strip(".,!?;:").lower() in incomplete_endings:
         label = f"{creator.split()[0]} GTA MOMENT" if creator else "GTA MOMENT"
     else:
