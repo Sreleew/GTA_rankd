@@ -119,6 +119,30 @@ def _is_formulaic_promo_copy(value: str) -> bool:
     )
     return any(pattern in text for pattern in patterns)
 
+def _is_incomplete_phrase(value: str) -> bool:
+    words = re.findall(r"[A-Za-z0-9’']+", str(value or "").lower())
+    if not words:
+        return True
+    dangling = {
+        "a", "an", "and", "are", "at", "because", "but", "for", "from", "got",
+        "had", "has", "have", "he", "her", "his", "if", "in", "is", "it",
+        "my", "of", "on", "or", "she", "so", "that", "the", "their", "them",
+        "then", "there", "they", "this", "to", "was", "we", "were", "with",
+        "you", "your",
+    }
+    return words[-1] in dangling
+
+
+def _last_complete_phrase(transcript: str) -> str:
+    """Return the last ASR phrase with explicit sentence-ending punctuation."""
+    phrases = re.split(r"(?<=[.!?])\s+", re.sub(r"\s+", " ", str(transcript or "")).strip())
+    for phrase in reversed(phrases):
+        words = re.findall(r"[A-Za-z0-9’']+", phrase)
+        if 3 <= len(words) <= 14 and not _is_incomplete_phrase(phrase):
+            return phrase.strip()
+    return ""
+
+
 def _fallback_metadata(
     *, streamer: str, note: str, source_url: str, transcript: str,
     custom_hook: str, custom_context: str, source_title: str = "",
@@ -145,18 +169,24 @@ def _fallback_metadata(
             caption = "The like button was NOT getting left alone 💀"
         thumbnail_text = "HIT THAT LIKE" if mentions_like else "SUBSCRIBE"
     else:
-        hook = _limit_words(custom_hook or _fallback_hook(raw_text, note), 6)
-        dangling = {"the", "a", "an", "to", "of", "and", "but", "so", "with", "for", "in", "on", "at", "because", "if", "when", "that"}
-        quote_words = hook.split()
-        while quote_words and quote_words[-1].lower().strip(".,!?;:") in dangling:
-            quote_words.pop()
-        phrase = _limit_words(" ".join(quote_words), 4) or "GTA MOMENT"
-        if creator:
-            title = _fit_caption(f"{creator} really said “{phrase.lower()}” in {game} 😭", 90)
+        complete_phrase = _last_complete_phrase(raw_text)
+        hook = _limit_words(custom_hook or complete_phrase or _fallback_hook(raw_text, note), 6)
+        if not custom_hook and _is_incomplete_phrase(hook):
+            hook = ""
+        if complete_phrase:
+            phrase = _limit_words(complete_phrase, 4) or "GTA MOMENT"
+            if creator:
+                title = _fit_caption(f"{creator} really said “{phrase.lower()}” in {game} 😭", 90)
+            else:
+                title = _fit_caption(f"“{phrase.lower()}” in {game} 😭", 90)
+            caption = f"“{phrase.lower()}” 😭"
+            thumbnail_text = phrase
         else:
-            title = _fit_caption(f"“{phrase.lower()}” in {game} 😭", 90)
-        caption = f"“{phrase.lower()}” 😭"
-        thumbnail_text = _limit_words(phrase, 4) or "GTA MOMENT"
+            # An ASR fragment is not a quote. Stay factual until a complete
+            # spoken thought or a reliable editorial summary is available.
+            title = _fit_caption(f"{creator}'s {game} moment 😭" if creator else f"A {game} moment 😭", 90)
+            caption = f"A {game} moment with {creator} 😭" if creator else f"A {game} moment 😭"
+            thumbnail_text = f"{creator.split()[0]} GTA MOMENT" if creator else "GTA MOMENT"
 
     credit = f"Clip: {creator}" if creator else "Original clip"
     source_line = f"Source: {source_url.strip()}" if source_url.strip() else ""
@@ -264,6 +294,7 @@ def generate_short_metadata(
             or "gta" not in title.lower()
             or (known_creator and known_creator.lower() not in title.lower())
             or _has_incomplete_quote(title)
+            or ("really said" in title.lower() and not _last_complete_phrase(transcript))
             or (promo_detected and _is_formulaic_promo_copy(title))
         )
         if invalid_title:
@@ -296,11 +327,11 @@ def generate_short_metadata(
         description = "\n".join(part for part in (description, "", credit, source_line, " ".join(tags)) if part is not None)
 
         hook = _limit_words(custom_hook or str(data.get("hook_text", fallback["hook_text"])), 6)
-        if _has_incomplete_quote(f"“{hook}”"):
+        if _has_incomplete_quote(f"“{hook}”") or (not custom_hook and _is_incomplete_phrase(hook)):
             hook = fallback["hook_text"]
         context = _limit_words(custom_context, 10)
         thumbnail_text = _limit_words(str(data.get("thumbnail_text", fallback["thumbnail_text"])), 4)
-        if not thumbnail_text or invalid_title or _has_incomplete_quote(f"“{thumbnail_text}”"):
+        if not thumbnail_text or invalid_title or _has_incomplete_quote(f"“{thumbnail_text}”") or _is_incomplete_phrase(thumbnail_text):
             thumbnail_text = fallback["thumbnail_text"]
         if invalid_title:
             hook = fallback["hook_text"]
@@ -322,7 +353,7 @@ def generate_short_metadata(
 def _has_incomplete_quote(value: str) -> bool:
     dangling = {
         "a", "an", "the", "to", "of", "and", "but", "so", "with", "for", "in", "on", "at",
-        "because", "if", "when", "that", "this", "is", "are", "was", "were", "my", "your", "his", "her",
+        "because", "if", "when", "that", "this", "is", "are", "was", "were", "my", "your", "his", "her", "got", "has", "have",
     }
     for match in re.finditer(r"[\"“]([^\"”]{2,80})[\"”]", str(value or "")):
         words = re.findall(r"[A-Za-z0-9’']+", match.group(1).lower())
