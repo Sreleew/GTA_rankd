@@ -2,16 +2,16 @@
 
 Application Windows locale pour transformer des clips et VOD GTA en Shorts verticaux prêts à relire et publier.
 
-**Dernière version stable : v0.8.1.**
+**Dernière version stable : v0.8.2.**
 
-[Consulter la Release stable v0.8.1](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.1)
+[Consulter la Release stable v0.8.2](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.2)
 
 ## Fonctionnalités
 
 - Import de vidéos locales et de clips/VOD Twitch accessibles via yt-dlp.
 - Analyse audio et transcription Whisper locale pour classer les moments forts.
 - Score d'accroche distinct sur les cinq premières secondes.
-- Shorts 1080 × 1920 avec cadrage intelligent, hook, sous-titres et réglage du focus.
+- Shorts 1080 × 1920 de 60 à 165 secondes, avec coupes naturelles, cadrage intelligent, hook, sous-titres et réglage du focus.
 - Miniature basée sur une capture réelle du clip.
 - Métadonnées locales avec Ollama/Qwen facultatif et fallback sans IA.
 - Contrôle qualité post-export et revue humaine.
