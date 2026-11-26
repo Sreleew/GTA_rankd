@@ -1,8 +1,8 @@
 # Mises à jour GTA Ranked Studio
 
-## v0.7.9 : refonte du montage et des miniatures
+## v0.7.9 : disponible en mise à jour stable
 
-Cette version améliore la génération des Shorts : miniatures verticales plus épurées et centrées sur une vraie capture du clip, titres et hooks protégés contre les phrases ASR tronquées, et accroches plus courtes. Le montage intelligent conserve les clips Twitch déjà sélectionnés et ne retire que des pauses longues lorsque les timestamps mot à mot sont fiables.
+La version stable v0.7.9 est publiée : https://github.com/Sreleew/GTA_rankd/releases/tag/v0.7.9. Elle améliore la génération des Shorts : miniatures verticales plus épurées et centrées sur une vraie capture du clip, titres et hooks protégés contre les phrases ASR tronquées, et accroches plus courtes. Le montage intelligent conserve les clips Twitch déjà sélectionnés et ne retire que des pauses longues lorsque les timestamps mot à mot sont fiables.
 
 La mise à jour préserve les réglages et données locales. La validation matérielle AMF/Vulkan sur le PC cible reste à effectuer après installation.
 
