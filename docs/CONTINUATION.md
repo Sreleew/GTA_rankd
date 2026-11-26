@@ -3,17 +3,17 @@
 > Lire ce document en premier dans chaque nouvelle conversation sur le projet. Il décrit l'état réellement livré et la structure source actuelle.
 
 - **Dernière mise à jour :** 26 novembre 2026
-- **Version stable publiée :** 0.8.0
-- **Version candidate de maintenance :** 0.8.1, branche `maintenance/full-repository-cleanup`, non publiée
-- **État :** v0.8.0 reste la Release stable de `main`. La candidate v0.8.1 est sur `maintenance/full-repository-cleanup` (PR #10). Le code a passé Linux et Windows ; les derniers ajustements documentaires sont en cours de revalidation avant fusion.
+- **Version stable publiée :** 0.8.1
+- **État :** v0.8.1 est fusionnée dans `main` et publiée. L'audit de maintenance est terminé ; le pipeline Shorts reste la priorité fonctionnelle.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
-- **Dernière Release stable :** [v0.8.0](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.0)
+- **Dernière Release stable :** [v0.8.1](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.1)
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
 - **Source active :** `app/`. Modifier directement les fichiers Python, JavaScript, CSS, HTML, tests et installateur présents dans ce dossier.
-- **Mise à jour intégrée :** l'application consulte les Releases GitHub. Le ZIP v0.7.9 et `SHA256SUMS.txt` sont publiés par le workflow de release.
-- **Tests v0.8.0 :** Linux 147 réussis, 1 ignoré (PowerShell non disponible sous Linux) ; Windows 148 réussis.
-- **Audit v0.8.1 :** Linux 150 réussis, 1 ignoré ; Windows 151 réussis. Ruff et pip-audit réussis sur les deux runners, aucune vulnérabilité connue ; ZIP Windows et SHA-256 vérifiés.
-- **PR de maintenance v0.8.1 :** [#10](https://github.com/Sreleew/GTA_rankd/pull/10), branche `maintenance/full-repository-cleanup`. Dernier commit de code validé : `85a21ee` ; ajustements documentaires suivants en revalidation.
+- **Mise à jour intégrée :** l'application consulte les Releases GitHub. Le ZIP v0.8.1 et `SHA256SUMS.txt` sont publiés par le workflow de release.
+- **Tests v0.8.1 :** Linux 150 réussis, 1 ignoré (PowerShell non disponible sous Linux) ; Windows 151 réussis.
+- **Sécurité et packaging :** Ruff et pip-audit réussis sur Linux et Windows, aucune vulnérabilité connue ; ZIP Windows et SHA-256 vérifiés.
+- **PR de maintenance :** [#10](https://github.com/Sreleew/GTA_rankd/pull/10), fusionnée dans `main`.
+- **Release v0.8.1 :** [publication officielle](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.1), workflow https://github.com/Sreleew/GTA_rankd/actions/runs/45842590841.
 - **PR de livraison v0.7.9 :** [#8](https://github.com/Sreleew/GTA_rankd/pull/8), fusionnée dans `main`.
 - **PR cadrage intelligent v0.8.0 :** [#9](https://github.com/Sreleew/GTA_rankd/pull/9), fusionnée dans `main` et publiée.
 - **Workflow de publication v0.7.9 :** https://github.com/Sreleew/GTA_rankd/actions/runs/45793843538.
@@ -171,7 +171,7 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 
 ## 10. Journal de travail récent
 
-- **Audit v0.8.1 validé sur CI :** séparation runtime/dev, retrait du scaffold Best Of non relié, suppression des duplications documentaires et rapports historiques, exclusion des outils développeur et données locales du ZIP, contrôle Ruff/pip-audit, analyse des scripts PowerShell, tests de régression Linux/Windows et vérification ZIP/SHA-256. PR #10 en attente de la dernière revalidation des ajustements documentaires ; v0.8.1 n'est pas encore publiée.
+- **v0.8.1 publiée :** séparation runtime/dev, retrait du scaffold Best Of non relié, suppression des duplications documentaires et rapports historiques, exclusion des outils développeur et données locales du ZIP, contrôle Ruff/pip-audit, analyse PowerShell, tests Linux/Windows et vérification ZIP/SHA-256. PR #10 fusionnée et Release stable publiée.
 
 - **v0.7.9 publiée :** refonte des miniatures verticales, sélection de phrases plus complètes pour les hooks/titres, garde-fous contre les événements inventés dans les métadonnées, raccords audio plus doux et conservation des clips Twitch sélectionnés.
 - **Intégration :** PR #8 fusionnée dans `main`, Release stable [v0.7.9](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.7.9).
@@ -181,7 +181,7 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 
 ## 11. Prochaines étapes priorisées
 
-1. Fusionner la PR #10 et publier la Release v0.8.1 après validation finale des contrôles GitHub.
+1. Mettre à jour l'installation v0.8.0 vers v0.8.1 et vérifier la préservation des réglages, projets, bases et exports locaux.
 2. Mettre à jour depuis **Paramètres > Mises à jour**, puis vérifier que les réglages, projets, bases et exports sont conservés.
 3. Exécuter `docs/WINDOWS-HARDWARE-VALIDATION.md` sur la RX 9060 XT : AMF, Whisper Vulkan, Ollama/Qwen et cycle Short complet.
 4. Calibrer le contrôle qualité sur plusieurs vrais Shorts GTA, en mesurant les faux positifs sur les scènes sombres, pauses voulues et séquences sans musique.
@@ -192,4 +192,4 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 
 ## 12. Message de reprise prêt à copier
 
-> Nous reprenons GTA Ranked Studio. Lis `docs/CONTINUATION.md` puis `docs/WORKING-AGREEMENT.md`. La source de développement est directement dans `app/`, et non dans une archive. La v0.8.0 est la Release stable actuelle : https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.0. Les workflows Linux, Windows et Release doivent tous tester/construire directement depuis `app/`, sans hotfix ni extraction d'archive. Préserve les données locales. Modifie uniquement les fichiers nécessaires, ajoute les tests pertinents, valide sous Linux et Windows pour les changements transversaux. La RX 9060 XT n'a pas encore été validée physiquement pour AMF/Vulkan. L'utilisateur souhaite que toute modification demandée soit intégrée et publiée directement dès que les contrôles sont réussis. Travailler directement dans GitHub, éviter les audits redondants, préserver une qualité élevée et maintenir ce mémo à jour à chaque lot.
+> Nous reprenons GTA Ranked Studio. Lis `docs/CONTINUATION.md` puis `docs/WORKING-AGREEMENT.md`. La source de développement est directement dans `app/`, et non dans une archive. La v0.8.1 est la Release stable actuelle : https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.1. Les workflows Linux, Windows et Release doivent tous tester/construire directement depuis `app/`, sans hotfix ni extraction d'archive. Préserve les données locales. Modifie uniquement les fichiers nécessaires, ajoute les tests pertinents, valide sous Linux et Windows pour les changements transversaux. La RX 9060 XT n'a pas encore été validée physiquement pour AMF/Vulkan. L'utilisateur souhaite que toute modification demandée soit intégrée et publiée directement dès que les contrôles sont réussis. Travailler directement dans GitHub, éviter les audits redondants, préserver une qualité élevée et maintenir ce mémo à jour à chaque lot.
