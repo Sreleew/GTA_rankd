@@ -1,8 +1,8 @@
 # Mises à jour GTA Ranked Studio
 
-## v0.8.1 : audit de maintenance en préparation
+## v0.8.1 : audit de maintenance (disponible en mise à jour stable)
 
-Cette version candidate regroupe la séparation stricte des dépendances runtime et dev, l'allègement de l'installation, le retrait du scaffold Best Of non relié au moteur Shorts, la documentation canonique unique, le linter Ruff, l'audit pip-audit des dépendances runtime et la validation centralisée des packages. CI v0.8.1 : Linux 150 réussis + 1 ignoré ; Windows 151 réussis. Ruff et pip-audit passent sur les deux runners, sans vulnérabilité connue ; les ZIP et SHA-256 sont vérifiés. La Release reste en attente de la fusion de la PR #10 et de la réussite du workflow de publication.
+La version stable v0.8.1 est publiée : https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.1. Elle regroupe la séparation stricte des dépendances runtime et dev, l'allègement de l'installation, le retrait du scaffold Best Of non relié au moteur Shorts, la documentation canonique unique, Ruff et pip-audit, la validation des scripts PowerShell et le packaging sécurisé. CI : Linux 150 réussis + 1 ignoré ; Windows 151 réussis. Aucune vulnérabilité connue détectée. Le ZIP Windows et son SHA-256 ont été vérifiés par le workflow de publication.
 
 ## v0.8.0 : cadrage vertical intelligent (disponible en mise à jour stable)
 
