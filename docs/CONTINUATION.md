@@ -2,15 +2,15 @@
 
 > Lire ce document en premier dans chaque nouvelle conversation sur le projet. Il décrit l'état réellement livré et la structure source actuelle.
 
-- **Dernière mise à jour :** 25 novembre 2026
+- **Dernière mise à jour :** 26 novembre 2026
 - **Version source de référence :** 0.7.8
-- **État :** v0.7.8 publiée en Release stable publique. Le code applicatif est maintenant décompressé et maintenu directement dans `app/`.
+- **État :** v0.7.8 reste la dernière Release stable. La source applicative est directement dans `app/`. Le nettoyage est proposé dans la PR #6 et le montage intelligent des Shorts est développé sur `feature/smart-short-editing`. Aucune de ces PR n'est fusionnée dans `main`.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
 - **Dernière Release stable :** [v0.7.8](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.7.8)
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
 - **Source active :** `app/`. Modifier directement les fichiers Python, JavaScript, CSS, HTML, tests et installateur présents dans ce dossier.
 - **Mise à jour intégrée :** l'application consulte les Releases GitHub. Le ZIP v0.7.8 et `SHA256SUMS.txt` sont publiés.
-- **Tests v0.7.8 :** Linux 138 réussis, 1 ignoré (PowerShell non disponible sous Linux) ; Windows 139 réussis, aucun ignoré.
+- **Tests de la base nettoyée :** Linux 138 réussis, 1 ignoré ; Windows 139 réussis. **Tests du montage intelligent :** Linux 146 réussis, 1 ignoré ; Windows 147 réussis, aucun ignoré. Le rendu FFmpeg réel avec coupe audio/vidéo concaténée est couvert.
 - **Workflow de publication v0.7.8 :** https://github.com/Sreleew/GTA_rankd/actions/runs/45714213999.
 - **Validation matérielle :** le PC AMD Radeon RX 9060 XT n'a pas encore été validé physiquement pour AMF/Vulkan après mise à jour.
 
@@ -29,10 +29,11 @@ Le projet doit rester local-first, sans abonnement ni API IA payante obligatoire
 - Contrôle qualité post-export : vérification MP4/FFprobe, dimensions, durée, codec, audio attendu, plages noires, images figées, silences, sous-titres ASS et horodatages de transcription. Les alertes restent non bloquantes.
 - Génération de Shorts 1080 × 1920. Le rendu conserve l'image source complète avec fond flouté par défaut. Le zoom dynamique est désactivé par défaut.
 - Transcription locale, sous-titres, filtre lexical de réactions et mode expérimental de voix dominante.
-- Hooks, titres, descriptions et hashtags générés localement avec Ollama/Qwen facultatif et fallback déterministe.
+- Hooks, titres, descriptions et hashtags générés localement avec Ollama/Qwen facultatif et fallback déterministe. Les hooks génériques d'engagement ne sont pas inventés : sans élément probant dans la transcription, le hook reste vide. Sans transcription ni contexte éditorial exploitable, le fallback de publication reste factuel et ne fabrique pas de citation.
 - Miniatures issues d'images réelles du clip, habillage GTA Ranked, signature de chaîne et effets sonores.
 - File de traitement, progression FFmpeg, annulation, prévisualisation, validation/rejet et bibliothèque de clips.
 - Après validation d'un Short, Prévisualiser, Télécharger, Miniature et Copier le titre, la description, les hashtags et le post restent accessibles.
+- Montage intelligent candidat sur `feature/smart-short-editing` : début d'extrait calé sur une frontière de phrase ou une pause naturelle ; suppression de pauses longues uniquement avec timestamps Whisper mot à mot DTW ; sous-titres, pic, zoom, audio et miniature recalés sur la timeline assemblée. La détection des pauses utilise la transcription de toutes les voix, indépendamment du filtre de sous-titres dominant, afin de ne pas couper les dialogues masqués. La génération du titre, de la description, du hook et le choix de la miniature utilisent également la transcription complète ; seul l'affichage des sous-titres applique le filtre de voix. Les raccords audio des jump cuts reçoivent des micro-fondus de 40 ms aux jonctions ; hook et carte de contexte apparaissent/disparaissent avec un fondu ASS discret. Les URLs de clips Twitch sont traitées comme des passages déjà sélectionnés : l'auto-recadrage reste désactivé même si la case générale de recadrage est cochée, mais le nettoyage conservateur des pauses reste actif. Les VOD et vidéos longues conservent le recadrage automatique.
 - La publication vers YouTube, TikTok et Instagram reste manuelle.
 
 ## 3. Architecture technique et environnement
@@ -65,6 +66,10 @@ Le projet doit rester local-first, sans abonnement ni API IA payante obligatoire
 ## 5. Source de référence et état des branches
 
 - **Source de développement :** `app/`. Ne pas décompresser l'archive de release pour développer.
+- **PR de nettoyage :** #6, base `main`, branche `chore/clean-source-layout`, ouverte et validée Linux/Windows : https://github.com/Sreleew/GTA_rankd/pull/6.
+- **Branche fonctionnalité :** `feature/smart-short-editing`, basée sur `chore/clean-source-layout`. Elle contient le montage intelligent de Shorts et ses tests. Ne pas la rebaser directement sur `main` tant que la PR #6 n'est pas intégrée.
+- **PR montage intelligent :** #7, base `chore/clean-source-layout`, branche `feature/smart-short-editing`, un seul commit fonctionnel, ouverte et validée Linux/Windows : https://github.com/Sreleew/GTA_rankd/pull/7.
+- **Note de réconciliation Git :** un oubli de paramètre `branch` lors d'un ajout de test a créé par erreur le commit `8380de9989973f1ae86f4a30bea63ef3d44833b6` sur `main`. Il ajoute uniquement `app/tests/test_short_editor.py` isolé, sans code applicatif ni changement de Release. La branche de nettoyage a intégré cet historique comme deuxième parent tout en conservant le fichier canonique de l'application. La PR #6 remplace donc le fichier isolé par la version correcte au sein de `app/`. Tant que la PR #6 n'est pas fusionnée, le fichier isolé reste présent sur `main`. Ne pas ajouter d'autres commits directs sur `main`.
 - **Archive de provenance v0.7.8 :** `archive/releases/v0.7.8/`. La conserver intacte.
 - **Fichiers de contrôle :** manifeste et SHA-256 de l'archive de provenance.
 - **Anciennes chaînes de correctifs :** retirées de la racine active. Les tags et l'historique Git conservent les commits historiques ; ne pas réintroduire l'ancienne chaîne de reconstruction.
@@ -125,13 +130,13 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 
 ## 9. Prochaines étapes priorisées
 
-1. Sur le PC cible, ouvrir **Paramètres > Mises à jour**, rechercher v0.7.8, installer et vérifier que les réglages, projets, bases et exports sont conservés.
-2. Exécuter `docs/WINDOWS-HARDWARE-VALIDATION.md` sur la RX 9060 XT : AMF, Whisper Vulkan, Ollama/Qwen et cycle Short complet.
-3. Calibrer le contrôle qualité sur plusieurs vrais Shorts GTA, en mesurant les faux positifs sur les scènes sombres, pauses voulues et séquences sans musique.
-4. Améliorer les coupes naturelles et la construction des hooks à partir des limites de phrases, sans CTA générique à l'ouverture.
-5. Développer le classement visuel des événements GTA (HUD, kill feed et changements de scène) avec un score explicable et une validation humaine.
-6. Garder les futures améliorations dans `app/` et produire les packages depuis cette source directe.
+1. Finaliser la PR #6 qui établit `app/` comme source directe, sans la fusionner sans instruction explicite.
+2. Examiner plusieurs Shorts GTA réels pour vérifier qu'aucune réaction n'est amputée et ajuster les seuils à partir des résultats vidéo.
+3. Améliorer le hook d'ouverture et la hiérarchie hook/contexte/sous-titres, sans CTA générique avant que l'action démarre.
+4. Tester le cycle Short complet sur la RX 9060 XT : AMF, Whisper Vulkan, Ollama/Qwen, prévisualisation, validation et persistance.
+5. Développer ensuite la détection visuelle GTA (HUD, kill feed, changements de scène) et fusionner ses signaux au classement audio/texte.
+6. Continuer à modifier directement `app/`, avec tests ciblés puis Linux/Windows sur les changements transversaux.
 
 ## 10. Message de reprise prêt à copier
 
-> Nous reprenons GTA Ranked Studio. Lis `docs/CONTINUATION.md` puis `docs/WORKING-AGREEMENT.md`. La source de développement est directement dans `app/`, et non dans une archive. La v0.7.8 est la Release stable publiée : https://github.com/Sreleew/GTA_rankd/releases/tag/v0.7.8. Les workflows Linux, Windows et Release doivent tous tester/construire directement depuis `app/`, sans hotfix ni extraction d'archive. Préserve les données locales. Modifie uniquement les fichiers nécessaires, ajoute les tests pertinents, valide sous Linux et Windows pour les changements transversaux. La RX 9060 XT n'a pas encore été validée physiquement pour AMF/Vulkan. Ne touche pas à `main`, ne fusionne pas et ne publie pas sans instruction explicite.
+> Nous reprenons GTA Ranked Studio. Lis `docs/CONTINUATION.md` puis `docs/WORKING-AGREEMENT.md`. La source active est directement dans `app/`. La v0.7.8 reste la dernière Release stable : https://github.com/Sreleew/GTA_rankd/releases/tag/v0.7.8. La PR #6 (`chore/clean-source-layout`) est la base propre à intégrer en premier. La branche `feature/smart-short-editing` ajoute des coupes conservatrices des pauses longues avec timestamps Whisper `word_dtw`, synchronisées avec audio, vidéo, sous-titres et miniature. CI : Linux 139 pass / 1 skipped ; Windows 140 pass. Vérifier plusieurs vrais Shorts avant d'assouplir les seuils. La RX 9060 XT n'a pas encore été validée physiquement pour AMF/Vulkan. Préserve les données locales, modifie uniquement `app/` et ne fusionne/publie pas sans instruction explicite.

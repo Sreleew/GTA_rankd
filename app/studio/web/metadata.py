@@ -57,10 +57,10 @@ def _fallback_hook(transcript: str, note: str = "") -> str:
         note_clean = re.sub(r"\s+", " ", str(note or "")).strip()
         if note_clean and not re.search(r"(?:moment fort détecté|score|100/100|automatiquement)", note_clean, re.I):
             return _limit_words(note_clean, 5).upper()
-        return "WAIT FOR THE REACTION"
+        return ""
     words = re.findall(r"[A-Za-z0-9’']+", source)
     if not words:
-        return "WAIT FOR THE REACTION"
+        return ""
     cues = {"what", "wait", "bro", "no", "oh", "why", "look", "listen", "insane", "crazy", "actually", "help", "stop", "how", "wtf", "omg", "nah", "clutch"}
     cue_index = next((i for i, word in enumerate(words) if word.lower() in cues), 0)
     start = max(0, cue_index - 2)
@@ -68,6 +68,19 @@ def _fallback_hook(transcript: str, note: str = "") -> str:
     if len(chosen) < 3:
         chosen = words[:6]
     return " ".join(chosen).upper()
+
+
+
+def _is_generic_hook(value: str) -> bool:
+    """Reject empty engagement bait that is not a real beat from the clip."""
+    text = re.sub(r"[^a-z0-9]+", " ", str(value or "").lower()).strip()
+    generic = (
+        "wait for the reaction", "watch till the end", "watch to the end",
+        "you won t believe this", "you wont believe this", "like and subscribe",
+        "follow for more", "subscribe for more", "smash that like button",
+        "dont forget to like", "don t forget to like", "stay until the end",
+    )
+    return not text or any(phrase in text for phrase in generic)
 
 
 def _credit_line(streamer: str, source_title: str, source_url: str) -> str:
@@ -134,7 +147,14 @@ def _fallback_metadata(
     mentions_subscribe = any(term in compact for term in ("subscribe", "sub button", "sub to", "subscribers"))
     mentions_like = "like" in compact or "like button" in compact
 
-    if is_creator_promo:
+    if not raw_text and not note.strip() and not custom_hook.strip() and not custom_context.strip():
+        # Without usable speech or editorial context, do not invent a quote or
+        # pretend to understand the clip. Keep the publishing copy honest.
+        title = f"{creator} GTA clip" if creator else "GTA clip"
+        hook = ""
+        caption = f"GTA clip from {creator}." if creator else "GTA clip."
+        thumbnail_text = "GTA CLIP"
+    elif is_creator_promo:
         if mentions_subscribe:
             title = f"{creator} was farming subs in {game} 😭" if creator else f"Someone was farming subs in {game} 😭"
             hook = "HIT THAT LIKE" if mentions_like else "SUBSCRIBE"
@@ -214,7 +234,7 @@ def generate_short_metadata(
         "Caption: one or two short natural lines, no generic CTA, followed by a simple streamer credit, source URL "
         "when supplied, and 3-4 useful search hashtags. Prefer #GTA, #GTA5 or #GTARP as appropriate, plus the "
         "creator tag when known. Thumbnail text: 2-4 punchy words, readable on a phone, not a sentence. "
-        "Hook text: 3-6 words for the opening 2.6 seconds, grounded in the transcript. context_card must be empty "
+        "Hook text: 3-6 words for the opening 2.6 seconds, grounded in a specific moment in the transcript. It is an editorial tease, not an engagement CTA: never invent generic lines such as wait for the reaction, watch till the end, follow for more or like and subscribe. Only use a CTA when the clip itself is genuinely about the creator asking viewers to engage. If there is no strong hook supported by the transcript, return an empty string. context_card must be empty "
         "unless a custom context was supplied. Return valid JSON only with title, description, hashtags, "
         "hook_text, context_card and thumbnail_text."
     )
@@ -295,8 +315,9 @@ def generate_short_metadata(
         source_line = f"Source: {source_url.strip()}" if source_url.strip() else ""
         description = "\n".join(part for part in (description, "", credit, source_line, " ".join(tags)) if part is not None)
 
-        hook = _limit_words(custom_hook or str(data.get("hook_text", fallback["hook_text"])), 6)
-        if _has_incomplete_quote(f"“{hook}”"):
+        model_hook = str(data.get("hook_text", fallback["hook_text"]))
+        hook = _limit_words(custom_hook or model_hook, 6)
+        if _has_incomplete_quote(f"“{hook}”") or (not custom_hook and _is_generic_hook(hook) and not promo_detected):
             hook = fallback["hook_text"]
         context = _limit_words(custom_context, 10)
         thumbnail_text = _limit_words(str(data.get("thumbnail_text", fallback["thumbnail_text"])), 4)

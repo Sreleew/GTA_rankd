@@ -1,8 +1,9 @@
 from pathlib import Path
 
 from studio.web.short_editor import (
-    WordTiming, apply_thumbnail_overlay, create_ass_file, parse_srt,
-    rebase_word_timings, select_excerpt_range, write_srt_file,
+    WordTiming, apply_thumbnail_overlay, create_ass_file, map_timestamp_through_segments,
+    parse_srt, plan_speech_pause_edits, rebase_word_timings,
+    rebase_word_timings_by_segments, select_excerpt_range, write_srt_file,
 )
 
 
@@ -35,6 +36,8 @@ def test_ass_contains_hook_branding_and_active_word_highlight(tmp_path: Path):
     assert "GTA VI" in content
     assert "HAPPENED?" in content
     assert r"\c&H0000C8F5&" in content
+    assert r"\fad(160,220)" in content
+    assert r"\fad(140,180)" in content
 
 
 def test_ass_can_disable_captions_and_brand(tmp_path: Path):
@@ -135,3 +138,107 @@ def test_thumbnail_overlay_builds_vertical_gta_poster_from_full_landscape_gamepl
         panel_pixel = result.convert("RGB").getpixel((540, 900))
         assert panel_pixel[1] > panel_pixel[0] * 2, "La capture de gameplay doit rester visible dans le cadre principal."
         assert thumbnail.stat().st_size > 10_000
+
+
+
+def test_excerpt_starts_at_a_natural_phrase_boundary_and_keeps_the_payoff() -> None:
+    words = [
+        WordTiming(18.0, 18.5, "Yesterday."),
+        WordTiming(22.0, 22.3, "Then"),
+        WordTiming(22.4, 22.6, "he"),
+        WordTiming(22.65, 23.0, "crashed"),
+        WordTiming(23.1, 23.3, "into"),
+        WordTiming(23.4, 23.5, "the"),
+        WordTiming(23.6, 24.2, "store!"),
+        WordTiming(25.0, 25.2, "Oh"),
+        WordTiming(25.3, 25.5, "my"),
+        WordTiming(25.6, 26.0, "god!"),
+    ]
+
+    start, end = select_excerpt_range(
+        100.0, 23.8, words,
+        minimum_seconds=1.0, maximum_seconds=30.0,
+        tail_seconds=2.0,
+    )
+
+    assert start == 21.88
+    assert end >= 28.0
+
+
+def test_pause_trim_requires_word_dtw_and_protects_the_peak() -> None:
+    words = [
+        WordTiming(1.0, 1.2, "So"),
+        WordTiming(1.3, 1.5, "we"),
+        WordTiming(1.6, 1.8, "waited."),
+        WordTiming(5.8, 6.0, "Then"),
+        WordTiming(6.1, 6.3, "he"),
+        WordTiming(6.4, 6.7, "crashed!"),
+        WordTiming(19.0, 19.2, "No"),
+        WordTiming(19.3, 19.6, "way!"),
+    ]
+
+    plan = plan_speech_pause_edits(
+        words, 30.0, 20.0, timestamp_mode="word_dtw",
+    )
+    assert plan.segments == ((0.0, 2.35), (5.25, 30.0))
+    assert plan.removed_pauses == ((2.35, 5.25),)
+    assert plan.removed_duration == 2.9
+
+    imprecise = plan_speech_pause_edits(
+        words, 30.0, 20.0, timestamp_mode="segment_srt",
+    )
+    assert imprecise.removed_pauses == ()
+    assert imprecise.segments == ((0.0, 30.0),)
+
+    protected = plan_speech_pause_edits(
+        words, 30.0, 4.5, timestamp_mode="word_dtw",
+    )
+    assert protected.removed_pauses == ()
+
+
+def test_pause_plan_rebases_captions_and_peak_to_the_joined_timeline() -> None:
+    segments = ((0.0, 2.35), (5.25, 30.0))
+    words = [
+        WordTiming(1.6, 1.8, "waited."),
+        WordTiming(5.8, 6.0, "Then"),
+        WordTiming(6.1, 6.3, "he"),
+        WordTiming(6.4, 6.7, "crashed!"),
+        WordTiming(19.0, 19.2, "No"),
+    ]
+
+    rebased = rebase_word_timings_by_segments(words, segments)
+    assert [word.text for word in rebased] == ["waited.", "Then", "he", "crashed!", "No"]
+    assert rebased[1] == WordTiming(2.9, 3.1, "Then")
+    assert map_timestamp_through_segments(20.0, segments) == 17.1
+
+def test_pause_detection_uses_all_speakers_not_only_caption_voice() -> None:
+    # The dominant speaker pauses while another character keeps talking.
+    # Filtering captions to the dominant speaker must not turn that dialogue
+    # into a false silence that the editor then removes from the video.
+    all_speakers = [
+        WordTiming(0.2, 0.5, "I"),
+        WordTiming(0.7, 1.0, "wait"),
+        WordTiming(2.0, 2.3, "hello"),
+        WordTiming(3.0, 3.3, "what"),
+        WordTiming(4.0, 4.3, "happened"),
+        WordTiming(5.0, 5.3, "Then"),
+        WordTiming(5.5, 5.8, "go!"),
+        WordTiming(15.0, 15.2, "wow"),
+        WordTiming(15.4, 15.8, "crazy!"),
+    ]
+    dominant_voice_only = [
+        all_speakers[0], all_speakers[1],
+        all_speakers[5], all_speakers[6],
+        all_speakers[7], all_speakers[8],
+    ]
+
+    safe_plan = plan_speech_pause_edits(
+        all_speakers, 20.0, 15.5, timestamp_mode="word_dtw",
+    )
+    filtered_plan = plan_speech_pause_edits(
+        dominant_voice_only, 20.0, 15.5, timestamp_mode="word_dtw",
+    )
+
+    assert safe_plan.removed_pauses == ()
+    assert filtered_plan.removed_pauses == ((1.55, 4.45),)
+

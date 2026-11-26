@@ -136,6 +136,7 @@ def build_filter_complex(
     fps: int = 30,
     zoom_percent: int = 0,
     webcam_zone: str = "none",
+    video_source: str = "[0:v]",
 ) -> str:
     """Build a vertical canvas while preserving the complete source frame.
 
@@ -151,12 +152,12 @@ def build_filter_complex(
     crop_y = max(0, min(100, int(crop_y))) / 100
     if layout == "fill":
         base = (
-            f"[0:v]scale={width}:{height}:force_original_aspect_ratio=increase,"
+            f"{video_source}scale={width}:{height}:force_original_aspect_ratio=increase,"
             f"crop={width}:{height}:(in_w-out_w)*{crop_x:.3f}:(in_h-out_h)*{crop_y:.3f},setsar=1[base]"
         )
     else:
         base = (
-            f"[0:v]split=2[bgsrc][fgsrc];"
+            f"{video_source}split=2[bgsrc][fgsrc];"
             f"[bgsrc]scale={width}:{height}:force_original_aspect_ratio=increase,"
             f"crop={width}:{height},boxblur={blur}:10,setsar=1[bg];"
             f"[fgsrc]scale={width}:{height}:force_original_aspect_ratio=decrease,"
@@ -215,13 +216,69 @@ def build_render_command(
     sound_effect_path: Path | None = None,
     sound_effect_offset: float = 0.0,
     sound_effect_volume: float = 0.14,
+    edit_segments: Sequence[tuple[float, float]] | None = None,
 ) -> list[str]:
+    normalized_segments: list[tuple[float, float]] = []
+    if edit_segments:
+        window_duration = float(trim_duration) if trim_duration is not None else max(
+            end for _, end in edit_segments
+        )
+        previous_end = 0.0
+        for raw_start, raw_end in edit_segments:
+            start = float(raw_start)
+            end = float(raw_end)
+            if (
+                not math.isfinite(start) or not math.isfinite(end)
+                or start < 0 or end <= start
+                or start < previous_end - 0.001
+                or end > window_duration + 0.05
+            ):
+                raise ValueError("Les segments de montage doivent être croissants, non chevauchants et dans l'extrait source.")
+            normalized_segments.append((start, end))
+            previous_end = end
+        if len(normalized_segments) < 2:
+            normalized_segments = []
+
+    edit_parts: list[str] = []
+    video_source = "[0:v]"
+    audio_source = "[0:a:0]"
+    if normalized_segments:
+        for index, (start, end) in enumerate(normalized_segments):
+            edit_parts.append(
+                f"[0:v]trim=start={start:.3f}:end={end:.3f},setpts=PTS-STARTPTS[vseg{index}]"
+            )
+            if has_audio:
+                audio_segment = (
+                    f"[0:a:0]atrim=start={start:.3f}:end={end:.3f},asetpts=PTS-STARTPTS"
+                )
+                segment_duration = end - start
+                # Short edge fades prevent clicks/pops at automatic jump cuts.
+                # Keep the opening and final fade to the global audio envelope.
+                if index > 0 and segment_duration > 0.12:
+                    audio_segment += ",afade=t=in:st=0:d=0.04"
+                if index < len(normalized_segments) - 1 and segment_duration > 0.12:
+                    audio_segment += f",afade=t=out:st={segment_duration - 0.04:.3f}:d=0.04"
+                edit_parts.append(f"{audio_segment}[aseg{index}]")
+        concat_inputs = "".join(
+            f"[vseg{index}]" + (f"[aseg{index}]" if has_audio else "")
+            for index in range(len(normalized_segments))
+        )
+        edit_parts.append(
+            f"{concat_inputs}concat=n={len(normalized_segments)}:v=1:a={1 if has_audio else 0}"
+            + ("[vcut][acut]" if has_audio else "[vcut]")
+        )
+        video_source = "[vcut]"
+        if has_audio:
+            audio_source = "[acut]"
+
     filter_graph = build_filter_complex(
         width, height, layout=layout, crop_x=crop_x, crop_y=crop_y,
         ass_file=ass_file, fonts_dir=fonts_dir, project_root=project_root,
         dynamic_zoom=dynamic_zoom, peak_timestamp=peak_timestamp, fps=fps,
-        zoom_percent=zoom_percent,
+        zoom_percent=zoom_percent, video_source=video_source,
     )
+    if edit_parts:
+        filter_graph = ";".join(edit_parts) + ";" + filter_graph
     command = [resolve_executable(ffmpeg), "-hide_banner", "-y"]
     if trim_start > 0:
         command.extend(["-ss", f"{trim_start:.3f}"])
@@ -230,14 +287,17 @@ def build_render_command(
     use_sfx = bool(has_audio and sfx_file)
     if use_sfx:
         command.extend(["-i", str(sfx_file)])
-    if trim_duration is not None and trim_duration > 0:
-        command.extend(["-t", f"{trim_duration:.3f}"])
+    source_window_duration = float(trim_duration) if trim_duration is not None else None
+    if normalized_segments and source_window_duration is None:
+        source_window_duration = max(end for _, end in normalized_segments)
+    if source_window_duration is not None and source_window_duration > 0:
+        command.extend(["-t", f"{source_window_duration:.3f}"])
 
     if use_sfx:
         offset_ms = max(0, int(max(0.0, float(sound_effect_offset)) * 1000))
         volume = max(0.01, min(0.35, float(sound_effect_volume)))
         audio_parts = [
-            f"[0:a:0]loudnorm=I={loudness_lufs}:TP=-1.5:LRA=11,afade=t=in:st=0:d=0.12[main_audio]",
+            f"{audio_source}loudnorm=I={loudness_lufs}:TP=-1.5:LRA=11,afade=t=in:st=0:d=0.12[main_audio]",
             f"[1:a:0]volume={volume:.3f},adelay={offset_ms}:all=1[sfx_audio]",
             "[main_audio][sfx_audio]amix=inputs=2:duration=first:dropout_transition=0:normalize=0,alimiter=limit=0.95[a]",
         ]
@@ -252,15 +312,26 @@ def build_render_command(
             "-map", "[v]", "-map", audio_map, "-c:a", "aac", "-b:a", "192k",
         ])
     else:
-        command.extend(["-filter_complex", filter_graph, "-map", "[v]"])
-        if has_audio:
-            audio_filter = f"loudnorm=I={loudness_lufs}:TP=-1.5:LRA=11,afade=t=in:st=0:d=0.12"
+        if has_audio and normalized_segments:
+            audio_filter = f"{audio_source}loudnorm=I={loudness_lufs}:TP=-1.5:LRA=11,afade=t=in:st=0:d=0.12"
             if duration and duration > 0.4:
                 fade_start = max(0.12, duration - 0.18)
                 audio_filter += f",afade=t=out:st={fade_start:.3f}:d=0.18"
-            command.extend(["-map", "0:a:0?", "-af", audio_filter, "-c:a", "aac", "-b:a", "192k"])
+            audio_filter += "[aout]"
+            command.extend([
+                "-filter_complex", filter_graph + ";" + audio_filter,
+                "-map", "[v]", "-map", "[aout]", "-c:a", "aac", "-b:a", "192k",
+            ])
         else:
-            command.append("-an")
+            command.extend(["-filter_complex", filter_graph, "-map", "[v]"])
+            if has_audio:
+                audio_filter = f"loudnorm=I={loudness_lufs}:TP=-1.5:LRA=11,afade=t=in:st=0:d=0.12"
+                if duration and duration > 0.4:
+                    fade_start = max(0.12, duration - 0.18)
+                    audio_filter += f",afade=t=out:st={fade_start:.3f}:d=0.18"
+                command.extend(["-map", "0:a:0?", "-af", audio_filter, "-c:a", "aac", "-b:a", "192k"])
+            else:
+                command.append("-an")
     command.extend(["-r", str(fps), "-c:v", encoder])
     if encoder == "h264_amf":
         command.extend(["-quality", "quality", "-rc", "vbr_peak", "-b:v", bitrate])
@@ -302,18 +373,44 @@ def render_vertical_short(
     sound_effect_path: Path | None = None,
     sound_effect_offset: float = 0.0,
     sound_effect_volume: float = 0.14,
+    edit_segments: Sequence[tuple[float, float]] | None = None,
 ) -> dict[str, Any]:
     input_path = input_path.resolve()
     output_path.parent.mkdir(parents=True, exist_ok=True)
     thumbnail_path.parent.mkdir(parents=True, exist_ok=True)
     info = probe_media(input_path, ffprobe)
     trim_start = max(0.0, float(trim_start))
-    output_duration = float(trim_duration) if trim_duration is not None else info["duration"]
+    source_window_duration = float(trim_duration) if trim_duration is not None else max(0.0, info["duration"] - trim_start)
+    normalized_segments: list[tuple[float, float]] = []
+    if edit_segments:
+        previous_end = 0.0
+        for raw_start, raw_end in edit_segments:
+            start, end = float(raw_start), float(raw_end)
+            if (
+                not math.isfinite(start) or not math.isfinite(end)
+                or start < 0 or end <= start
+                or start < previous_end - 0.001
+                or end > source_window_duration + 0.05
+            ):
+                raise MediaError("Le plan de montage contient des segments invalides ou hors de l'extrait.")
+            normalized_segments.append((start, end))
+            previous_end = end
+        if len(normalized_segments) < 2:
+            normalized_segments = []
+    output_duration = (
+        sum(end - start for start, end in normalized_segments)
+        if normalized_segments else source_window_duration
+    )
     if output_duration > max_duration:
         raise MediaError(
-            f"L'extrait dure {output_duration:.1f} s. La limite actuelle est de {max_duration:.0f} s."
+            f"L'extrait monté dure {output_duration:.1f} s. La limite actuelle est de {max_duration:.0f} s."
         )
-    if output_duration <= 0 or trim_start >= info["duration"] or trim_start + output_duration > info["duration"] + 0.25:
+    if (
+        source_window_duration <= 0
+        or output_duration <= 0
+        or trim_start >= info["duration"]
+        or trim_start + source_window_duration > info["duration"] + 0.25
+    ):
         raise MediaError("Les bornes de coupe dépassent la durée de la vidéo source.")
     fps = 60 if info["fps"] >= 50 else 30
     ffmpeg_bin = resolve_executable(ffmpeg)
@@ -334,9 +431,10 @@ def render_vertical_short(
             fonts_dir=fonts_dir, project_root=project_root,
             dynamic_zoom=dynamic_zoom, peak_timestamp=peak_timestamp,
             zoom_percent=zoom_percent, duration=output_duration,
-            trim_start=trim_start, trim_duration=output_duration if trim_start > 0 or output_duration < info["duration"] else None,
+            trim_start=trim_start,
+            trim_duration=source_window_duration if trim_start > 0 or source_window_duration < info["duration"] or normalized_segments else None,
             sound_effect_path=sound_effect_path, sound_effect_offset=sound_effect_offset,
-            sound_effect_volume=sound_effect_volume,
+            sound_effect_volume=sound_effect_volume, edit_segments=normalized_segments,
         )
         try:
             run_command(command, timeout=max(300, int(info["duration"] * 30)), cwd=project_root)
@@ -360,23 +458,28 @@ def render_vertical_short(
         selected_thumbnail_time = _extract_best_thumbnail(
             ffmpeg_bin, input_path, thumbnail_path, trim_start=trim_start,
             output_duration=output_duration, preferred_timestamp=preferred_thumbnail_time,
+            edit_segments=normalized_segments,
         )
     except (MediaError, OSError):
         logger.exception("La sélection intelligente de miniature a échoué. Tentative sur le timestamp audio.")
-        seek = min(max(0.1, trim_start + float(preferred_thumbnail_time)), max(0.1, info["duration"] - 0.1))
+        source_offset = _map_output_time_to_source(float(preferred_thumbnail_time), normalized_segments) if normalized_segments else float(preferred_thumbnail_time)
+        seek = min(max(0.1, trim_start + source_offset), max(0.1, info["duration"] - 0.1))
         try:
             run_command([
                 ffmpeg_bin, "-hide_banner", "-loglevel", "error", "-y", "-ss", f"{seek:.3f}",
                 "-i", str(input_path.resolve()), "-frames:v", "1", "-q:v", "2", str(thumbnail_path.resolve()),
             ], timeout=30)
-            selected_thumbnail_time = max(0.0, seek - trim_start)
+            selected_thumbnail_time = max(0.0, float(preferred_thumbnail_time))
         except MediaError:
             logger.exception("La miniature n'a pas pu être générée. Le rendu vidéo reste disponible.")
     info.update({
         "source_duration": info["duration"],
         "duration": output_duration,
         "trim_start": trim_start,
-        "trim_end": trim_start + output_duration,
+        "trim_end": trim_start + source_window_duration,
+        "source_window_duration": source_window_duration,
+        "edit_segments": normalized_segments,
+        "removed_duration": round(max(0.0, source_window_duration - output_duration), 3),
         "output_path": str(output_path.resolve()),
         "thumbnail_path": str(thumbnail_path.resolve()) if thumbnail_path.is_file() else None,
         "output_width": rendered_info["width"],
@@ -384,7 +487,9 @@ def render_vertical_short(
         "layout": layout,
         "fps_output": rendered_info["fps"],
         "peak_timestamp": float(peak_timestamp),
-        "thumbnail_timestamp": (trim_start + selected_thumbnail_time) if selected_thumbnail_time is not None else None,
+        "thumbnail_timestamp": (
+            trim_start + (_map_output_time_to_source(selected_thumbnail_time, normalized_segments) if normalized_segments else selected_thumbnail_time)
+        ) if selected_thumbnail_time is not None else None,
         "sound_effect_used": bool(sound_effect_path and Path(sound_effect_path).is_file() and info["has_audio"]),
     })
     return info
@@ -415,39 +520,63 @@ def _thumbnail_visual_score(image_path: Path) -> float:
     return 0.42 * entropy + 0.25 * contrast + 0.23 * edge_score + 0.10 * saturation - exposure_penalty
 
 
+def _map_output_time_to_source(
+    output_time: float, segments: Sequence[tuple[float, float]],
+) -> float:
+    remaining = max(0.0, float(output_time))
+    for start, end in segments:
+        length = end - start
+        if remaining <= length:
+            return round(start + remaining, 3)
+        remaining -= length
+    return round(segments[-1][1], 3) if segments else max(0.0, float(output_time))
+
+
 def _extract_best_thumbnail(
     ffmpeg_bin: str, input_path: Path, thumbnail_path: Path, *,
     trim_start: float, output_duration: float, preferred_timestamp: float,
+    edit_segments: Sequence[tuple[float, float]] | None = None,
 ) -> float:
-    """Sample a few low-resolution frames, then extract only the best one at full resolution."""
+    """Sample frames from the kept source segments and return output-local time."""
     duration = max(0.25, float(output_duration))
-    base_offset = min(0.35, duration * 0.05)
-    remaining = max(0.2, duration - base_offset)
+    preferred = max(0.0, min(float(preferred_timestamp or 0.0), duration - 0.1))
     interval = min(3.0, max(1.5, duration / 12.0))
-    preferred = max(0.0, min(float(preferred_timestamp or 0.0), duration - 0.25))
+    segments = list(edit_segments or [(0.0, duration)])
     with tempfile.TemporaryDirectory(prefix="gta-ranked-thumb-", dir=str(thumbnail_path.parent)) as temporary:
         temporary_dir = Path(temporary)
-        pattern = temporary_dir / "candidate-%03d.jpg"
-        sample_command = [
-            ffmpeg_bin, "-hide_banner", "-loglevel", "error", "-y",
-            "-ss", f"{trim_start + base_offset:.3f}", "-i", str(input_path.resolve()),
-            "-t", f"{remaining:.3f}", "-vf", f"fps=1/{interval:.3f},scale=480:-2",
-            "-q:v", "5", str(pattern),
-        ]
-        run_command(sample_command, timeout=60)
-        candidates = sorted(temporary_dir.glob("candidate-*.jpg"))
-        scored: list[tuple[float, float]] = []
-        for index, candidate in enumerate(candidates):
-            local_time = min(duration - 0.1, base_offset + index * interval)
-            visual = _thumbnail_visual_score(candidate)
-            proximity = 0.12 * math.exp(-abs(local_time - preferred) / 8.0)
-            scored.append((visual + proximity, local_time))
+        scored: list[tuple[float, float, float]] = []
+        output_offset = 0.0
+        for segment_index, (segment_start, segment_end) in enumerate(segments):
+            segment_duration = max(0.0, float(segment_end) - float(segment_start))
+            if segment_duration < 0.3:
+                output_offset += segment_duration
+                continue
+            base_offset = min(0.35, segment_duration * 0.05)
+            remaining = max(0.2, segment_duration - base_offset)
+            pattern = temporary_dir / f"segment-{segment_index}-candidate-%03d.jpg"
+            sample_command = [
+                ffmpeg_bin, "-hide_banner", "-loglevel", "error", "-y",
+                "-ss", f"{trim_start + segment_start + base_offset:.3f}", "-i", str(input_path.resolve()),
+                "-t", f"{remaining:.3f}", "-vf", f"fps=1/{interval:.3f},scale=480:-2",
+                "-q:v", "5", str(pattern),
+            ]
+            run_command(sample_command, timeout=60)
+            candidates = sorted(temporary_dir.glob(f"segment-{segment_index}-candidate-*.jpg"))
+            for index, candidate in enumerate(candidates):
+                within_segment = min(segment_duration - 0.1, base_offset + index * interval)
+                output_time = output_offset + within_segment
+                source_time = trim_start + segment_start + within_segment
+                visual = _thumbnail_visual_score(candidate)
+                proximity = 0.12 * math.exp(-abs(output_time - preferred) / 8.0)
+                scored.append((visual + proximity, output_time, source_time))
+            output_offset += segment_duration
+
         if not scored:
             raise MediaError("FFmpeg n'a extrait aucune image candidate pour la miniature.")
-        _, chosen_local_time = max(scored, key=lambda item: item[0])
-        absolute_time = max(0.1, min(trim_start + chosen_local_time, trim_start + duration - 0.1))
+        _, chosen_output_time, absolute_time = max(scored, key=lambda item: item[0])
+        absolute_time = max(0.1, min(absolute_time, trim_start + max(0.1, segments[-1][1]) - 0.1))
         run_command([
             ffmpeg_bin, "-hide_banner", "-loglevel", "error", "-y", "-ss", f"{absolute_time:.3f}",
             "-i", str(input_path.resolve()), "-frames:v", "1", "-q:v", "2", str(thumbnail_path.resolve()),
         ], timeout=30)
-    return chosen_local_time
+    return chosen_output_time

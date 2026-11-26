@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -15,6 +16,22 @@ class WordTiming:
     start: float
     end: float
     text: str
+
+
+@dataclass(frozen=True)
+class PauseTrimPlan:
+    """Conservative jump-cut plan expressed in excerpt-relative timestamps."""
+
+    segments: tuple[tuple[float, float], ...]
+    removed_pauses: tuple[tuple[float, float], ...]
+
+    @property
+    def output_duration(self) -> float:
+        return round(sum(end - start for start, end in self.segments), 3)
+
+    @property
+    def removed_duration(self) -> float:
+        return round(sum(end - start for start, end in self.removed_pauses), 3)
 
 
 def parse_srt(path: Path) -> list[WordTiming]:
@@ -239,12 +256,12 @@ Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
     clean_hook = _clean_ass_text(hook_text)
     if clean_hook:
         events.append(
-            f"Dialogue: 2,0:00:00.00,0:00:02.60,Hook,,0,0,0,,{{\\an8\\pos({width // 2},{int(height * 0.20)})}}{_wrap_words(clean_hook, 5)}"
+            f"Dialogue: 2,0:00:00.00,0:00:02.60,Hook,,0,0,0,,{{\\an8\\pos({width // 2},{int(height * 0.20)})\\fad(160,220)}}{_wrap_words(clean_hook, 5)}"
         )
     clean_context = _clean_ass_text(context_text)
     if clean_context:
         events.append(
-            f"Dialogue: 2,0:00:00.35,0:00:03.50,Context,,0,0,0,,{{\\an8\\pos({width // 2},{int(height * 0.29)})}}{_wrap_words(clean_context, 7)}"
+            f"Dialogue: 2,0:00:00.35,0:00:03.50,Context,,0,0,0,,{{\\an8\\pos({width // 2},{int(height * 0.29)})\\fad(140,180)}}{_wrap_words(clean_context, 7)}"
         )
     if captions_enabled and words:
         events.extend(_caption_events(words, width, height))
@@ -406,6 +423,11 @@ def apply_thumbnail_overlay(
     final_image.save(image_path, format="JPEG", quality=92, optimize=True, progressive=True, subsampling=0)
     return image_path
 
+def _has_sentence_punctuation(text: str) -> bool:
+    clean = _clean_ass_text(text or "").strip()
+    return bool(re.search(r"[.!?][\"')\]]*$", clean))
+
+
 def select_excerpt_range(
     duration: float,
     peak_timestamp: float,
@@ -416,43 +438,70 @@ def select_excerpt_range(
     tail_seconds: float = 2.0,
     minimum_seconds: float = 15.0,
     maximum_seconds: float = 45.0,
+    max_context_lead_seconds: float = 6.0,
+    sentence_pause_seconds: float = 0.65,
+    boundary_padding_seconds: float = 0.12,
 ) -> tuple[float, float]:
-    """Sélectionne un passage resserré autour du pic, si la source est longue.
+    """Select an excerpt around the payoff without cutting into a spoken phrase.
 
-    Les mots transcrits servent à repérer une fin de phrase ou une pause après
-    le pic. Sans transcription, une fenêtre de secours centrée sur le pic est
-    choisie. Les clips courts sont conservés intégralement.
+    The opening starts at a nearby phrase boundary (punctuation or a natural
+    speech gap) where possible. The ending keeps the first complete payoff
+    phrase plus a short reaction tail. Short clips remain untouched.
     """
     duration = max(0.0, float(duration))
-    if duration <= 0:
+    if not math.isfinite(duration) or duration <= 0:
         return 0.0, 0.0
     if duration <= threshold_seconds:
         return 0.0, duration
 
-    peak = max(0.0, min(float(peak_timestamp), duration))
-    start = max(0.0, peak - max(0.0, lead_seconds))
-    end_after_payoff: float | None = None
-    ordered = sorted(words or [], key=lambda item: (item.start, item.end))
-    punctuation = re.compile(r"[.!?][\"')\]]*$")
-    after_peak = [item for item in ordered if item.end >= peak]
-    if after_peak:
-        for item in after_peak:
-            clean = _clean_ass_text(item.text)
-            next_item = next((candidate for candidate in ordered if candidate.start >= item.end and candidate is not item), None)
-            pause_after = (next_item.start - item.end) if next_item else 0.0
-            if punctuation.search(clean) or pause_after >= 0.75:
-                end_after_payoff = item.end
+    peak = max(0.0, min(float(peak_timestamp or 0.0), duration))
+    ordered = sorted(
+        (word for word in (words or []) if math.isfinite(word.start) and math.isfinite(word.end)
+         and word.end > word.start and word.end > 0 and word.start < duration),
+        key=lambda item: (item.start, item.end),
+    )
+    target_start = max(0.0, peak - max(0.0, lead_seconds))
+    start = target_start
+    if ordered:
+        phrase_starts: list[float] = []
+        for index, word in enumerate(ordered):
+            if word.start > target_start:
                 break
-        if end_after_payoff is None:
-            nearby = [item for item in after_peak if item.start <= peak + 10.0]
-            if nearby:
-                end_after_payoff = nearby[-1].end
+            is_boundary = index == 0
+            if index > 0:
+                previous = ordered[index - 1]
+                pause = word.start - previous.end
+                is_boundary = _has_sentence_punctuation(previous.text) or pause >= max(0.0, sentence_pause_seconds)
+            distance = target_start - word.start
+            if is_boundary and distance <= max(0.0, max_context_lead_seconds):
+                phrase_starts.append(word.start)
+
+        if phrase_starts:
+            start = max(0.0, phrase_starts[-1] - max(0.0, boundary_padding_seconds))
+        else:
+            preceding_words = [word for word in ordered if word.start <= target_start]
+            if preceding_words:
+                start = max(0.0, preceding_words[-1].start - max(0.0, boundary_padding_seconds))
+
+    minimum_post_peak = 2.0
+    end_after_payoff: float | None = None
+    for index, word in enumerate(ordered):
+        if word.end < peak or word.end < peak + minimum_post_peak:
+            continue
+        next_word = next((candidate for candidate in ordered[index + 1:] if candidate.start >= word.end), None)
+        pause_after = (next_word.start - word.end) if next_word else 0.0
+        if _has_sentence_punctuation(word.text) or pause_after >= 0.9:
+            end_after_payoff = word.end
+            break
 
     if end_after_payoff is None:
-        end_after_payoff = peak + 12.0
-    end = min(duration, max(peak + 2.0, end_after_payoff + max(0.0, tail_seconds)))
+        nearby = [word for word in ordered if peak <= word.start <= peak + 10.0]
+        end_after_payoff = nearby[-1].end if nearby else peak + 12.0
+    end = min(duration, max(peak + minimum_post_peak, end_after_payoff + max(0.0, tail_seconds)))
 
     # Garantit assez de contexte pour que le moment reste compréhensible.
+    minimum_seconds = max(0.0, float(minimum_seconds))
+    maximum_seconds = max(minimum_seconds, float(maximum_seconds))
     if end - start < minimum_seconds:
         desired_start = max(0.0, peak - max(1.5, minimum_seconds * 0.565))
         start = min(start, desired_start)
@@ -469,6 +518,142 @@ def select_excerpt_range(
     start = max(0.0, min(start, duration))
     end = max(start, min(end, duration))
     return round(start, 3), round(end, 3)
+
+
+def plan_speech_pause_edits(
+    words: list[WordTiming],
+    duration: float,
+    peak_timestamp: float,
+    *,
+    timestamp_mode: str,
+    min_pause_seconds: float = 3.0,
+    keep_context_seconds: float = 0.55,
+    peak_guard_seconds: float = 2.5,
+    max_removed_seconds: float = 6.0,
+    max_cuts: int = 2,
+    min_segment_seconds: float = 1.25,
+) -> PauseTrimPlan:
+    """Remove only a few long, low-risk speech gaps from a word-DTW excerpt.
+
+    Segment-level SRT timestamps are too coarse for jump cuts, so they never
+    trigger pause removal. A protected zone around the detected audio peak
+    preserves the main reaction/gameplay payoff.
+    """
+    duration = float(duration)
+    if not math.isfinite(duration) or duration <= 0:
+        return PauseTrimPlan((), ())
+    full_plan = PauseTrimPlan(((0.0, round(duration, 3)),), ())
+    if timestamp_mode != "word_dtw" or max_cuts <= 0 or max_removed_seconds <= 0:
+        return full_plan
+
+    ordered = sorted(
+        (word for word in (words or []) if math.isfinite(word.start) and math.isfinite(word.end)
+         and word.end > word.start and word.end > 0 and word.start < duration),
+        key=lambda item: (item.start, item.end),
+    )
+    if len(ordered) < 4:
+        return full_plan
+
+    peak = max(0.0, min(float(peak_timestamp or 0.0), duration))
+    minimum_pause = max(0.0, float(min_pause_seconds))
+    keep = max(0.0, float(keep_context_seconds))
+    guard = max(0.0, float(peak_guard_seconds))
+    minimum_segment = max(0.25, float(min_segment_seconds))
+    candidates: list[tuple[float, float, float]] = []
+
+    for previous, following in zip(ordered, ordered[1:]):
+        gap_start = max(0.0, previous.end)
+        gap_end = min(duration, following.start)
+        gap_duration = gap_end - gap_start
+        if gap_duration < minimum_pause:
+            continue
+        if gap_start - guard <= peak <= gap_end + guard:
+            continue
+
+        cut_start = gap_start + keep
+        cut_end = gap_end - keep
+        removed = cut_end - cut_start
+        if removed < 1.25:
+            continue
+        candidates.append((cut_start, cut_end, removed))
+
+    # Prefer the longest gaps, but never leave a tiny fragment at either end
+    # or between two edits. Both the number and total removed time are capped.
+    selected: list[tuple[float, float]] = []
+    removed_total = 0.0
+
+    def complement(cuts: list[tuple[float, float]]) -> list[tuple[float, float]]:
+        result: list[tuple[float, float]] = []
+        cursor = 0.0
+        for cut_start, cut_end in sorted(cuts):
+            if cut_start > cursor:
+                result.append((cursor, cut_start))
+            cursor = max(cursor, cut_end)
+        if cursor < duration:
+            result.append((cursor, duration))
+        return result
+
+    for cut_start, cut_end, removed in sorted(candidates, key=lambda item: item[2], reverse=True):
+        if len(selected) >= max_cuts or removed_total + removed > max_removed_seconds:
+            continue
+        if any(cut_start < existing_end and cut_end > existing_start for existing_start, existing_end in selected):
+            continue
+        tentative = sorted(selected + [(cut_start, cut_end)])
+        kept_segments = complement(tentative)
+        if len(kept_segments) < 2 or any(end - start < minimum_segment for start, end in kept_segments):
+            continue
+        selected = tentative
+        removed_total += removed
+
+    if not selected:
+        return full_plan
+
+    segments = tuple(
+        (round(start, 3), round(end, 3))
+        for start, end in complement(selected)
+    )
+    removed_pauses = tuple(
+        (round(start, 3), round(end, 3)) for start, end in selected
+    )
+    return PauseTrimPlan(segments, removed_pauses)
+
+
+def rebase_word_timings_by_segments(
+    words: list[WordTiming], segments: tuple[tuple[float, float], ...] | list[tuple[float, float]],
+) -> list[WordTiming]:
+    """Rebase word timestamps after several excerpt-relative segments are joined."""
+    result: list[WordTiming] = []
+    output_offset = 0.0
+    for segment_start, segment_end in segments:
+        segment_start = max(0.0, float(segment_start))
+        segment_end = max(segment_start, float(segment_end))
+        for word in words:
+            if word.end <= segment_start or word.start >= segment_end:
+                continue
+            start = output_offset + max(0.0, word.start - segment_start)
+            end = output_offset + min(segment_end, word.end) - segment_start
+            if end > start:
+                result.append(WordTiming(round(start, 3), round(end, 3), word.text))
+        output_offset += segment_end - segment_start
+    return sorted(result, key=lambda item: (item.start, item.end))
+
+
+def map_timestamp_through_segments(
+    timestamp: float,
+    segments: tuple[tuple[float, float], ...] | list[tuple[float, float]],
+) -> float:
+    """Map a source-relative timestamp into the concatenated output timeline."""
+    source_time = max(0.0, float(timestamp))
+    output_offset = 0.0
+    for start, end in segments:
+        start = max(0.0, float(start))
+        end = max(start, float(end))
+        if source_time <= start:
+            return round(output_offset, 3)
+        if source_time <= end:
+            return round(output_offset + source_time - start, 3)
+        output_offset += end - start
+    return round(output_offset, 3)
 
 
 def rebase_word_timings(words: list[WordTiming], trim_start: float, trim_end: float) -> list[WordTiming]:

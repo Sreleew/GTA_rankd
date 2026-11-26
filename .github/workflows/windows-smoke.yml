@@ -2,7 +2,7 @@ name: Windows runtime validation
 
 on:
   push:
-    branches: [main, chore/clean-source-layout]
+    branches: [main, chore/clean-source-layout, "feature/**"]
     paths:
       - "app/**"
       - ".github/workflows/windows-smoke.yml"

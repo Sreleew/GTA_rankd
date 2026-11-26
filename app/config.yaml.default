@@ -95,6 +95,12 @@ shorts:
   auto_trim_enabled: true
   auto_trim_min_seconds: 15
   auto_trim_max_seconds: 45
+  auto_pause_trim_enabled: true
+  auto_pause_trim_min_pause_seconds: 3.0
+  auto_pause_trim_keep_seconds: 0.55
+  auto_pause_trim_peak_guard_seconds: 2.5
+  auto_pause_trim_max_removed_seconds: 6.0
+  auto_pause_trim_max_cuts: 2
   hook_max_words: 8
   hook_duration_seconds: 2.5
   context_max_words: 10

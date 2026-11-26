@@ -67,6 +67,20 @@ function jobCard(job) {
   const quality = metadata.quality_report || null;
   const qualityLabels = { passed: 'QC OK', review: 'À vérifier', partial: 'Contrôle partiel', failed: 'Problème détecté' };
   const qualityHtml = quality ? `<details class="quality-report ${escapeHtml(quality.status || 'partial')}"><summary><span>Contrôle qualité</span><strong>${escapeHtml(qualityLabels[quality.status] || 'Contrôle')}</strong></summary><p>${escapeHtml(quality.summary || '')}</p>${(quality.warnings || []).length ? `<ul>${quality.warnings.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>` : ''}</details>` : '';
+  const smartCutting = metadata.smart_cutting || null;
+  let smartCutHtml = '';
+  if (smartCutting && smartCutting.enabled) {
+    const pauseCount = Math.max(0, Number(smartCutting.removed_pause_count || 0));
+    const removedSeconds = Math.max(0, Number(smartCutting.removed_pause_seconds || 0));
+    if (smartCutting.timestamp_mode !== 'word_dtw') {
+      smartCutHtml = '<div class="smart-cut-note">Montage intelligent · coupes de pauses ignorées : timestamps mot à mot indisponibles</div>';
+    } else if (pauseCount > 0) {
+      const secondsLabel = removedSeconds.toLocaleString('fr-FR', { maximumFractionDigits: 1 });
+      smartCutHtml = `<div class="smart-cut-note">Montage intelligent · ${pauseCount} pause${pauseCount > 1 ? 's' : ''} raccourcie${pauseCount > 1 ? 's' : ''} · ${secondsLabel} s retirées</div>`;
+    } else {
+      smartCutHtml = '<div class="smart-cut-note">Montage intelligent · aucune pause longue ne pouvait être coupée sans risquer le contexte</div>';
+    }
+  }
   const subtitleState = metadata.transcription_status === 'completed'
     ? 'Sous-titres mot à mot (DTW)'
     : metadata.transcription_status === 'completed_segment_fallback'
@@ -74,7 +88,7 @@ function jobCard(job) {
       : metadata.transcription_message || '';
   return `<article class="job-card">
     ${thumbUrl ? `<img class="job-thumb" src="${thumbUrl}" alt="Miniature du Short">` : `<div class="job-thumb job-thumb-placeholder">▶</div>`}
-    <div class="job-main"><strong title="${escapeHtml(title)}">${escapeHtml(title)}</strong>${socialCaption ? `<div class="job-caption">${escapeHtml(socialCaption)}</div>` : ''}<div class="job-meta">${escapeHtml(meta || (job.source_kind || 'clip').toUpperCase())}</div><div class="job-message">${escapeHtml(job.message || '')}${subtitleState ? ` · ${escapeHtml(subtitleState)}` : ''}${job.error ? ` · ${escapeHtml(job.error.slice(0, 200))}` : ''}</div>${qualityHtml}${['queued','running'].includes(job.status) ? `<div class="job-progress"><span style="width:${progress}%"></span></div>` : ''}${actions}</div>
+    <div class="job-main"><strong title="${escapeHtml(title)}">${escapeHtml(title)}</strong>${socialCaption ? `<div class="job-caption">${escapeHtml(socialCaption)}</div>` : ''}<div class="job-meta">${escapeHtml(meta || (job.source_kind || 'clip').toUpperCase())}</div><div class="job-message">${escapeHtml(job.message || '')}${subtitleState ? ` · ${escapeHtml(subtitleState)}` : ''}${job.error ? ` · ${escapeHtml(job.error.slice(0, 200))}` : ''}</div>${smartCutHtml}${qualityHtml}${['queued','running'].includes(job.status) ? `<div class="job-progress"><span style="width:${progress}%"></span></div>` : ''}${actions}</div>
     <div class="job-side"><span class="status-pill ${escapeHtml(job.status)}">${statusLabel(job.status)}</span></div>
   </article>`;
 }
