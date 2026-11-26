@@ -123,7 +123,7 @@ jobs:
           set -euo pipefail
           cd "$APP_ROOT"
           ruff check studio installer tests "$GITHUB_WORKSPACE/tools"
-          python -m pip-audit -r requirements.txt
+          pip-audit -r requirements.txt
 
       - name: Validate source and run complete tests
         shell: bash
