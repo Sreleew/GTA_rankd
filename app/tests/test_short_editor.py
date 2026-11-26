@@ -152,6 +152,24 @@ def test_long_clip_excerpt_can_start_after_a_natural_pause_without_punctuation()
     assert 5.0 <= end - start <= 45.0
 
 
+
+def test_production_excerpt_profile_targets_one_to_two_minutes_forty_five() -> None:
+    short_source = select_excerpt_range(
+        120.0, 55.0, [], threshold_seconds=165.0,
+        minimum_seconds=60.0, maximum_seconds=165.0,
+    )
+    assert short_source == (0.0, 120.0)
+
+    long_source = select_excerpt_range(
+        300.0, 150.0, [], threshold_seconds=165.0,
+        minimum_seconds=60.0, maximum_seconds=165.0,
+    )
+    assert 60.0 <= long_source[1] - long_source[0] <= 165.0
+    assert long_source[0] <= 90.0
+    assert long_source[1] >= 162.0
+
+
+
 def test_short_clip_is_never_trimmed_and_word_times_are_rebased(tmp_path: Path) -> None:
     assert select_excerpt_range(21.1, 10.0, []) == (0.0, 21.1)
     original = [WordTiming(10.0, 10.3, "Bro"), WordTiming(10.35, 10.8, "WHAT?")]
