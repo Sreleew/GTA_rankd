@@ -37,6 +37,20 @@ def test_ass_contains_hook_branding_and_active_word_highlight(tmp_path: Path):
     assert r"\c&H0000C8F5&" in content
 
 
+def test_smart_layout_moves_captions_below_the_gameplay_panel(tmp_path: Path):
+    path = create_ass_file(
+        tmp_path / "smart-captions.ass",
+        words=[WordTiming(0.1, 0.4, "LAMBO")],
+        captions_enabled=True,
+        brand_enabled=False,
+        layout="smart",
+        width=1080,
+        height=1920,
+    )
+    content = path.read_text(encoding="utf-8-sig")
+    assert r"\\pos(540,1670)" in content
+
+
 def test_ass_can_disable_captions_and_brand(tmp_path: Path):
     path = create_ass_file(
         tmp_path / "minimal.ass", words=[WordTiming(0, 0.3, "HELLO")],
