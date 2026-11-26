@@ -7,7 +7,7 @@ import subprocess
 import pytest
 
 from studio.web.short_editor import WordTiming, create_ass_file
-from studio.web.short_renderer import probe_media, render_vertical_short
+from studio.web.short_renderer import build_render_command, probe_media, render_vertical_short
 
 
 def test_thumbnail_visual_score_rejects_blank_sky_frame(tmp_path: Path) -> None:
@@ -190,3 +190,24 @@ def test_real_vertical_short_stitches_speech_segments_and_keeps_audio_synced(tmp
     assert rendered["width"] == 360 and rendered["height"] == 640
     assert output.is_file() and output.stat().st_size > 10_000
     assert thumbnail.is_file() and thumbnail.stat().st_size > 1_000
+
+def test_automatic_jump_cuts_add_short_audio_edge_fades(monkeypatch, tmp_path: Path) -> None:
+    import studio.web.short_renderer as renderer_module
+
+    monkeypatch.setattr(renderer_module, "resolve_executable", lambda _name: "ffmpeg")
+    command = build_render_command(
+        "ffmpeg",
+        tmp_path / "source.mp4",
+        tmp_path / "output.mp4",
+        has_audio=True,
+        encoder="libx264",
+        duration=3.5,
+        trim_duration=6.0,
+        edit_segments=[(0.0, 1.5), (4.0, 6.0)],
+    )
+    graph = command[command.index("-filter_complex") + 1]
+
+    assert "afade=t=out:st=1.460:d=0.04[aseg0]" in graph
+    assert "afade=t=in:st=0:d=0.04[aseg1]" in graph
+    assert "concat=n=2:v=1:a=1" in graph
+

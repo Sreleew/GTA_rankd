@@ -256,12 +256,12 @@ Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
     clean_hook = _clean_ass_text(hook_text)
     if clean_hook:
         events.append(
-            f"Dialogue: 2,0:00:00.00,0:00:02.60,Hook,,0,0,0,,{{\\an8\\pos({width // 2},{int(height * 0.20)})}}{_wrap_words(clean_hook, 5)}"
+            f"Dialogue: 2,0:00:00.00,0:00:02.60,Hook,,0,0,0,,{{\\an8\\pos({width // 2},{int(height * 0.20)})\\fad(160,220)}}{_wrap_words(clean_hook, 5)}"
         )
     clean_context = _clean_ass_text(context_text)
     if clean_context:
         events.append(
-            f"Dialogue: 2,0:00:00.35,0:00:03.50,Context,,0,0,0,,{{\\an8\\pos({width // 2},{int(height * 0.29)})}}{_wrap_words(clean_context, 7)}"
+            f"Dialogue: 2,0:00:00.35,0:00:03.50,Context,,0,0,0,,{{\\an8\\pos({width // 2},{int(height * 0.29)})\\fad(140,180)}}{_wrap_words(clean_context, 7)}"
         )
     if captions_enabled and words:
         events.extend(_caption_events(words, width, height))

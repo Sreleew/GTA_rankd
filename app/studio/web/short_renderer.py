@@ -248,9 +248,17 @@ def build_render_command(
                 f"[0:v]trim=start={start:.3f}:end={end:.3f},setpts=PTS-STARTPTS[vseg{index}]"
             )
             if has_audio:
-                edit_parts.append(
-                    f"[0:a:0]atrim=start={start:.3f}:end={end:.3f},asetpts=PTS-STARTPTS[aseg{index}]"
+                audio_segment = (
+                    f"[0:a:0]atrim=start={start:.3f}:end={end:.3f},asetpts=PTS-STARTPTS"
                 )
+                segment_duration = end - start
+                # Short edge fades prevent clicks/pops at automatic jump cuts.
+                # Keep the opening and final fade to the global audio envelope.
+                if index > 0 and segment_duration > 0.12:
+                    audio_segment += ",afade=t=in:st=0:d=0.04"
+                if index < len(normalized_segments) - 1 and segment_duration > 0.12:
+                    audio_segment += f",afade=t=out:st={segment_duration - 0.04:.3f}:d=0.04"
+                edit_parts.append(f"{audio_segment}[aseg{index}]")
         concat_inputs = "".join(
             f"[vseg{index}]" + (f"[aseg{index}]" if has_audio else "")
             for index in range(len(normalized_segments))

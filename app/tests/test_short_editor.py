@@ -36,6 +36,8 @@ def test_ass_contains_hook_branding_and_active_word_highlight(tmp_path: Path):
     assert "GTA VI" in content
     assert "HAPPENED?" in content
     assert r"\c&H0000C8F5&" in content
+    assert r"\fad(160,220)" in content
+    assert r"\fad(140,180)" in content
 
 
 def test_ass_can_disable_captions_and_brand(tmp_path: Path):
