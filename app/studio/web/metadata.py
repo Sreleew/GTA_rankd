@@ -146,12 +146,43 @@ def _is_incomplete_phrase(value: str) -> bool:
 
 
 def _last_complete_phrase(transcript: str) -> str:
-    """Return the last ASR phrase with explicit sentence-ending punctuation."""
-    phrases = re.split(r"(?<=[.!?])\s+", re.sub(r"\s+", " ", str(transcript or "")).strip())
+    """Return a complete ASR sentence or a short phrase anchored by a clear GTA noun."""
+    clean = re.sub(r"\s+", " ", str(transcript or "")).strip()
+    phrases = re.split(r"(?<=[.!?])\s+", clean)
     for phrase in reversed(phrases):
         words = re.findall(r"[A-Za-z0-9’']+", phrase)
         if 3 <= len(words) <= 14 and not _is_incomplete_phrase(phrase):
             return phrase.strip()
+
+    # ASR often omits punctuation. In that case, retain a short phrase only
+    # when it is anchored by a concrete object/action word rather than filler.
+    tokens = re.findall(r"[A-Za-z0-9’']+", clean)
+    anchors = {
+        "lambo", "lamborghini", "car", "cars", "whip", "ride", "vehicle",
+        "police", "cop", "cops", "crash", "crashed", "explosion", "bank",
+        "money", "bike", "motorcycle", "plane", "helicopter", "train",
+        "house", "store", "shop", "robbery", "robbed", "chase", "chased",
+    }
+    filler = {"yeah", "yea", "huh", "uh", "um", "bro", "man", "shit", "like"}
+    dangling = {
+        "a", "an", "and", "are", "at", "because", "but", "for", "from",
+        "got", "had", "has", "have", "he", "her", "his", "if", "in", "is",
+        "it", "my", "of", "on", "or", "she", "so", "that", "the", "their",
+        "them", "then", "there", "they", "this", "to", "was", "we", "were",
+        "with", "you", "your",
+    }
+    for index in range(len(tokens) - 1, -1, -1):
+        if tokens[index].lower() not in anchors:
+            continue
+        start = max(0, index - 3)
+        end = min(len(tokens), index + 2)
+        selected = tokens[start:end]
+        while len(selected) > 1 and selected[0].lower() in filler:
+            selected = selected[1:]
+        while selected and selected[-1].lower() in dangling:
+            selected.pop()
+        if 2 <= len(selected) <= 5 and selected[-1].lower() not in dangling:
+            return " ".join(selected)
     return ""
 
 
