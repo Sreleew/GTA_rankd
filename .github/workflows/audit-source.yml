@@ -31,7 +31,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: gta-ranked-linux-audit-${{ github.ref }}
+  group: gta-ranked-linux-audit-${{ github.ref }}-${{ github.sha }}
   cancel-in-progress: true
 
 jobs:
