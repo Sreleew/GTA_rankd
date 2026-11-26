@@ -34,6 +34,31 @@ from studio.web.transcribe import (
 logger = logging.getLogger(__name__)
 
 
+def _is_twitch_clip_url(url: str) -> bool:
+    """Return True for a Twitch clip URL, not a VOD/video URL."""
+    from urllib.parse import urlparse
+
+    parsed = urlparse(str(url or "").strip())
+    host = (parsed.hostname or "").lower()
+    segments = [part for part in parsed.path.split("/") if part]
+    if host == "clips.twitch.tv":
+        return bool(segments)
+    if host in {"twitch.tv", "www.twitch.tv", "m.twitch.tv"}:
+        return len(segments) >= 3 and segments[1].lower() == "clip"
+    return False
+
+
+def _resolve_auto_trim_enabled(
+    options: dict[str, Any], source_url: str, configured_default: bool,
+) -> bool:
+    """Twitch clips are already editor-selected; preserve them unless overridden."""
+    if "auto_trim_enabled" in options:
+        return bool(options["auto_trim_enabled"])
+    if _is_twitch_clip_url(source_url):
+        return False
+    return bool(configured_default)
+
+
 def safe_slug(value: str, fallback: str = "gta-clip") -> str:
     cleaned = re.sub(r"[^a-zA-Z0-9_-]+", "-", value.strip().lower()).strip("-_")
     return cleaned[:70] or fallback
@@ -208,7 +233,10 @@ class JobRunner:
                 transcript_result = {"status": "no_audio", "reason": "La vidéo ne contient pas de piste audio.", "words": [], "text": ""}
 
             if not source_range:
-                auto_trim_enabled = bool(options.get("auto_trim_enabled", self.config.get("shorts", "auto_trim_enabled", default=True)))
+                auto_trim_enabled = _resolve_auto_trim_enabled(
+                    options, source_url,
+                    bool(self.config.get("shorts", "auto_trim_enabled", default=True)),
+                )
                 trim_start, trim_end = 0.0, float(source_info["duration"])
             all_words = transcript_result.get("words", [])
             if auto_trim_enabled and not source_range:
@@ -264,7 +292,7 @@ class JobRunner:
                     "auto_pause_trim_enabled",
                     self.config.get("shorts", "auto_pause_trim_enabled", default=True),
                 )
-            ) and auto_trim_enabled and not source_range
+            ) and not source_range
             pause_plan = plan_speech_pause_edits(
                 pause_detection_words,
                 excerpt_duration,
