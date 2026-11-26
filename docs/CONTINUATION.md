@@ -3,20 +3,20 @@
 > Lire ce document en premier dans chaque nouvelle conversation sur le projet. Il décrit l'état réellement livré et la structure source actuelle.
 
 - **Dernière mise à jour :** 26 novembre 2026
-- **Version stable publiée :** 0.8.2 (correctif installateur v0.8.4 en préparation)
-- **État :** PR #14 fusionnée : correction du chemin d'import du smoke test runtime Windows. Release v0.8.4 en préparation ; v0.8.2 reste la dernière release stable publiée. les coupes naturelles et le profil de production 60 à 165 secondes. PR #10, #11 et #12 sont fusionnées dans `main`.
+- **Dernière version stable confirmée :** 0.8.2 ; le tag Git `v0.8.4` existe, mais la présence des assets ZIP et SHA-256 de la Release reste à confirmer.
+- **État :** PR #14 fusionnée. Les workflows CI Linux et Windows de la PR #14 sont réussis. `.release-approval` vaut `0.8.4` et le tag Git `v0.8.4` est présent. Vérifier les assets de la Release avant de considérer la publication et l'installation comme terminées. PR #10, #11 et #12 restent intégrées dans `main`.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
-- **Dernière Release stable :** [v0.8.2](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.2)
+- **Dernière Release stable confirmée :** [v0.8.2](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.2). Candidate suivante : [v0.8.4](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.4), tag présent, assets à vérifier.
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
 - **Source active :** `app/`. Modifier directement les fichiers Python, JavaScript, CSS, HTML, tests et installateur présents dans ce dossier.
-- **Mise à jour intégrée :** l'application consulte les Releases GitHub. Le ZIP v0.8.2 et `SHA256SUMS.txt` sont publiés par le workflow de release.
-- **Tests v0.8.2 :** Linux 155 réussis, 1 ignoré (PowerShell non disponible sous Linux) ; Windows 156 réussis.
+- **Mise à jour intégrée :** l'application consulte les Releases GitHub. La v0.8.4 prévoit le ZIP Windows et `SHA256SUMS.txt` ; vérifier leur présence sur la page de Release avant installation.
+- **CI PR #14 :** Linux et Windows terminés avec succès, y compris suites de régression, analyse statique, audit de dépendances et packaging. Les décomptes détaillés ne sont pas consignés ici.
 - **Sécurité et packaging :** Ruff et pip-audit réussis sur Linux et Windows, aucune vulnérabilité connue ; ZIP Windows et SHA-256 vérifiés.
 - **PR de maintenance :** [#10](https://github.com/Sreleew/GTA_rankd/pull/10), fusionnée dans `main`.
 - **PR coupes naturelles :** [#11](https://github.com/Sreleew/GTA_rankd/pull/11), fusionnée dans `main`. Le départ du Short préfère une frontière après ponctuation ou pause de 0,75 s ; fallback temporel conservé si aucune frontière fiable n'existe.
 - **PR profil de production :** [#12](https://github.com/Sreleew/GTA_rankd/pull/12), fusionnée dans `main`. VOD : candidats 60, 90, 120, 150 et 165 s ; sources Twitch plus courtes préservées.
 - **CI PR #12 :** Linux 155 réussis + 1 ignoré ; Windows 156 réussis. Ruff, pip-audit, ZIP et SHA-256 validés.
-- **Statut de livraison :** Release stable v0.8.2 publiée, avec profil de production et migration non destructive de configuration.
+- **Statut de livraison :** v0.8.2 reste la dernière Release confirmée. Le tag v0.8.4 existe ; vérifier les assets ZIP et SHA-256 avant de déclarer la nouvelle Release installable.
 - **Release v0.8.2 :** [publication officielle](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.2), workflow [réussi](https://github.com/Sreleew/GTA_rankd/actions/runs/45850248905).
 - **PR de livraison v0.7.9 :** [#8](https://github.com/Sreleew/GTA_rankd/pull/8), fusionnée dans `main`.
 - **PR cadrage intelligent v0.8.0 :** [#9](https://github.com/Sreleew/GTA_rankd/pull/9), fusionnée dans `main` et publiée.
@@ -177,7 +177,7 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 
 ## 10. Journal de travail récent
 
-- **Correctif installateur v0.8.4 :** PR #14 fusionnée. `installer/check_runtime.py` ajoute `app/` à `sys.path` avant les imports. Test de régression depuis un cwd externe sans `PYTHONPATH`. CI Windows réussie (suite complète, Ruff, pip-audit, package). CI Linux en cours, puis publication v0.8.4.
+- **Correctif installateur v0.8.4 :** PR #14 fusionnée. `installer/check_runtime.py` ajoute `app/` à `sys.path` avant les imports. Test de régression depuis un cwd externe sans `PYTHONPATH`. CI Linux et Windows réussies (tests, Ruff, pip-audit et package). Le tag `v0.8.4` est présent ; vérifier les assets de Release avant installation.
 
 - **Correctif v0.8.3 en préparation :** le serveur local attend 8 secondes après le lancement de PowerShell avant de s'arrêter, pour laisser le navigateur recevoir la réponse HTTP et lire le statut. Ajout d'un test de régression. Branche `fix/updater-shutdown-handshake` ; publication après validation Linux/Windows.
 
@@ -192,7 +192,7 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 
 ## 11. Prochaines étapes priorisées
 
-1. Publier v0.8.4 après validation complète, puis demander à l'utilisateur d'extraire le ZIP et de lancer `UPDATE-FROM-ARCHIVE.bat` depuis le dossier extrait pour réparer son installation v0.8.0.
+1. Vérifier que la Release v0.8.4 contient le ZIP et `SHA256SUMS.txt`. Pour une installation v0.8.0 à v0.8.3, extraire le ZIP puis lancer `UPDATE-FROM-ARCHIVE.bat` depuis le dossier extrait, conformément aux notes v0.8.4.
 2. Générer un premier lot de 3 à 5 Shorts à partir de clips Twitch et de passages VOD, sans chercher à corriger les détails mineurs.
 3. Vérifier sur la RX 9060 XT l'encodage AMF, Whisper Vulkan et Ollama/Qwen pendant un cycle complet.
 4. Corriger uniquement les défauts récurrents qui empêchent de publier : coupe incompréhensible, cadrage raté, sous-titres illisibles, audio défectueux ou métadonnées trompeuses.
@@ -200,4 +200,4 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 
 ## 12. Message de reprise prêt à copier
 
-> Nous reprenons GTA Ranked Studio. Lis `docs/CONTINUATION.md` puis `docs/WORKING-AGREEMENT.md`. La source de développement est directement dans `app/`, et non dans une archive. La v0.8.2 reste la dernière Release stable publiée ; la v0.8.4 corrigera le smoke test runtime Windows. Pour la transition depuis v0.8.0, utiliser `UPDATE-FROM-ARCHIVE.bat` du ZIP v0.8.4. Les workflows Linux, Windows et Release doivent tous tester/construire directement depuis `app/`, sans hotfix ni extraction d'archive. Préserve les données locales. Modifie uniquement les fichiers nécessaires, ajoute les tests pertinents, valide sous Linux et Windows pour les changements transversaux. La RX 9060 XT n'a pas encore été validée physiquement pour AMF/Vulkan. L'utilisateur souhaite que toute modification demandée soit intégrée et publiée directement dès que les contrôles sont réussis. Travailler directement dans GitHub, éviter les audits redondants, préserver une qualité élevée et maintenir ce mémo à jour à chaque lot.
+ > Nous reprenons GTA Ranked Studio. Lis `docs/CONTINUATION.md` puis `docs/WORKING-AGREEMENT.md`. La source de développement est directement dans `app/`. Le tag v0.8.4 existe et les CI Linux/Windows de la PR #14 sont réussies ; vérifier les assets ZIP/SHA-256 de la Release avant l'installation. Pour la transition depuis v0.8.0 à v0.8.3, utiliser `UPDATE-FROM-ARCHIVE.bat` du ZIP v0.8.4. Préserve les données locales. Modifie uniquement les fichiers nécessaires, ajoute les tests pertinents, valide sous Linux et Windows pour les changements transversaux. La RX 9060 XT n'a pas encore été validée physiquement pour AMF/Vulkan. L'utilisateur souhaite que toute modification demandée soit intégrée et publiée directement dès que les contrôles sont réussis. Travailler directement dans GitHub, éviter les audits redondants, préserver une qualité élevée et maintenir ce mémo à chaque lot.
