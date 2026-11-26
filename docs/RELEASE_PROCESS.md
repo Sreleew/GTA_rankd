@@ -34,6 +34,7 @@ La voie `workflow_dispatch` reste disponible pour préparer une Release brouillo
 ## État au 26 novembre 2026
 
 - Release stable actuelle : [v0.7.9](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.7.9).
+- Workflow de publication v0.7.9 : https://github.com/Sreleew/GTA_rankd/actions/runs/45793843538.
 - Package publié : `GTA-Ranked-Studio-v0.7.9.zip` et `SHA256SUMS.txt`.
 - Audit Linux v0.7.9 : 144 tests réussis, 1 test PowerShell ignoré sous Linux.
 - Validation Windows CI v0.7.9 : 145 tests réussis, aucun ignoré.
