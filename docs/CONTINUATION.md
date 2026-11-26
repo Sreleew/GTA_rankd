@@ -176,19 +176,18 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **v0.7.9 publiée :** refonte des miniatures verticales, sélection de phrases plus complètes pour les hooks/titres, garde-fous contre les événements inventés dans les métadonnées, raccords audio plus doux et conservation des clips Twitch sélectionnés.
 - **Intégration :** PR #8 fusionnée dans `main`, Release stable [v0.7.9](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.7.9).
 - **v0.8.0 publiée :** PR #9 fusionnée, cadrage intelligent activé par défaut, ZIP Windows et SHA-256 publiés. README, guide des mises à jour et processus de release synchronisés après publication.
-- **Validation :** Linux 144 réussis + 1 ignoré ; Windows 145 réussis. ZIP et SHA-256 publiés.
-- **À vérifier sur le PC utilisateur :** mise à jour depuis v0.7.9, préservation des données, rendu d'un Short avec cadrage intelligent et fonctionnement matériel AMD AMF/Vulkan sur RX 9060 XT.
+- **Validation :** Linux 147 réussis + 1 ignoré ; Windows 148 réussis. ZIP et SHA-256 publiés.
+- **À vérifier sur le PC utilisateur :** mise à jour depuis v0.8.0, préservation des données, rendu d'un Short avec cadrage intelligent et fonctionnement matériel AMD AMF/Vulkan sur RX 9060 XT.
 
 ## 11. Prochaines étapes priorisées
 
-1. Mettre à jour l'installation v0.8.0 vers v0.8.1 et vérifier la préservation des réglages, projets, bases et exports locaux.
-2. Mettre à jour depuis **Paramètres > Mises à jour**, puis vérifier que les réglages, projets, bases et exports sont conservés.
-3. Exécuter `docs/WINDOWS-HARDWARE-VALIDATION.md` sur la RX 9060 XT : AMF, Whisper Vulkan, Ollama/Qwen et cycle Short complet.
-4. Calibrer le contrôle qualité sur plusieurs vrais Shorts GTA, en mesurant les faux positifs sur les scènes sombres, pauses voulues et séquences sans musique.
-5. Améliorer les coupes naturelles et la construction des hooks à partir des limites de phrases, sans CTA générique à l'ouverture.
-6. Développer le classement visuel des événements GTA (HUD, kill feed et changements de scène) avec un score explicable et une validation humaine.
-7. Valider le nouveau cadrage intelligent sur plusieurs clips paysage et portrait, notamment avec facecam intégrée à droite, puis ajuster le focus par défaut si nécessaire.
-8. Garder les futures améliorations dans `app/` et produire les packages depuis cette source directe.
+1. Mettre à jour l'installation v0.8.0 vers v0.8.1 depuis **Paramètres > Mises à jour**, puis vérifier la préservation des réglages, projets, bases et exports locaux.
+2. Exécuter `docs/WINDOWS-HARDWARE-VALIDATION.md` sur la RX 9060 XT : AMF, Whisper Vulkan, Ollama/Qwen et cycle Short complet.
+3. Calibrer le contrôle qualité sur plusieurs vrais Shorts GTA, en mesurant les faux positifs sur les scènes sombres, pauses voulues et séquences sans musique.
+4. Améliorer les coupes naturelles et la construction des hooks à partir des limites de phrases, sans CTA générique à l'ouverture.
+5. Développer le classement visuel des événements GTA (HUD, kill feed et changements de scène) avec un score explicable et une validation humaine.
+6. Valider le nouveau cadrage intelligent sur plusieurs clips paysage et portrait, notamment avec facecam intégrée à droite, puis ajuster le focus par défaut si nécessaire.
+7. Garder les futures améliorations dans `app/` et produire les packages depuis cette source directe.
 
 ## 12. Message de reprise prêt à copier
 
