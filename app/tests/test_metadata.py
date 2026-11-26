@@ -210,7 +210,7 @@ def test_incomplete_title_does_not_discard_a_complete_thumbnail_phrase(monkeypat
     payload = {
         "response": json.dumps({
             "title": "Tminnzy really said “yeah huh shit got” in GTA 5 😭",
-            "description": "Tminnzy was talking about his Lambo.",
+            "description": "Tminnzy got his Lambo back.",
             "hashtags": ["#GTA5", "#Tminnzy", "#GTAClips"],
             "hook_text": "YEAH HUH SHIT GOT",
             "thumbnail_text": "YEAH HUH SHIT GOT MY LAMBO",
@@ -239,6 +239,7 @@ def test_incomplete_title_does_not_discard_a_complete_thumbnail_phrase(monkeypat
     assert "got my lambo" in result["title"].lower()
     assert result["hook_text"] == "GOT MY LAMBO"
     assert result["thumbnail_text"] == "YEAH HUH SHIT GOT MY LAMBO"
+    assert "back" not in result["description"].splitlines()[0].lower()
 
 
 
