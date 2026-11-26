@@ -213,12 +213,15 @@ def _fallback_metadata(
         thumbnail_text = "HIT THAT LIKE" if mentions_like else "SUBSCRIBE"
     else:
         complete_phrase = _last_complete_phrase(raw_text)
-        hook = _limit_words(custom_hook or complete_phrase or _fallback_hook(raw_text, note), 6)
+        hook = _limit_words(custom_hook or _fallback_hook(complete_phrase or raw_text, note), 6)
         if not custom_hook and _is_incomplete_phrase(hook):
             hook = ""
         if complete_phrase:
-            phrase_words = re.findall(r"[A-Za-z0-9’']+", complete_phrase)
-            phrase = _limit_words(" ".join(phrase_words[-4:]), 4) or "GTA MOMENT"
+            phrase_words = re.findall(r"[A-Za-z0-9’']+", complete_phrase)[-4:]
+            leading_dangling = {"a", "an", "and", "but", "for", "from", "in", "of", "on", "or", "so", "the", "to", "with"}
+            while phrase_words and phrase_words[0].lower() in leading_dangling:
+                phrase_words.pop(0)
+            phrase = _limit_words(" ".join(phrase_words), 4) or "GTA MOMENT"
             if creator:
                 title = _fit_caption(f"{creator} really said “{phrase.lower()}” in {game} 😭", 90)
             else:
