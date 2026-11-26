@@ -3,8 +3,8 @@
 > Lire ce document en premier dans chaque nouvelle conversation sur le projet. Il décrit l'état réellement livré et la structure source actuelle.
 
 - **Dernière mise à jour :** 26 novembre 2026
-- **Version stable publiée :** 0.8.2 (correctif v0.8.3 en préparation)
-- **État :** correctif du délai de fermeture du serveur pendant la mise à jour en cours de validation ; v0.8.2 intègre les coupes naturelles et le profil de production 60 à 165 secondes. PR #10, #11 et #12 sont fusionnées dans `main`.
+- **Version stable publiée :** 0.8.2 (correctif installateur v0.8.4 en préparation)
+- **État :** PR #14 fusionnée : correction du chemin d'import du smoke test runtime Windows. Release v0.8.4 en préparation ; v0.8.2 reste la dernière release stable publiée. les coupes naturelles et le profil de production 60 à 165 secondes. PR #10, #11 et #12 sont fusionnées dans `main`.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
 - **Dernière Release stable :** [v0.8.2](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.2)
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
@@ -177,6 +177,8 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 
 ## 10. Journal de travail récent
 
+- **Correctif installateur v0.8.4 :** PR #14 fusionnée. `installer/check_runtime.py` ajoute `app/` à `sys.path` avant les imports. Test de régression depuis un cwd externe sans `PYTHONPATH`. CI Windows réussie (suite complète, Ruff, pip-audit, package). CI Linux en cours, puis publication v0.8.4.
+
 - **Correctif v0.8.3 en préparation :** le serveur local attend 8 secondes après le lancement de PowerShell avant de s'arrêter, pour laisser le navigateur recevoir la réponse HTTP et lire le statut. Ajout d'un test de régression. Branche `fix/updater-shutdown-handshake` ; publication après validation Linux/Windows.
 
 - **v0.8.1 publiée :** séparation runtime/dev, retrait du scaffold Best Of non relié, suppression des duplications documentaires et rapports historiques, exclusion des outils développeur et données locales du ZIP, contrôle Ruff/pip-audit, analyse PowerShell, tests Linux/Windows et vérification ZIP/SHA-256. PR #10 fusionnée et Release stable publiée.
@@ -190,7 +192,7 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 
 ## 11. Prochaines étapes priorisées
 
-1. Finaliser et publier le correctif v0.8.3 du mécanisme de mise à jour, puis vérifier la mise à jour depuis v0.8.0 et la préservation des données locales.
+1. Publier v0.8.4 après validation complète, puis demander à l'utilisateur d'extraire le ZIP et de lancer `UPDATE-FROM-ARCHIVE.bat` depuis le dossier extrait pour réparer son installation v0.8.0.
 2. Générer un premier lot de 3 à 5 Shorts à partir de clips Twitch et de passages VOD, sans chercher à corriger les détails mineurs.
 3. Vérifier sur la RX 9060 XT l'encodage AMF, Whisper Vulkan et Ollama/Qwen pendant un cycle complet.
 4. Corriger uniquement les défauts récurrents qui empêchent de publier : coupe incompréhensible, cadrage raté, sous-titres illisibles, audio défectueux ou métadonnées trompeuses.
@@ -198,4 +200,4 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 
 ## 12. Message de reprise prêt à copier
 
-> Nous reprenons GTA Ranked Studio. Lis `docs/CONTINUATION.md` puis `docs/WORKING-AGREEMENT.md`. La source de développement est directement dans `app/`, et non dans une archive. La v0.8.2 est la Release stable actuelle, avec un correctif v0.8.3 du démarrage de mise à jour en préparation : https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.2. Les workflows Linux, Windows et Release doivent tous tester/construire directement depuis `app/`, sans hotfix ni extraction d'archive. Préserve les données locales. Modifie uniquement les fichiers nécessaires, ajoute les tests pertinents, valide sous Linux et Windows pour les changements transversaux. La RX 9060 XT n'a pas encore été validée physiquement pour AMF/Vulkan. L'utilisateur souhaite que toute modification demandée soit intégrée et publiée directement dès que les contrôles sont réussis. Travailler directement dans GitHub, éviter les audits redondants, préserver une qualité élevée et maintenir ce mémo à jour à chaque lot.
+> Nous reprenons GTA Ranked Studio. Lis `docs/CONTINUATION.md` puis `docs/WORKING-AGREEMENT.md`. La source de développement est directement dans `app/`, et non dans une archive. La v0.8.2 reste la dernière Release stable publiée ; la v0.8.4 corrigera le smoke test runtime Windows. Pour la transition depuis v0.8.0, utiliser `UPDATE-FROM-ARCHIVE.bat` du ZIP v0.8.4. Les workflows Linux, Windows et Release doivent tous tester/construire directement depuis `app/`, sans hotfix ni extraction d'archive. Préserve les données locales. Modifie uniquement les fichiers nécessaires, ajoute les tests pertinents, valide sous Linux et Windows pour les changements transversaux. La RX 9060 XT n'a pas encore été validée physiquement pour AMF/Vulkan. L'utilisateur souhaite que toute modification demandée soit intégrée et publiée directement dès que les contrôles sont réussis. Travailler directement dans GitHub, éviter les audits redondants, préserver une qualité élevée et maintenir ce mémo à jour à chaque lot.
