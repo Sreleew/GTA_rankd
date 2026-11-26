@@ -129,7 +129,26 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - L'utilisateur a demandé que toute modification demandée soit menée jusqu'à l'intégration et la publication stable, sans s'arrêter à une branche ou une PR. En cas d'échec CI ou de blocage technique, corriger ou expliquer le blocage.
 - Ne jamais présenter un test prévu comme réussi. Distinguer code modifié, tests CI et validation matérielle réelle.
 
-## 9. Prochaines étapes priorisées
+## 9. Préférences utilisateur et méthode de collaboration
+
+- **Travailler directement dans GitHub.** Le dépôt est la source de vérité : ne pas demander un ZIP ou une copie locale si les fichiers sont accessibles dans le dépôt.
+- **Livrer du propre et du fonctionnel.** Privilégier une base saine, un périmètre ciblé, des tests utiles et une vraie vérification des régressions. Ne pas sacrifier la qualité pour aller plus vite.
+- **Éviter les lenteurs inutiles.** Ne pas refaire de longs audits ni relire tout l'historique à chaque demande. Lire le mémo, le HEAD, les contrôles utiles et seulement les fichiers concernés.
+- **Aller jusqu'au résultat utilisable.** Pour une modification demandée, travailler sur une branche, tester, fusionner dans `main` et publier une Release stable lorsque les validations passent. Si un contrôle bloque, le corriger ou expliquer précisément pourquoi la livraison est arrêtée.
+- **Priorité produit actuelle :** le parcours Twitch clip → Short prêt à publier. L'utilisateur fournit principalement une URL de clip Twitch ; améliorer la sélection/montage, le rythme, les sous-titres, le hook, la miniature, le titre et la description. Ne pas disperser le travail sur des fonctions secondaires sans demande.
+- **Direction des miniatures :** rendu propre, esthétique, lisible et immédiatement compréhensible, construit autour d'une vraie image du clip. Le visuel doit donner envie de cliquer sans surcharge, faux événement ou texte tronqué.
+- **Évaluer sur des exemples réels.** Quand l'utilisateur envoie un clip ou un Short généré, examiner concrètement le rendu avant de décider des corrections. Distinguer les observations réelles des hypothèses.
+- **Garder les contrôles accessibles après validation.** Ne pas retirer les actions de prévisualisation, téléchargement, miniature et copie du titre/description/hashtags après validation d'un Short.
+- **Communication :** être direct et concis, donner les résultats concrets et signaler clairement ce qui reste non testé. Une seule prochaine action prioritaire dans le bilan.
+
+## 10. Journal de travail récent
+
+- **v0.7.9 publiée :** refonte des miniatures verticales, sélection de phrases plus complètes pour les hooks/titres, garde-fous contre les événements inventés dans les métadonnées, raccords audio plus doux et conservation des clips Twitch sélectionnés.
+- **Intégration :** PR #8 fusionnée dans `main`, Release stable [v0.7.9](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.7.9).
+- **Validation :** Linux 144 réussis + 1 ignoré ; Windows 145 réussis. ZIP et SHA-256 publiés.
+- **À vérifier sur le PC utilisateur :** cycle réel de mise à jour depuis v0.7.8, préservation des données, rendu d'un Short et fonctionnement matériel AMD AMF/Vulkan sur RX 9060 XT.
+
+## 11. Prochaines étapes priorisées
 
 1. Après publication, installer v0.7.9 depuis **Paramètres > Mises à jour**, puis vérifier que les réglages, projets, bases et exports sont conservés.
 2. Exécuter `docs/WINDOWS-HARDWARE-VALIDATION.md` sur la RX 9060 XT : AMF, Whisper Vulkan, Ollama/Qwen et cycle Short complet.
@@ -138,6 +157,6 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 5. Développer le classement visuel des événements GTA (HUD, kill feed et changements de scène) avec un score explicable et une validation humaine.
 6. Garder les futures améliorations dans `app/` et produire les packages depuis cette source directe.
 
-## 10. Message de reprise prêt à copier
+## 12. Message de reprise prêt à copier
 
-> Nous reprenons GTA Ranked Studio. Lis `docs/CONTINUATION.md` puis `docs/WORKING-AGREEMENT.md`. La source de développement est directement dans `app/`, et non dans une archive. La v0.7.9 est la Release stable actuelle : https://github.com/Sreleew/GTA_rankd/releases/tag/v0.7.9. Les workflows Linux, Windows et Release doivent tous tester/construire directement depuis `app/`, sans hotfix ni extraction d'archive. Préserve les données locales. Modifie uniquement les fichiers nécessaires, ajoute les tests pertinents, valide sous Linux et Windows pour les changements transversaux. La RX 9060 XT n'a pas encore été validée physiquement pour AMF/Vulkan. L'utilisateur souhaite que toute modification demandée soit intégrée et publiée directement dès que les contrôles sont réussis.
+> Nous reprenons GTA Ranked Studio. Lis `docs/CONTINUATION.md` puis `docs/WORKING-AGREEMENT.md`. La source de développement est directement dans `app/`, et non dans une archive. La v0.7.9 est la Release stable actuelle : https://github.com/Sreleew/GTA_rankd/releases/tag/v0.7.9. Les workflows Linux, Windows et Release doivent tous tester/construire directement depuis `app/`, sans hotfix ni extraction d'archive. Préserve les données locales. Modifie uniquement les fichiers nécessaires, ajoute les tests pertinents, valide sous Linux et Windows pour les changements transversaux. La RX 9060 XT n'a pas encore été validée physiquement pour AMF/Vulkan. L'utilisateur souhaite que toute modification demandée soit intégrée et publiée directement dès que les contrôles sont réussis. Travailler directement dans GitHub, éviter les audits redondants, préserver une qualité élevée et maintenir ce mémo à jour à chaque lot.
