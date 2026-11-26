@@ -33,10 +33,10 @@ La voie `workflow_dispatch` reste disponible pour préparer une Release brouillo
 
 ## État au 26 novembre 2026
 
-- Release stable actuelle : [v0.7.8](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.7.8). La v0.7.9 est en préparation.
-- Package publié : `GTA-Ranked-Studio-v0.7.8.zip` et `SHA256SUMS.txt`.
-- Audit Linux : 138 tests réussis, 1 test PowerShell ignoré sous Linux.
-- Validation Windows CI : 139 tests réussis, aucun ignoré.
+- Release stable actuelle : [v0.7.9](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.7.9).
+- Package publié : `GTA-Ranked-Studio-v0.7.9.zip` et `SHA256SUMS.txt`.
+- Audit Linux v0.7.9 : 144 tests réussis, 1 test PowerShell ignoré sous Linux.
+- Validation Windows CI v0.7.9 : 145 tests réussis, aucun ignoré.
 - Workflow de publication réussi : https://github.com/Sreleew/GTA_rankd/actions/runs/45714213999.
 - La validation physique de la RX 9060 XT pour AMF/Vulkan reste à faire.
 
