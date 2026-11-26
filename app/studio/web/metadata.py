@@ -174,7 +174,8 @@ def _fallback_metadata(
         if not custom_hook and _is_incomplete_phrase(hook):
             hook = ""
         if complete_phrase:
-            phrase = _limit_words(complete_phrase, 4) or "GTA MOMENT"
+            phrase_words = re.findall(r"[A-Za-z0-9’']+", complete_phrase)
+            phrase = _limit_words(" ".join(phrase_words[-4:]), 4) or "GTA MOMENT"
             if creator:
                 title = _fit_caption(f"{creator} really said “{phrase.lower()}” in {game} 😭", 90)
             else:
@@ -243,8 +244,10 @@ def generate_short_metadata(
         "Write ONE shared title and ONE shared caption/description for all platforms, not separate versions. "
         "Caption: one or two short natural lines, no generic CTA, followed by a simple streamer credit, source URL "
         "when supplied, and 3-4 useful search hashtags. Prefer #GTA, #GTA5 or #GTARP as appropriate, plus the "
-        "creator tag when known. Thumbnail text: 2-4 punchy words, readable on a phone, not a sentence. "
-        "Hook text: 3-6 words for the opening 2.6 seconds, grounded in the transcript. context_card must be empty "
+        "creator tag when known. Thumbnail text: 2-4 punchy words, readable on a phone, not a sentence. Never use a transcript fragment as the thumbnail headline. "
+        "If a spoken phrase is incomplete or has no clear ending, do not quote it in the title, description, hook or thumbnail. "
+        "Prefer an action-led summary only when the action is explicitly supported by the transcript or supplied context; otherwise use a short neutral GTA moment title and an empty hook. "
+        "Hook text: 3-6 words for the opening 2.6 seconds, grounded in a complete thought from the transcript. context_card must be empty "
         "unless a custom context was supplied. Return valid JSON only with title, description, hashtags, "
         "hook_text, context_card and thumbnail_text."
     )
