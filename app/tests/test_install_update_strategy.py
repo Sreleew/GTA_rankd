@@ -61,6 +61,9 @@ def test_update_marker_and_legacy_compatibility_remain_available() -> None:
     assert "install-location.txt" in installer
     assert "Copy-ApplicationUpdate" in installer
     assert "$targetVersion -lt [version]'0.2.6'" in legacy
+    assert "if ($targetVersion -gt $sourceVersion)" in legacy
+    assert "if ($targetVersion -ge $sourceVersion)" not in legacy
+    assert "reapplication de cette version en mode reparation" in legacy
     assert "UPDATE-FROM-ARCHIVE.bat" in legacy or (ROOT / "UPDATE-FROM-ARCHIVE.bat").is_file()
 
 
