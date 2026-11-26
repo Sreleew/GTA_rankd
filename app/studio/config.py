@@ -42,6 +42,38 @@ class AppConfig:
         return path.resolve()
 
 
+
+def _apply_legacy_short_profile(raw: dict[str, Any]) -> None:
+    """Upgrade untouched v0.8.1 Short defaults in memory without rewriting user config."""
+    app = raw.get("app")
+    shorts = raw.get("shorts")
+    if not isinstance(app, dict) or not isinstance(shorts, dict):
+        return
+
+    try:
+        version = tuple(int(part) for part in str(app.get("version", "0")).split("."))
+    except ValueError:
+        return
+    if version > (0, 8, 1):
+        return
+
+    legacy_defaults = {
+        "max_input_duration_seconds": 60,
+        "peak_trim_threshold_seconds": 45,
+        "auto_trim_min_seconds": 15,
+        "auto_trim_max_seconds": 45,
+    }
+    production_defaults = {
+        "max_input_duration_seconds": 165,
+        "peak_trim_threshold_seconds": 165,
+        "auto_trim_min_seconds": 60,
+        "auto_trim_max_seconds": 165,
+    }
+    for key, legacy_value in legacy_defaults.items():
+        if shorts.get(key) == legacy_value:
+            shorts[key] = production_defaults[key]
+
+
 def load_config(path: str | Path = "config.yaml") -> AppConfig:
     """Charge le YAML et vérifie les sections obligatoires du projet."""
 
@@ -58,6 +90,8 @@ def load_config(path: str | Path = "config.yaml") -> AppConfig:
 
     if not isinstance(raw, dict):
         raise ConfigError("La racine de config.yaml doit être un objet YAML.")
+
+    _apply_legacy_short_profile(raw)
 
     required_sections = ("app", "hardware", "paths", "executables", "encoding", "transcription", "ollama")
     missing = [section for section in required_sections if not isinstance(raw.get(section), dict)]
