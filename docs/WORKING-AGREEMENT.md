@@ -28,6 +28,7 @@ Livrer des changements concrets, propres et testés sans passer un temps disprop
 8. **Communiquer avec des résultats.** Pendant une tâche longue, donner une mise à jour lorsqu'un résultat concret ou un blocage est identifié.
 9. **Terminer par un bilan exploitable.** Indiquer les fichiers modifiés, branche et commit, tests réellement exécutés, limites et prochaine action.
 10. **Préserver les données et les versions.** Ne jamais publier `config.yaml`, secrets, bases, vidéos, rendus, modèles ou exports. Ne jamais modifier un tag publié.
+11. **Livrer jusqu'à publication.** Quand l'utilisateur demande une modification et souhaite un résultat utilisable, aller jusqu'à l'intégration dans `main`, la création de la Release stable et la mise à disposition du package. Ne pas s'arrêter à un commit, une branche ou une PR. Si une validation échoue ou si un blocage technique empêche la publication, corriger le problème ou expliquer précisément le blocage.
 
 ## Flux de développement
 
@@ -38,7 +39,7 @@ Livrer des changements concrets, propres et testés sans passer un temps disprop
 5. Exécuter les tests ciblés.
 6. Ouvrir une PR vers `main`.
 7. Vérifier l'audit Linux et la validation Windows sur cette PR.
-8. Fusion et publication uniquement après instruction explicite de l'utilisateur.
+8. Vérifier les contrôles Linux et Windows, puis fusionner et publier la Release stable lorsque l'utilisateur a demandé le résultat complet. Créer `.release-approval` sur `main` avec la version synchronisée afin de déclencher la publication.
 
 ## Politique de vérification
 
