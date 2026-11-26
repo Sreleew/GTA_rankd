@@ -67,6 +67,18 @@ def _fallback_hook(transcript: str, note: str = "") -> str:
     chosen = words[start:start + 6]
     if len(chosen) < 3:
         chosen = words[:6]
+    filler_openers = {"yeah", "yea", "huh", "uh", "um", "bro", "man", "shit", "like"}
+    while len(chosen) > 1 and chosen[0].lower() in filler_openers:
+        chosen = chosen[1:]
+    dangling = {
+        "a", "an", "and", "are", "at", "because", "but", "for", "from",
+        "got", "had", "has", "have", "he", "her", "his", "if", "in", "is",
+        "it", "my", "of", "on", "or", "she", "so", "that", "the", "their",
+        "them", "then", "there", "they", "this", "to", "was", "we", "were",
+        "with", "you", "your",
+    }
+    while chosen and chosen[-1].lower().strip(".,!?;:") in dangling:
+        chosen.pop()
     return " ".join(chosen).upper()
 
 
