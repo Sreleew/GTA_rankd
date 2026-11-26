@@ -140,7 +140,7 @@ def _is_incomplete_phrase(value: str) -> bool:
         "had", "has", "have", "he", "her", "his", "if", "in", "is", "it",
         "my", "of", "on", "or", "she", "so", "that", "the", "their", "them",
         "then", "there", "they", "this", "to", "was", "we", "were", "with",
-        "you", "your",
+        "you", "your", "yeah", "yea", "huh", "shit", "uh", "um",
     }
     return words[-1] in dangling
 
@@ -378,7 +378,7 @@ def generate_short_metadata(
             if not line.strip().lower().startswith(("clip:", "source:"))
             and not re.match(r"^#[A-Za-z0-9_]+(?:\s+#[A-Za-z0-9_]+)*$", line.strip())
         ).strip()
-        if (_has_incomplete_quote(description)
+        if (_has_incomplete_quote(description) or _is_incomplete_phrase(description)
                 or any(phrase in description.lower() for phrase in generic_phrases)
                 or (promo_detected and _is_formulaic_promo_copy(description))):
             description = fallback["description"].split("\n\n")[0]
