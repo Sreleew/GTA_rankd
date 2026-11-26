@@ -27,6 +27,7 @@ REPOSITORY = "Sreleew/GTA_rankd"
 RELEASES_API = f"https://api.github.com/repos/{REPOSITORY}/releases/latest"
 USER_AGENT = "GTA-Ranked-Studio-Updater/1.0"
 MAX_PACKAGE_BYTES = 750 * 1024 * 1024
+SHUTDOWN_GRACE_SECONDS = 8.0
 
 
 def _version_tuple(value: str) -> tuple[int, ...]:
@@ -279,7 +280,9 @@ class UpdateService:
             logger.info("Mise à jour %s téléchargée et vérifiée ; arrêt de l'application.", release["version"])
 
             def request_shutdown() -> None:
-                time.sleep(1.0)
+                # Keep the local API alive long enough for the browser to receive
+                # the install response and poll the restarting state.
+                time.sleep(SHUTDOWN_GRACE_SECONDS)
                 try:
                     server.should_exit = True
                 except Exception:
