@@ -75,7 +75,10 @@ def should_include(path: Path) -> bool:
         return False
     if name.startswith(".") and name not in {".gitignore", ".env.example"}:
         return False
-    if name.startswith("config.") and name not in {"config.yaml.default", "config.example.yaml"}:
+    # Le module applicatif studio/config.py est du code runtime, pas une configuration utilisateur.
+    if (name.startswith("config.")
+            and relative.as_posix() != "studio/config.py"
+            and name not in {"config.yaml.default", "config.example.yaml"}):
         return False
     if len(parts) >= 2 and parts[:2] == ("assets", "fonts"):
         return path.suffix.lower() not in EXCLUDED_FONT_SUFFIXES
