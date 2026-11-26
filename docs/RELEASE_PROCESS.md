@@ -40,7 +40,8 @@ La voie `workflow_dispatch` reste disponible pour préparer une Release brouillo
 - CI `main` après fusion : Linux et Windows validés avant préparation de la Release v0.8.2.
 - Profil de production : passages VOD de 60, 90, 120, 150 et 165 secondes ; clips Twitch plus courts préservés sans rallongement artificiel.
 - La migration des anciennes valeurs de configuration v0.8.1 s'effectue en mémoire uniquement et préserve les valeurs personnalisées.
-- Le package Windows et son checksum SHA-256 sont contrôlés avant publication.
+- Workflow de publication v0.8.2 réussi : https://github.com/Sreleew/GTA_rankd/actions/runs/45850248905.
+- Assets publiés : `GTA-Ranked-Studio-v0.8.2.zip` et `SHA256SUMS.txt`.
 - La validation physique de la RX 9060 XT pour AMF/Vulkan reste à faire.
 
 ## Protection de main
