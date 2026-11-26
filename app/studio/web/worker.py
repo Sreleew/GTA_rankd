@@ -307,18 +307,25 @@ class JobRunner:
                 [], excerpt_duration, render_peak_timestamp, timestamp_mode="disabled",
             )
             edit_segments = list(pause_plan.segments) if len(pause_plan.segments) > 1 else None
+            metadata_words = list(pause_detection_words)
             if edit_segments:
                 render_words = rebase_word_timings_by_segments(render_words, pause_plan.segments)
+                metadata_words = rebase_word_timings_by_segments(metadata_words, pause_plan.segments)
                 render_peak_timestamp = map_timestamp_through_segments(
                     render_peak_timestamp, pause_plan.segments
                 )
             render_duration = pause_plan.output_duration if edit_segments else excerpt_duration
+            # Metadata and thumbnail selection need the complete conversation.
+            # Only on-screen captions should be filtered to the dominant speaker.
             render_thumbnail_timestamp = select_thumbnail_timestamp(
-                render_words, render_duration, preferred=render_peak_timestamp
+                metadata_words, render_duration, preferred=render_peak_timestamp
             )
             render_transcript = " ".join(word.text for word in render_words).strip()
-            if not render_transcript and trim_start == 0 and trim_end >= float(source_info["duration"]):
-                render_transcript = transcript_result.get("text", "")
+            metadata_transcript = " ".join(word.text for word in metadata_words).strip()
+            if not metadata_transcript and trim_start == 0 and trim_end >= float(source_info["duration"]):
+                metadata_transcript = transcript_result.get("text", "")
+            if not render_transcript:
+                render_transcript = metadata_transcript
 
             self.store.update_job(job_id, progress=48, message="Préparation du montage vertical")
             prompt_path = self.config.path_for("paths", "prompts") / "short_metadata.txt"
@@ -327,7 +334,7 @@ class JobRunner:
                 note=job.get("note", ""),
                 source_url=source_url,
                 source_title=job.get("source_title", ""),
-                transcript=render_transcript,
+                transcript=metadata_transcript,
                 custom_hook=str(options.get("hook_text", "")),
                 custom_context=str(options.get("context_text", "")),
                 ollama_base_url=str(self.config.get("ollama", "base_url", default="http://127.0.0.1:11434")),
@@ -462,7 +469,8 @@ class JobRunner:
                 "transcription_status": transcript_result.get("status"),
                 "transcription_timestamp_mode": transcript_result.get("timestamp_mode"),
                 "transcription_message": transcript_result.get("reason"),
-                "transcript": render_transcript,
+                "transcript": metadata_transcript,
+                "caption_transcript": render_transcript,
                 "speaker_filter": speaker_filter,
                 "generation_stage": "short_edit_v0.6.0",
                 "options": options,
