@@ -379,6 +379,7 @@ def generate_short_metadata(
             and not re.match(r"^#[A-Za-z0-9_]+(?:\s+#[A-Za-z0-9_]+)*$", line.strip())
         ).strip()
         if (_has_incomplete_quote(description) or _is_incomplete_phrase(description)
+                or _has_unsupported_event_claim(description, transcript, note)
                 or any(phrase in description.lower() for phrase in generic_phrases)
                 or (promo_detected and _is_formulaic_promo_copy(description))):
             description = fallback["description"].split("\n\n")[0]
