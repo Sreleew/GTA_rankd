@@ -96,8 +96,11 @@ try {
         throw "Le dossier source et le dossier cible sont identiques. Extrais d'abord le ZIP dans un autre dossier."
     }
     $targetVersion = Get-AppVersion -Root $targetRoot
-    if ($targetVersion -ge $sourceVersion) {
-        throw "La cible est deja en version $targetVersion. Aucune mise a jour necessaire."
+    if ($targetVersion -gt $sourceVersion) {
+        throw "La cible est deja en version $targetVersion, superieure a la source $sourceVersion. Le retour a une version anterieure est refuse."
+    }
+    if ($targetVersion -eq $sourceVersion) {
+        Write-Host "La cible annonce deja $targetVersion : reapplication de cette version en mode reparation." -ForegroundColor Yellow
     }
     if ($targetVersion -lt [version]'0.2.6') {
         throw "Cette mise a jour attend une installation 0.2.6 ou plus recente. Version detectee : $targetVersion."
