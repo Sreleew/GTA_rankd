@@ -1,4 +1,4 @@
-﻿﻿#requires -Version 5.1
+#requires#requires -Version 5.1
 [CmdletBinding()]
 param(
     [Parameter(Mandatory=$true)][string]$ProjectRoot,
@@ -158,7 +158,7 @@ try {
     }
 
     if ($requirementsChanged) {
-        Write-UpdateLog 'Les manifestes Python ont changé : mise à jour de l’environnement runtime.'
+        Write-UpdateLog 'Les manifestes Python ont changé : mise à jour de l'environnement runtime.'
         & $venvPython -m pip install --disable-pip-version-check --prefer-binary -e $ProjectRoot 2>&1 | ForEach-Object { Write-UpdateLog ([string]$_) }
         if ($LASTEXITCODE -ne 0) {
             throw "La mise à jour des dépendances Python a échoué (code $LASTEXITCODE)."
