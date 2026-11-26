@@ -53,8 +53,6 @@ def test_whisper_json_rejects_non_dtw_zero_timestamps(tmp_path: Path):
 
 
 def test_whisper_cli_requests_dtw_full_json_for_word_timestamps(tmp_path: Path):
-    import json
-    import os
     import sys
     import textwrap
 
