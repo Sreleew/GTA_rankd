@@ -50,6 +50,8 @@ def test_user_installer_does_not_run_pytest_or_install_dev_extra() -> None:
     assert "-m pytest" not in script
     assert "Test-PipConsistency" in script
     assert "Test-PythonRuntime" in script
+    assert '$output = & $PythonExe $checkScript 2>&1' in script
+    assert 'Write-InstallLog "Smoke test runtime: $message"' in script
     assert "requirements.sha256" in script
 
 
