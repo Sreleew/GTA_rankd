@@ -69,7 +69,7 @@ Le projet doit rester local-first, sans abonnement ni API IA payante obligatoire
 - **Base propre intégrée :** PR #6 fusionnée dans `main`.
 - **Montage intelligent intégré :** PR #7 fusionnée dans `main`.
 - **Refonte créative intégrée :** PR #8 fusionnée dans `main`, version v0.7.9.
-- **Chantier cadrage vertical intelligent (en cours) :** nouvelle composition 9:16 avec panneau gameplay agrandi, focus horizontal réglable, hook au-dessus et sous-titres dans une zone basse dédiée. La version de secours « vidéo entière + fond flouté » reste disponible. En attente des tests CI avant intégration.
+- **Chantier cadrage vertical intelligent (en cours) :** nouvelle composition 9:16 avec panneau gameplay agrandi, focus horizontal réglable, hook au-dessus et sous-titres dans une zone basse dédiée. Le mode est activé par défaut pour les nouveaux imports, URLs et passages issus du classement. Les modes « plein écran recadré » et « vidéo entière + fond flouté » restent disponibles. En attente des tests CI et de la validation sur des clips réels.
 
 - **Source de développement :** `app/`. Ne pas décompresser l'archive de release pour développer.
 - **Archive de provenance v0.7.8 :** `archive/releases/v0.7.8/`. La conserver intacte.
