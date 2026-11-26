@@ -206,6 +206,7 @@ def create_ass_file(
     font_name: str = "Arial",
     captions_enabled: bool = True,
     brand_enabled: bool = True,
+    layout: str = "blur",
 ) -> Path:
     """Crée une piste ASS avec hook, contexte, branding et captions mot à mot."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -247,7 +248,15 @@ Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
             f"Dialogue: 2,0:00:00.35,0:00:03.50,Context,,0,0,0,,{{\\an8\\pos({width // 2},{int(height * 0.29)})}}{_wrap_words(clean_context, 7)}"
         )
     if captions_enabled and words:
-        events.extend(_caption_events(words, width, height))
+        caption_events = _caption_events(words, width, height)
+        if layout == "smart":
+            # Keep subtitles in the dedicated lower safe area, below gameplay.
+            caption_events = [
+                event.replace(f"\\pos({width // 2},{int(height * 0.79)})",
+                              f"\\pos({width // 2},{int(height * 0.87)})")
+                for event in caption_events
+            ]
+        events.extend(caption_events)
 
     output_path.write_text(header + "\n".join(events) + "\n", encoding="utf-8-sig")
     return output_path
