@@ -119,7 +119,57 @@ jobs:
           }
           $version = $rootMatch.Groups[1].Value
           $project = Get-Content (Join-Path $env:GITHUB_WORKSPACE "app\pyproject.toml") -Raw
-          if ($project -notmatch "(?m)^version = \"$([regex]::Escape($version))\"$") {
+          $projectPattern = '(?m)^version = "{0}"
+            throw "La version de pyproject.toml ne correspond pas à VERSION.txt."
+          }
+          $rootNotes = Join-Path $env:GITHUB_WORKSPACE "NOTES-v$version.txt"
+          $appNotes = Join-Path $env:GITHUB_WORKSPACE "app\NOTES-v$version.txt"
+          if (-not (Test-Path $rootNotes -PathType Leaf) -or -not (Test-Path $appNotes -PathType Leaf)) {
+            throw "Notes de version manquantes pour v$version."
+          }
+          if ((Get-FileHash $rootNotes -Algorithm SHA256).Hash -ne (Get-FileHash $appNotes -Algorithm SHA256).Hash) {
+            throw "Les notes de version racine et app doivent être identiques."
+          }
+          [System.IO.File]::AppendAllText($env:GITHUB_ENV, "APP_VERSION=$version" + [Environment]::NewLine, [System.Text.UTF8Encoding]::new($false))
+
+      - name: Run complete Windows regression suite
+        shell: pwsh
+        run: |
+          $appRoot = Join-Path $env:GITHUB_WORKSPACE "app"
+          Push-Location $appRoot
+          Copy-Item config.yaml.default config.yaml -Force
+          try {
+            python -m compileall -q studio installer tests
+            if ($LASTEXITCODE -ne 0) { throw "Compilation Python en échec." }
+            python -m pytest -q
+            if ($LASTEXITCODE -ne 0) { throw "La suite de tests Windows a échoué." }
+            node --check studio/web/static/app.js
+            if ($LASTEXITCODE -ne 0) { throw "Le contrôle syntaxique JavaScript a échoué." }
+          }
+          finally {
+            Remove-Item config.yaml -Force -ErrorAction SilentlyContinue
+            Pop-Location
+          }
+
+      - name: Build and verify sanitized Windows update package
+        shell: pwsh
+        run: |
+          $dist = Join-Path $env:GITHUB_WORKSPACE "dist-windows"
+          python "$env:GITHUB_WORKSPACE\app\installer\build_release_package.py" --version "$env:APP_VERSION" --output-dir $dist
+          if ($LASTEXITCODE -ne 0) { throw "La construction du package Windows a échoué." }
+          $package = Join-Path $dist "GTA-Ranked-Studio-v$env:APP_VERSION.zip"
+          $checksum = Join-Path $dist "SHA256SUMS.txt"
+          python "$env:GITHUB_WORKSPACE\tools\verify_release_package.py" --package $package --checksum $checksum --version $env:APP_VERSION
+          if ($LASTEXITCODE -ne 0) { throw "La vérification du package Windows a échoué." }
+
+      - name: Upload validated Windows package
+        uses: actions/upload-artifact@v7
+        with:
+          name: gta-ranked-studio-v${{ env.APP_VERSION }}-windows-validated
+          path: dist-windows/
+          retention-days: 14
+ -f [regex]::Escape($version)
+          if ($project -notmatch $projectPattern) {
             throw "La version de pyproject.toml ne correspond pas à VERSION.txt."
           }
           $rootNotes = Join-Path $env:GITHUB_WORKSPACE "NOTES-v$version.txt"
