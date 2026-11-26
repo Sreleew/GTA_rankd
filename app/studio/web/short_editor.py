@@ -253,6 +253,27 @@ Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
     return output_path
 
 
+def _thumbnail_headline(text: str, streamer: str = "", *, max_words: int = 4) -> str:
+    raw_words = _clean_ass_text(text).split()
+    words = raw_words[:max(1, int(max_words))]
+    incomplete_endings = {
+        "a", "an", "and", "are", "as", "at", "because", "but", "by", "for",
+        "from", "got", "had", "has", "have", "he", "her", "him", "his",
+        "i", "if", "in", "is", "it", "me", "my", "of", "on", "or", "our",
+        "she", "so", "that", "the", "their", "them", "then", "there", "they",
+        "this", "to", "was", "we", "were", "with", "you", "your",
+    }
+    if words and words[-1].strip(".,!?;:").lower() in incomplete_endings and len(raw_words) > len(words):
+        words = raw_words[-max(1, int(max_words)):]
+    filler_openers = {"yeah", "yea", "huh", "uh", "um", "bro", "man", "shit", "like"}
+    while len(words) > 1 and words[0].strip(".,!?;:").lower() in filler_openers:
+        words = words[1:]
+    if not words or words[-1].strip(".,!?;:").lower() in incomplete_endings:
+        first_name = re.sub(r"\s+", " ", str(streamer or "")).strip().split()
+        return f"{first_name[0]} GTA MOMENT" if first_name else "GTA MOMENT"
+    return " ".join(words).upper()
+
+
 def apply_thumbnail_overlay(
     image_path: Path,
     text: str,
@@ -268,26 +289,7 @@ def apply_thumbnail_overlay(
 
     creator = re.sub(r"\s+", " ", str(streamer or "")).strip()[:30]
     game = re.sub(r"[^A-Za-z0-9 ]", "", str(game_label or "GTA")).upper()[:18] or "GTA"
-    raw_words = _clean_ass_text(text).split()
-    words = raw_words[:max_words]
-    incomplete_endings = {
-        "a", "an", "and", "are", "as", "at", "because", "but", "by", "for",
-        "from", "got", "had", "has", "have", "he", "her", "him", "his",
-        "i", "if", "in", "is", "it", "me", "my", "of", "on", "or", "our",
-        "she", "so", "that", "the", "their", "them", "then", "there", "they",
-        "this", "to", "was", "we", "were", "with", "you", "your",
-    }
-    # If the first words are filler and the phrase continues, prefer its
-    # meaningful ending rather than cutting the headline in the middle.
-    if words and words[-1].strip(".,!?;:").lower() in incomplete_endings and len(raw_words) > len(words):
-        words = raw_words[-max_words:]
-    filler_openers = {"yeah", "yea", "huh", "uh", "um", "bro", "man", "shit", "like"}
-    while len(words) > 1 and words[0].strip(".,!?;:").lower() in filler_openers:
-        words = words[1:]
-    if not words or words[-1].strip(".,!?;:").lower() in incomplete_endings:
-        label = f"{creator.split()[0]} GTA MOMENT" if creator else "GTA MOMENT"
-    else:
-        label = " ".join(words).upper()
+    label = _thumbnail_headline(text, creator, max_words=max_words)
 
     with Image.open(image_path) as source:
         source_image = source.convert("RGB")
