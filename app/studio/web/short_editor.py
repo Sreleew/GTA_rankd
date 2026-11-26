@@ -111,7 +111,7 @@ def _wrap_words(value: str, max_words: int = 5) -> str:
 
 def _merge_punctuation(words: Iterable[WordTiming]) -> list[WordTiming]:
     output: list[WordTiming] = []
-    punctuation = re.compile(r"^[,.;:!?)]")
+    punctuation = re.compile(r"""[.!?]["')\]]*$""")
     for word in words:
         text = _clean_ass_text(word.text)
         if not text:
