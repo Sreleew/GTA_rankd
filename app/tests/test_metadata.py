@@ -221,3 +221,16 @@ def test_fallback_hook_stays_empty_for_unusable_transcript() -> None:
 
     assert result["hook_text"] == ""
 
+def test_metadata_without_transcript_does_not_invent_a_hook_or_quote() -> None:
+    result = generate_short_metadata(
+        streamer="StreamerA",
+        source_url="https://clips.twitch.tv/ExampleClip",
+        ollama_base_url="http://127.0.0.1:1",
+        retries=0,
+    )
+
+    assert result["title"] == "StreamerA GTA clip"
+    assert result["hook_text"] == ""
+    assert result["thumbnail_text"] == "GTA CLIP"
+    assert "GTA clip from StreamerA." in result["description"]
+

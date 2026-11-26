@@ -29,7 +29,7 @@ Le projet doit rester local-first, sans abonnement ni API IA payante obligatoire
 - Contrôle qualité post-export : vérification MP4/FFprobe, dimensions, durée, codec, audio attendu, plages noires, images figées, silences, sous-titres ASS et horodatages de transcription. Les alertes restent non bloquantes.
 - Génération de Shorts 1080 × 1920. Le rendu conserve l'image source complète avec fond flouté par défaut. Le zoom dynamique est désactivé par défaut.
 - Transcription locale, sous-titres, filtre lexical de réactions et mode expérimental de voix dominante.
-- Hooks, titres, descriptions et hashtags générés localement avec Ollama/Qwen facultatif et fallback déterministe. Les hooks génériques d'engagement ne sont pas inventés : sans élément probant dans la transcription, le hook reste vide.
+- Hooks, titres, descriptions et hashtags générés localement avec Ollama/Qwen facultatif et fallback déterministe. Les hooks génériques d'engagement ne sont pas inventés : sans élément probant dans la transcription, le hook reste vide. Sans transcription ni contexte éditorial exploitable, le fallback de publication reste factuel et ne fabrique pas de citation.
 - Miniatures issues d'images réelles du clip, habillage GTA Ranked, signature de chaîne et effets sonores.
 - File de traitement, progression FFmpeg, annulation, prévisualisation, validation/rejet et bibliothèque de clips.
 - Après validation d'un Short, Prévisualiser, Télécharger, Miniature et Copier le titre, la description, les hashtags et le post restent accessibles.
