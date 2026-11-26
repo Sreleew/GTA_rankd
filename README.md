@@ -2,9 +2,9 @@
 
 Application Windows locale pour transformer des clips et VOD GTA en Shorts verticaux prêts à relire et publier.
 
-**Dernière version stable : v0.8.3.**
+**Dernière version stable : v0.8.4.**
 
-[Consulter la Release stable v0.8.2](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.2)
+[Consulter la Release stable v0.8.4](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.4)
 
 ## Fonctionnalités
 
@@ -59,8 +59,8 @@ finally {
     Set-Location ..
 }
 
-py -3.11 app/installer/build_release_package.py --version 0.8.1 --output-dir app/dist
-py -3.11 tools/verify_release_package.py --package app/dist/GTA-Ranked-Studio-v0.8.1.zip --checksum app/dist/SHA256SUMS.txt --version 0.8.1
+py -3.11 app/installer/build_release_package.py --version 0.8.4 --output-dir app/dist
+py -3.11 tools/verify_release_package.py --package app/dist/GTA-Ranked-Studio-v0.8.4.zip --checksum app/dist/SHA256SUMS.txt --version 0.8.1
 ```
 
 Les dépendances utilisateur sont limitées au runtime. Pytest, HTTPX2, Ruff et pip-audit restent dans les environnements de développement et CI.
