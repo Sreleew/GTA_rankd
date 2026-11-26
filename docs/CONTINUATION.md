@@ -74,7 +74,7 @@ Le projet doit rester local-first, sans abonnement ni API IA payante obligatoire
 - **Refonte créative intégrée :** PR #8 fusionnée dans `main`, version v0.7.9.
 - **Cadrage vertical intelligent (PR #9) :** nouveau layout 9:16 par défaut, panneau gameplay agrandi à 42 % de la hauteur, focus horizontal par défaut à 80 %, hook en haut et sous-titres en zone basse. Le mode préserve les sources portrait et garde les modes `fill`/`blur` disponibles.
 - **Contrôle documentaire :** correction de `tools/check_project_memory.py` pour reconnaître les sections 9 à 12 du mémo, évitant les échecs CI dus à l'ancien plan de sections.
-- **Chantier cadrage vertical intelligent (en cours) :** nouvelle composition 9:16 avec panneau gameplay agrandi, focus horizontal réglable (position par défaut à 80 %), hook au-dessus et sous-titres dans une zone basse dédiée. Le mode est activé par défaut pour les nouveaux imports, URLs et passages issus du classement. Les modes « plein écran recadré » et « vidéo entière + fond flouté » restent disponibles. En attente des tests CI et de la validation sur des clips réels.
+- **Validation restante :** les tests synthétiques Linux/Windows passent. Vérifier le cadrage sur plusieurs vrais clips Twitch, notamment les HUD et les facecams dont la position varie, puis confirmer AMF/Vulkan sur le PC AMD.
 
 - **Source de développement :** `app/`. Ne pas décompresser l'archive de release pour développer.
 - **Archive de provenance v0.7.8 :** `archive/releases/v0.7.8/`. La conserver intacte.
