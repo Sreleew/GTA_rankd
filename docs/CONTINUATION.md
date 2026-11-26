@@ -5,7 +5,7 @@
 - **Dernière mise à jour :** 26 novembre 2026
 - **Version stable publiée :** 0.8.0
 - **Version candidate de maintenance :** 0.8.1, branche `maintenance/full-repository-cleanup`, non publiée
-- **État :** v0.8.0 reste la Release stable de `main`. La candidate v0.8.1 est prête sur `maintenance/full-repository-cleanup` (PR #10), avec validations Linux et Windows réussies ; publication après fusion.
+- **État :** v0.8.0 reste la Release stable de `main`. La candidate v0.8.1 est sur `maintenance/full-repository-cleanup` (PR #10). Le code a passé Linux et Windows ; les derniers ajustements documentaires sont en cours de revalidation avant fusion.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
 - **Dernière Release stable :** [v0.8.0](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.0)
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
@@ -13,7 +13,7 @@
 - **Mise à jour intégrée :** l'application consulte les Releases GitHub. Le ZIP v0.7.9 et `SHA256SUMS.txt` sont publiés par le workflow de release.
 - **Tests v0.8.0 :** Linux 147 réussis, 1 ignoré (PowerShell non disponible sous Linux) ; Windows 148 réussis.
 - **Audit v0.8.1 :** Linux 150 réussis, 1 ignoré ; Windows 151 réussis. Ruff et pip-audit réussis sur les deux runners, aucune vulnérabilité connue ; ZIP Windows et SHA-256 vérifiés.
-- **PR de maintenance v0.8.1 :** [#10](https://github.com/Sreleew/GTA_rankd/pull/10), branche `maintenance/full-repository-cleanup`, HEAD `85a21ee`.
+- **PR de maintenance v0.8.1 :** [#10](https://github.com/Sreleew/GTA_rankd/pull/10), branche `maintenance/full-repository-cleanup`. Dernier commit de code validé : `85a21ee` ; ajustements documentaires suivants en revalidation.
 - **PR de livraison v0.7.9 :** [#8](https://github.com/Sreleew/GTA_rankd/pull/8), fusionnée dans `main`.
 - **PR cadrage intelligent v0.8.0 :** [#9](https://github.com/Sreleew/GTA_rankd/pull/9), fusionnée dans `main` et publiée.
 - **Workflow de publication v0.7.9 :** https://github.com/Sreleew/GTA_rankd/actions/runs/45793843538.
@@ -171,7 +171,7 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 
 ## 10. Journal de travail récent
 
-- **Audit v0.8.1 validé sur CI :** séparation runtime/dev, retrait du scaffold Best Of non relié, suppression des duplications documentaires et rapports historiques, exclusion des outils développeur et données locales du ZIP, contrôle Ruff/pip-audit, analyse des scripts PowerShell, tests de régression Linux/Windows et vérification ZIP/SHA-256. PR #10 prête à fusionner ; v0.8.1 n'est pas encore publiée.
+- **Audit v0.8.1 validé sur CI :** séparation runtime/dev, retrait du scaffold Best Of non relié, suppression des duplications documentaires et rapports historiques, exclusion des outils développeur et données locales du ZIP, contrôle Ruff/pip-audit, analyse des scripts PowerShell, tests de régression Linux/Windows et vérification ZIP/SHA-256. PR #10 en attente de la dernière revalidation des ajustements documentaires ; v0.8.1 n'est pas encore publiée.
 
 - **v0.7.9 publiée :** refonte des miniatures verticales, sélection de phrases plus complètes pour les hooks/titres, garde-fous contre les événements inventés dans les métadonnées, raccords audio plus doux et conservation des clips Twitch sélectionnés.
 - **Intégration :** PR #8 fusionnée dans `main`, Release stable [v0.7.9](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.7.9).
