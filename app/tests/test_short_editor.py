@@ -164,3 +164,4 @@ def test_thumbnail_headline_prefers_complete_meaningful_tail_over_filler():
 
     assert _thumbnail_headline("YEAH HUH SHIT GOT MY LAMBO", "Tminnzy") == "GOT MY LAMBO"
     assert _thumbnail_headline("YEAH HUH SHIT GOT", "Tminnzy") == "Tminnzy GTA MOMENT"
+    assert _thumbnail_headline("YEAH HUH SHIT", "Tminnzy") == "Tminnzy GTA MOMENT"
