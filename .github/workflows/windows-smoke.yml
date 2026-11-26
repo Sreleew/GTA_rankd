@@ -96,7 +96,7 @@ jobs:
           try {
             ruff check studio installer tests ..\tools
             if ($LASTEXITCODE -ne 0) { throw "Ruff a détecté des problèmes dans le code Python." }
-            python -m pip-audit -r requirements.txt
+            pip-audit -r requirements.txt
             if ($LASTEXITCODE -ne 0) { throw "L'audit de vulnérabilités des dépendances a échoué." }
           }
           finally {
