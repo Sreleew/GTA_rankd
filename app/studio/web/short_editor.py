@@ -471,59 +471,96 @@ def select_excerpt_range(
     minimum_seconds: float = 15.0,
     maximum_seconds: float = 45.0,
 ) -> tuple[float, float]:
-    """Sélectionne un passage resserré autour du pic, si la source est longue.
+    """Select a payoff-centred excerpt while respecting spoken phrase boundaries.
 
-    Les mots transcrits servent à repérer une fin de phrase ou une pause après
-    le pic. Sans transcription, une fenêtre de secours centrée sur le pic est
-    choisie. Les clips courts sont conservés intégralement.
+    Long clips are trimmed around the audio peak. When word timings are available,
+    the beginning prefers a sentence or natural-pause boundary before the peak and
+    the end prefers the first completed phrase after it. Clips shorter than the
+    threshold are preserved in full.
     """
     duration = max(0.0, float(duration))
     if duration <= 0:
         return 0.0, 0.0
+    threshold_seconds = max(0.0, float(threshold_seconds))
     if duration <= threshold_seconds:
         return 0.0, duration
 
     peak = max(0.0, min(float(peak_timestamp), duration))
-    start = max(0.0, peak - max(0.0, lead_seconds))
-    end_after_payoff: float | None = None
+    lead_seconds = max(0.0, float(lead_seconds))
+    tail_seconds = max(0.0, float(tail_seconds))
+    minimum_seconds = max(0.0, float(minimum_seconds))
+    maximum_seconds = max(minimum_seconds, float(maximum_seconds))
+    latest_start = max(0.0, peak - lead_seconds)
+    start = latest_start
+
     ordered = sorted(words or [], key=lambda item: (item.start, item.end))
-    punctuation = re.compile(r"[.!?][\"')\]]*$")
-    after_peak = [item for item in ordered if item.end >= peak]
+    punctuation = re.compile(r"""[.!?]["')\]]*$""")
+    sentence_starts: list[float] = []
+    lookback_seconds = min(maximum_seconds, 24.0)
+    earliest_start = max(0.0, peak - max(lead_seconds, lookback_seconds))
+
+    for index, item in enumerate(ordered):
+        item_start = max(0.0, float(item.start))
+        if item_start < earliest_start or item_start > latest_start:
+            continue
+        if index == 0:
+            sentence_starts.append(item_start)
+            continue
+        previous = ordered[index - 1]
+        previous_text = _clean_ass_text(previous.text)
+        pause_before = item_start - float(previous.end)
+        if punctuation.search(previous_text) or pause_before >= 0.75:
+            sentence_starts.append(item_start)
+
+    # Prefer the latest complete sentence/pause boundary that still leaves
+    # enough lead-in to understand the reaction.
+    if sentence_starts:
+        start = max(sentence_starts)
+
+    end_after_payoff: float | None = None
+    after_peak = [item for item in ordered if float(item.end) >= peak]
     if after_peak:
-        for item in after_peak:
+        for index, item in enumerate(after_peak):
             clean = _clean_ass_text(item.text)
-            next_item = next((candidate for candidate in ordered if candidate.start >= item.end and candidate is not item), None)
-            pause_after = (next_item.start - item.end) if next_item else 0.0
+            next_item = after_peak[index + 1] if index + 1 < len(after_peak) else None
+            pause_after = float(next_item.start) - float(item.end) if next_item else 0.0
             if punctuation.search(clean) or pause_after >= 0.75:
-                end_after_payoff = item.end
+                end_after_payoff = float(item.end)
                 break
         if end_after_payoff is None:
-            nearby = [item for item in after_peak if item.start <= peak + 10.0]
+            nearby = [item for item in after_peak if float(item.start) <= peak + 10.0]
             if nearby:
-                end_after_payoff = nearby[-1].end
+                end_after_payoff = float(nearby[-1].end)
 
     if end_after_payoff is None:
         end_after_payoff = peak + 12.0
-    end = min(duration, max(peak + 2.0, end_after_payoff + max(0.0, tail_seconds)))
+    end = min(duration, max(peak + 2.0, end_after_payoff + tail_seconds))
 
-    # Garantit assez de contexte pour que le moment reste compréhensible.
+    # If the selected payoff is short, expand backwards to a prior sentence
+    # boundary when one can satisfy the minimum duration. Otherwise use a
+    # deterministic time fallback rather than producing an unusably short clip.
     if end - start < minimum_seconds:
-        desired_start = max(0.0, peak - max(1.5, minimum_seconds * 0.565))
-        start = min(start, desired_start)
-        end = min(duration, max(end, start + minimum_seconds))
+        desired_start = max(0.0, end - minimum_seconds)
+        eligible = [boundary for boundary in sentence_starts if boundary <= desired_start]
+        start = max(eligible) if eligible else min(start, desired_start)
         if end - start < minimum_seconds:
             start = max(0.0, end - minimum_seconds)
 
+    # Enforce the maximum duration, preferring a later natural boundary when
+    # available so the clip does not begin in the middle of a spoken sentence.
     if end - start > maximum_seconds:
-        start = max(0.0, min(start, peak - min(12.0, maximum_seconds * 0.35)))
-        end = min(duration, start + maximum_seconds)
+        earliest_allowed = max(0.0, end - maximum_seconds)
+        eligible = [
+            boundary for boundary in sentence_starts
+            if earliest_allowed <= boundary <= latest_start
+        ]
+        start = max(eligible) if eligible else max(start, earliest_allowed)
         if end - start > maximum_seconds:
-            start = end - maximum_seconds
+            start = max(0.0, end - maximum_seconds)
 
     start = max(0.0, min(start, duration))
     end = max(start, min(end, duration))
     return round(start, 3), round(end, 3)
-
 
 def rebase_word_timings(words: list[WordTiming], trim_start: float, trim_end: float) -> list[WordTiming]:
     """Garde les mots dans la coupe et ramène leurs horodatages à zéro."""
