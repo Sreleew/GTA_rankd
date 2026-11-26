@@ -32,6 +32,7 @@ REQUIRED_FILES = {
     "gta-ranked-studio/config.yaml.default",
     "gta-ranked-studio/installer/install.ps1",
     "gta-ranked-studio/installer/apply_update.ps1",
+    "gta-ranked-studio/studio/config.py",
     "gta-ranked-studio/studio/web/updater.py",
     "gta-ranked-studio/studio/web/static/index.html",
     "gta-ranked-studio/docs/CONTINUATION.md",
