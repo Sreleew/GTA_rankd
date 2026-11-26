@@ -103,7 +103,7 @@ def check_repository(root: Path) -> list[str]:
             (app_root / "config.yaml.default").read_text(encoding="utf-8-sig")
         )
         if not isinstance(config, dict) or not isinstance(config.get("app"), dict):
-            raise ValueError("La section app doit être un objet YAML.")
+            raise TypeError("La section app doit être un objet YAML.")
         config_version = str(config["app"].get("version", ""))
         if config_version != version:
             errors.append(
