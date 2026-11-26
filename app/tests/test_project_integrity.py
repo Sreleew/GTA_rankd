@@ -36,7 +36,7 @@ def test_canonical_documentation_is_not_duplicated_inside_app() -> None:
     assert (REPO / "docs/CONTINUATION.md").is_file()
     assert (REPO / "docs/PROJECT-MAP.md").is_file()
     assert not (REPO / "docs/implementation-plan-v0.7.8.md").exists()
-    assert {note.name for note in APP.glob("NOTES-v*.txt")} == {"NOTES-v0.8.1.txt"}
+    assert {note.name for note in APP.glob("NOTES-v*.txt")} == {"NOTES-v0.8.2.txt"}
     assert not list(APP.glob("VERIFICATION-v*.md"))
 
 
