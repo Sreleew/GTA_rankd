@@ -62,7 +62,7 @@ jobs:
         shell: pwsh
         run: |
           choco install ffmpeg --yes --no-progress
-          $ffmpeg = Get-ChildItem -Path "$env:ProgramData\\chocolatey\\lib" -Filter ffmpeg.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+          $ffmpeg = Get-ChildItem -Path "$env:ProgramData\chocolatey\lib" -Filter ffmpeg.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
           if (-not $ffmpeg) {
             $command = Get-Command ffmpeg.exe -ErrorAction SilentlyContinue
             if ($command) { $ffmpegPath = Split-Path $command.Source -Parent }
@@ -94,7 +94,7 @@ jobs:
         run: |
           Push-Location (Join-Path $env:GITHUB_WORKSPACE "app")
           try {
-            ruff check studio installer tests ..\\tools
+            ruff check studio installer tests ..\tools
             if ($LASTEXITCODE -ne 0) { throw "Ruff a détecté des problèmes dans le code Python." }
             python -m pip-audit -r requirements.txt
             if ($LASTEXITCODE -ne 0) { throw "L'audit de vulnérabilités des dépendances a échoué." }
@@ -106,24 +106,24 @@ jobs:
       - name: Verify source structure and release metadata
         shell: pwsh
         run: |
-          python "$env:GITHUB_WORKSPACE\\tools\\check_project_memory.py" --root "$env:GITHUB_WORKSPACE"
+          python "$env:GITHUB_WORKSPACE\tools\check_project_memory.py" --root "$env:GITHUB_WORKSPACE"
           if ($LASTEXITCODE -ne 0) { throw "Le contrôle de structure/version/documentation a échoué." }
           git show --check --oneline HEAD
           if ($LASTEXITCODE -ne 0) { throw "git show --check --oneline HEAD a échoué." }
           $rootVersionText = Get-Content (Join-Path $env:GITHUB_WORKSPACE "VERSION.txt") -Raw
-          $appVersionText = Get-Content (Join-Path $env:GITHUB_WORKSPACE "app\\VERSION.txt") -Raw
-          $rootMatch = [regex]::Match($rootVersionText, '(?m)^Version:\\s*([0-9]+(?:\\.[0-9]+){2,3})\\s*$')
-          $appMatch = [regex]::Match($appVersionText, '(?m)^Version:\\s*([0-9]+(?:\\.[0-9]+){2,3})\\s*$')
+          $appVersionText = Get-Content (Join-Path $env:GITHUB_WORKSPACE "app\VERSION.txt") -Raw
+          $rootMatch = [regex]::Match($rootVersionText, '(?m)^Version:\s*([0-9]+(?:\.[0-9]+){2,3})\s*$')
+          $appMatch = [regex]::Match($appVersionText, '(?m)^Version:\s*([0-9]+(?:\.[0-9]+){2,3})\s*$')
           if (-not $rootMatch.Success -or -not $appMatch.Success -or $rootMatch.Groups[1].Value -ne $appMatch.Groups[1].Value) {
             throw "Les versions racine et app doivent être valides et identiques."
           }
           $version = $rootMatch.Groups[1].Value
-          $project = Get-Content (Join-Path $env:GITHUB_WORKSPACE "app\\pyproject.toml") -Raw
+          $project = Get-Content (Join-Path $env:GITHUB_WORKSPACE "app\pyproject.toml") -Raw
           if ($project -notmatch "(?m)^version = \"$([regex]::Escape($version))\"$") {
             throw "La version de pyproject.toml ne correspond pas à VERSION.txt."
           }
           $rootNotes = Join-Path $env:GITHUB_WORKSPACE "NOTES-v$version.txt"
-          $appNotes = Join-Path $env:GITHUB_WORKSPACE "app\\NOTES-v$version.txt"
+          $appNotes = Join-Path $env:GITHUB_WORKSPACE "app\NOTES-v$version.txt"
           if (-not (Test-Path $rootNotes -PathType Leaf) -or -not (Test-Path $appNotes -PathType Leaf)) {
             throw "Notes de version manquantes pour v$version."
           }
@@ -155,11 +155,11 @@ jobs:
         shell: pwsh
         run: |
           $dist = Join-Path $env:GITHUB_WORKSPACE "dist-windows"
-          python "$env:GITHUB_WORKSPACE\\app\\installer\\build_release_package.py" --version "$env:APP_VERSION" --output-dir $dist
+          python "$env:GITHUB_WORKSPACE\app\installer\build_release_package.py" --version "$env:APP_VERSION" --output-dir $dist
           if ($LASTEXITCODE -ne 0) { throw "La construction du package Windows a échoué." }
           $package = Join-Path $dist "GTA-Ranked-Studio-v$env:APP_VERSION.zip"
           $checksum = Join-Path $dist "SHA256SUMS.txt"
-          python "$env:GITHUB_WORKSPACE\\tools\\verify_release_package.py" --package $package --checksum $checksum --version $env:APP_VERSION
+          python "$env:GITHUB_WORKSPACE\tools\verify_release_package.py" --package $package --checksum $checksum --version $env:APP_VERSION
           if ($LASTEXITCODE -ne 0) { throw "La vérification du package Windows a échoué." }
 
       - name: Upload validated Windows package
