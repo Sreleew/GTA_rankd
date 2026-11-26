@@ -262,6 +262,7 @@ def _thumbnail_headline(text: str, streamer: str = "", *, max_words: int = 4) ->
         "i", "if", "in", "is", "it", "me", "my", "of", "on", "or", "our",
         "she", "so", "that", "the", "their", "them", "then", "there", "they",
         "this", "to", "was", "we", "were", "with", "you", "your",
+        "yeah", "yea", "huh", "shit", "uh", "um", "like",
     }
     if words and words[-1].strip(".,!?;:").lower() in incomplete_endings and len(raw_words) > len(words):
         words = raw_words[-max(1, int(max_words)):]
