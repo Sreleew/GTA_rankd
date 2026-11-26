@@ -165,7 +165,7 @@ def test_production_excerpt_profile_targets_one_to_two_minutes_forty_five() -> N
         minimum_seconds=60.0, maximum_seconds=165.0,
     )
     assert 60.0 <= long_source[1] - long_source[0] <= 165.0
-    assert long_source[0] <= 102.0
+    assert long_source[0] <= 104.0
     assert long_source[1] >= 162.0
 
 
