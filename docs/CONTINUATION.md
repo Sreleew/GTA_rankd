@@ -4,9 +4,9 @@
 
 - **Dernière mise à jour :** 26 novembre 2026
 - **Version source de référence :** 0.8.0
-- **État :** v0.8.0 est préparée sur la PR #9 ; v0.7.9 reste la dernière Release stable tant que l'approbation de publication n'a pas été déclenchée. La source applicative est maintenue directement dans `app/`.
+- **État :** v0.8.0 est fusionnée dans `main` et approuvée pour publication ; le workflow de Release est déclenché par `.release-approval`. La source applicative est maintenue directement dans `app/`.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
-- **Dernière Release stable :** [v0.7.9](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.7.9)
+- **Dernière Release stable :** [v0.8.0](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.0)
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
 - **Source active :** `app/`. Modifier directement les fichiers Python, JavaScript, CSS, HTML, tests et installateur présents dans ce dossier.
 - **Mise à jour intégrée :** l'application consulte les Releases GitHub. Le ZIP v0.7.9 et `SHA256SUMS.txt` sont publiés par le workflow de release.
@@ -64,7 +64,7 @@ Le projet doit rester local-first, sans abonnement ni API IA payante obligatoire
 3. La diarisation est expérimentale : en cas d'ambiguïté, préserver les sous-titres plutôt que supprimer la mauvaise voix.
 4. La CI Linux et le runner Windows ne valident pas les performances AMF/Vulkan sur la RX 9060 XT physique.
 5. Les hooks, coupes de phrases, CTA et compositions doivent encore être jugés sur de vrais Shorts. Éviter les CTA génériques en ouverture.
-6. Les compilations Best Of, chapitres et Hall of Fame figurent dans d'anciennes feuilles de route, mais leur état fonctionnel n'a pas été confirmé en v0.7.9.
+6. Les compilations Best Of, chapitres et Hall of Fame figurent dans d'anciennes feuilles de route, mais leur état fonctionnel n'a pas été confirmé en v0.8.0.
 7. Les alertes qualité ne sont pas des rejets : certaines scènes sombres, statiques ou silencieuses sont intentionnelles.
 
 ## 5. Source de référence et état des branches
@@ -72,7 +72,7 @@ Le projet doit rester local-first, sans abonnement ni API IA payante obligatoire
 - **Base propre intégrée :** PR #6 fusionnée dans `main`.
 - **Montage intelligent intégré :** PR #7 fusionnée dans `main`.
 - **Refonte créative intégrée :** PR #8 fusionnée dans `main`, version v0.7.9.
-- **Cadrage vertical intelligent (PR #9) :** nouveau layout 9:16 par défaut, panneau gameplay agrandi à 42 % de la hauteur, focus horizontal par défaut à 80 %, hook en haut et sous-titres en zone basse. Le mode préserve les sources portrait et garde les modes `fill`/`blur` disponibles.
+- **Cadrage vertical intelligent (PR #9) :** fusionné dans `main` pour v0.8.0. Layout 9:16 par défaut, panneau gameplay agrandi à 42 % de la hauteur, focus horizontal par défaut à 80 %, hook en haut et sous-titres en zone basse. Les sources portrait restent proportionnelles et les modes `fill`/`blur` restent disponibles.
 - **Contrôle documentaire :** correction de `tools/check_project_memory.py` pour reconnaître les sections 9 à 12 du mémo, évitant les échecs CI dus à l'ancien plan de sections.
 - **Validation restante :** les tests synthétiques Linux/Windows passent. Vérifier le cadrage sur plusieurs vrais clips Twitch, notamment les HUD et les facecams dont la position varie, puis confirmer AMF/Vulkan sur le PC AMD.
 
@@ -157,7 +157,7 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 
 ## 11. Prochaines étapes priorisées
 
-1. Après publication, installer v0.7.9 depuis **Paramètres > Mises à jour**, puis vérifier que les réglages, projets, bases et exports sont conservés.
+1. Après publication, installer v0.8.0 depuis **Paramètres > Mises à jour**, puis vérifier que les réglages, projets, bases et exports sont conservés.
 2. Exécuter `docs/WINDOWS-HARDWARE-VALIDATION.md` sur la RX 9060 XT : AMF, Whisper Vulkan, Ollama/Qwen et cycle Short complet.
 3. Calibrer le contrôle qualité sur plusieurs vrais Shorts GTA, en mesurant les faux positifs sur les scènes sombres, pauses voulues et séquences sans musique.
 4. Améliorer les coupes naturelles et la construction des hooks à partir des limites de phrases, sans CTA générique à l'ouverture.
@@ -167,4 +167,4 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 
 ## 12. Message de reprise prêt à copier
 
-> Nous reprenons GTA Ranked Studio. Lis `docs/CONTINUATION.md` puis `docs/WORKING-AGREEMENT.md`. La source de développement est directement dans `app/`, et non dans une archive. La v0.7.9 est la Release stable actuelle : https://github.com/Sreleew/GTA_rankd/releases/tag/v0.7.9. Les workflows Linux, Windows et Release doivent tous tester/construire directement depuis `app/`, sans hotfix ni extraction d'archive. Préserve les données locales. Modifie uniquement les fichiers nécessaires, ajoute les tests pertinents, valide sous Linux et Windows pour les changements transversaux. La RX 9060 XT n'a pas encore été validée physiquement pour AMF/Vulkan. L'utilisateur souhaite que toute modification demandée soit intégrée et publiée directement dès que les contrôles sont réussis. Travailler directement dans GitHub, éviter les audits redondants, préserver une qualité élevée et maintenir ce mémo à jour à chaque lot.
+> Nous reprenons GTA Ranked Studio. Lis `docs/CONTINUATION.md` puis `docs/WORKING-AGREEMENT.md`. La source de développement est directement dans `app/`, et non dans une archive. La v0.8.0 vient d'être fusionnée et approuvée pour publication : https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.0. Les workflows Linux, Windows et Release doivent tous tester/construire directement depuis `app/`, sans hotfix ni extraction d'archive. Préserve les données locales. Modifie uniquement les fichiers nécessaires, ajoute les tests pertinents, valide sous Linux et Windows pour les changements transversaux. La RX 9060 XT n'a pas encore été validée physiquement pour AMF/Vulkan. L'utilisateur souhaite que toute modification demandée soit intégrée et publiée directement dès que les contrôles sont réussis. Travailler directement dans GitHub, éviter les audits redondants, préserver une qualité élevée et maintenir ce mémo à jour à chaque lot.
