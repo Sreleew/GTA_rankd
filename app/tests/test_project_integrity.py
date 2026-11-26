@@ -1,5 +1,6 @@
 """Vérifie les invariants de cohérence qui protègent les releases."""
 from pathlib import Path
+import os
 import tomllib
 
 import yaml
@@ -47,6 +48,7 @@ def test_project_memory_checker_passes_for_the_repository_root() -> None:
     result = subprocess.run(
         [sys.executable, str(checker), "--root", str(REPO)],
         cwd=REPO,
+        env={**os.environ, "PYTHONIOENCODING": "utf-8"},
         capture_output=True,
         text=True,
         encoding="utf-8",
