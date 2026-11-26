@@ -2,7 +2,7 @@
 
 Application Windows locale pour transformer des clips GTA en Shorts verticaux, avec traitement local et validation manuelle.
 
-**Version préparée : 0.8.1.**
+**Version de l'application : 0.8.1.**
 
 ## Fonctionnalités
 
