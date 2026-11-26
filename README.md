@@ -2,16 +2,17 @@
 
 Application Windows locale pour analyser des clips et VOD GTA, repérer les moments intéressants et produire des Shorts verticaux prêts à publier.
 
-**Dernière version stable : v0.7.9.** La mise à jour est proposée dans l'application depuis **Paramètres > Mises à jour**.
+**Dernière version stable : v0.7.9. La prochaine version préparée est v0.8.0.** La mise à jour est proposée dans l'application depuis **Paramètres > Mises à jour**.
 
-[Consulter la Release v0.7.8](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.7.9)
+[Consulter la Release v0.7.9](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.7.9)
 
 ## Fonctionnalités
 
 - Import de vidéos locales et de clips/VOD Twitch accessibles via yt-dlp.
 - Détection audio et transcription Whisper locale pour classer les moments forts.
 - Score d'accroche distinct sur les cinq premières secondes.
-- Création de Shorts 1080 × 1920, sous-titres, hooks, titres et descriptions éditorialement vérifiés contre les phrases ASR incomplètes.
+- Création de Shorts 1080 × 1920 avec cadrage intelligent : gameplay agrandi, hook en haut, sous-titres en bas et focus horizontal réglable. Les modes plein écran et fond flouté restent disponibles.
+- Sous-titres, hooks, titres et descriptions éditorialement vérifiés contre les phrases ASR incomplètes.
 - Miniatures verticales plus épurées, composées à partir d'images réelles du clip, avec titre court et lisible.
 - Métadonnées générées avec Ollama/Qwen local si installé, avec solution de repli sans IA.
 - Contrôle qualité après export : MP4, durée, résolution, codec, audio, écrans noirs, images figées, silences et horodatages des sous-titres.
