@@ -20,7 +20,7 @@ Application Windows locale qui analyse des clips et VOD GTA, repère les passage
 
 Le projet doit rester local-first, sans abonnement ni API IA payante obligatoire. Les vidéos, médias, transcriptions, rendus et modèles locaux ne doivent pas être envoyés vers un service cloud par le pipeline.
 
-## 2. État actuel et fonctionnalités candidates v0.7.9
+## 2. État actuel et fonctionnalités présentes
 
 - Import de vidéos locales et d'URLs de clips/VOD Twitch accessibles via yt-dlp.
 - Téléchargement de plages horaires avec progression et gestion des erreurs/reprises.
