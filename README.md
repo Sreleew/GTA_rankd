@@ -2,9 +2,9 @@
 
 Application Windows locale pour analyser des clips et VOD GTA, repérer les moments intéressants et produire des Shorts verticaux prêts à publier.
 
-**Version approuvée pour publication : v0.8.0.** La dernière version stable disponible reste v0.7.9 jusqu'à la fin du workflow. La mise à jour sera proposée dans l'application depuis **Paramètres > Mises à jour**. La mise à jour est proposée dans l'application depuis **Paramètres > Mises à jour**.
+**Dernière version stable : v0.8.0.** La mise à jour est proposée dans l'application depuis **Paramètres > Mises à jour**. La mise à jour est proposée dans l'application depuis **Paramètres > Mises à jour**.
 
-[Consulter la Release v0.7.9](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.7.9)
+[Consulter la Release v0.8.0](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.0)
 
 ## Fonctionnalités
 
@@ -39,7 +39,7 @@ py -3.11 -m pip install -r requirements.txt
 python tools/check_project_memory.py
 python -m pytest -q
 node --check studio/web/static/app.js
-python installer/build_release_package.py --version 0.7.9 --output-dir dist
+python installer/build_release_package.py --version 0.8.0 --output-dir dist
 ```
 
 Pour une nouvelle installation, utiliser `app/INSTALL.bat`. Ne jamais remplacer un `config.yaml` existant par le fichier modèle pendant une mise à jour.
