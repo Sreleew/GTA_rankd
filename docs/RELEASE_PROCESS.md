@@ -34,18 +34,13 @@ La voie `workflow_dispatch` reste disponible pour préparer une Release brouillo
 
 ## État au 26 novembre 2026
 
-- Audit de maintenance v0.8.1 en cours sur `maintenance/full-repository-cleanup` ; version candidate non publiée.
-
-- Release stable actuelle : [v0.8.0](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.0).
-- Workflow de publication v0.8.0 : https://github.com/Sreleew/GTA_rankd/actions/runs/45797395932.
-- Audit Linux v0.8.0 : 147 tests réussis, 1 test PowerShell ignoré sous Linux.
-- Validation Windows CI v0.8.0 : 148 tests réussis, aucun ignoré.
-- Package Windows et checksum SHA-256 construits et vérifiés par le workflow.
-- Workflow de publication v0.7.9 : https://github.com/Sreleew/GTA_rankd/actions/runs/45793843538.
-- Package publié : `GTA-Ranked-Studio-v0.7.9.zip` et `SHA256SUMS.txt`.
-- Audit Linux v0.7.9 : 144 tests réussis, 1 test PowerShell ignoré sous Linux.
-- Validation Windows CI v0.7.9 : 145 tests réussis, aucun ignoré.
-- Workflow de publication réussi : https://github.com/Sreleew/GTA_rankd/actions/runs/45714213999.
+- Release stable actuelle : [v0.8.2](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.2).
+- PR #10 maintenance, PR #11 coupes naturelles et PR #12 profil de durée de production sont fusionnées dans `main`.
+- CI PR #12 : Linux 155 tests réussis + 1 ignoré ; Windows 156 tests réussis.
+- CI `main` après fusion : Linux et Windows validés avant préparation de la Release v0.8.2.
+- Profil de production : passages VOD de 60, 90, 120, 150 et 165 secondes ; clips Twitch plus courts préservés sans rallongement artificiel.
+- La migration des anciennes valeurs de configuration v0.8.1 s'effectue en mémoire uniquement et préserve les valeurs personnalisées.
+- Le package Windows et son checksum SHA-256 sont contrôlés avant publication.
 - La validation physique de la RX 9060 XT pour AMF/Vulkan reste à faire.
 
 ## Protection de main
