@@ -52,10 +52,10 @@ def _resolve_auto_trim_enabled(
     options: dict[str, Any], source_url: str, configured_default: bool,
 ) -> bool:
     """Twitch clips are already editor-selected; preserve them unless overridden."""
-    if "auto_trim_enabled" in options:
-        return bool(options["auto_trim_enabled"])
     if _is_twitch_clip_url(source_url):
         return False
+    if "auto_trim_enabled" in options:
+        return bool(options["auto_trim_enabled"])
     return bool(configured_default)
 
 

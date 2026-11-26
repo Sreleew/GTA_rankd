@@ -35,9 +35,10 @@ def test_twitch_clip_urls_are_preserved_as_preselected_moments() -> None:
 
     assert not _is_twitch_clip_url("https://www.twitch.tv/videos/123456789")
     assert _resolve_auto_trim_enabled({}, "https://www.twitch.tv/videos/123456789", True) is True
+    # Twitch clip URLs stay intact even when the general UI checkbox is on.
     assert _resolve_auto_trim_enabled(
-        {"auto_trim_enabled": True}, clip_urls[0], configured_default=False,
-    ) is True
+        {"auto_trim_enabled": True}, clip_urls[0], configured_default=True,
+    ) is False
     assert _resolve_auto_trim_enabled(
         {"auto_trim_enabled": False}, "https://www.twitch.tv/videos/123456789", configured_default=True,
     ) is False
