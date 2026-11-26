@@ -165,3 +165,37 @@ def test_local_model_formulaic_promo_copy_falls_back_to_human_title(monkeypatch)
     assert result["title"] == "IShowSpeed was farming subs in GTA 5 😭"
     assert result["description"].splitlines()[0] == "Still found time to ask everyone for a like 💀"
     assert "YouTube promo" not in result["description"]
+
+
+
+def test_asr_fragment_is_not_reused_as_title_hook_or_thumbnail_copy():
+    result = generate_short_metadata(
+        streamer="Tminnzy",
+        source_title="GTA 5",
+        transcript="yeah huh shit got",
+        source_url="https://www.twitch.tv/tminnzy/clip/example",
+        ollama_base_url="http://127.0.0.1:1",
+    )
+
+    assert "yeah huh shit got" not in result["title"].lower()
+    assert "really said" not in result["title"].lower()
+    assert result["hook_text"] == ""
+    assert result["thumbnail_text"] == "Tminnzy GTA MOMENT"
+    assert "yeah huh shit got" not in result["description"].lower()
+
+
+def test_complete_sentence_keeps_its_descriptive_ending_in_metadata_fallback():
+    from studio.web.metadata import _fallback_metadata
+
+    result = _fallback_metadata(
+        streamer="Tminnzy",
+        note="",
+        source_url="",
+        transcript="I finally got my car back!",
+        custom_hook="",
+        custom_context="",
+        source_title="GTA 5",
+    )
+
+    assert "got my car back" in result["title"].lower()
+    assert result["thumbnail_text"].lower() == "got my car back"
