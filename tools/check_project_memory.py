@@ -14,8 +14,10 @@ REQUIRED_SECTIONS = (
     "## 6. Fichiers importants",
     "## 7. Commandes de contrôle",
     "## 8. Règles de travail pour toute nouvelle conversation",
-    "## 9. Prochaines étapes priorisées",
-    "## 10. Message de reprise prêt à copier",
+    "## 9. Préférences utilisateur et méthode de collaboration",
+    "## 10. Journal de travail récent",
+    "## 11. Prochaines étapes priorisées",
+    "## 12. Message de reprise prêt à copier",
 )
 
 

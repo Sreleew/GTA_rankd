@@ -40,6 +40,9 @@ def test_edit_options_are_validated_and_clamped_by_api():
     assert options["crop_x"] == 50
     assert options["dynamic_zoom"] is True
     assert options["auto_trim_enabled"] is True
+    smart = _validate_edit_options("smart", 80, 50, False, 0, True, True, "", "")
+    assert smart["layout"] == "smart"
+    assert smart["crop_x"] == 80
     try:
         _validate_edit_options("invalid", 50, 50, True, 8, True, True, "", "")
     except Exception as exc:

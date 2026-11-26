@@ -128,6 +128,8 @@ def build_filter_complex(
     layout: str = "blur",
     crop_x: int = 50,
     crop_y: int = 50,
+    source_width: int = 1920,
+    source_height: int = 1080,
     ass_file: Path | None = None,
     fonts_dir: Path | None = None,
     project_root: Path | None = None,
@@ -144,12 +146,36 @@ def build_filter_complex(
     """
     if width <= 0 or height <= 0:
         raise ValueError("Les dimensions de sortie doivent être positives.")
-    if layout not in {"fill", "blur"}:
-        raise ValueError("Le layout doit être 'fill' ou 'blur'.")
+    if layout not in {"fill", "blur", "smart"}:
+        raise ValueError("Le layout doit être 'fill', 'blur' ou 'smart'.")
 
     crop_x = max(0, min(100, int(crop_x))) / 100
     crop_y = max(0, min(100, int(crop_y))) / 100
-    if layout == "fill":
+    if layout == "smart":
+        # Editorial 9:16 composition: a large gameplay panel sits between
+        # the hook and captions. Landscape sources are cropped to the panel
+        # ratio; portrait sources stay intact and are centered over the blur.
+        panel_height = max(1, int(height * 0.42))
+        panel_y = int(height * 0.33)
+        panel_ratio = width / panel_height
+        source_ratio = max(0.01, float(source_width) / max(1, int(source_height)))
+        base = (
+            f"[0:v]split=2[bgsrc][fgsrc];"
+            f"[bgsrc]scale={width}:{height}:force_original_aspect_ratio=increase,"
+            f"crop={width}:{height},boxblur={blur}:10,setsar=1[bg];"
+        )
+        if source_ratio >= panel_ratio:
+            base += (
+                f"[fgsrc]scale=-2:{panel_height},"
+                f"crop={width}:{panel_height}:(in_w-out_w)*{crop_x:.3f}:"
+                f"(in_h-out_h)*{crop_y:.3f},setsar=1[panel];"
+            )
+        else:
+            base += (
+                f"[fgsrc]scale=-2:{panel_height},setsar=1[panel];"
+            )
+        base += f"[bg][panel]overlay=(W-w)/2:{panel_y},setsar=1[base]"
+    elif layout == "fill":
         base = (
             f"[0:v]scale={width}:{height}:force_original_aspect_ratio=increase,"
             f"crop={width}:{height}:(in_w-out_w)*{crop_x:.3f}:(in_h-out_h)*{crop_y:.3f},setsar=1[base]"
@@ -202,6 +228,8 @@ def build_render_command(
     layout: str = "blur",
     crop_x: int = 50,
     crop_y: int = 50,
+    source_width: int = 1920,
+    source_height: int = 1080,
     ass_file: Path | None = None,
     fonts_dir: Path | None = None,
     project_root: Path | None = None,
@@ -218,6 +246,7 @@ def build_render_command(
 ) -> list[str]:
     filter_graph = build_filter_complex(
         width, height, layout=layout, crop_x=crop_x, crop_y=crop_y,
+        source_width=source_width, source_height=source_height,
         ass_file=ass_file, fonts_dir=fonts_dir, project_root=project_root,
         dynamic_zoom=dynamic_zoom, peak_timestamp=peak_timestamp, fps=fps,
         zoom_percent=zoom_percent,
@@ -330,7 +359,8 @@ def render_vertical_short(
             ffmpeg_bin, input_path, output_path, width=width, height=height,
             bitrate=bitrate, loudness_lufs=loudness_lufs,
             has_audio=info["has_audio"], encoder=encoder, fps=fps,
-            layout=layout, crop_x=crop_x, crop_y=crop_y, ass_file=ass_file,
+            layout=layout, crop_x=crop_x, crop_y=crop_y,
+            source_width=info["width"], source_height=info["height"], ass_file=ass_file,
             fonts_dir=fonts_dir, project_root=project_root,
             dynamic_zoom=dynamic_zoom, peak_timestamp=peak_timestamp,
             zoom_percent=zoom_percent, duration=output_duration,

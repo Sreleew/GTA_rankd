@@ -1,0 +1,21 @@
+GTA Ranked Studio v0.8.0
+
+Nouveau cadrage intelligent des Shorts :
+- Le mode « Cadrage intelligent 9:16 » devient le mode par défaut pour les imports, les URLs Twitch et les passages issus du classement des moments forts.
+- Le gameplay paysage est agrandi dans un panneau central occupant environ 42 % de la hauteur du Short, au lieu de rester réduit dans une bande horizontale.
+- Le hook et le contexte restent dans la partie supérieure ; les sous-titres sont déplacés dans une zone basse dédiée, sous le gameplay.
+- Le focus horizontal est réglable. La position initiale à 80 % favorise la conservation d'une facecam incrustée à droite.
+- Les sources portrait restent proportionnelles et sont centrées sur le fond flouté, sans recadrage vertical agressif.
+- Les modes « Plein écran recadré » et « Vidéo entière + fond flouté » restent disponibles comme alternatives.
+
+Fiabilité et validation :
+- Ajout de tests sur les sources paysage et portrait, la position du crop et la zone de sécurité des sous-titres.
+- Le contrôle de cohérence du mémo projet reconnaît désormais les sections 9 à 12 de la documentation.
+- CI Linux : 147 tests réussis, 1 ignoré (PowerShell non disponible sous Linux).
+- CI Windows : 148 tests réussis, aucun ignoré. Package Windows de validation construit et vérifié.
+- Les tests synthétiques valident le filtre FFmpeg, mais le rendu doit encore être confirmé sur plusieurs vrais clips Twitch, notamment avec des HUD et des facecams à des positions différentes.
+- La validation matérielle AMF/Vulkan sur la RX 9060 XT reste à effectuer sur le PC cible.
+
+Compatibilité :
+- Les anciens modes de rendu restent disponibles.
+- Les réglages, projets, bases de données, médias, exports et modèles locaux sont préservés pendant la mise à jour.

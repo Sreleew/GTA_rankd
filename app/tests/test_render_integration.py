@@ -7,7 +7,27 @@ import subprocess
 import pytest
 
 from studio.web.short_editor import WordTiming, create_ass_file
-from studio.web.short_renderer import probe_media, render_vertical_short
+from studio.web.short_renderer import build_filter_complex, probe_media, render_vertical_short
+
+
+def test_smart_layout_builds_large_gameplay_panel_and_respects_horizontal_focus() -> None:
+    graph = build_filter_complex(
+        width=1080, height=1920, layout="smart", crop_x=80,
+        source_width=1920, source_height=1080,
+    )
+    assert "scale=-2:806" in graph
+    assert "crop=1080:806:(in_w-out_w)*0.800" in graph
+    assert "overlay=(W-w)/2:633" in graph
+    assert "boxblur=28:10" in graph
+
+
+def test_smart_layout_preserves_portrait_sources_without_aggressive_crop() -> None:
+    graph = build_filter_complex(
+        width=1080, height=1920, layout="smart",
+        source_width=1080, source_height=1920,
+    )
+    assert "scale=-2:806,setsar=1[panel]" in graph
+    assert "crop=1080:806" not in graph
 
 
 def test_thumbnail_visual_score_rejects_blank_sky_frame(tmp_path: Path) -> None:
@@ -90,7 +110,8 @@ def test_real_vertical_short_render(tmp_path: Path) -> None:
         height=640,
         ass_file=captions,
         project_root=tmp_path,
-        layout="blur",
+        layout="smart",
+        crop_x=80,
         dynamic_zoom=False,
         peak_timestamp=0.9,
         zoom_percent=8,
@@ -103,6 +124,7 @@ def test_real_vertical_short_render(tmp_path: Path) -> None:
     rendered = probe_media(output, ffprobe)
     assert result["encoder_used"] == "libx264"
     assert result["sound_effect_used"] is True
+    assert result["layout"] == "smart"
     assert result["source_duration"] == pytest.approx(2.0, abs=0.15)
     assert result["duration"] == pytest.approx(1.5, abs=0.01)
     assert result["trim_start"] == pytest.approx(0.25)

@@ -293,6 +293,7 @@ class JobRunner:
                 font_name=str(self.config.get("branding", "font_name", default="Arial")),
                 captions_enabled=captions_active,
                 brand_enabled=bool(options.get("brand_enabled", True)),
+                layout=str(options.get("layout", self.config.get("shorts", "layout", default="smart"))),
             )
             shutil.copy2(ass_path, output_dir / "captions.ass")
 
@@ -309,9 +310,9 @@ class JobRunner:
                 loudness_lufs=int(self.config.get("encoding", "short_loudness_lufs", default=-14)),
                 width=int(self.config.get("encoding", "width_short", default=1080)),
                 height=int(self.config.get("encoding", "height_short", default=1920)),
-                layout=str(options.get("layout", self.config.get("shorts", "layout", default="fill"))),
+                layout=str(options.get("layout", self.config.get("shorts", "layout", default="smart"))),
                 webcam_zone=str(options.get("webcam_zone", "none")),
-                crop_x=int(options.get("crop_x", 50)),
+                crop_x=int(options.get("crop_x", self.config.get("shorts", "default_crop_x", default=80))),
                 crop_y=int(options.get("crop_y", 50)),
                 ass_file=ass_path,
                 fonts_dir=self.config.path_for("paths", "fonts"),
