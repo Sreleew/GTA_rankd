@@ -156,3 +156,11 @@ def test_thumbnail_overlay_uses_a_compact_editorial_cover_and_sanitizes_fragment
         assert result.format == "JPEG"
         assert result.width == 1080 and result.height == 1920
         assert thumbnail.stat().st_size > 15_000
+
+
+
+def test_thumbnail_headline_prefers_complete_meaningful_tail_over_filler():
+    from studio.web.short_editor import _thumbnail_headline
+
+    assert _thumbnail_headline("YEAH HUH SHIT GOT MY LAMBO", "Tminnzy") == "GOT MY LAMBO"
+    assert _thumbnail_headline("YEAH HUH SHIT GOT", "Tminnzy") == "Tminnzy GTA MOMENT"
