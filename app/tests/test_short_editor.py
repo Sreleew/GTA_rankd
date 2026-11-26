@@ -48,7 +48,7 @@ def test_smart_layout_moves_captions_below_the_gameplay_panel(tmp_path: Path):
         height=1920,
     )
     content = path.read_text(encoding="utf-8-sig")
-    assert r"\\pos(540,1670)" in content
+    assert r"\pos(540,1670)" in content
 
 
 def test_ass_can_disable_captions_and_brand(tmp_path: Path):
