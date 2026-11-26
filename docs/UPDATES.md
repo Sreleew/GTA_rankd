@@ -1,5 +1,9 @@
 # Mises à jour GTA Ranked Studio
 
+## v0.8.2 : production Shorts 1 min à 2 min 45
+
+La version stable v0.8.2 est publiée : https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.2. Le profil de production vise désormais des Shorts de 60 à 165 secondes. Le scan des VOD classe des passages de 60, 90, 120, 150 et 165 secondes. Les coupes automatiques privilégient les frontières de phrases et les pauses naturelles autour du moment fort. Les clips Twitch plus courts restent inchangés, sans rallongement artificiel. Les installations v0.8.1 migrent leurs anciens réglages par défaut en mémoire, sans réécrire la configuration personnelle ni remplacer les réglages personnalisés. CI Linux : 155 tests réussis, 1 ignoré. CI Windows : 156 tests réussis. Ruff, pip-audit, ZIP Windows et SHA-256 validés. La validation physique AMF/Vulkan sur la RX 9060 XT reste à effectuer.
+
 ## v0.8.1 : audit de maintenance (disponible en mise à jour stable)
 
 La version stable v0.8.1 est publiée : https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.1. Elle regroupe la séparation stricte des dépendances runtime et dev, l'allègement de l'installation, le retrait du scaffold Best Of non relié au moteur Shorts, la documentation canonique unique, Ruff et pip-audit, la validation des scripts PowerShell et le packaging sécurisé. CI : Linux 150 réussis + 1 ignoré ; Windows 151 réussis. Aucune vulnérabilité connue détectée. Le ZIP Windows et son SHA-256 ont été vérifiés par le workflow de publication.
