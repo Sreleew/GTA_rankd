@@ -112,6 +112,28 @@ def test_long_clip_excerpt_keeps_payoff_and_context() -> None:
     assert end >= 32.0  # environ 2 secondes après la fin de la réaction
 
 
+
+def test_long_clip_excerpt_starts_on_a_sentence_boundary_before_the_payoff() -> None:
+    words = [
+        WordTiming(4.0, 4.3, "We"),
+        WordTiming(4.3, 4.6, "left"),
+        WordTiming(4.6, 5.0, "early."),
+        WordTiming(6.0, 6.3, "Then"),
+        WordTiming(6.3, 6.6, "the"),
+        WordTiming(6.6, 7.0, "police"),
+        WordTiming(7.0, 7.4, "arrived."),
+        WordTiming(20.0, 20.3, "Wait"),
+        WordTiming(20.3, 20.6, "what?"),
+        WordTiming(20.8, 21.0, "No."),
+    ]
+
+    start, end = select_excerpt_range(60.0, 20.5, words)
+
+    assert start == 6.0
+    assert end >= 22.6
+    assert 15.0 <= end - start <= 45.0
+
+
 def test_short_clip_is_never_trimmed_and_word_times_are_rebased(tmp_path: Path) -> None:
     assert select_excerpt_range(21.1, 10.0, []) == (0.0, 21.1)
     original = [WordTiming(10.0, 10.3, "Bro"), WordTiming(10.35, 10.8, "WHAT?")]
