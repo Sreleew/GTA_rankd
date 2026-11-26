@@ -50,4 +50,3 @@ def test_run_quiet_stops_a_running_process_when_cancelled():
         timer.cancel()
         process.set_current_cancel_event(None)
     assert time.monotonic() - started < 4
-

@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version à préparer (ex. 0.7.9)"
+        description: "Version à préparer (ex. 0.8.1)"
         required: true
         type: string
       confirm_publish:
@@ -28,24 +28,28 @@ jobs:
   release:
     name: Verify, test, package and publish an explicitly approved release
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 40
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - name: Set up project Python
-        uses: actions/setup-python@v5
+      - name: Set up Python
+        uses: actions/setup-python@v7
         with:
           python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            app/pyproject.toml
+            app/requirements.txt
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: "22"
 
-      - name: Validate release request and direct source version
+      - name: Validate release approval and synchronized versions
         shell: bash
         env:
           VERSION_INPUT: ${{ inputs.version }}
@@ -56,7 +60,6 @@ jobs:
             echo "Refus : une Release doit être préparée depuis main."
             exit 1
           fi
-
           if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
             if [[ "$CONFIRM_PUBLISH" != "true" ]]; then
               echo "Refus : la confirmation explicite n'a pas été cochée."
@@ -71,25 +74,28 @@ jobs:
             echo "Événement de publication non pris en charge."
             exit 1
           fi
-
           if [[ ! "$VERSION" =~ ^[0-9]+(\.[0-9]+){2,3}$ ]]; then
             echo "Version invalide : $VERSION"
             exit 1
           fi
           ROOT_VERSION="$(sed -nE 's/^Version:[[:space:]]*([0-9]+(\.[0-9]+){2,3})[[:space:]]*$/\1/p' VERSION.txt | head -n 1)"
           APP_VERSION="$(sed -nE 's/^Version:[[:space:]]*([0-9]+(\.[0-9]+){2,3})[[:space:]]*$/\1/p' app/VERSION.txt | head -n 1)"
-          if [[ "$VERSION" != "$ROOT_VERSION" || "$VERSION" != "$APP_VERSION" ]]; then
-            echo "Version incohérente : approbation=$VERSION, racine=$ROOT_VERSION, app=$APP_VERSION."
+          PYPROJECT_VERSION="$(python -c 'import tomllib; print(tomllib.load(open("app/pyproject.toml", "rb"))["project"]["version"])')"
+          if [[ "$VERSION" != "$ROOT_VERSION" || "$VERSION" != "$APP_VERSION" || "$VERSION" != "$PYPROJECT_VERSION" ]]; then
+            echo "Version incohérente : approval=$VERSION root=$ROOT_VERSION app=$APP_VERSION pyproject=$PYPROJECT_VERSION."
             exit 1
           fi
           if [[ ! -s "NOTES-v$VERSION.txt" || ! -s "app/NOTES-v$VERSION.txt" ]]; then
             echo "Notes de version absentes pour v$VERSION."
             exit 1
           fi
-
+          if ! cmp -s "NOTES-v$VERSION.txt" "app/NOTES-v$VERSION.txt"; then
+            echo "Les notes racine et app doivent être identiques."
+            exit 1
+          fi
           RELEASE_TAG="v$VERSION"
           if git ls-remote --exit-code --tags origin "refs/tags/$RELEASE_TAG" >/dev/null 2>&1; then
-            echo "Refus : le tag $RELEASE_TAG existe déjà. Aucune Release ne sera écrasée."
+            echo "Refus : le tag $RELEASE_TAG existe déjà."
             exit 1
           fi
           {
@@ -98,20 +104,7 @@ jobs:
             echo "APP_ROOT=$GITHUB_WORKSPACE/app"
           } >> "$GITHUB_ENV"
 
-      - name: Synchronize release documentation into the application package
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p "$APP_ROOT/docs" "$APP_ROOT/tools"
-          cp VERSION.txt "$APP_ROOT/VERSION.txt"
-          cp "NOTES-v$APP_VERSION.txt" "$APP_ROOT/NOTES-v$APP_VERSION.txt"
-          cp docs/CONTINUATION.md "$APP_ROOT/docs/CONTINUATION.md"
-          cp docs/UPDATES.md "$APP_ROOT/docs/UPDATES.md"
-          cp docs/implementation-plan-v0.7.8.md "$APP_ROOT/docs/implementation-plan-v0.7.8.md"
-          cp tools/check_project_memory.py "$APP_ROOT/tools/check_project_memory.py"
-          python "$APP_ROOT/tools/check_project_memory.py" --root "$APP_ROOT"
-
-      - name: Install FFmpeg and application dependencies
+      - name: Install FFmpeg and development dependencies
         shell: bash
         run: |
           set -euo pipefail
@@ -121,16 +114,27 @@ jobs:
           fi
           ffmpeg -version
           ffprobe -version
-          python -m pip install --disable-pip-version-check -r "$APP_ROOT/requirements.txt"
+          python -m pip install --disable-pip-version-check -e "$APP_ROOT[dev]"
+          python -m pip check
 
-      - name: Run full test suite and frontend syntax check
+      - name: Run static analysis and dependency security audit
         shell: bash
         run: |
           set -euo pipefail
           cd "$APP_ROOT"
+          ruff check studio installer tests "$GITHUB_WORKSPACE/tools"
+          pip-audit -r requirements.txt
+
+      - name: Validate source and run complete tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/check_project_memory.py --root .
+          git show --check --oneline HEAD
+          cd "$APP_ROOT"
           cp config.yaml.default config.yaml
           trap 'rm -f config.yaml' EXIT
-          python tools/check_project_memory.py
+          python -m compileall -q studio installer tests
           python -m pytest -q
           node --check studio/web/static/app.js
 
@@ -140,52 +144,18 @@ jobs:
           set -euo pipefail
           python "$APP_ROOT/installer/build_release_package.py" --version "$APP_VERSION" --output-dir "$GITHUB_WORKSPACE/dist"
 
-      - name: Verify update package and user-data exclusions
+      - name: Verify ZIP contents, exclusions and SHA-256
         shell: bash
         run: |
           set -euo pipefail
-          python - "$GITHUB_WORKSPACE/dist/GTA-Ranked-Studio-v$APP_VERSION.zip" "$GITHUB_WORKSPACE/dist/SHA256SUMS.txt" "$APP_VERSION" <<'PY'
-          import hashlib
-          import sys
-          import zipfile
-          from pathlib import PurePosixPath
-
-          package_path, checksum_path, version = sys.argv[1:]
-          required = {
-              "gta-ranked-studio/VERSION.txt",
-              "gta-ranked-studio/installer/apply_update.ps1",
-              "gta-ranked-studio/studio/web/updater.py",
-              "gta-ranked-studio/docs/CONTINUATION.md",
-              "gta-ranked-studio/docs/UPDATES.md",
-              "gta-ranked-studio/tools/check_project_memory.py",
-          }
-          with zipfile.ZipFile(package_path) as archive:
-              names = set(archive.namelist())
-              missing = required - names
-              if missing:
-                  raise SystemExit("Fichiers requis absents : " + ", ".join(sorted(missing)))
-              if archive.testzip():
-                  raise SystemExit("Le ZIP de mise à jour est corrompu.")
-              version_text = archive.read("gta-ranked-studio/VERSION.txt").decode("utf-8-sig")
-              if f"Version: {version}" not in version_text:
-                  raise SystemExit("La version du paquet ne correspond pas à la Release.")
-              forbidden = []
-              for name in names:
-                  path = PurePosixPath(name)
-                  if path.name in {"config.yaml", "secrets.json", "credentials.json"} or path.name.startswith(".env") or path.suffix.lower() in {".sqlite", ".sqlite3", ".db", ".log", ".pyc", ".pem", ".key"}:
-                      forbidden.append(name)
-              if forbidden:
-                  raise SystemExit("Données locales ou fichiers sensibles dans le paquet : " + ", ".join(sorted(forbidden)))
-          digest = hashlib.sha256(open(package_path, "rb").read()).hexdigest()
-          if digest not in open(checksum_path, encoding="utf-8").read():
-              raise SystemExit("Le checksum SHA-256 du ZIP ne correspond pas.")
-          print(f"Paquet Windows v{version} vérifié.")
-          PY
+          python tools/verify_release_package.py \
+            --package "$GITHUB_WORKSPACE/dist/GTA-Ranked-Studio-v$APP_VERSION.zip" \
+            --checksum "$GITHUB_WORKSPACE/dist/SHA256SUMS.txt" \
+            --version "$APP_VERSION"
 
       - name: Prepare release notes
         shell: bash
-        run: |
-          cp "NOTES-v$APP_VERSION.txt" "$GITHUB_WORKSPACE/dist/release-notes.md"
+        run: cp "NOTES-v$APP_VERSION.txt" "$GITHUB_WORKSPACE/dist/release-notes.md"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3

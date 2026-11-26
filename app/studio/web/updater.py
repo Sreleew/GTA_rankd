@@ -12,7 +12,6 @@ import os
 import re
 import shutil
 import subprocess
-import tempfile
 import threading
 import time
 import urllib.error

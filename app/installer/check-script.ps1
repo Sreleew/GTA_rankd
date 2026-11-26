@@ -5,6 +5,7 @@ try {
     $targets = @(
         $PSCommandPath,
         (Join-Path $PSScriptRoot 'install.ps1'),
+        (Join-Path $PSScriptRoot 'apply_update.ps1'),
         (Join-Path $PSScriptRoot 'update_from_archive.ps1')
     )
     foreach ($target in $targets) {

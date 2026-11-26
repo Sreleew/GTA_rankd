@@ -1,26 +1,15 @@
 app:
   name: gta-ranked-studio
-  version: 0.8.0
-  output_language: en
-  timezone: Europe/Paris
+  version: 0.8.1
 
 hardware:
-  gpu_vendor: amd
   gpu_model: AMD Radeon RX 9060 XT
   gpu_architecture: gfx1200
   gpu_vram_gb: 16
-  video_encoder: h264_amf
-  video_encoder_fallback: libx264
-  transcription_backend: vulkan
-  ollama_backend: vulkan
 
 paths:
   inbox_shorts: inbox/shorts
-  inbox_bestof: inbox/bestof
-  inbox_urls: inbox/urls.txt
   output_shorts: out/shorts
-  output_bestof: out/bestof
-  output_log_csv: out/log.csv
   database: data/clip_bank.sqlite
   logs: logs
   temp: work/tmp
@@ -32,34 +21,24 @@ paths:
 executables:
   ffmpeg: ffmpeg
   ffprobe: ffprobe
-  yt_dlp: yt-dlp
   whisper_cli: tools/whisper.cpp/whisper-cli.exe
 
 encoding:
   width_short: 1080
   height_short: 1920
-  width_bestof: 1920
-  height_bestof: 1080
   fps: match_source
   video_codec: h264_amf
   fallback_video_codec: libx264
   audio_codec: aac
   short_loudness_lufs: -14
-  bestof_loudness_lufs: -16
-  amf_quality: quality
   amf_bitrate: 12M
-  software_crf: 19
-  preset: medium
 
 transcription:
   engine: whisper.cpp
   backend: vulkan
-  model_name: large-v3-turbo
   model_path: models/whisper/ggml-large-v3-turbo.bin
   language: en
-  word_timestamps: true
   threads: 0
-  vad_enabled: true
   vad_model_path: models/whisper/ggml-silero-v6.2.0.bin
   temperature: 0.0
 
@@ -71,55 +50,25 @@ ollama:
   retries: 2
 
 branding:
-  channel_name: GTA Ranked Studio
   handle: '@GTARankedStudio'
-  primary_color: '#F5C400'
-  secondary_color: '#111111'
-  text_color: '#FFFFFF'
   font_name: Arial
   font_file: assets/fonts/Anton-Regular.ttf
-  day_badge_enabled: true
 
 shorts:
   max_input_duration_seconds: 60
   layout: smart
   default_crop_x: 80
-  default_crop_y: 50
   dynamic_zoom: true
   zoom_percent: 8
   captions_enabled: true
-  brand_overlay_enabled: true
   peak_trim_threshold_seconds: 45
   peak_lead_seconds: 1.5
   payoff_tail_seconds: 2.0
   auto_trim_enabled: true
   auto_trim_min_seconds: 15
   auto_trim_max_seconds: 45
-  hook_max_words: 8
-  hook_duration_seconds: 2.5
-  context_max_words: 10
-  context_duration_seconds: 3.5
-  punch_in_enabled: false
-  punch_in_percent: 8
   sfx_enabled: true
   sfx_volume: 0.14
-
-bestof:
-  target_min_minutes: 9
-  target_max_minutes: 11
-  order: ascending_score
-  cold_open_seconds: 12
-  intro_seconds: 3
-  outro_seconds: 4
-  top_hall_of_fame: 5
-  fade_seconds: 0.25
-
-scoring:
-  audio_weight: 0.30
-  speech_weight: 0.25
-  visual_weight: 0.20
-  llm_weight: 0.25
-  llm_enabled: true
 
 logging:
   level: INFO

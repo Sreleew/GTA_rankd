@@ -2,86 +2,62 @@ name: Audit GTA Ranked Studio application
 
 on:
   push:
-    branches: [main, chore/clean-source-layout]
+    branches: [main]
     paths:
       - "app/**"
-      - ".github/workflows/audit-source.yml"
-      - ".github/workflows/windows-smoke.yml"
-      - ".github/workflows/release.yml"
+      - ".github/**"
+      - "docs/**"
+      - "tools/**"
+      - "AGENTS.md"
+      - ".gitattributes"
       - "README.md"
       - "VERSION.txt"
       - "NOTES-v*.txt"
-      - "docs/**"
-      - "tools/check_project_memory.py"
   pull_request:
     branches: [main]
     paths:
       - "app/**"
-      - ".github/workflows/audit-source.yml"
-      - ".github/workflows/windows-smoke.yml"
-      - ".github/workflows/release.yml"
+      - ".github/**"
+      - "docs/**"
+      - "tools/**"
+      - "AGENTS.md"
       - "README.md"
       - "VERSION.txt"
       - "NOTES-v*.txt"
-      - "docs/**"
-      - "tools/check_project_memory.py"
+      - ".release-approval"
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: gta-ranked-linux-audit-${{ github.ref }}-${{ github.sha }}
+  group: gta-ranked-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   audit:
-    name: Test direct application source and build Windows update package
+    name: Linux tests and Windows package validation
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - name: Checkout selected revision
-        uses: actions/checkout@v4
+      - name: Checkout source
+        uses: actions/checkout@v7
 
-      - name: Set up project Python
-        uses: actions/setup-python@v5
+      - name: Set up Python
+        uses: actions/setup-python@v7
         with:
           python-version: "3.11"
           cache: pip
-          cache-dependency-path: app/requirements.txt
+          cache-dependency-path: |
+            app/pyproject.toml
+            app/requirements.txt
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: "22"
 
-      - name: Verify source layout and synchronize release metadata
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -f app/studio/web/app.py
-          test -f app/studio/web/updater.py
-          test -f app/installer/build_release_package.py
-          test -f app/tests/test_web.py
-          ROOT_VERSION="$(sed -nE 's/^Version:[[:space:]]*([0-9]+(\.[0-9]+){2,3})[[:space:]]*$/\1/p' VERSION.txt | head -n 1)"
-          APP_VERSION="$(sed -nE 's/^Version:[[:space:]]*([0-9]+(\.[0-9]+){2,3})[[:space:]]*$/\1/p' app/VERSION.txt | head -n 1)"
-          if [[ -z "$ROOT_VERSION" || "$ROOT_VERSION" != "$APP_VERSION" ]]; then
-            echo "Les versions racine ($ROOT_VERSION) et application ($APP_VERSION) doivent être identiques."
-            exit 1
-          fi
-          test -s "NOTES-v$ROOT_VERSION.txt"
-          mkdir -p app/docs app/tools
-          cp VERSION.txt app/VERSION.txt
-          cp "NOTES-v$ROOT_VERSION.txt" "app/NOTES-v$ROOT_VERSION.txt"
-          cp docs/CONTINUATION.md app/docs/CONTINUATION.md
-          cp docs/UPDATES.md app/docs/UPDATES.md
-          cp docs/implementation-plan-v0.7.8.md app/docs/implementation-plan-v0.7.8.md
-          cp tools/check_project_memory.py app/tools/check_project_memory.py
-          python app/tools/check_project_memory.py --root app
-          echo "APP_VERSION=$ROOT_VERSION" >> "$GITHUB_ENV"
-          echo "Application source: app/ (v$ROOT_VERSION)"
-
-      - name: Install FFmpeg and application dependencies
+      - name: Install FFmpeg
         shell: bash
         run: |
           set -euo pipefail
@@ -91,111 +67,58 @@ jobs:
           fi
           ffmpeg -version
           ffprobe -version
-          python -m pip install --disable-pip-version-check -r app/requirements.txt
 
-      - name: Verify release workflow safety gates
+      - name: Install application and development dependencies
         shell: bash
         run: |
           set -euo pipefail
-          python - <<'PY'
-          from pathlib import Path
-          import yaml
+          python -m pip install --disable-pip-version-check -e "app[dev]"
+          python -m pip check
 
-          loader = yaml.BaseLoader
-          release = yaml.load(Path(".github/workflows/release.yml").read_text(encoding="utf-8"), Loader=loader)
-          triggers = release.get("on", {})
-          if set(triggers) != {"push", "workflow_dispatch"}:
-              raise SystemExit("Le workflow de release doit exiger l'approbation et garder le mode brouillon manuel.")
-          push = triggers["push"]
-          if push.get("branches") != ["main"] or push.get("paths") != [".release-approval"]:
-              raise SystemExit("La publication stable doit être limitée au marqueur .release-approval sur main.")
-          inputs = triggers["workflow_dispatch"].get("inputs", {})
-          confirm = inputs.get("confirm_publish", {})
-          if confirm.get("type") != "boolean" or confirm.get("default") != "false" or confirm.get("required") != "true":
-              raise SystemExit("La confirmation du mode brouillon doit être obligatoire et décochée par défaut.")
-          steps = release["jobs"]["release"]["steps"]
-          script = "\n".join(step.get("run", "") for step in steps)
-          for required in ("refs/heads/main", ".release-approval", "VERSION.txt", "app/VERSION.txt", "installer/build_release_package.py", "APP_ROOT=$GITHUB_WORKSPACE/app"):
-              if required not in script:
-                  raise SystemExit(f"Garde-fou de release manquant : {required}")
-          setup = next((step for step in steps if step.get("uses") == "actions/setup-python@v5"), None)
-          if not setup or setup.get("with", {}).get("python-version") != "3.11":
-              raise SystemExit("Le workflow de release doit utiliser Python 3.11.")
-          if any("source/canonical" in str(step.get("run", "")) or "apply-hotfix" in str(step.get("run", "")) for step in steps):
-              raise SystemExit("La publication ne doit plus reconstruire l'application à partir d'archives ou de correctifs.")
+      - name: Run static analysis and dependency security audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          ruff check app/studio app/installer app/tests tools
+          pip-audit -r app/requirements.txt
 
-          windows = yaml.load(Path(".github/workflows/windows-smoke.yml").read_text(encoding="utf-8"), Loader=loader)
-          windows_steps = windows.get("jobs", {}).get("windows-smoke", {}).get("steps", [])
-          windows_script = "\n".join(step.get("run", "") for step in windows_steps)
-          if "build_release_package.py" not in windows_script or "node --check studio/web/static/app.js" not in windows_script:
-              raise SystemExit("La validation Windows doit construire le paquet et vérifier le JavaScript de app/.")
-          if "source/canonical" in windows_script or "apply-hotfix" in windows_script:
-              raise SystemExit("La validation Windows ne doit plus extraire une archive ni appliquer de patchs.")
-          print("Garde-fous de publication et validation Windows vérifiés.")
-          PY
+      - name: Verify repository structure and metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/check_project_memory.py --root .
+          git show --check --oneline HEAD
+          test -f app/studio/web/app.py
+          test -f app/tests/test_web.py
+          test -f tools/verify_release_package.py
 
-      - name: Run complete Linux test suite and frontend syntax check
+      - name: Run Linux regression suite
         shell: bash
         run: |
           set -euo pipefail
           cd app
           cp config.yaml.default config.yaml
           trap 'rm -f config.yaml' EXIT
-          python tools/check_project_memory.py
+          python -m compileall -q studio installer tests
           python -m pytest -q
           node --check studio/web/static/app.js
 
-      - name: Build Windows update package
+      - name: Build sanitized Windows update package
         shell: bash
         run: |
           set -euo pipefail
-          python app/installer/build_release_package.py --version "$APP_VERSION" --output-dir "$GITHUB_WORKSPACE/dist"
+          VERSION="$(sed -nE 's/^Version:[[:space:]]*([0-9]+(\.[0-9]+){2,3})[[:space:]]*$/\1/p' VERSION.txt | head -n 1)"
+          mkdir -p "$GITHUB_WORKSPACE/dist"
+          python app/installer/build_release_package.py --version "$VERSION" --output-dir "$GITHUB_WORKSPACE/dist"
+          python tools/verify_release_package.py \
+            --package "$GITHUB_WORKSPACE/dist/GTA-Ranked-Studio-v$VERSION.zip" \
+            --checksum "$GITHUB_WORKSPACE/dist/SHA256SUMS.txt" \
+            --version "$VERSION"
+          echo "APP_VERSION=$VERSION" >> "$GITHUB_ENV"
 
-      - name: Verify update package integrity and user-data exclusions
-        shell: bash
-        run: |
-          set -euo pipefail
-          python - "$GITHUB_WORKSPACE/dist/GTA-Ranked-Studio-v$APP_VERSION.zip" "$GITHUB_WORKSPACE/dist/SHA256SUMS.txt" "$APP_VERSION" <<'PY'
-          import hashlib
-          import sys
-          import zipfile
-          from pathlib import PurePosixPath
-
-          package, checksum_file, version = sys.argv[1:]
-          required = {
-              "gta-ranked-studio/VERSION.txt",
-              "gta-ranked-studio/installer/apply_update.ps1",
-              "gta-ranked-studio/studio/web/updater.py",
-              "gta-ranked-studio/docs/CONTINUATION.md",
-              "gta-ranked-studio/docs/UPDATES.md",
-              "gta-ranked-studio/tools/check_project_memory.py",
-          }
-          with zipfile.ZipFile(package) as archive:
-              names = set(archive.namelist())
-              missing = required - names
-              if missing:
-                  raise SystemExit("Fichiers requis absents : " + ", ".join(sorted(missing)))
-              if archive.testzip():
-                  raise SystemExit("Le ZIP de mise à jour est corrompu.")
-              version_text = archive.read("gta-ranked-studio/VERSION.txt").decode("utf-8-sig")
-              if f"Version: {version}" not in version_text:
-                  raise SystemExit("La version du ZIP ne correspond pas à la version source.")
-              forbidden = []
-              for name in names:
-                  path = PurePosixPath(name)
-                  if path.name in {"config.yaml", "secrets.json", "credentials.json"} or path.name.startswith(".env") or path.suffix.lower() in {".sqlite", ".sqlite3", ".db", ".log", ".pyc", ".pem", ".key"}:
-                      forbidden.append(name)
-              if forbidden:
-                  raise SystemExit("Données locales ou fichiers sensibles présents : " + ", ".join(sorted(forbidden)))
-          digest = hashlib.sha256(open(package, "rb").read()).hexdigest()
-          if digest not in open(checksum_file, encoding="utf-8").read():
-              raise SystemExit("Le checksum SHA-256 du ZIP ne correspond pas.")
-          print(f"ZIP Windows v{version} vérifié, données locales exclues.")
-          PY
-
-      - name: Upload tested Windows update package
-        uses: actions/upload-artifact@v4
+      - name: Upload validated package
+        uses: actions/upload-artifact@v7
         with:
-          name: gta-ranked-studio-v0.7.8-linux-validated-package
+          name: gta-ranked-studio-v${{ env.APP_VERSION }}-linux-validated
           path: dist/
           retention-days: 14

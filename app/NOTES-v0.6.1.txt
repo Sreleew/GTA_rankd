@@ -1,5 +1,0 @@
-GTA Ranked Studio v0.6.1
-
-Correctif de présentation :
-- Correction de l'espacement HTML du sélecteur « Voix à sous-titrer ».
-- Aucun changement sur le moteur de diarisation, les réglages ou les modèles locaux.

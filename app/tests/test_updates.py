@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import hashlib
-import json
 import zipfile
 from pathlib import Path
 
@@ -108,14 +107,14 @@ def test_release_builder_excludes_user_data(tmp_path: Path) -> None:
 def test_powershell_installer_preserves_personal_data_and_rolls_back() -> None:
     script = (Path(__file__).resolve().parents[1] / "installer" / "apply_update.ps1").read_text(encoding="utf-8-sig")
     assert "'config.yaml'" not in script.split("$rootFiles = @(", 1)[1].split(")", 1)[0]
-    assert "'studio', 'installer', 'tests'" in script
+    assert "'studio', 'installer', 'docs'" in script
     assert "work\\updates\\rollback-" in script
     assert "Tentative de restauration" in script
     assert "$replacedDirectories" in script
     assert "$replacedFiles" in script
     assert "foreach ($directoryName in $replacedDirectories)" in script
     assert "foreach ($fileName in $replacedFiles)" in script
-    assert "models" not in script.split("foreach ($directoryName in @('studio', 'installer', 'tests'))", 1)[0]
+    assert "models" not in script.split("foreach ($directoryName in @('studio', 'installer', 'docs'))", 1)[0]
 
 
 def test_application_ui_exposes_integrated_update_controls() -> None:
@@ -139,7 +138,7 @@ def test_updater_captures_powershell_output_and_creates_bootstrap_log() -> None:
 
 def test_powershell_update_script_logs_before_waiting_and_avoids_generic_lists() -> None:
     script = (Path(__file__).resolve().parents[1] / "installer" / "apply_update.ps1").read_text(encoding="utf-8-sig")
-    assert "=== GTA Ranked Studio updater v0.3.6 ===" in script
+    assert "=== GTA Ranked Studio updater ===" in script
     assert "En attente de la fermeture" in script
     assert "New-Object 'System.Collections.Generic.List[string]'" not in script
     assert "Tentative de restauration" in script

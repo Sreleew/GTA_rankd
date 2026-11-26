@@ -1,9 +1,0 @@
-GTA Ranked Studio v0.7.4
-
-Diagnostic Whisper Vulkan :
-- Corrige le faux état « Backend GPU non vérifiable » des builds Release whisper.cpp qui ne proposent pas --list-devices.
-- Ajoute un test GPU explicite depuis Paramètres > Modèles IA > Tester le GPU.
-- Le test charge le modèle local sur whisper.cpp et exige à la fois la sélection du backend VulkanN et l'allocation du buffer du modèle sur ce même backend.
-- Le résultat positif est conservé dans data/whisper-vulkan-verification.json et lié à la taille/date du binaire et du modèle. Un remplacement du binaire ou du modèle invalide automatiquement le diagnostic.
-- Aucun changement n'est fait à Ollama, Qwen, au modèle Whisper ou au binaire Vulkan déjà installé.
-- L'actualisation de la page reste légère ; le smoke-test n'est exécuté que sur demande explicite.

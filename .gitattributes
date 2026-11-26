@@ -1,0 +1,22 @@
+# Windows launchers and PowerShell require Windows line endings.
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.vbs text eol=crlf
+
+# Application source and documentation use Unix line endings.
+*.py text eol=lf
+*.js text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+
+# Generated and media assets are binary.
+*.wav binary
+*.zip binary
+*.sqlite binary
+*.sqlite3 binary
+*.db binary

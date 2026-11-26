@@ -446,4 +446,3 @@ def test_queued_short_and_highlight_scan_can_be_cancelled_via_api(tmp_path: Path
     assert scan_response.status_code == 200
     assert store.get_job("cancel-short")["status"] == "cancelled"
     assert store.get_highlight_scan("cancel-scan")["status"] == "cancelled"
-

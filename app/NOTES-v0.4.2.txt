@@ -1,9 +1,0 @@
-GTA Ranked Studio v0.4.2
-
-Correctif du découpage temporel des VOD Twitch :
-- Utilisation de l'API Python yt-dlp download_ranges pour transmettre le début et la fin demandés.
-- Les plages horaires sélectionnées sont maintenant appliquées au téléchargement au lieu de télécharger la VOD complète.
-- Les horodatages des moments détectés restent référencés à la VOD d'origine.
-- La limite de 3 heures par analyse est conservée.
-- Le correctif d'inspection FFprobe de la version 0.4.1 est conservé.
-- Les médias, modèles IA, projets, réglages et données locaux sont préservés.

@@ -119,7 +119,7 @@ try {
     New-Item -ItemType Directory -Path $backupRoot -Force | Out-Null
 
     Write-Step 'Sauvegarde du code actuellement installe'
-    foreach ($directoryName in @('studio', 'installer', 'tests')) {
+    foreach ($directoryName in @('studio', 'installer', 'docs')) {
         $sourceDirectory = Join-Path $sourceRoot $directoryName
         if (-not (Test-Path -LiteralPath $sourceDirectory -PathType Container)) {
             throw "Dossier de code absent de l'archive : $directoryName"
@@ -131,7 +131,7 @@ try {
     }
 
     Write-Step 'Mise a jour du code'
-    foreach ($directoryName in @('studio', 'installer', 'tests')) {
+    foreach ($directoryName in @('studio', 'installer', 'docs')) {
         $destinationDirectory = Join-Path $targetRoot $directoryName
         if (Test-Path -LiteralPath $destinationDirectory -PathType Container) {
             Remove-Item -LiteralPath $destinationDirectory -Recurse -Force
@@ -143,8 +143,8 @@ try {
         'INSTALL.bat', 'UPDATE-FROM-ARCHIVE.bat', 'REPAIR.bat',
         'START-STUDIO.bat', 'START-STUDIO.vbs', 'STOP-STUDIO.bat',
         'pyproject.toml', 'requirements.txt', '.gitignore', 'README.md',
-        'README_M0.txt', 'GUIDE_INSTALLATION_FR.md', 'LIRE-MOI-DABORD.txt',
-        'config.yaml.default', 'VERSION.txt', 'NOTES-v0.3.3.txt', 'VERIFICATION-v0.3.3.md', 'NOTES-v0.3.3.3.txt', 'VERIFICATION-v0.3.3.3.md', 'NOTES-v0.3.5.txt', 'VERIFICATION-v0.3.5.md', 'NOTES-v0.3.6.txt', 'VERIFICATION-v0.3.6.md', 'NOTES-v0.4.1.txt', 'VERIFICATION-v0.4.1.md', 'NOTES-v0.4.2.txt', 'VERIFICATION-v0.4.2.md', 'NOTES-v0.5.0.txt', 'VERIFICATION-v0.5.0.md', 'NOTES-v0.5.1.txt', 'VERIFICATION-v0.5.1.md', 'NOTES-v0.6.0.txt', 'VERIFICATION-v0.6.0.md', 'NOTES-v0.6.1.txt', 'VERIFICATION-v0.6.1.md', 'NOTES-v0.6.2.txt', 'VERIFICATION-v0.6.2.md', 'NOTES-v0.7.0.txt', 'VERIFICATION-v0.7.0.md', 'NOTES-v0.7.1.txt', 'VERIFICATION-v0.7.1.md', 'NOTES-v0.7.2.txt', 'VERIFICATION-v0.7.2.md', 'NOTES-v0.7.3.txt', 'VERIFICATION-v0.7.3.md', 'NOTES-v0.4.0.txt', 'VERIFICATION-v0.4.0.md'
+        'GUIDE_INSTALLATION_FR.md', 'LIRE-MOI-DABORD.txt',
+        'config.yaml.default', 'VERSION.txt'
     )
     foreach ($fileName in $rootFiles) {
         $sourceFile = Join-Path $sourceRoot $fileName
@@ -187,7 +187,7 @@ try {
     New-Item -ItemType Directory -Path (Split-Path -Parent $pointer) -Force | Out-Null
     Set-Content -LiteralPath $pointer -Value $targetRoot -Encoding UTF8
 
-    Write-Step 'Verification des dependances et tests'
+    Write-Step 'Verification runtime et diagnostic'
     $installScript = Join-Path $targetRoot 'installer\install.ps1'
     & $powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -File $installScript
     $installExitCode = $LASTEXITCODE

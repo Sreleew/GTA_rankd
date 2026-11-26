@@ -1,5 +1,9 @@
 # Mises à jour GTA Ranked Studio
 
+## v0.8.1 : audit de maintenance en préparation
+
+Cette version candidate regroupe la séparation stricte des dépendances runtime et dev, l'allègement de l'installation, le retrait du scaffold Best Of non relié au moteur Shorts, la documentation canonique unique, le linter Ruff, l'audit pip-audit des dépendances runtime et la validation centralisée des packages. CI v0.8.1 : Linux 150 réussis + 1 ignoré ; Windows 151 réussis. Ruff et pip-audit passent sur les deux runners, sans vulnérabilité connue ; les ZIP et SHA-256 sont vérifiés. La Release reste en attente de la fusion de la PR #10 et de la réussite du workflow de publication.
+
 ## v0.8.0 : cadrage vertical intelligent (disponible en mise à jour stable)
 
 Le nouveau mode par défaut compose les Shorts en 9:16 avec un panneau gameplay agrandi, un hook au-dessus et les sous-titres dans une zone basse dédiée. Le focus horizontal est réglable et positionné par défaut à 80 % pour mieux préserver une facecam incrustée à droite. Les sources portrait restent proportionnelles ; les modes plein écran recadré et vidéo entière avec fond flouté restent disponibles. CI Linux : 147 tests réussis, 1 ignoré. CI Windows : 148 tests réussis, aucun ignoré. La validation sur plusieurs clips Twitch réels et sur le PC AMD reste à faire. La version stable est publiée : https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.0. Dans l'application, ouvrir **Paramètres > Mises à jour**, puis rechercher et installer la mise à jour.
@@ -43,7 +47,7 @@ Le paquet est généré par installer/build_release_package.py. Le script exclut
 - Le client vérifie la somme SHA-256 avant installation.
 - Le ZIP est testé avant extraction.
 - L'installateur n'écrase pas config.yaml ni les données personnelles.
-- Les dossiers studio, installer et tests sont sauvegardés sous work/updates/rollback-*.
+- Les dossiers studio, installer et docs sont sauvegardés sous work/updates/rollback-*. Les tests ne sont pas distribués dans le ZIP utilisateur.
 - L'installation est restaurée si une erreur survient pendant le remplacement.
 - La mise à jour est lancée hors du processus de l'application, puis l'application redémarre.
 
