@@ -67,6 +67,18 @@ def _fallback_hook(transcript: str, note: str = "") -> str:
     chosen = words[start:start + 6]
     if len(chosen) < 3:
         chosen = words[:6]
+    filler_openers = {"yeah", "yea", "huh", "uh", "um", "bro", "man", "shit", "like"}
+    while len(chosen) > 1 and chosen[0].lower() in filler_openers:
+        chosen = chosen[1:]
+    dangling = {
+        "a", "an", "and", "are", "at", "because", "but", "for", "from",
+        "got", "had", "has", "have", "he", "her", "his", "if", "in", "is",
+        "it", "my", "of", "on", "or", "she", "so", "that", "the", "their",
+        "them", "then", "there", "they", "this", "to", "was", "we", "were",
+        "with", "you", "your",
+    }
+    while chosen and chosen[-1].lower().strip(".,!?;:") in dangling:
+        chosen.pop()
     return " ".join(chosen).upper()
 
 
@@ -119,6 +131,81 @@ def _is_formulaic_promo_copy(value: str) -> bool:
     )
     return any(pattern in text for pattern in patterns)
 
+def _is_incomplete_phrase(value: str) -> bool:
+    words = re.findall(r"[A-Za-z0-9’']+", str(value or "").lower())
+    if not words:
+        return True
+    dangling = {
+        "a", "an", "and", "are", "at", "because", "but", "for", "from", "got",
+        "had", "has", "have", "he", "her", "his", "if", "in", "is", "it",
+        "my", "of", "on", "or", "she", "so", "that", "the", "their", "them",
+        "then", "there", "they", "this", "to", "was", "we", "were", "with",
+        "you", "your", "yeah", "yea", "huh", "shit", "uh", "um",
+    }
+    return words[-1] in dangling
+
+
+def _last_complete_phrase(transcript: str) -> str:
+    """Return a complete ASR sentence or a short phrase anchored by a clear GTA noun."""
+    clean = re.sub(r"\s+", " ", str(transcript or "")).strip()
+    phrases = re.split(r"(?<=[.!?])\s+", clean)
+    for phrase in reversed(phrases):
+        words = re.findall(r"[A-Za-z0-9’']+", phrase)
+        if 3 <= len(words) <= 14 and not _is_incomplete_phrase(phrase):
+            return phrase.strip()
+
+    # ASR often omits punctuation. In that case, retain a short phrase only
+    # when it is anchored by a concrete object/action word rather than filler.
+    tokens = re.findall(r"[A-Za-z0-9’']+", clean)
+    anchors = {
+        "lambo", "lamborghini", "car", "cars", "whip", "ride", "vehicle",
+        "police", "cop", "cops", "crash", "crashed", "explosion", "bank",
+        "money", "bike", "motorcycle", "plane", "helicopter", "train",
+        "house", "store", "shop", "robbery", "robbed", "chase", "chased",
+    }
+    filler = {"yeah", "yea", "huh", "uh", "um", "bro", "man", "shit", "like"}
+    dangling = {
+        "a", "an", "and", "are", "at", "because", "but", "for", "from",
+        "got", "had", "has", "have", "he", "her", "his", "if", "in", "is",
+        "it", "my", "of", "on", "or", "she", "so", "that", "the", "their",
+        "them", "then", "there", "they", "this", "to", "was", "we", "were",
+        "with", "you", "your",
+    }
+    for index in range(len(tokens) - 1, -1, -1):
+        if tokens[index].lower() not in anchors:
+            continue
+        start = max(0, index - 3)
+        end = min(len(tokens), index + 2)
+        selected = tokens[start:end]
+        while len(selected) > 1 and selected[0].lower() in filler:
+            selected = selected[1:]
+        while selected and selected[-1].lower() in dangling:
+            selected.pop()
+        if 2 <= len(selected) <= 5 and selected[-1].lower() not in dangling:
+            return " ".join(selected)
+    return ""
+
+
+def _has_unsupported_event_claim(title: str, transcript: str, note: str = "") -> bool:
+    """Reject strong event verbs that the source text does not actually support."""
+    source_tokens = set(re.findall(r"[A-Za-z0-9']+", f"{transcript} {note}".lower()))
+    title_tokens = set(re.findall(r"[A-Za-z0-9']+", str(title or "").lower()))
+    claims = {
+        "back": {"back"},
+        "stole": {"steal", "stole", "stolen", "stealing"},
+        "stolen": {"steal", "stole", "stolen", "stealing"},
+        "stealing": {"steal", "stole", "stolen", "stealing"},
+        "returned": {"return", "returned", "returning", "back"},
+        "recovered": {"recover", "recovered", "recovering"},
+        "won": {"win", "won", "winning"},
+        "lost": {"lose", "lost", "losing"},
+        "crashed": {"crash", "crashed", "crashing"},
+        "exploded": {"explode", "exploded", "explosion"},
+        "arrested": {"arrest", "arrested", "arresting"},
+    }
+    return any(token in title_tokens and not (allowed & source_tokens) for token, allowed in claims.items())
+
+
 def _fallback_metadata(
     *, streamer: str, note: str, source_url: str, transcript: str,
     custom_hook: str, custom_context: str, source_title: str = "",
@@ -145,18 +232,28 @@ def _fallback_metadata(
             caption = "The like button was NOT getting left alone 💀"
         thumbnail_text = "HIT THAT LIKE" if mentions_like else "SUBSCRIBE"
     else:
-        hook = _limit_words(custom_hook or _fallback_hook(raw_text, note), 6)
-        dangling = {"the", "a", "an", "to", "of", "and", "but", "so", "with", "for", "in", "on", "at", "because", "if", "when", "that"}
-        quote_words = hook.split()
-        while quote_words and quote_words[-1].lower().strip(".,!?;:") in dangling:
-            quote_words.pop()
-        phrase = _limit_words(" ".join(quote_words), 4) or "GTA MOMENT"
-        if creator:
-            title = _fit_caption(f"{creator} really said “{phrase.lower()}” in {game} 😭", 90)
+        complete_phrase = _last_complete_phrase(raw_text)
+        hook = _limit_words(custom_hook or _fallback_hook(complete_phrase or raw_text, note), 6)
+        if not custom_hook and _is_incomplete_phrase(hook):
+            hook = ""
+        if complete_phrase:
+            phrase_words = re.findall(r"[A-Za-z0-9’']+", complete_phrase)[-4:]
+            leading_dangling = {"a", "an", "and", "but", "for", "from", "in", "of", "on", "or", "so", "the", "to", "with"}
+            while phrase_words and phrase_words[0].lower() in leading_dangling:
+                phrase_words.pop(0)
+            phrase = _limit_words(" ".join(phrase_words), 4) or "GTA MOMENT"
+            if creator:
+                title = _fit_caption(f"{creator} really said “{phrase.lower()}” in {game} 😭", 90)
+            else:
+                title = _fit_caption(f"“{phrase.lower()}” in {game} 😭", 90)
+            caption = f"“{phrase.lower()}” 😭"
+            thumbnail_text = phrase
         else:
-            title = _fit_caption(f"“{phrase.lower()}” in {game} 😭", 90)
-        caption = f"“{phrase.lower()}” 😭"
-        thumbnail_text = _limit_words(phrase, 4) or "GTA MOMENT"
+            # An ASR fragment is not a quote. Stay factual until a complete
+            # spoken thought or a reliable editorial summary is available.
+            title = _fit_caption(f"{creator}'s {game} moment 😭" if creator else f"A {game} moment 😭", 90)
+            caption = f"A {game} moment with {creator} 😭" if creator else f"A {game} moment 😭"
+            thumbnail_text = f"{creator.split()[0]} GTA MOMENT" if creator else "GTA MOMENT"
 
     credit = f"Clip: {creator}" if creator else "Original clip"
     source_line = f"Source: {source_url.strip()}" if source_url.strip() else ""
@@ -213,8 +310,11 @@ def generate_short_metadata(
         "Write ONE shared title and ONE shared caption/description for all platforms, not separate versions. "
         "Caption: one or two short natural lines, no generic CTA, followed by a simple streamer credit, source URL "
         "when supplied, and 3-4 useful search hashtags. Prefer #GTA, #GTA5 or #GTARP as appropriate, plus the "
-        "creator tag when known. Thumbnail text: 2-4 punchy words, readable on a phone, not a sentence. "
-        "Hook text: 3-6 words for the opening 2.6 seconds, grounded in the transcript. context_card must be empty "
+        "creator tag when known. Thumbnail text: 2-4 punchy words, readable on a phone, not a sentence. Never use a transcript fragment as the thumbnail headline. "
+        "If a spoken phrase is incomplete or has no clear ending, do not quote it in the title, description, hook or thumbnail. "
+        "Do not claim that a car was stolen, returned, recovered, won, lost, crashed or exploded unless the transcript or note explicitly supports that event. "
+        "Prefer an action-led summary only when the action is explicitly supported by the transcript or supplied context; otherwise use a short neutral GTA moment title and an empty hook. "
+        "Hook text: 3-6 words for the opening 2.6 seconds, grounded in a complete thought from the transcript. context_card must be empty "
         "unless a custom context was supplied. Return valid JSON only with title, description, hashtags, "
         "hook_text, context_card and thumbnail_text."
     )
@@ -264,6 +364,8 @@ def generate_short_metadata(
             or "gta" not in title.lower()
             or (known_creator and known_creator.lower() not in title.lower())
             or _has_incomplete_quote(title)
+            or ("said" in title.lower() and not _last_complete_phrase(transcript))
+            or _has_unsupported_event_claim(title, transcript, note)
             or (promo_detected and _is_formulaic_promo_copy(title))
         )
         if invalid_title:
@@ -276,7 +378,9 @@ def generate_short_metadata(
             if not line.strip().lower().startswith(("clip:", "source:"))
             and not re.match(r"^#[A-Za-z0-9_]+(?:\s+#[A-Za-z0-9_]+)*$", line.strip())
         ).strip()
-        if (invalid_title or any(phrase in description.lower() for phrase in generic_phrases)
+        if (_has_incomplete_quote(description) or _is_incomplete_phrase(description)
+                or _has_unsupported_event_claim(description, transcript, note)
+                or any(phrase in description.lower() for phrase in generic_phrases)
                 or (promo_detected and _is_formulaic_promo_copy(description))):
             description = fallback["description"].split("\n\n")[0]
         description = _fit_caption(description, 260)
@@ -296,11 +400,11 @@ def generate_short_metadata(
         description = "\n".join(part for part in (description, "", credit, source_line, " ".join(tags)) if part is not None)
 
         hook = _limit_words(custom_hook or str(data.get("hook_text", fallback["hook_text"])), 6)
-        if _has_incomplete_quote(f"“{hook}”"):
+        if _has_incomplete_quote(f"“{hook}”") or (not custom_hook and _is_incomplete_phrase(hook)):
             hook = fallback["hook_text"]
         context = _limit_words(custom_context, 10)
-        thumbnail_text = _limit_words(str(data.get("thumbnail_text", fallback["thumbnail_text"])), 4)
-        if not thumbnail_text or invalid_title or _has_incomplete_quote(f"“{thumbnail_text}”"):
+        thumbnail_text = _limit_words(str(data.get("thumbnail_text", fallback["thumbnail_text"])), 8)
+        if not thumbnail_text or _has_incomplete_quote(f"“{thumbnail_text}”") or _is_incomplete_phrase(thumbnail_text):
             thumbnail_text = fallback["thumbnail_text"]
         if invalid_title:
             hook = fallback["hook_text"]
@@ -322,7 +426,7 @@ def generate_short_metadata(
 def _has_incomplete_quote(value: str) -> bool:
     dangling = {
         "a", "an", "the", "to", "of", "and", "but", "so", "with", "for", "in", "on", "at",
-        "because", "if", "when", "that", "this", "is", "are", "was", "were", "my", "your", "his", "her",
+        "because", "if", "when", "that", "this", "is", "are", "was", "were", "my", "your", "his", "her", "got", "has", "have", "yeah", "yea", "huh", "shit", "uh", "um",
     }
     for match in re.finditer(r"[\"“]([^\"”]{2,80})[\"”]", str(value or "")):
         words = re.findall(r"[A-Za-z0-9’']+", match.group(1).lower())

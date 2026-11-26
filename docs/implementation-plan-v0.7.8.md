@@ -75,3 +75,12 @@ After the single-Short lifecycle is reliable:
 - Keep cancel behavior and local-first processing.
 - Add tests for draft -> approved -> reload -> actions still available.
 - Add tests that approved state does not mutate title/description/hashtags/thumbnail paths.
+
+
+## v0.7.9 — Editorial refresh
+
+The new thumbnail renderer creates a cleaner 1080 × 1920 editorial cover: a real gameplay frame is the visual hero, the blurred background is darkened, the GTA Ranked identity is compact, and the headline is short and readable. The headline selector removes leading filler and prefers the meaningful end of a phrase; incomplete fragments fall back to a neutral creator/GTA label.
+
+Metadata generation now prefers a complete sentence or a short phrase anchored by a concrete GTA noun. A clipped ASR opening such as "yeah huh shit got" is not used as a quote, hook or title. If the transcript cannot support a specific event summary, the fallback stays neutral rather than inventing a car theft, recovery or reaction. Local model output is checked independently for title, description, hook and thumbnail safety.
+
+The release candidate includes regression tests for incomplete ASR fragments, meaningful phrase extraction and the redesigned thumbnail output. Real-world review on multiple clips remains necessary before changing the conservative thresholds or claiming that the renderer understands visual game events.

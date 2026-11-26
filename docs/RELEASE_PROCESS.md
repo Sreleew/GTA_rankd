@@ -13,7 +13,7 @@ Le bouton de mise à jour de GTA Ranked Studio consulte les Releases publiques d
 3. Synchroniser le numéro de version racine `VERSION.txt` avec `app/VERSION.txt`, et les notes racine avec `app/NOTES-vX.Y.Z.txt`.
 4. Ouvrir une PR vers `main`. L'audit Linux et la validation Windows exécutent les tests directement depuis `app/`.
 5. Examiner les résultats, les fichiers du package et les exclusions de données locales.
-6. Fusionner uniquement après instruction explicite.
+6. Fusionner après validation Linux/Windows lorsque l'utilisateur a demandé le résultat complet, puis créer la Release stable approuvée.
 7. Pour autoriser une nouvelle Release stable, créer ou mettre à jour `.release-approval` sur `main` avec exactement la version présente dans les deux `VERSION.txt`. Ce commit constitue l'approbation explicite de publication.
 8. Le workflow de Release vérifie la version, le tag, la mémoire du projet, exécute la suite complète, construit le ZIP avec `app/installer/build_release_package.py`, vérifie le checksum et les données exclues.
 9. GitHub publie le ZIP Windows et `SHA256SUMS.txt`. L'application peut détecter cette version via son bouton de mise à jour.
@@ -31,9 +31,9 @@ La voie `workflow_dispatch` reste disponible pour préparer une Release brouillo
 - L'installateur doit préserver les réglages, projets, bases, exports et modèles existants.
 - L'archive `archive/releases/v0.7.8/` est conservée uniquement comme provenance historique de la Release v0.7.8.
 
-## État au 25 novembre 2026
+## État au 26 novembre 2026
 
-- Release stable publique : [v0.7.8](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.7.8).
+- Release stable actuelle : [v0.7.8](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.7.8). La v0.7.9 est en préparation.
 - Package publié : `GTA-Ranked-Studio-v0.7.8.zip` et `SHA256SUMS.txt`.
 - Audit Linux : 138 tests réussis, 1 test PowerShell ignoré sous Linux.
 - Validation Windows CI : 139 tests réussis, aucun ignoré.

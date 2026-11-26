@@ -135,3 +135,33 @@ def test_thumbnail_overlay_builds_vertical_gta_poster_from_full_landscape_gamepl
         panel_pixel = result.convert("RGB").getpixel((540, 900))
         assert panel_pixel[1] > panel_pixel[0] * 2, "La capture de gameplay doit rester visible dans le cadre principal."
         assert thumbnail.stat().st_size > 10_000
+
+
+
+def test_thumbnail_overlay_uses_a_compact_editorial_cover_and_sanitizes_fragment(tmp_path: Path):
+    from PIL import Image
+
+    thumbnail = tmp_path / "editorial-thumbnail.jpg"
+    Image.new("RGB", (1920, 1080), (42, 70, 90)).save(thumbnail, quality=90)
+
+    apply_thumbnail_overlay(
+        thumbnail,
+        "YEAH HUH SHIT GOT",
+        streamer="Tminnzy",
+        game_label="GTA 5",
+    )
+
+    with Image.open(thumbnail) as result:
+        assert result.size == (1080, 1920)
+        assert result.format == "JPEG"
+        assert result.width == 1080 and result.height == 1920
+        assert thumbnail.stat().st_size > 15_000
+
+
+
+def test_thumbnail_headline_prefers_complete_meaningful_tail_over_filler():
+    from studio.web.short_editor import _thumbnail_headline
+
+    assert _thumbnail_headline("YEAH HUH SHIT GOT MY LAMBO", "Tminnzy") == "GOT MY LAMBO"
+    assert _thumbnail_headline("YEAH HUH SHIT GOT", "Tminnzy") == "Tminnzy GTA MOMENT"
+    assert _thumbnail_headline("YEAH HUH SHIT", "Tminnzy") == "Tminnzy GTA MOMENT"

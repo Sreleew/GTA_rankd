@@ -1,0 +1,24 @@
+GTA Ranked Studio v0.7.9
+
+Refonte éditoriale des Shorts :
+- Les titres et hooks ne reprennent plus les fragments ASR manifestement incomplets.
+- Les phrases courtes et complètes sont privilégiées ; les expressions de remplissage sont retirées des accroches de secours.
+- Lorsqu'aucune phrase exploitable n'est disponible, le titre reste neutre plutôt que d'inventer une citation ou un événement.
+- Les métadonnées locales peuvent conserver une idée de miniature complète même si le titre doit être remplacé par le fallback.
+
+Nouvelle direction artistique des miniatures :
+- Composition verticale 1080 × 1920 plus épurée, avec une image réelle du clip mise au premier plan.
+- Fond flouté et assombri, cadre gameplay plus large, branding compact et hiérarchie typographique renforcée.
+- Le texte de couverture privilégie une expression courte et complète ; les débuts de phrase et mots de remplissage sont supprimés.
+- Le crédit streamer est discret et le visuel évite les grands espaces vides du poster précédent.
+
+Montage intelligent :
+- Les clips Twitch sélectionnés sont conservés dans leur intégralité, hors suppression prudente de pauses longues lorsque les timestamps Whisper mot à mot DTW sont fiables.
+- Les sous-titres, le pic audio, le zoom, l'audio et la miniature restent synchronisés avec les segments assemblés.
+- Les coupes automatiques restent limitées et protègent la zone du moment fort.
+- Les raccords audio sont adoucis par des micro-fondus.
+
+Compatibilité et sécurité :
+- Les réglages, projets, bases de données, médias, exports et modèles locaux sont préservés pendant la mise à jour.
+- La validation CI Linux et Windows vérifie la source applicative et le package Windows.
+- La validation matérielle réelle AMF/Vulkan sur la RX 9060 XT reste indépendante des tests CI.
