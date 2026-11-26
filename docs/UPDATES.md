@@ -1,8 +1,8 @@
 # Mises à jour GTA Ranked Studio
 
-## v0.8.0 : cadrage vertical intelligent (publication approuvée)
+## v0.8.0 : cadrage vertical intelligent (disponible en mise à jour stable)
 
-Le nouveau mode par défaut compose les Shorts en 9:16 avec un panneau gameplay agrandi, un hook au-dessus et les sous-titres dans une zone basse dédiée. Le focus horizontal est réglable et positionné par défaut à 80 % pour mieux préserver une facecam incrustée à droite. Les sources portrait restent proportionnelles ; les modes plein écran recadré et vidéo entière avec fond flouté restent disponibles. CI Linux : 147 tests réussis, 1 ignoré. CI Windows : 148 tests réussis, aucun ignoré. La validation sur plusieurs clips Twitch réels et sur le PC AMD reste à faire. La publication stable est déclenchée depuis `main`.
+Le nouveau mode par défaut compose les Shorts en 9:16 avec un panneau gameplay agrandi, un hook au-dessus et les sous-titres dans une zone basse dédiée. Le focus horizontal est réglable et positionné par défaut à 80 % pour mieux préserver une facecam incrustée à droite. Les sources portrait restent proportionnelles ; les modes plein écran recadré et vidéo entière avec fond flouté restent disponibles. CI Linux : 147 tests réussis, 1 ignoré. CI Windows : 148 tests réussis, aucun ignoré. La validation sur plusieurs clips Twitch réels et sur le PC AMD reste à faire. La version stable est publiée : https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.0. Dans l'application, ouvrir **Paramètres > Mises à jour**, puis rechercher et installer la mise à jour.
 
 ## v0.7.9 : disponible en mise à jour stable
 
