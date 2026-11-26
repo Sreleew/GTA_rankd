@@ -343,7 +343,7 @@ def generate_short_metadata(
             or "gta" not in title.lower()
             or (known_creator and known_creator.lower() not in title.lower())
             or _has_incomplete_quote(title)
-            or ("really said" in title.lower() and not _last_complete_phrase(transcript))
+            or ("said" in title.lower() and not _last_complete_phrase(transcript))
             or (promo_detected and _is_formulaic_promo_copy(title))
         )
         if invalid_title:
@@ -403,7 +403,7 @@ def generate_short_metadata(
 def _has_incomplete_quote(value: str) -> bool:
     dangling = {
         "a", "an", "the", "to", "of", "and", "but", "so", "with", "for", "in", "on", "at",
-        "because", "if", "when", "that", "this", "is", "are", "was", "were", "my", "your", "his", "her", "got", "has", "have",
+        "because", "if", "when", "that", "this", "is", "are", "was", "were", "my", "your", "his", "her", "got", "has", "have", "yeah", "yea", "huh", "shit", "uh", "um",
     }
     for match in re.finditer(r"[\"“]([^\"”]{2,80})[\"”]", str(value or "")):
         words = re.findall(r"[A-Za-z0-9’']+", match.group(1).lower())
