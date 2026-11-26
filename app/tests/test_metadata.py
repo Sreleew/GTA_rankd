@@ -199,3 +199,42 @@ def test_complete_sentence_keeps_its_descriptive_ending_in_metadata_fallback():
 
     assert "got my car back" in result["title"].lower()
     assert result["thumbnail_text"].lower() == "got my car back"
+
+
+
+def test_incomplete_title_does_not_discard_a_complete_thumbnail_phrase(monkeypatch):
+    import io
+    import json
+    from studio.web import metadata as metadata_module
+
+    payload = {
+        "response": json.dumps({
+            "title": "Tminnzy really said “yeah huh shit got” in GTA 5 😭",
+            "description": "Tminnzy was talking about his Lambo.",
+            "hashtags": ["#GTA5", "#Tminnzy", "#GTAClips"],
+            "hook_text": "YEAH HUH SHIT GOT",
+            "thumbnail_text": "YEAH HUH SHIT GOT MY LAMBO",
+        })
+    }
+
+    class FakeResponse(io.BytesIO):
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            self.close()
+
+    monkeypatch.setattr(
+        metadata_module.urllib.request,
+        "urlopen",
+        lambda request, timeout: FakeResponse(json.dumps(payload).encode("utf-8")),
+    )
+    result = metadata_module.generate_short_metadata(
+        streamer="Tminnzy",
+        source_title="GTA 5",
+        transcript="yeah huh shit got my lambo",
+        source_url="https://www.twitch.tv/tminnzy/clip/example",
+    )
+
+    assert "really said" not in result["title"].lower()
+    assert result["hook_text"] == ""
+    assert result["thumbnail_text"] == "YEAH HUH SHIT GOT MY LAMBO"
