@@ -2,17 +2,17 @@
 
 Application Windows locale pour analyser des clips et VOD GTA, repérer les moments intéressants et produire des Shorts verticaux prêts à publier.
 
-**Dernière version stable : v0.7.8.** La mise à jour est proposée dans l'application depuis **Paramètres > Mises à jour**.
+**Dernière version stable : v0.7.9.** La mise à jour est proposée dans l'application depuis **Paramètres > Mises à jour**.
 
-[Consulter la Release v0.7.8](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.7.8)
+[Consulter la Release v0.7.8](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.7.9)
 
 ## Fonctionnalités
 
 - Import de vidéos locales et de clips/VOD Twitch accessibles via yt-dlp.
 - Détection audio et transcription Whisper locale pour classer les moments forts.
 - Score d'accroche distinct sur les cinq premières secondes.
-- Création de Shorts 1080 × 1920, sous-titres, hooks, titres, descriptions et hashtags.
-- Miniatures composées à partir d'images réelles du clip.
+- Création de Shorts 1080 × 1920, sous-titres, hooks, titres et descriptions éditorialement vérifiés contre les phrases ASR incomplètes.
+- Miniatures verticales plus épurées, composées à partir d'images réelles du clip, avec titre court et lisible.
 - Métadonnées générées avec Ollama/Qwen local si installé, avec solution de repli sans IA.
 - Contrôle qualité après export : MP4, durée, résolution, codec, audio, écrans noirs, images figées, silences et horodatages des sous-titres.
 - Prévisualisation, téléchargement, miniature et copie des métadonnées toujours disponibles après validation.
@@ -38,7 +38,7 @@ py -3.11 -m pip install -r requirements.txt
 python tools/check_project_memory.py
 python -m pytest -q
 node --check studio/web/static/app.js
-python installer/build_release_package.py --version 0.7.8 --output-dir dist
+python installer/build_release_package.py --version 0.7.9 --output-dir dist
 ```
 
 Pour une nouvelle installation, utiliser `app/INSTALL.bat`. Ne jamais remplacer un `config.yaml` existant par le fichier modèle pendant une mise à jour.
