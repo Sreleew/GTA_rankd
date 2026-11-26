@@ -153,6 +153,7 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 
 - **v0.7.9 publiée :** refonte des miniatures verticales, sélection de phrases plus complètes pour les hooks/titres, garde-fous contre les événements inventés dans les métadonnées, raccords audio plus doux et conservation des clips Twitch sélectionnés.
 - **Intégration :** PR #8 fusionnée dans `main`, Release stable [v0.7.9](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.7.9).
+- **v0.8.0 publiée :** PR #9 fusionnée, cadrage intelligent activé par défaut, ZIP Windows et SHA-256 publiés. README, guide des mises à jour et processus de release synchronisés après publication.
 - **Validation :** Linux 144 réussis + 1 ignoré ; Windows 145 réussis. ZIP et SHA-256 publiés.
 - **À vérifier sur le PC utilisateur :** mise à jour depuis v0.7.9, préservation des données, rendu d'un Short avec cadrage intelligent et fonctionnement matériel AMD AMF/Vulkan sur RX 9060 XT.
 
