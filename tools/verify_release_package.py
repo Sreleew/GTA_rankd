@@ -57,7 +57,7 @@ def _validate_member(name: str, info: zipfile.ZipInfo) -> None:
         raise ValueError(f"Répertoire local ou de développement interdit : {name}")
     if filename in FORBIDDEN_NAMES or filename.startswith(".env") and filename != ".env.example":
         raise ValueError(f"Fichier privé interdit dans le ZIP : {name}")
-    if filename.startswith("._") or filename.startswith("notes-v") or filename.startswith("verification-v"):
+    if filename.startswith(("._", "notes-v", "verification-v")):
         raise ValueError(f"Fichier de métadonnées/historique non nécessaire interdit dans le ZIP : {name}")
     if filename.startswith(".") and filename not in {".gitignore", ".env.example"}:
         raise ValueError(f"Fichier caché interdit dans le ZIP : {name}")
