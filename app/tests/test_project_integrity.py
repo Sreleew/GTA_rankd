@@ -65,3 +65,21 @@ def test_only_the_short_creation_pipeline_is_in_the_default_config() -> None:
     assert "bestof" not in config
     assert "scoring" not in config
     assert not {"inbox_bestof", "inbox_urls", "output_bestof", "output_log_csv"} & set(config["paths"])
+
+def test_runtime_smoke_check_runs_from_installer_path(tmp_path) -> None:
+    import subprocess
+    import sys
+
+    checker = APP / "installer" / "check_runtime.py"
+    result = subprocess.run(
+        [sys.executable, str(checker)],
+        cwd=tmp_path,
+        env={key: value for key, value in os.environ.items() if key != "PYTHONPATH"},
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=30,
+    )
+    assert result.returncode == 0, result.stdout + "\\n" + result.stderr
+    assert "GTA_RS_RUNTIME_CHECK_OK" in result.stdout
