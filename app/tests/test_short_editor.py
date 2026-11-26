@@ -154,5 +154,5 @@ def test_thumbnail_overlay_uses_a_compact_editorial_cover_and_sanitizes_fragment
     with Image.open(thumbnail) as result:
         assert result.size == (1080, 1920)
         assert result.format == "JPEG"
-        assert result.stat if False else result.width == 1080
+        assert result.width == 1080 and result.height == 1920
         assert thumbnail.stat().st_size > 15_000
