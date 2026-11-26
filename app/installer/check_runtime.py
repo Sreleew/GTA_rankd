@@ -40,7 +40,7 @@ def main() -> int:
             except PackageNotFoundError as exc:
                 raise RuntimeError(f"Paquet runtime absent : {distribution}") from exc
         print(f"Python: {sys.version.split()[0]}")
-        print("Imports applicatifs: OK")
+        print("Imports de l'application : OK")
         print(SUCCESS_MARKER)
         return 0
     except Exception as exc:
