@@ -1,17 +1,19 @@
 # Mises à jour GTA Ranked Studio
 
+## v0.8.4 : correctif critique de l'installateur Windows
+
+- Corrige le chemin d'import Python du smoke test runtime : la racine de l'application est ajoutée à `sys.path` avant les imports `studio`.
+- Corrige l'erreur `ModuleNotFoundError: No module named 'studio.config'` observée pendant l'installation.
+- Ajoute un test qui exécute le smoke test depuis un répertoire de travail externe sans `PYTHONPATH`.
+- Mise à jour de transition depuis v0.8.0 à v0.8.3 : utiliser le ZIP et `UPDATE-FROM-ARCHIVE.bat`, pas le bouton de mise à jour intégré.
+
+
 ## v0.8.3 : fiabilisation de la mise à jour intégrée
 
 - Le serveur local attend désormais 8 secondes après le lancement de l'installateur avant de s'arrêter, afin de laisser le navigateur recevoir la confirmation et consulter l'état de progression.
 - Correctif destiné à éviter l'erreur `Failed to fetch` si la fermeture du serveur coupe la requête d'installation.
 - Le téléchargement, la vérification SHA-256 et la préservation des données locales restent inchangés.
 
-
-## v0.8.3 : fiabilisation de la mise à jour intégrée
-
-- Le serveur local attend désormais 8 secondes après le lancement de l'installateur avant de s'arrêter, afin de laisser le navigateur recevoir la confirmation et consulter l'état de progression.
-- Correctif destiné à éviter l'erreur `Failed to fetch` si la fermeture du serveur coupe la requête d'installation.
-- Le téléchargement, la vérification SHA-256 et la préservation des données locales restent inchangés.
 
 
 ## v0.8.2 : production Shorts 1 min à 2 min 45
