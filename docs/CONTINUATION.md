@@ -20,7 +20,7 @@ Application Windows locale qui analyse des clips et VOD GTA, repère les passage
 
 Le projet doit rester local-first, sans abonnement ni API IA payante obligatoire. Les vidéos, médias, transcriptions, rendus et modèles locaux ne doivent pas être envoyés vers un service cloud par le pipeline.
 
-## 2. État actuel et fonctionnalités présentes en v0.7.8
+## 2. État actuel et fonctionnalités candidates v0.7.9
 
 - Import de vidéos locales et d'URLs de clips/VOD Twitch accessibles via yt-dlp.
 - Téléchargement de plages horaires avec progression et gestion des erreurs/reprises.
@@ -110,7 +110,7 @@ py -3.11 -m pip install -r requirements.txt
 python tools/check_project_memory.py
 python -m pytest -q
 node --check studio/web/static/app.js
-python installer/build_release_package.py --version 0.7.8 --output-dir dist
+python installer/build_release_package.py --version 0.7.9 --output-dir dist
 ```
 
 Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquement si aucun fichier de configuration personnel n'existe. Ne jamais écraser un `config.yaml` existant.
@@ -125,12 +125,12 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - Maintenir synchronisés `VERSION.txt` et `app/VERSION.txt`, ainsi que les notes de release racine et `app/`.
 - Les workflows synchronisent les documents racine dans le package applicatif avant de tester et publier.
 - Préserver la configuration, les bases, projets, médias, exports et modèles locaux.
-- Ne jamais toucher à `main`, fusionner, publier une Release ou supprimer des données sans instruction explicite.
+- L'utilisateur a demandé que toute modification demandée soit menée jusqu'à l'intégration et la publication stable, sans s'arrêter à une branche ou une PR. En cas d'échec CI ou de blocage technique, corriger ou expliquer le blocage.
 - Ne jamais présenter un test prévu comme réussi. Distinguer code modifié, tests CI et validation matérielle réelle.
 
 ## 9. Prochaines étapes priorisées
 
-1. Sur le PC cible, ouvrir **Paramètres > Mises à jour**, rechercher v0.7.8, installer et vérifier que les réglages, projets, bases et exports sont conservés.
+1. Après publication, installer v0.7.9 depuis **Paramètres > Mises à jour**, puis vérifier que les réglages, projets, bases et exports sont conservés.
 2. Exécuter `docs/WINDOWS-HARDWARE-VALIDATION.md` sur la RX 9060 XT : AMF, Whisper Vulkan, Ollama/Qwen et cycle Short complet.
 3. Calibrer le contrôle qualité sur plusieurs vrais Shorts GTA, en mesurant les faux positifs sur les scènes sombres, pauses voulues et séquences sans musique.
 4. Améliorer les coupes naturelles et la construction des hooks à partir des limites de phrases, sans CTA générique à l'ouverture.
@@ -139,4 +139,4 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 
 ## 10. Message de reprise prêt à copier
 
-> Nous reprenons GTA Ranked Studio. Lis `docs/CONTINUATION.md` puis `docs/WORKING-AGREEMENT.md`. La source de développement est directement dans `app/`, et non dans une archive. La v0.7.8 est la Release stable publiée : https://github.com/Sreleew/GTA_rankd/releases/tag/v0.7.8. Les workflows Linux, Windows et Release doivent tous tester/construire directement depuis `app/`, sans hotfix ni extraction d'archive. Préserve les données locales. Modifie uniquement les fichiers nécessaires, ajoute les tests pertinents, valide sous Linux et Windows pour les changements transversaux. La RX 9060 XT n'a pas encore été validée physiquement pour AMF/Vulkan. Ne touche pas à `main`, ne fusionne pas et ne publie pas sans instruction explicite.
+> Nous reprenons GTA Ranked Studio. Lis `docs/CONTINUATION.md` puis `docs/WORKING-AGREEMENT.md`. La source de développement est directement dans `app/`, et non dans une archive. La v0.7.9 est la version candidate à publier après validation Linux/Windows ; v0.7.8 reste la Release stable actuelle jusqu'à sa publication. Les workflows Linux, Windows et Release doivent tous tester/construire directement depuis `app/`, sans hotfix ni extraction d'archive. Préserve les données locales. Modifie uniquement les fichiers nécessaires, ajoute les tests pertinents, valide sous Linux et Windows pour les changements transversaux. La RX 9060 XT n'a pas encore été validée physiquement pour AMF/Vulkan. L'utilisateur souhaite que toute modification demandée soit intégrée et publiée directement dès que les contrôles sont réussis.
