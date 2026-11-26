@@ -12,11 +12,11 @@ from studio.web.short_renderer import build_filter_complex, probe_media, render_
 
 def test_smart_layout_builds_large_gameplay_panel_and_respects_horizontal_focus() -> None:
     graph = build_filter_complex(
-        width=1080, height=1920, layout="smart", crop_x=72,
+        width=1080, height=1920, layout="smart", crop_x=80,
         source_width=1920, source_height=1080,
     )
     assert "scale=-2:806" in graph
-    assert "crop=1080:806:(in_w-out_w)*0.720" in graph
+    assert "crop=1080:806:(in_w-out_w)*0.800" in graph
     assert "overlay=(W-w)/2:633" in graph
     assert "boxblur=28:10" in graph
 
@@ -111,7 +111,7 @@ def test_real_vertical_short_render(tmp_path: Path) -> None:
         ass_file=captions,
         project_root=tmp_path,
         layout="smart",
-        crop_x=72,
+        crop_x=80,
         dynamic_zoom=False,
         peak_timestamp=0.9,
         zoom_percent=8,
