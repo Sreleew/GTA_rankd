@@ -111,7 +111,7 @@ def _wrap_words(value: str, max_words: int = 5) -> str:
 
 def _merge_punctuation(words: Iterable[WordTiming]) -> list[WordTiming]:
     output: list[WordTiming] = []
-    punctuation = re.compile(r"""[.!?]["')\]]*$""")
+    punctuation = re.compile(r"^[,.;:!?)]")
     for word in words:
         text = _clean_ass_text(word.text)
         if not text:
@@ -494,7 +494,7 @@ def select_excerpt_range(
     start = latest_start
 
     ordered = sorted(words or [], key=lambda item: (item.start, item.end))
-    punctuation = re.compile(r"[.!?][\\\"')\\]]*$")
+    punctuation = re.compile(r"""[.!?]["')\]]*$""")
     sentence_starts: list[float] = []
     lookback_seconds = min(maximum_seconds, 24.0)
     earliest_start = max(0.0, peak - max(lead_seconds, lookback_seconds))
