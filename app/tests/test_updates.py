@@ -127,6 +127,12 @@ def test_application_ui_exposes_integrated_update_controls() -> None:
 
 
 
+def test_updater_keeps_api_alive_for_install_response() -> None:
+    source = (Path(__file__).resolve().parents[1] / "studio" / "web" / "updater.py").read_text(encoding="utf-8")
+    assert updater.SHUTDOWN_GRACE_SECONDS >= 5.0
+    assert "time.sleep(SHUTDOWN_GRACE_SECONDS)" in source
+
+
 def test_updater_captures_powershell_output_and_creates_bootstrap_log() -> None:
     source = (Path(__file__).resolve().parents[1] / "studio" / "web" / "updater.py").read_text(encoding="utf-8")
     assert "powershell-output.log" in source

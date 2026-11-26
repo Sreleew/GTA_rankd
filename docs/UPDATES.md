@@ -1,5 +1,19 @@
 # Mises à jour GTA Ranked Studio
 
+## v0.8.3 : fiabilisation de la mise à jour intégrée
+
+- Le serveur local attend désormais 8 secondes après le lancement de l'installateur avant de s'arrêter, afin de laisser le navigateur recevoir la confirmation et consulter l'état de progression.
+- Correctif destiné à éviter l'erreur `Failed to fetch` si la fermeture du serveur coupe la requête d'installation.
+- Le téléchargement, la vérification SHA-256 et la préservation des données locales restent inchangés.
+
+
+## v0.8.3 : fiabilisation de la mise à jour intégrée
+
+- Le serveur local attend désormais 8 secondes après le lancement de l'installateur avant de s'arrêter, afin de laisser le navigateur recevoir la confirmation et consulter l'état de progression.
+- Correctif destiné à éviter l'erreur `Failed to fetch` si la fermeture du serveur coupe la requête d'installation.
+- Le téléchargement, la vérification SHA-256 et la préservation des données locales restent inchangés.
+
+
 ## v0.8.2 : production Shorts 1 min à 2 min 45
 
 La version stable v0.8.2 est publiée : https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.2. Le profil de production vise désormais des Shorts de 60 à 165 secondes. Le scan des VOD classe des passages de 60, 90, 120, 150 et 165 secondes. Les coupes automatiques privilégient les frontières de phrases et les pauses naturelles autour du moment fort. Les clips Twitch plus courts restent inchangés, sans rallongement artificiel. Les installations v0.8.1 migrent leurs anciens réglages par défaut en mémoire, sans réécrire la configuration personnelle ni remplacer les réglages personnalisés. CI Linux : 155 tests réussis, 1 ignoré. CI Windows : 156 tests réussis. Ruff, pip-audit, ZIP Windows et SHA-256 validés. La validation physique AMF/Vulkan sur la RX 9060 XT reste à effectuer.
