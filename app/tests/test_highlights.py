@@ -59,7 +59,7 @@ def test_default_highlight_candidates_are_non_overlapping_and_use_supported_leng
     candidates = score_highlight_candidates(180, audio, words)
     assert candidates
     assert all(item["score"] > 80 for item in candidates)
-    assert all(round(item["end_time"] - item["start_time"]) in {25, 35, 45, 60} for item in candidates)
+    assert all(round(item["end_time"] - item["start_time"]) in {60, 90, 120, 150, 165} for item in candidates)
     for index, first in enumerate(candidates):
         for second in candidates[index + 1:]:
             assert first["end_time"] + 6 <= second["start_time"] or second["end_time"] + 6 <= first["start_time"]

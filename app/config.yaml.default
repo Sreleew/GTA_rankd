@@ -55,18 +55,18 @@ branding:
   font_file: assets/fonts/Anton-Regular.ttf
 
 shorts:
-  max_input_duration_seconds: 60
+  max_input_duration_seconds: 165
   layout: smart
   default_crop_x: 80
   dynamic_zoom: true
   zoom_percent: 8
   captions_enabled: true
-  peak_trim_threshold_seconds: 45
+  peak_trim_threshold_seconds: 165
   peak_lead_seconds: 1.5
   payoff_tail_seconds: 2.0
   auto_trim_enabled: true
-  auto_trim_min_seconds: 15
-  auto_trim_max_seconds: 45
+  auto_trim_min_seconds: 60
+  auto_trim_max_seconds: 165
   sfx_enabled: true
   sfx_volume: 0.14
 

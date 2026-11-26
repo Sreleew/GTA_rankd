@@ -153,7 +153,7 @@ def score_highlight_candidates(
     if candidate_seconds is not None:
         clip_lengths = [min(max(1.0, float(candidate_seconds)), duration)]
     else:
-        clip_lengths = sorted({min(value, duration) for value in (25.0, 35.0, 45.0, 60.0) if value <= duration})
+        clip_lengths = sorted({min(value, duration) for value in (60.0, 90.0, 120.0, 150.0, 165.0) if value <= duration})
         if not clip_lengths:
             clip_lengths = [duration]
 

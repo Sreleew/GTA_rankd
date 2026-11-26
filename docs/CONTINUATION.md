@@ -4,7 +4,7 @@
 
 - **Dernière mise à jour :** 26 novembre 2026
 - **Version stable publiée :** 0.8.1
-- **État :** v0.8.1 est fusionnée dans `main` et publiée. Le travail fonctionnel suivant est isolé dans la PR #11 : aligner les coupes automatiques sur les frontières de phrases et pauses naturelles.
+- **État :** v0.8.1 est la dernière Release publiée. PR #11 (coupes naturelles) est fusionnée dans `main`, non encore publiée. PR #12 prépare le profil de production 60 à 165 secondes pour lancer la chaîne rapidement.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
 - **Dernière Release stable :** [v0.8.1](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.1)
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
@@ -15,7 +15,7 @@
 - **PR de maintenance :** [#10](https://github.com/Sreleew/GTA_rankd/pull/10), fusionnée dans `main`.
 - **PR coupes naturelles :** [#11](https://github.com/Sreleew/GTA_rankd/pull/11), fusionnée dans `main`. Le départ du Short préfère une frontière après ponctuation ou pause de 0,75 s ; fallback temporel conservé si aucune frontière fiable n'existe.
 - **CI PR #11 :** Linux 152 réussis + 1 ignoré ; Windows 153 réussis. Ruff, pip-audit, ZIP et SHA-256 validés.
-- **Statut de livraison :** amélioration présente dans `main`, non encore intégrée à un package de Release ; prochaine version à préparer après validation sur de vrais clips.
+- **Statut de livraison :** les coupes naturelles et le profil de durée 60 à 165 secondes sont en attente d'une Release v0.8.2 après CI et validation réelle.
 - **Release v0.8.1 :** [publication officielle](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.1), workflow https://github.com/Sreleew/GTA_rankd/actions/runs/45842590841.
 - **PR de livraison v0.7.9 :** [#8](https://github.com/Sreleew/GTA_rankd/pull/8), fusionnée dans `main`.
 - **PR cadrage intelligent v0.8.0 :** [#9](https://github.com/Sreleew/GTA_rankd/pull/9), fusionnée dans `main` et publiée.
@@ -24,6 +24,8 @@
 - **CI Linux v0.8.0 :** https://github.com/Sreleew/GTA_rankd/actions/runs/45796472429.
 - **CI Windows v0.8.0 :** https://github.com/Sreleew/GTA_rankd/actions/runs/45796473363.
 - **Validation matérielle :** le PC AMD Radeon RX 9060 XT n'a pas encore été validé physiquement pour AMF/Vulkan après mise à jour.
+- **PR #12 :** [profil de Shorts 60-165 s](https://github.com/Sreleew/GTA_rankd/pull/12), branche `feature/shorts-production-lengths`. CI en attente. Le scan VOD propose 60, 90, 120, 150 et 165 s ; les clips Twitch plus courts restent inchangés.
+- **Compatibilité config :** les anciennes configs 0.8.1 migrent les valeurs par défaut en mémoire uniquement, sans réécrire `config.yaml` et sans remplacer les réglages personnalisés.
 
 ## 1. Objectif du produit
 
@@ -166,7 +168,8 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Éviter les lenteurs inutiles.** Ne pas refaire de longs audits ni relire tout l'historique à chaque demande. Lire le mémo, le HEAD, les contrôles utiles et seulement les fichiers concernés.
 - **Aller jusqu'au résultat utilisable.** Pour une modification demandée, travailler sur une branche, tester, fusionner dans `main` et publier une Release stable lorsque les validations passent. Si un contrôle bloque, le corriger ou expliquer précisément pourquoi la livraison est arrêtée.
 - **Découpage du travail :** pour les gros chantiers, avancer par lots courts, cohérents et contrôlables, avec des points de reprise explicites. Éviter les réponses monolithiques qui risquent d'expirer.
-- **Priorité produit actuelle :** le parcours Twitch clip → Short prêt à publier. L'utilisateur fournit principalement une URL de clip Twitch ; améliorer la sélection/montage, le rythme, les sous-titres, le hook, la miniature, le titre et la description. Ne pas disperser le travail sur des fonctions secondaires sans demande.
+- **Priorité produit actuelle :** lancer rapidement la chaîne GTA VI. Accepter un niveau de qualité initial de 85-90 % et privilégier un flux fiable de production/publication plutôt que des raffinements interminables. Parcours prioritaire : URL Twitch/VOD → moment fort → Short 9:16 → review → titre/description/hashtags/miniature prêts à publier.
+- **Durée cible :** Shorts de 60 à 165 secondes. Les clips Twitch plus courts sont conservés tels quels, sans rallongement artificiel. Les passages VOD sont proposés en 60, 90, 120, 150 ou 165 secondes.
 - **Direction des miniatures :** rendu propre, esthétique, lisible et immédiatement compréhensible, construit autour d'une vraie image du clip. Le visuel doit donner envie de cliquer sans surcharge, faux événement ou texte tronqué.
 - **Évaluer sur des exemples réels.** Quand l'utilisateur envoie un clip ou un Short généré, examiner concrètement le rendu avant de décider des corrections. Distinguer les observations réelles des hypothèses.
 - **Garder les contrôles accessibles après validation.** Ne pas retirer les actions de prévisualisation, téléchargement, miniature et copie du titre/description/hashtags après validation d'un Short.
