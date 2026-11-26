@@ -310,7 +310,8 @@ def generate_short_metadata(
             if not line.strip().lower().startswith(("clip:", "source:"))
             and not re.match(r"^#[A-Za-z0-9_]+(?:\s+#[A-Za-z0-9_]+)*$", line.strip())
         ).strip()
-        if (invalid_title or any(phrase in description.lower() for phrase in generic_phrases)
+        if (_has_incomplete_quote(description)
+                or any(phrase in description.lower() for phrase in generic_phrases)
                 or (promo_detected and _is_formulaic_promo_copy(description))):
             description = fallback["description"].split("\n\n")[0]
         description = _fit_caption(description, 260)
@@ -333,8 +334,8 @@ def generate_short_metadata(
         if _has_incomplete_quote(f"“{hook}”") or (not custom_hook and _is_incomplete_phrase(hook)):
             hook = fallback["hook_text"]
         context = _limit_words(custom_context, 10)
-        thumbnail_text = _limit_words(str(data.get("thumbnail_text", fallback["thumbnail_text"])), 4)
-        if not thumbnail_text or invalid_title or _has_incomplete_quote(f"“{thumbnail_text}”") or _is_incomplete_phrase(thumbnail_text):
+        thumbnail_text = _limit_words(str(data.get("thumbnail_text", fallback["thumbnail_text"])), 8)
+        if not thumbnail_text or _has_incomplete_quote(f"“{thumbnail_text}”") or _is_incomplete_phrase(thumbnail_text):
             thumbnail_text = fallback["thumbnail_text"]
         if invalid_title:
             hook = fallback["hook_text"]
