@@ -4,7 +4,7 @@
 
 - **Dernière mise à jour :** 26 novembre 2026
 - **Version source de référence :** 0.7.9
-- **État :** v0.7.9 est la Release stable préparée depuis `main`. La source applicative est maintenue directement dans `app/`.
+- **État :** v0.7.9 est la Release stable publiée depuis `main`. La source applicative est maintenue directement dans `app/`.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
 - **Dernière Release stable :** [v0.7.9](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.7.9)
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
@@ -12,6 +12,7 @@
 - **Mise à jour intégrée :** l'application consulte les Releases GitHub. Le ZIP v0.7.9 et `SHA256SUMS.txt` sont publiés par le workflow de release.
 - **Tests v0.7.9 :** Linux 144 réussis, 1 ignoré (PowerShell non disponible sous Linux) ; Windows 145 réussis.
 - **PR de livraison :** [#8](https://github.com/Sreleew/GTA_rankd/pull/8), fusionnée dans `main`.
+- **Workflow de publication v0.7.9 :** https://github.com/Sreleew/GTA_rankd/actions/runs/45793843538.
 - **Validation matérielle :** le PC AMD Radeon RX 9060 XT n'a pas encore été validé physiquement pour AMF/Vulkan après mise à jour.
 
 ## 1. Objectif du produit
