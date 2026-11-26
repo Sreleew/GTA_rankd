@@ -36,7 +36,7 @@ def test_canonical_documentation_is_not_duplicated_inside_app() -> None:
     assert (REPO / "docs/CONTINUATION.md").is_file()
     assert (REPO / "docs/PROJECT-MAP.md").is_file()
     assert not (REPO / "docs/implementation-plan-v0.7.8.md").exists()
-    assert {note.name for note in APP.glob("NOTES-v*.txt")} == {"NOTES-v0.8.3.txt"}
+    assert {note.name for note in APP.glob("NOTES-v*.txt")} == {"NOTES-v0.8.4.txt"}
     assert not list(APP.glob("VERIFICATION-v*.md"))
 
 
@@ -81,5 +81,5 @@ def test_runtime_smoke_check_runs_from_installer_path(tmp_path) -> None:
         errors="replace",
         timeout=30,
     )
-    assert result.returncode == 0, result.stdout + "\\n" + result.stderr
+    assert result.returncode == 0, result.stdout + "\n" + result.stderr
     assert "GTA_RS_RUNTIME_CHECK_OK" in result.stdout
