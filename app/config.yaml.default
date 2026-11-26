@@ -83,7 +83,7 @@ branding:
 shorts:
   max_input_duration_seconds: 60
   layout: smart
-  default_crop_x: 72
+  default_crop_x: 80
   default_crop_y: 50
   dynamic_zoom: true
   zoom_percent: 8
