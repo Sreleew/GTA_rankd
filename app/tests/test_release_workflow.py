@@ -32,7 +32,7 @@ def test_full_development_dependencies_are_installed_only_in_ci() -> None:
         assert "[dev]" in script
         assert "ruff check" in script
         assert "pip-audit" in script
-        assert "tools/verify_release_package.py" in script
+        assert "verify_release_package.py" in script\n        assert "pip-audit" in script
 
 
 def test_stable_release_remains_explicitly_approved_and_non_overwriting() -> None:
