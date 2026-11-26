@@ -2,15 +2,15 @@
 
 > Lire ce document en premier dans chaque nouvelle conversation sur le projet. Il décrit l'état réellement livré et la structure source actuelle.
 
-- **Dernière mise à jour :** 25 novembre 2026
-- **Version source de référence :** 0.7.8
-- **État :** v0.7.8 publiée en Release stable publique. Le code applicatif est maintenant décompressé et maintenu directement dans `app/`.
+- **Dernière mise à jour :** 26 novembre 2026
+- **Version source de référence :** 0.7.9
+- **État :** v0.7.8 reste la dernière Release stable publiée ; v0.7.9 est la version candidate préparée pour publication après validation CI. Le code applicatif est maintenu directement dans `app/`.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
 - **Dernière Release stable :** [v0.7.8](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.7.8)
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
 - **Source active :** `app/`. Modifier directement les fichiers Python, JavaScript, CSS, HTML, tests et installateur présents dans ce dossier.
 - **Mise à jour intégrée :** l'application consulte les Releases GitHub. Le ZIP v0.7.8 et `SHA256SUMS.txt` sont publiés.
-- **Tests v0.7.8 :** Linux 138 réussis, 1 ignoré (PowerShell non disponible sous Linux) ; Windows 139 réussis, aucun ignoré.
+- **Tests v0.7.8 :** Linux 138 réussis, 1 ignoré ; Windows 139 réussis. Les résultats de v0.7.9 seront consignés après CI.
 - **Workflow de publication v0.7.8 :** https://github.com/Sreleew/GTA_rankd/actions/runs/45714213999.
 - **Validation matérielle :** le PC AMD Radeon RX 9060 XT n'a pas encore été validé physiquement pour AMF/Vulkan après mise à jour.
 
@@ -29,10 +29,11 @@ Le projet doit rester local-first, sans abonnement ni API IA payante obligatoire
 - Contrôle qualité post-export : vérification MP4/FFprobe, dimensions, durée, codec, audio attendu, plages noires, images figées, silences, sous-titres ASS et horodatages de transcription. Les alertes restent non bloquantes.
 - Génération de Shorts 1080 × 1920. Le rendu conserve l'image source complète avec fond flouté par défaut. Le zoom dynamique est désactivé par défaut.
 - Transcription locale, sous-titres, filtre lexical de réactions et mode expérimental de voix dominante.
-- Hooks, titres, descriptions et hashtags générés localement avec Ollama/Qwen facultatif et fallback déterministe.
-- Miniatures issues d'images réelles du clip, habillage GTA Ranked, signature de chaîne et effets sonores.
+- Hooks, titres, descriptions et hashtags générés localement avec Ollama/Qwen facultatif et fallback déterministe. Les fragments ASR incomplets ne sont pas utilisés comme citations ; en l'absence de phrase ou de contexte fiable, le fallback reste neutre.
+- Miniatures issues d'images réelles du clip, avec une composition verticale 1080 × 1920 plus épurée, gameplay mis au premier plan, fond assombri, titre court et branding discret.
 - File de traitement, progression FFmpeg, annulation, prévisualisation, validation/rejet et bibliothèque de clips.
 - Après validation d'un Short, Prévisualiser, Télécharger, Miniature et Copier le titre, la description, les hashtags et le post restent accessibles.
+- Le montage intelligent de Shorts est intégré : les clips Twitch déjà sélectionnés sont préservés, les pauses longues ne sont retirées qu'avec des timestamps mot à mot DTW fiables, et les sous-titres, le pic audio, le zoom, l'audio et la miniature sont recalés sur la timeline assemblée.
 - La publication vers YouTube, TikTok et Instagram reste manuelle.
 
 ## 3. Architecture technique et environnement
@@ -63,6 +64,10 @@ Le projet doit rester local-first, sans abonnement ni API IA payante obligatoire
 7. Les alertes qualité ne sont pas des rejets : certaines scènes sombres, statiques ou silencieuses sont intentionnelles.
 
 ## 5. Source de référence et état des branches
+
+- **Base propre intégrée :** PR #6 fusionnée dans `main`.
+- **Montage intelligent intégré :** PR #7 fusionnée dans `main`.
+- **Refonte créative en cours :** branche `feature/shorts-creative-refresh`, candidate v0.7.9.
 
 - **Source de développement :** `app/`. Ne pas décompresser l'archive de release pour développer.
 - **Archive de provenance v0.7.8 :** `archive/releases/v0.7.8/`. La conserver intacte.
