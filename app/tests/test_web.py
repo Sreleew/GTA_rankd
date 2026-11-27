@@ -1147,7 +1147,7 @@ def test_store_adds_batch_id_to_existing_database_without_losing_jobs(tmp_path: 
     database = tmp_path / "legacy.sqlite"
     with sqlite3.connect(database) as connection:
         connection.execute(
-            "CREATE TABLE jobs (id TEXT PRIMARY KEY, status TEXT NOT NULL, created_at TEXT NOT NULL, source_hash TEXT)"
+            "CREATE TABLE jobs (id TEXT PRIMARY KEY, status TEXT NOT NULL, created_at TEXT NOT NULL, source_hash TEXT, metadata_json TEXT NOT NULL DEFAULT '{}')"
         )
         connection.execute(
             "INSERT INTO jobs (id, status, created_at) VALUES ('existing-job', 'ready', '2026-11-27T12:00:00')"
