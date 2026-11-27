@@ -523,10 +523,31 @@ def select_excerpt_range(
     if sentence_starts:
         start = max(sentence_starts)
 
+    # A loud sound is not always the payoff: the streamer's verbal reaction
+    # can happen a few seconds later. When transcript cues exist, keep the
+    # complete reaction and then stop at its next phrase boundary.
+    reaction_cues = {
+        "bro", "bruh", "no", "what", "wow", "whoa", "holy", "shit", "fuck",
+        "damn", "crazy", "insane", "run", "dead", "killed", "kill", "shoot",
+        "police", "help", "oh", "god", "wait", "yo", "nah", "clutch", "nice",
+        "wtf", "omg", "sick", "actually", "seriously", "impossible",
+    }
+    reaction_words = [
+        item for item in ordered
+        if peak - 2.0 <= float(item.start) <= peak + 14.0
+        and any(token in reaction_cues for token in re.findall(r"[a-z']+", item.text.lower()))
+    ]
+    reaction_end = max((float(item.end) for item in reaction_words), default=None)
+
     end_after_payoff: float | None = None
     after_peak = [item for item in ordered if float(item.end) >= peak]
     if after_peak:
+        # If a reaction is detected, ignore pauses before its final cue. This
+        # prevents cutting on the impact sound before the streamer reacts.
+        boundary_floor = reaction_end if reaction_end is not None else peak
         for index, item in enumerate(after_peak):
+            if float(item.end) < boundary_floor:
+                continue
             clean = _clean_ass_text(item.text)
             next_item = after_peak[index + 1] if index + 1 < len(after_peak) else None
             pause_after = float(next_item.start) - float(item.end) if next_item else 0.0
@@ -534,12 +555,12 @@ def select_excerpt_range(
                 end_after_payoff = float(item.end)
                 break
         if end_after_payoff is None:
-            nearby = [item for item in after_peak if float(item.start) <= peak + 10.0]
+            nearby = [item for item in after_peak if float(item.start) <= max(peak + 10.0, (reaction_end or peak) + 4.0)]
             if nearby:
                 end_after_payoff = float(nearby[-1].end)
 
     if end_after_payoff is None:
-        end_after_payoff = peak + 12.0
+        end_after_payoff = max(peak + 12.0, (reaction_end or peak) + 1.0)
     end = min(duration, max(peak + 2.0, end_after_payoff + tail_seconds))
 
     # If the selected payoff is short, expand backwards to a prior sentence
