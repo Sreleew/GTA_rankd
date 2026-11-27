@@ -1,7 +1,10 @@
 from pathlib import Path
 
+import pytest
+
 from studio.web.transcribe import (
-    detect_audio_peak_timestamp, parse_whisper_json_words, transcribe_with_whisper_cpp,
+    detect_audio_peak_timestamp, detect_audio_peak_timestamps,
+    parse_whisper_json_words, transcribe_with_whisper_cpp,
 )
 
 
@@ -16,6 +19,45 @@ def test_transcriber_reports_missing_model_without_crashing(tmp_path: Path):
 
 def test_peak_detector_returns_zero_for_missing_wav(tmp_path: Path):
     assert detect_audio_peak_timestamp(tmp_path / "missing.wav") == 0.0
+
+
+def test_audio_accents_detect_separated_peaks_and_ignore_silence(tmp_path: Path):
+    import math
+    import struct
+    import wave
+
+    path = tmp_path / "accents.wav"
+    sample_rate = 16000
+    samples = []
+    for index in range(sample_rate * 12):
+        timestamp = index / sample_rate
+        active = 1.0 <= timestamp <= 1.7 or 7.0 <= timestamp <= 7.7
+        amplitude = 12000 if active else 100
+        samples.append(int(amplitude * math.sin(2 * math.pi * 440 * timestamp)))
+    with wave.open(str(path), "wb") as audio:
+        audio.setnchannels(1)
+        audio.setsampwidth(2)
+        audio.setframerate(sample_rate)
+        audio.writeframes(struct.pack(f"<{len(samples)}h", *samples))
+
+    peaks = detect_audio_peak_timestamps(path)
+    assert len(peaks) == 2
+    assert peaks[0] == pytest.approx(1.35, abs=0.35)
+    assert peaks[1] == pytest.approx(7.35, abs=0.35)
+    assert detect_audio_peak_timestamp(path) == peaks[0]
+
+
+def test_audio_accents_ignore_silence(tmp_path: Path):
+    import struct
+    import wave
+
+    path = tmp_path / "silence.wav"
+    with wave.open(str(path), "wb") as audio:
+        audio.setnchannels(1)
+        audio.setsampwidth(2)
+        audio.setframerate(16000)
+        audio.writeframes(struct.pack("<16000h", *([0] * 16000)))
+    assert detect_audio_peak_timestamps(path) == []
 
 
 def test_whisper_json_dtw_tokens_are_grouped_into_word_timings(tmp_path: Path):
