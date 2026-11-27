@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import math
 import queue
 import re
 import shutil
@@ -33,6 +34,38 @@ from studio.web.transcribe import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _download_metrics_suffix(data: dict[str, Any]) -> str:
+    """Format optional yt-dlp transfer speed and ETA for the live job message."""
+    metrics: list[str] = []
+    try:
+        speed = float(data.get("speed"))
+    except (TypeError, ValueError, OverflowError):
+        speed = 0.0
+    if speed > 0 and math.isfinite(speed):
+        if speed >= 1024 * 1024:
+            metrics.append(f"{speed / (1024 * 1024):.1f} MiB/s")
+        elif speed >= 1024:
+            metrics.append(f"{speed / 1024:.0f} KiB/s")
+        else:
+            metrics.append(f"{speed:.0f} B/s")
+
+    try:
+        eta = float(data.get("eta"))
+    except (TypeError, ValueError, OverflowError):
+        eta = -1.0
+    if math.isfinite(eta) and 0 <= eta <= 365 * 24 * 60 * 60:
+        seconds = int(round(eta))
+        hours, remainder = divmod(seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        formatted_eta = (
+            f"{hours:d}:{minutes:02d}:{seconds:02d}"
+            if hours else f"{minutes:02d}:{seconds:02d}"
+        )
+        metrics.append(f"reste {formatted_eta}")
+
+    return " · " + " · ".join(metrics) if metrics else ""
 
 
 def _metadata_text(info: dict[str, Any], *keys: str) -> str:
@@ -516,13 +549,14 @@ class JobRunner:
             except (TypeError, ValueError, OverflowError):
                 downloaded, total = 0, 0
 
+            metrics_suffix = _download_metrics_suffix(data)
             now = time.monotonic()
             if total > 0:
                 percent = min(100, max(0, downloaded * 100 // total))
                 if last_download_percent is not None:
                     percent = max(last_download_percent, percent)
                 progress = 10 + int(round(percent * 0.09))
-                message = f"Téléchargement de la source · {percent} %"
+                message = f"Téléchargement de la source · {percent} %{metrics_suffix}"
                 should_update = (
                     last_progress_at is None
                     or now - last_progress_at >= 1.0
@@ -534,7 +568,7 @@ class JobRunner:
                 )
             else:
                 progress = 10 + int(round((last_download_percent or 0) * 0.09))
-                message = "Téléchargement de la source…"
+                message = "Téléchargement de la source…" + metrics_suffix
                 should_update = last_progress_at is None or now - last_progress_at >= 1.25
 
             if should_update:
