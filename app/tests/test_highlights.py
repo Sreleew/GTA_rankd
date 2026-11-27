@@ -284,10 +284,14 @@ def test_short_reaction_transcripts_are_not_deduplicated() -> None:
         for second in range(0, duration, 2)
     ]
     words = [
-        WordTiming(start + offset, start + offset + 0.3, token)
+        WordTiming(start + offset * 0.8, start + offset * 0.8 + 0.3, "yeah")
+        for start in (42.0, 152.0) for offset in range(20)
+    ]
+    words.extend(
+        WordTiming(start + 17.0 + offset, start + 17.3 + offset, token)
         for start in (42.0, 152.0)
         for offset, token in enumerate(("OH", "MY", "GOD"))
-    ]
+    )
 
     candidates = score_highlight_candidates(
         duration, audio, words, candidate_seconds=30, max_candidates=None,
