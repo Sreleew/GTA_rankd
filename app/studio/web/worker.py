@@ -29,6 +29,7 @@ from studio.web.transcribe import (
     TranscriptionError,
     analyze_audio_peaks,
     extract_audio_wav,
+    transcribe_with_whisper_cpp,
 )
 
 logger = logging.getLogger(__name__)
@@ -121,6 +122,64 @@ def _needs_audio_analysis(
     return bool(has_audio and (
         dynamic_zoom or (auto_trim and float(duration) > max(0.0, trim_threshold_seconds))
     ))
+
+
+def _transcribe_short_excerpt(
+    source_path: Path,
+    temp_dir: Path,
+    config: AppConfig,
+    *,
+    trim_start: float,
+    trim_end: float,
+    existing_audio_path: Path | None = None,
+    existing_audio_start: float = 0.0,
+    existing_audio_duration: float | None = None,
+) -> dict[str, Any]:
+    """Transcribe only the selected Short excerpt, reusing an exact analysis WAV when possible."""
+    duration = float(trim_end) - float(trim_start)
+    if duration <= 0:
+        raise TranscriptionError("La durée de l'extrait à sous-titrer est invalide.")
+
+    can_reuse_audio = (
+        existing_audio_path is not None
+        and existing_audio_path.is_file()
+        and abs(float(existing_audio_start) - float(trim_start)) <= 0.05
+        and existing_audio_duration is not None
+        and abs(float(existing_audio_duration) - duration) <= 0.05
+    )
+    if can_reuse_audio:
+        audio_path = existing_audio_path
+    else:
+        audio_path = temp_dir / "short-captions-16k.wav"
+        extract_audio_wav(
+            source_path,
+            audio_path,
+            ffmpeg=str(config.get("executables", "ffmpeg", default="ffmpeg")),
+            start_seconds=float(trim_start),
+            duration_seconds=duration,
+        )
+
+    vad_value = config.get("transcription", "vad_model_path")
+    vad_model_path = config.path_for("transcription", "vad_model_path") if vad_value else None
+    try:
+        threads = max(0, int(config.get("transcription", "threads", default=0)))
+    except (TypeError, ValueError, OverflowError):
+        threads = 0
+    try:
+        timeout = max(60, int(config.get("transcription", "short_timeout_seconds", default=1800)))
+    except (TypeError, ValueError, OverflowError):
+        timeout = 1800
+
+    return transcribe_with_whisper_cpp(
+        audio_path,
+        whisper_cli=config.path_for("executables", "whisper_cli"),
+        model_path=config.path_for("transcription", "model_path"),
+        output_dir=temp_dir / "transcription",
+        language=str(config.get("transcription", "language", default="en") or "en"),
+        threads=threads,
+        vad_model_path=vad_model_path,
+        timeout=timeout,
+    )
 
 
 def safe_slug(value: str, fallback: str = "gta-clip") -> str:
@@ -236,6 +295,19 @@ class JobRunner:
             self.store.update_job(job_id, status="running", progress=5, message="Préparation du clip", error=None)
         try:
             check_cancelled()
+            options = (job.get("metadata") or {}).get("options", {})
+            captions_requested = bool(options.get("captions_enabled", False))
+            if captions_requested:
+                whisper_cli = self.config.path_for("executables", "whisper_cli")
+                whisper_model = self.config.path_for("transcription", "model_path")
+                if not whisper_cli.is_file():
+                    raise MediaError("Le moteur whisper.cpp a disparu. Réinstalle-le depuis Paramètres.")
+                try:
+                    model_valid = whisper_model.is_file() and whisper_model.stat().st_size >= 1024 * 1024 * 1024
+                except OSError:
+                    model_valid = False
+                if not model_valid:
+                    raise MediaError("Le modèle Whisper est absent ou incomplet. Télécharge-le à nouveau depuis Paramètres.")
             source_path = Path(job["source_path"]) if job.get("source_path") else None
             source_url = job.get("source_url") or ""
             if source_path is None and source_url:
@@ -261,7 +333,6 @@ class JobRunner:
             if source_path is None or not source_path.is_file():
                 raise MediaError("Fichier source introuvable après import.")
 
-            options = (job.get("metadata") or {}).get("options", {})
             date_key = datetime.now().astimezone().strftime("%Y-%m-%d")
             slug = safe_slug(job.get("source_title") or job.get("streamer") or source_path.stem)
             output_dir = self.config.path_for("paths", "output_shorts") / date_key / f"{slug}-{job_id[:8]}"
@@ -308,9 +379,14 @@ class JobRunner:
                 )),
             )
             audio_peak_timestamps: list[float] = []
+            audio_path: Path | None = None
+            audio_path_start = 0.0
+            audio_path_duration = float(source_info["duration"])
             if audio_analysis_needed:
                 stage_started = time.perf_counter()
                 audio_path = temp_dir / "audio-16k.wav"
+                audio_path_start = trim_start if source_range else 0.0
+                audio_path_duration = (trim_end - trim_start) if source_range else float(source_info["duration"])
                 try:
                     extract_audio_wav(
                         source_path, audio_path,
@@ -341,6 +417,50 @@ class JobRunner:
                     maximum_seconds=float(self.config.get("shorts", "auto_trim_max_seconds", default=45)),
                 )
             render_words: list[Any] = []
+            render_transcript = ""
+            transcription_status = "disabled"
+            transcription_timestamp_mode = None
+            transcription_warning = None
+            captions_output_path: Path | None = None
+            if captions_requested:
+                stage_started = time.perf_counter()
+                if not source_info["has_audio"]:
+                    transcription_status = "no_audio"
+                    transcription_warning = "La source ne contient aucune piste audio."
+                else:
+                    self.store.update_job(job_id, progress=43, message="Transcription locale des dialogues · Whisper")
+                    try:
+                        transcription = _transcribe_short_excerpt(
+                            source_path,
+                            temp_dir,
+                            self.config,
+                            trim_start=trim_start,
+                            trim_end=trim_end,
+                            existing_audio_path=audio_path,
+                            existing_audio_start=audio_path_start,
+                            existing_audio_duration=audio_path_duration,
+                        )
+                        transcription_status = str(transcription.get("status") or "unknown")
+                        transcription_timestamp_mode = transcription.get("timestamp_mode")
+                        render_words = list(transcription.get("words") or [])
+                        render_transcript = str(transcription.get("text") or "")
+                        if render_words:
+                            source_srt = Path(str(transcription.get("srt_path") or ""))
+                            if source_srt.is_file():
+                                captions_output_path = output_dir / "captions.srt"
+                                shutil.copy2(source_srt, captions_output_path)
+                        else:
+                            transcription_warning = str(
+                                transcription.get("reason") or "Aucune parole exploitable détectée."
+                            )[:240]
+                    except TranscriptionError as exc:
+                        transcription_status = "error"
+                        transcription_warning = str(exc).strip()[:240] or "Erreur de transcription Whisper."
+                        logger.warning("Sous-titres indisponibles pour le job %s : %s", job_id, exc)
+                timings["transcription_ms"] = max(0, int(round((time.perf_counter() - stage_started) * 1000)))
+                check_cancelled()
+
+            captions_active = bool(render_words)
             render_peak_timestamp = max(0.0, peak_timestamp - trim_start)
             render_zoom_timestamps = [
                 round(item - trim_start, 3)
@@ -352,8 +472,6 @@ class JobRunner:
             render_thumbnail_timestamp = select_thumbnail_timestamp(
                 [], trim_end - trim_start, preferred=render_peak_timestamp
             )
-            render_transcript = ""
-
             self.store.update_job(job_id, progress=48, message="Préparation du montage vertical")
             prompt_path = self.config.path_for("paths", "prompts") / "short_metadata.txt"
             stage_started = time.perf_counter()
@@ -449,9 +567,9 @@ class JobRunner:
                     expected_width=int(result["output_width"]),
                     expected_height=int(result["output_height"]),
                     expect_audio=bool(result.get("has_audio", source_info["has_audio"])),
-                    ass_file=None,
-                    caption_words=None,
-                    caption_expected=False,
+                    ass_file=ass_path if captions_active else None,
+                    caption_words=render_words if captions_active else None,
+                    caption_expected=captions_active,
                 )
             except ProcessingCancelled:
                 raise
@@ -512,6 +630,13 @@ class JobRunner:
                 "generation_stage": "short_edit_v0.6.0",
                 "processing_timings_ms": timings,
                 "audio_analysis_skipped": not audio_analysis_needed,
+                "transcription_status": transcription_status,
+                "transcription_timestamp_mode": transcription_timestamp_mode,
+                "transcribed_words": len(render_words),
+                "transcription_warning": transcription_warning,
+                "captions_enabled": captions_requested,
+                "captions_path": str(captions_output_path) if captions_output_path else None,
+                "transcript": render_transcript,
                 "options": options,
             })
             self.store.update_job(job_id, progress=92, message="Écriture des métadonnées et de la miniature")
@@ -520,8 +645,13 @@ class JobRunner:
             publication_text = str(metadata.get("title", "GTA Short")) + "\n\n" + str(metadata.get("description", "")) + "\n"
             (output_dir / "publication.txt").write_text(publication_text, encoding="utf-8")
             meta_path.write_text(json.dumps(metadata, indent=2, ensure_ascii=False), encoding="utf-8")
+            ready_message = (
+                "Short prêt · sous-titres non générés"
+                if captions_requested and not captions_active
+                else "Short prêt pour validation"
+            )
             self.store.update_job(
-                job_id, status="ready", progress=100, message="Short prêt pour validation",
+                job_id, status="ready", progress=100, message=ready_message,
                 duration=result["duration"], output_path=str(output_path),
                 thumbnail_path=str(thumbnail_path) if thumbnail_path.is_file() else None,
                 metadata_json=metadata,
