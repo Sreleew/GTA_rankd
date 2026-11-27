@@ -1386,6 +1386,14 @@ def test_short_caption_option_requires_local_whisper_and_is_persisted(tmp_path: 
     assert invalid_language.status_code == 400
     assert "langue" in invalid_language.json()["detail"].lower()
 
+    configured_default = client.post(
+        "/api/shorts/url",
+        data={key: value for key, value in payload.items() if key != "caption_language"},
+    )
+    assert configured_default.status_code == 202, configured_default.text
+    default_job = app.state.store.get_job(configured_default.json()["id"])
+    assert default_job["metadata"]["options"]["caption_language"] == "config"
+
     upload = client.post(
         "/api/shorts/upload",
         files={"file": ("caption-upload.mp4", b"video", "video/mp4")},
