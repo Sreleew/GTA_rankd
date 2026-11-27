@@ -198,7 +198,7 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 4. Corriger uniquement les défauts récurrents qui empêchent de publier : coupe incompréhensible, cadrage raté, sous-titres illisibles, audio défectueux ou métadonnées trompeuses.
 5. Démarrer la publication régulière et mesurer les résultats avant d'investir du temps dans les fonctions secondaires.
 
-## 10. Journal de travail récent
+## Journal complémentaire du 27 novembre 2026
 
 - PR #19 : refonte éditoriale Vice City Dispatch, fusionnée.
 - PR #20 : score payoff basé sur le contraste du pic audio et les réactions proches, avec migration SQLite, fusionnée.
