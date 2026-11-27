@@ -241,9 +241,6 @@ class JobRunner:
                 trim_start, trim_end = 0.0, float(source_info["duration"])
                 peak_timestamp = source_info["duration"] / 2
             audio_peak_timestamps: list[float] = []
-            transcript_result: dict[str, Any] = {
-                "status": "disabled", "reason": "Transcription mise en pause.", "words": [], "text": ""
-            }
             if source_info["has_audio"]:
                 audio_path = temp_dir / "audio-16k.wav"
                 try:
@@ -260,15 +257,11 @@ class JobRunner:
 
                 except TranscriptionError as exc:
                     logger.warning("Analyse audio ignorée pour le job %s : %s", job_id, exc)
-                    transcript_result = {"status": "error", "reason": str(exc), "words": [], "text": ""}
-            else:
-                transcript_result = {"status": "no_audio", "reason": "La vidéo ne contient pas de piste audio.", "words": [], "text": ""}
 
             if not source_range:
                 auto_trim_enabled = bool(options.get("auto_trim_enabled", self.config.get("shorts", "auto_trim_enabled", default=True)))
                 trim_start, trim_end = 0.0, float(source_info["duration"])
             render_words: list[Any] = []
-            speaker_filter: dict[str, Any] = {"mode": "paused", "status": "not_run"}
             render_peak_timestamp = max(0.0, peak_timestamp - trim_start)
             render_zoom_timestamps = [
                 round(item - trim_start, 3)
@@ -412,11 +405,6 @@ class JobRunner:
                 "trim_start": trim_start,
                 "trim_end": trim_end,
                 "auto_trim_enabled": auto_trim_enabled,
-                "transcription_status": transcript_result.get("status"),
-                "transcription_timestamp_mode": transcript_result.get("timestamp_mode"),
-                "transcription_message": transcript_result.get("reason"),
-                "transcript": render_transcript,
-                "speaker_filter": speaker_filter,
                 "generation_stage": "short_edit_v0.6.0",
                 "options": options,
             })
