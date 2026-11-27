@@ -106,32 +106,30 @@ def filter_dominant_speaker(
         return words, {**base, "status": "no_words"}
     if not durations:
         return [], {**base, "status": "no_speaker_segments", "words_after": 0, "reason": "Aucun segment vocal exploitable."}
-    if len(durations) == 1:
-        only_speaker = next(iter(durations))
-        return words, {
-            **base,
-            "status": "single_speaker",
-            "selected_speaker": only_speaker,
-            "dominant_share": 1.0,
-            "dominance_ratio": 99.0,
-        }
 
+    single_speaker = len(durations) == 1
     ranked = sorted(durations.items(), key=lambda pair: pair[1], reverse=True)
     selected, selected_duration = ranked[0]
-    second_duration = ranked[1][1]
-    total_duration = sum(durations.values())
-    share = selected_duration / max(0.001, total_duration)
-    ratio = selected_duration / max(0.001, second_duration)
-    if selected_duration < minimum_speech_seconds or share < minimum_share or ratio < minimum_ratio:
-        return [], {
-            **base,
-            "status": "ambiguous_speakers",
-            "words_after": 0,
-            "reason": "Plusieurs voix sont trop proches pour en sélectionner une sans risque.",
-            "dominant_share": round(share, 3),
-            "dominance_ratio": round(ratio, 3),
-        }
+    if single_speaker:
+        share, ratio = 1.0, 99.0
+    else:
+        second_duration = ranked[1][1]
+        total_duration = sum(durations.values())
+        share = selected_duration / max(0.001, total_duration)
+        ratio = selected_duration / max(0.001, second_duration)
+        if selected_duration < minimum_speech_seconds or share < minimum_share or ratio < minimum_ratio:
+            return [], {
+                **base,
+                "status": "ambiguous_speakers",
+                "words_after": 0,
+                "reason": "Plusieurs voix sont trop proches pour en sélectionner une sans risque.",
+                "dominant_share": round(share, 3),
+                "dominance_ratio": round(ratio, 3),
+            }
 
+    # Even with one detected speaker, only retain words that overlap an actual
+    # diarized speech segment. Returning every transcript word here used to let
+    # game dialogue, transcription hallucinations and silent gaps leak through.
     filtered: list[WordTiming] = []
     for word in words:
         word_start = max(0.0, float(word.start))
@@ -147,20 +145,27 @@ def filter_dominant_speaker(
         if selected_overlap >= max(0.06, word_duration * 0.40) and selected_overlap >= best_overlap * 0.80:
             filtered.append(word)
 
-    minimum_kept = max(2, math.ceil(len(words) * 0.22))
+    minimum_kept = 1 if single_speaker else max(2, math.ceil(len(words) * 0.22))
     if len(filtered) < minimum_kept:
+        status = "no_word_attribution" if single_speaker else "low_word_attribution"
+        reason = (
+            "Aucun mot ne chevauche les segments de parole détectés."
+            if single_speaker else
+            "Trop peu de mots peuvent être attribués à la voix principale."
+        )
         return [], {
             **base,
-            "status": "low_word_attribution",
+            "status": status,
             "words_after": 0,
-            "reason": "Trop peu de mots peuvent être attribués à la voix principale.",
+            "reason": reason,
+            "selected_speaker": selected if single_speaker else None,
             "dominant_share": round(share, 3),
             "dominance_ratio": round(ratio, 3),
         }
 
     return filtered, {
         **base,
-        "status": "dominant_filtered",
+        "status": "single_speaker" if single_speaker else "dominant_filtered",
         "selected_speaker": selected,
         "dominant_share": round(share, 3),
         "dominance_ratio": round(ratio, 3),

@@ -36,14 +36,30 @@ def test_filter_omits_captions_when_dominance_is_ambiguous() -> None:
     assert report["words_after"] == 0
 
 
-def test_filter_keeps_words_when_only_one_voice_is_present() -> None:
-    words = [WordTiming(0.1, 0.5, "HELLO")]
+def test_filter_single_speaker_only_keeps_words_overlapping_speech_segments() -> None:
+    words = [
+        WordTiming(0.1, 0.5, "STREAMER"),
+        WordTiming(1.4, 1.8, "GAME_DIALOGUE"),
+    ]
     filtered, report = filter_dominant_speaker(
-        words, [{"start": 0.0, "end": 1.0, "speaker": "SPEAKER_00"}]
+        words, [{"start": 0.0, "end": 0.9, "speaker": "SPEAKER_00"}]
     )
 
-    assert filtered == words
+    assert [word.text for word in filtered] == ["STREAMER"]
     assert report["status"] == "single_speaker"
+    assert report["words_before"] == 2
+    assert report["words_after"] == 1
+
+
+def test_filter_single_speaker_omits_words_outside_all_speech_segments() -> None:
+    words = [WordTiming(1.4, 1.8, "UNATTRIBUTED")]
+    filtered, report = filter_dominant_speaker(
+        words, [{"start": 0.0, "end": 0.9, "speaker": "SPEAKER_00"}]
+    )
+
+    assert filtered == []
+    assert report["status"] == "no_word_attribution"
+    assert report["words_after"] == 0
 
 
 def test_filter_omits_captions_if_too_few_words_match_dominant_voice() -> None:

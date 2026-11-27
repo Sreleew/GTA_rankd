@@ -376,3 +376,12 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Tests CI PR :** Linux run [46039322749](https://github.com/Sreleew/GTA_rankd/actions/runs/46039322749) et Windows run [46039322643](https://github.com/Sreleew/GTA_rankd/actions/runs/46039322643) réussis. Aucun rendu réel Twitch ni écoute sur le PC utilisateur n'a été effectué dans ce lot.
 - **État produit :** stable publiée v0.8.9 ; le lot #56 est intégré dans main mais pas encore publié dans une nouvelle Release.
 - **Prochaine action prioritaire :** reprendre le parcours réel Twitch Short et mesurer les défauts du rendu final, notamment l'identification du streamer, le cadrage webcam/gameplay et le rendu des sous-titres. Ne pas étendre « Moments forts ».
+
+
+## 25. Attribution temporelle des mots avec une seule voix, 27 novembre 2026
+
+- **Problème corrigé :** le mode diarisation conservait tous les mots Whisper lorsqu'un seul locuteur était détecté, y compris ceux hors des segments de parole identifiés.
+- **Comportement :** même avec une seule voix, chaque mot doit désormais chevaucher un segment diarizé avec un recouvrement minimal. Les mots non attribués sont écartés ; si aucun mot ne correspond, le statut devient `no_word_attribution`.
+- **Compatibilité :** le statut `single_speaker` est conservé lorsque des mots sont attribués. Les seuils de dominance multi-voix, les timings DTW, la transcription et le rendu ne changent pas.
+- **Tests :** cas avec un mot streamer dans le segment et un mot hors segment, plus cas sans aucun mot attribuable.
+- **Validation :** CI Linux et Windows à effectuer sur la PR. Cette heuristique ne prouve toujours pas l'identité du streamer et ne sépare pas deux voix superposées dans un même segment.
