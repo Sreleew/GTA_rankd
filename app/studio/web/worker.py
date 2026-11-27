@@ -503,7 +503,7 @@ class JobRunner:
             if not render_zoom_timestamps:
                 render_zoom_timestamps = [render_peak_timestamp]
             render_thumbnail_timestamp = select_thumbnail_timestamp(
-                [], trim_end - trim_start, preferred=render_peak_timestamp
+                render_words, trim_end - trim_start, preferred=render_peak_timestamp
             )
             self.store.update_job(job_id, progress=48, message="Préparation du montage vertical")
             prompt_path = self.config.path_for("paths", "prompts") / "short_metadata.txt"

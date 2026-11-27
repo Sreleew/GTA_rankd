@@ -673,10 +673,11 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 
 ## 48. Sous-titres SRT de secours sans faux timing mot à mot, 28 novembre 2026
 
-- **Intégration précédente :** PR #85 fusionnée dans `main`, commit `5d693db6f9db6c9cc755f53c337053443f6ab769`. Les validations Linux et Windows de la PR ont réussi. Les contrôles post-fusion Linux/Windows étaient encore en cours au démarrage de ce lot.
+- **Intégration précédente :** PR #85 fusionnée dans `main`, commit `5d693db6f9db6c9cc755f53c337053443f6ab769`. Les validations Linux et Windows de la PR ont réussi. Les contrôles post-fusion Linux [46081192425](https://github.com/Sreleew/GTA_rankd/actions/runs/46081192425) et Windows [46081192412](https://github.com/Sreleew/GTA_rankd/actions/runs/46081192412) ont ensuite tous deux réussi.
 - **Problème ciblé :** lorsque whisper.cpp ne fournit pas de timestamps DTW, le fallback SRT ne connaît que les limites de chaque segment. Le moteur répartissait artificiellement la durée du segment entre ses mots en fonction de leur longueur, puis animait le surlignage mot par mot. Ce timing simulé pouvait donner une impression de précision qui n'existe pas.
 - **Amélioration :** le worker transmet maintenant le mode de timing réel au générateur ASS. En mode `word_dtw`, le traitement cinétique mot à mot est conservé. En mode `segment_srt`, chaque phrase reste affichée sur son intervalle SRT réel, sans inventer de transitions entre mots.
 - **Lisibilité :** les segments SRT sont automatiquement répartis sur plusieurs lignes et les mots exceptionnellement longs sont réduits horizontalement de façon bornée afin de limiter les débordements sur le format vertical.
+- **Miniature :** le worker transmet désormais les mots réellement transcrits à la sélection de la frame de couverture. Les mots saillants (réaction, crash, police, etc.) peuvent donc choisir un instant plus descriptif au lieu de toujours retomber sur le pic audio, sans analyse ni coût supplémentaire.
 - **Tests ajoutés :** vérification de la conservation exacte des bornes temporelles d'un segment SRT, de l'absence de faux surlignage mot à mot et du traitement d'un mot très long.
 - **Périmètre :** aucune dépendance, aucun modèle, aucun réglage utilisateur, aucun changement AMD/CPU ou version de release. Le mode DTW existant reste inchangé.
 - **Branche :** `feat/accurate-segment-captions`. CI Linux/Windows à vérifier avant fusion.
