@@ -34,15 +34,13 @@ La voie `workflow_dispatch` reste disponible pour préparer une Release brouillo
 
 ## État au 27 novembre 2026
 
-- Dernière Release stable publiée : [v0.8.7](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.7), avec `GTA-Ranked-Studio-v0.8.7.zip` et `SHA256SUMS.txt`.
-- PR #26 : saisie des plages en secondes et en `HH:MM:SS`, fusionnée et validée Linux/Windows.
-- PR #27 : lots Twitch multi-tranches de 30 à 180 minutes, 48 segments maximum, scans indépendants insérés en base de façon atomique.
-- PR #28 : shortlist consolidée à l'échelle du lot, dédoublonnage inter-segments et conservation du `scan_id` source pour l'export Short.
-- PR #29 : synchronisation et approbation de la Release v0.8.7, fusionnée dans `main`.
-- CI des PR #26 à #29 : suites Linux et Windows complètes, Ruff, pip-audit, contrôles de cohérence et package Windows réussis.
-- Workflow de publication v0.8.7 : [45991509028](https://github.com/Sreleew/GTA_rankd/actions/runs/45991509028), terminé avec succès. ZIP construit, exclusions vérifiées, SHA-256 publié.
-- ZIP v0.8.7 : 197 246 octets ; SHA-256 `8239f0788fa788f793ae19228d589443e76ea32477cd04020e1f0267df1307f3`.
-- Les scores audio restent normalisés par segment. La shortlist commune est indicative et les moments doivent être relus avant export.
+- Dernière Release stable publiée : [v0.8.7](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.7), avec le ZIP Windows et `SHA256SUMS.txt`.
+- PR #41 fusionnée : constructeur de sélection Daily Best Of, avec CI Linux et Windows réussies.
+- PR #42 fusionnée : relance des jobs Twitch en erreur depuis l'URL d'origine, conservation des options et réutilisation du média local.
+- CI PR #42 : Linux [46012357301](https://github.com/Sreleew/GTA_rankd/actions/runs/46012357301) et Windows [46012357283](https://github.com/Sreleew/GTA_rankd/actions/runs/46012357283) réussies.
+- CI post-fusion sur main : Linux [46012922370](https://github.com/Sreleew/GTA_rankd/actions/runs/46012922370) et Windows [46012922379](https://github.com/Sreleew/GTA_rankd/actions/runs/46012922379), résultats à confirmer.
+- Version v0.8.8 en préparation. La publication stable est déclenchée uniquement par la mise à jour de `.release-approval` sur `main`, après validation complète de la PR de release.
+- Le rendu vidéo final Daily Best Of 16:9 reste à implémenter.
 - La validation physique de la RX 9060 XT pour AMF/Vulkan reste à faire.
 ## Protection de main
 
