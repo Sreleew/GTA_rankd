@@ -274,3 +274,24 @@ def test_store_migrates_existing_highlight_candidates_table(tmp_path: Path) -> N
     candidates = store.list_highlight_candidates("legacy-scan")
     assert candidates[0]["opening_score"] == 0.7
     assert candidates[0]["payoff_score"] == 0.8
+
+
+def test_short_reaction_transcripts_are_not_deduplicated() -> None:
+    duration = 240
+    audio = [
+        {"start": float(second), "end": float(second + 2),
+         "rms": 0.06 if (40 <= second < 70 or 150 <= second < 180) else 0.005}
+        for second in range(0, duration, 2)
+    ]
+    words = [
+        WordTiming(start + offset, start + offset + 0.3, token)
+        for start in (42.0, 152.0)
+        for offset, token in enumerate(("OH", "MY", "GOD"))
+    ]
+
+    candidates = score_highlight_candidates(
+        duration, audio, words, candidate_seconds=30, max_candidates=None,
+    )
+
+    assert len(candidates) == 2
+    assert candidates[0]["transcript"] == candidates[1]["transcript"]
