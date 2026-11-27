@@ -202,12 +202,31 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         return clean
 
     def _parse_optional_seconds(value: str | None, field_name: str) -> float | None:
+        """Parse seconds or a human-readable HH:MM:SS timecode."""
         if value is None or not str(value).strip():
             return None
+        raw = str(value).strip()
         try:
-            parsed = float(value)
+            if ":" in raw:
+                parts = raw.split(":")
+                if len(parts) != 3:
+                    raise ValueError("timecode must use HH:MM:SS")
+                hours_text, minutes_text, seconds_text = parts
+                if not hours_text.isdigit() or not minutes_text.isdigit():
+                    raise ValueError("hours and minutes must be whole numbers")
+                hours = int(hours_text)
+                minutes = int(minutes_text)
+                seconds = float(seconds_text)
+                if hours < 0 or not 0 <= minutes < 60 or not 0 <= seconds < 60:
+                    raise ValueError("timecode component out of range")
+                parsed = hours * 3600 + minutes * 60 + seconds
+            else:
+                parsed = float(raw)
         except (TypeError, ValueError) as exc:
-            raise HTTPException(status_code=400, detail=f"{field_name} doit être un nombre de secondes.") from exc
+            raise HTTPException(
+                status_code=400,
+                detail=f"{field_name} doit être un nombre de secondes ou un horaire au format HH:MM:SS.",
+            ) from exc
         if not math.isfinite(parsed):
             raise HTTPException(status_code=400, detail=f"{field_name} doit être un nombre valide.")
         return parsed
