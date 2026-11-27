@@ -36,7 +36,11 @@ def test_canonical_documentation_is_not_duplicated_inside_app() -> None:
     assert (REPO / "docs/CONTINUATION.md").is_file()
     assert (REPO / "docs/PROJECT-MAP.md").is_file()
     assert not (REPO / "docs/implementation-plan-v0.7.8.md").exists()
-    assert {note.name for note in APP.glob("NOTES-v*.txt")} == {"NOTES-v0.8.4.txt"}
+    app_notes = {note.name for note in APP.glob("NOTES-v*.txt")}
+    root_version = (REPO / "VERSION.txt").read_text(encoding="utf-8-sig")
+    import re
+    version = re.search(r"(?m)^Version:\s*([0-9.]+)\s*$", root_version).group(1)
+    assert app_notes == {f"NOTES-v{version}.txt"}
     assert not list(APP.glob("VERIFICATION-v*.md"))
 
 
@@ -65,6 +69,7 @@ def test_only_the_short_creation_pipeline_is_in_the_default_config() -> None:
     assert "bestof" not in config
     assert "scoring" not in config
     assert not {"inbox_bestof", "inbox_urls", "output_bestof", "output_log_csv"} & set(config["paths"])
+
 
 def test_runtime_smoke_check_runs_from_installer_path(tmp_path) -> None:
     import subprocess
