@@ -19,7 +19,7 @@ from studio.config import AppConfig
 from studio.process import ProcessingCancelled, check_cancelled, set_current_cancel_event
 from studio.web.metadata import generate_short_metadata
 from studio.web.short_editor import (
-    apply_thumbnail_overlay, create_ass_file, infer_hook_style,
+    create_ass_file, infer_hook_style,
     select_thumbnail_timestamp, select_excerpt_range,
 )
 from studio.web.short_renderer import MediaError, create_hook_sound_effect, probe_media, render_vertical_short
@@ -205,35 +205,6 @@ def _transcribe_short_excerpt(
 def safe_slug(value: str, fallback: str = "gta-clip") -> str:
     cleaned = re.sub(r"[^a-zA-Z0-9_-]+", "-", value.strip().lower()).strip("-_")
     return cleaned[:70] or fallback
-
-
-def _apply_thumbnail_overlay_safely(
-    image_path: Path,
-    text: str,
-    *,
-    font_path: Path | None = None,
-    streamer: str = "",
-    game_label: str = "GTA",
-) -> tuple[str, str | None]:
-    """Keep a rendered Short usable when its optional cover decoration fails."""
-    try:
-        apply_thumbnail_overlay(
-            image_path,
-            text,
-            font_path=font_path,
-            streamer=streamer,
-            game_label=game_label,
-        )
-        return "applied", None
-    except Exception as exc:
-        warning = str(exc).strip()[:180] or exc.__class__.__name__
-        logger.warning(
-            "Habillage de miniature indisponible pour %s ; conservation de l'image source : %s",
-            image_path,
-            warning,
-            exc_info=True,
-        )
-        return "fallback", warning
 
 
 class JobRunner:
@@ -525,20 +496,25 @@ class JobRunner:
             timings["metadata_generation_ms"] = max(0, int(round((time.perf_counter() - stage_started) * 1000)))
             check_cancelled()
 
+            layout = str(options.get("layout", self.config.get("shorts", "layout", default="blur")))
+            if layout == "smart":
+                # Older saved jobs used the framed editorial layout; keep them on
+                # the source-preserving, border-free composition after upgrade.
+                layout = "blur"
             ass_path = temp_dir / "overlay.ass"
             create_ass_file(
                 ass_path,
                 words=render_words,
                 hook_text=str(metadata.get("hook_text", "")),
                 context_text=str(metadata.get("context_card", "")),
-                handle=str(self.config.get("branding", "handle", default="@GTARankedStudio")),
+                handle="GTA_rankd",
                 badge_text="GTA",
                 width=int(self.config.get("encoding", "width_short", default=1080)),
                 height=int(self.config.get("encoding", "height_short", default=1920)),
                 font_name=str(self.config.get("branding", "font_name", default="Arial")),
                 captions_enabled=captions_active,
-                brand_enabled=bool(options.get("brand_enabled", True)),
-                layout=str(options.get("layout", self.config.get("shorts", "layout", default="smart"))),
+                brand_enabled=bool(options.get("brand_enabled", False)),
+                layout=layout,
             )
             shutil.copy2(ass_path, output_dir / "overlay.ass")
 
@@ -618,20 +594,6 @@ class JobRunner:
             check_cancelled()
             metadata["quality_report"] = quality_report
 
-            if thumbnail_path.is_file():
-                stage_started = time.perf_counter()
-                custom_font = self.config.root / str(self.config.get("branding", "font_file", default="assets/fonts/Anton-Regular.ttf"))
-                overlay_status, overlay_warning = _apply_thumbnail_overlay_safely(
-                    thumbnail_path,
-                    str(metadata.get("thumbnail_text") or metadata.get("title") or "GTA MOMENT"),
-                    font_path=custom_font if custom_font.is_file() else None,
-                    streamer=str(job.get("streamer", "")),
-                    game_label=str(metadata.get("game_keyword") or "GTA"),
-                )
-                metadata["thumbnail_overlay_status"] = overlay_status
-                if overlay_warning:
-                    metadata["thumbnail_overlay_warning"] = overlay_warning
-                timings["thumbnail_overlay_ms"] = max(0, int(round((time.perf_counter() - stage_started) * 1000)))
             renderer_timings = result.get("performance_timings_ms", {})
             for timing_name, timing_value in renderer_timings.items():
                 try:
@@ -673,7 +635,7 @@ class JobRunner:
                 "transcript": render_transcript,
                 "options": options,
             })
-            self.store.update_job(job_id, progress=92, message="Écriture des métadonnées et de la miniature")
+            self.store.update_job(job_id, progress=92, message="Écriture des métadonnées")
             title_path.write_text(str(metadata.get("title", "GTA Short")) + "\n", encoding="utf-8")
             description_path.write_text(str(metadata.get("description", "")) + "\n", encoding="utf-8")
             publication_text = str(metadata.get("title", "GTA Short")) + "\n\n" + str(metadata.get("description", "")) + "\n"
