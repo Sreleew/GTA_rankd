@@ -91,6 +91,13 @@
             </form>
             <form id="url-form">
               <label class="full-label">URL du clip Twitch<input type="url" name="url" placeholder="https://clips.twitch.tv/..." required autocomplete="url"><small>Seules les URLs publiques Twitch de clips ou de VOD sont acceptées.</small></label>
+              <details class="batch-import-panel">
+                <summary>Importer plusieurs clips Twitch d'un coup <span>JUSQU'À 10 URLS</span></summary>
+                <label class="batch-import-label">Une URL par ligne<textarea id="short-batch-urls" rows="5" placeholder="https://clips.twitch.tv/ClipOne&#10;https://www.twitch.tv/videos/123456789&#10;https://clips.twitch.tv/ClipTwo"></textarea></label>
+                <p class="batch-import-note">Chaque URL crée son propre Short avec les réglages ci-dessous. Les URLs invalides sont ignorées et signalées, sans bloquer les autres.</p>
+                <button type="button" class="button button-secondary" id="short-batch-submit">Ajouter le lot à la file</button>
+                <p class="batch-import-feedback" id="short-batch-feedback" aria-live="polite"></p>
+              </details>
               <div class="form-grid"><label>Streamer <span>OPTIONNEL</span><input type="text" name="streamer" placeholder="ex. Kai Cenat"></label><label>Note de contexte <span>OPTIONNEL</span><input type="text" name="note" placeholder="Pourquoi ce moment est intéressant ?"></label></div>
               <label class="rights-check"><input type="checkbox" name="rights_confirmed" required><span>Je confirme disposer des droits ou autorisations nécessaires pour télécharger et utiliser cette source.</span></label>
 

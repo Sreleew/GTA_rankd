@@ -403,3 +403,12 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Décision produit confirmée :** ne pas développer d'extraction, de recadrage ou d'overlay webcam séparé. La webcam est déjà présente dans la capture d'écran source et doit rester visible dans le rendu qui conserve l'image entière. Le paramètre historique `webcam_zone` n'est pas une priorité produit.
 - **Priorités :** améliorer le parcours de création d'un Short Twitch de bout en bout, puis finaliser le moteur Daily Best Of 16:9. Ne pas détourner du temps vers un composant webcam dédié ni vers « Moments forts ».
 - **PR #58 :** le premier échec CI provenait d'un import `pytest` manquant dans un nouveau test de graphe FFmpeg, avant même l'exécution de la suite de tests. Correctif ajouté sur la branche, nouvelle CI requise. Ne pas fusionner avant réussite Linux et Windows.
+
+
+## 28. Import groupé de clips Twitch pour le workflow Shorts, 27 novembre 2026
+
+- **Fonctionnalité :** le formulaire « Créer un Short » accepte un lot de jusqu'à 10 URLs Twitch, une par ligne. Chaque URL valide crée un job Short indépendant dans la file existante et utilise les mêmes options de montage, sous-titres, hook, branding et audio.
+- **Robustesse :** URLs dédupliquées dans le lot ; chaque URL est validée individuellement ; une URL invalide est signalée sans empêcher les autres de partir ; si aucune URL valide ne reste, l'API retourne une erreur claire. La confirmation de droits reste obligatoire et vaut pour toutes les sources du lot.
+- **Interface :** panneau repliable sous l'import Twitch simple, retour du nombre de Shorts créés et liste des URLs rejetées.
+- **Validation :** tests API ajoutés pour les lots mixtes, la déduplication, les options partagées, l'obligation de confirmation et la limite de 10. Test statique de l'interface ajouté. CI Linux/Windows requise sur la PR.
+- **Objectif :** accélérer la préparation quotidienne de plusieurs Shorts et alimenter plus facilement le Clip Bank pour le Daily Best Of. Ce lot ne touche pas à « Moments forts » ni à la webcam.

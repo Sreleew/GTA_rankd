@@ -782,6 +782,39 @@ async function submitForm(form, endpoint) {
   }
 }
 
+async function submitShortBatch(form) {
+  const rights = form.elements.namedItem('rights_confirmed');
+  const urls = $('#short-batch-urls').value.trim();
+  if (!rights.checked) { toast('Confirme d’abord que tu disposes des droits nécessaires.', true); return; }
+  if (!urls) { toast('Colle au moins une URL Twitch, une par ligne.', true); return; }
+  const button = $('#short-batch-submit');
+  const feedback = $('#short-batch-feedback');
+  const oldText = button.textContent;
+  button.disabled = true;
+  button.textContent = 'Ajout du lot…';
+  feedback.textContent = 'Validation des URLs et création des Shorts…';
+  try {
+    const payload = new FormData(form);
+    payload.delete('url');
+    payload.set('urls', urls);
+    $('[data-option-checkbox]', form).forEach(input => payload.set(input.name, input.checked ? 'true' : 'false'));
+    const response = await fetch('/api/shorts/url/batch', { method: 'POST', body: payload });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.detail || `Erreur HTTP ${response.status}`);
+    const errors = (data.rejected || []).map(item => `• ${item.url} : ${item.reason}`);
+    feedback.textContent = [data.message || `${data.created_count} Short(s) ajouté(s).`, ...errors].join('\\n');
+    toast(data.message || 'Lot ajouté à la file.');
+    $('#short-batch-urls').value = '';
+    await Promise.all([loadJobs(), loadDashboard()]);
+  } catch (error) {
+    feedback.textContent = error.message;
+    toast(error.message, true);
+  } finally {
+    button.disabled = false;
+    button.textContent = oldText;
+  }
+}
+
 async function handleJobAction(button) {
   const id = button.dataset.id;
   const action = button.dataset.action;
@@ -902,6 +935,7 @@ function setupEvents() {
   dropzone.addEventListener('drop', event => setFile(event.dataTransfer.files[0]));
   $('#upload-form').addEventListener('submit', event => { event.preventDefault(); if (!$('#clip-file').files[0]) { toast('Sélectionne d’abord un fichier vidéo.', true); return; } submitForm(event.currentTarget, '/api/shorts/upload'); });
   $('#url-form').addEventListener('submit', event => { event.preventDefault(); submitForm(event.currentTarget, '/api/shorts/url'); });
+  $('#short-batch-submit').addEventListener('click', () => submitShortBatch($('#url-form')));
   $$('.highlight-source-tab').forEach(tab => tab.addEventListener('click', () => showHighlightSourceTab(tab.dataset.highlightSourceTab)));
   $('#highlight-upload-form').addEventListener('submit', event => { event.preventDefault(); if (!$('#highlight-file').files[0]) { toast('Sélectionne un fichier vidéo.', true); return; } submitHighlightForm(event.currentTarget, '/api/highlights/scan/upload'); });
   $('#highlight-url-form').addEventListener('submit', event => { event.preventDefault(); submitHighlightForm(event.currentTarget, '/api/highlights/scan/url'); });
