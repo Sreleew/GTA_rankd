@@ -24,7 +24,7 @@
 - **Workflow de publication v0.8.0 :** https://github.com/Sreleew/GTA_rankd/actions/runs/45797395932.
 - **CI Linux v0.8.0 :** https://github.com/Sreleew/GTA_rankd/actions/runs/45796472429.
 - **CI Windows v0.8.0 :** https://github.com/Sreleew/GTA_rankd/actions/runs/45796473363.
-- **Validation matérielle :** le PC AMD Radeon RX 9060 XT n'a pas encore été validé physiquement pour AMF/Vulkan après mise à jour.
+- **Validation PC v0.9.0 (27 novembre 2026) :** mise à jour installée ; Whisper/Vulkan confirmé sur AMD Radeon RX 9060 XT (1 623,92 MB alloués) ; inférence Ollama/Qwen réussie en 7,6 s. L’interface détecte H.264 AMF, mais un export réel reste à confirmer.
 - **Profil de durée :** les anciennes configs v0.8.1 migrent les anciens défauts en mémoire uniquement, sans réécrire `config.yaml` et sans remplacer les réglages personnalisés. Les clips de moins de 60 s restent inchangés.
 
 ## 1. Objectif du produit
