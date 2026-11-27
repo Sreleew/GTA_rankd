@@ -124,6 +124,20 @@ def _needs_audio_analysis(
     ))
 
 
+def _validate_short_excerpt_duration(duration: float, maximum: float) -> float:
+    """Reject an overlong excerpt before expensive metadata or optional Whisper work."""
+    selected = float(duration)
+    limit = float(maximum)
+    if selected <= 0:
+        raise MediaError("La durée de l'extrait Short doit être supérieure à zéro.")
+    if selected > limit:
+        raise MediaError(
+            f"L'extrait sélectionné dure {selected:.1f} s, au-delà de la limite Short de {limit:.0f} s. "
+            "Active le recadrage automatique ou sélectionne une plage plus courte."
+        )
+    return selected
+
+
 def _transcribe_short_excerpt(
     source_path: Path,
     temp_dir: Path,
@@ -355,8 +369,8 @@ class JobRunner:
             if source_range:
                 trim_start = max(0.0, float(source_range.get("start", 0.0)))
                 trim_end = min(float(source_info["duration"]), float(source_range.get("end", source_info["duration"])))
-                if trim_end <= trim_start or trim_end - trim_start > float(self.config.get("shorts", "max_input_duration_seconds", default=60)):
-                    raise MediaError("La plage sélectionnée doit durer entre 0 et 60 secondes.")
+                maximum_short_duration = float(self.config.get("shorts", "max_input_duration_seconds", default=165))
+                _validate_short_excerpt_duration(trim_end - trim_start, maximum_short_duration)
                 peak_timestamp = trim_start + (trim_end - trim_start) / 2
                 auto_trim_enabled = False
             else:
@@ -416,6 +430,8 @@ class JobRunner:
                     minimum_seconds=float(self.config.get("shorts", "auto_trim_min_seconds", default=15)),
                     maximum_seconds=float(self.config.get("shorts", "auto_trim_max_seconds", default=45)),
                 )
+            maximum_short_duration = float(self.config.get("shorts", "max_input_duration_seconds", default=165))
+            _validate_short_excerpt_duration(trim_end - trim_start, maximum_short_duration)
             render_words: list[Any] = []
             render_transcript = ""
             transcription_status = "disabled"
