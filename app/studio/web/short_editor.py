@@ -241,7 +241,7 @@ Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
     clean_hook = _clean_ass_text(hook_text)
     if clean_hook:
         events.append(
-            f"Dialogue: 2,0:00:00.00,0:00:02.35,Hook,,0,0,0,,{{\\an8\\pos({width // 2},{int(height * 0.20)})\\fad(120,180)\\fscx88\\fscy88\\t(0,190,\\fscx100\\fscy100)}}{_wrap_words(clean_hook, 5)}"
+            f"Dialogue: 2,0:00:00.00,0:00:02.60,Hook,,0,0,0,,{{\\an8\\pos({width // 2},{int(height * 0.20)})\\fad(120,180)\\fscx88\\fscy88\\t(0,190,\\fscx100\\fscy100)}}{_wrap_words(clean_hook, 5)}"
         )
     clean_context = _clean_ass_text(context_text)
     if clean_context:
@@ -400,7 +400,7 @@ def apply_thumbnail_overlay(
     title_top = 1105
     kicker_font = load_font(23)
     draw.rounded_rectangle((margin, title_top - 34, margin + 8, title_top - 5), radius=4, fill=cyan)
-    draw.text((margin + 24, title_top - 38), "MOMENT / DETECTED", font=kicker_font, fill=cyan)
+    draw.text((margin + 24, title_top - 38), "TWITCH CLIP / GTA RANKED", font=kicker_font, fill=cyan)
 
     def wrap_headline(candidate_font) -> list[str]:
         lines: list[str] = []
