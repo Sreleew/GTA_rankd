@@ -121,7 +121,7 @@ def test_highlight_scans_and_candidates_are_persisted(tmp_path: Path) -> None:
         "rank": 1, "start_time": 25.0, "end_time": 60.0,
         "media_start": 25.0, "media_end": 60.0, "score": 82.5,
         "audio_score": 0.9, "speech_score": 0.7, "reaction_score": 1.0,
-        "opening_score": 0.85,
+        "opening_score": 0.85, "payoff_score": 0.9,
         "reasons": ["Pic d'énergie audio", "Mots de réaction détectés", "Accroche immédiate"],
         "transcript": "BRO WHAT NO",
     }])
@@ -132,7 +132,24 @@ def test_highlight_scans_and_candidates_are_persisted(tmp_path: Path) -> None:
     assert len(candidates) == 1
     assert candidates[0]["score"] == 82.5
     assert candidates[0]["opening_score"] == 0.85
+    assert candidates[0]["payoff_score"] == 0.9
     assert candidates[0]["reasons"] == ["Pic d'énergie audio", "Mots de réaction détectés", "Accroche immédiate"]
+
+
+def test_payoff_scoring_rewards_a_rising_audio_peak_with_a_nearby_reaction() -> None:
+    audio = [
+        {"start": float(second), "end": float(second + 2),
+         "rms": 0.045 if 18 <= second < 32 else 0.006}
+        for second in range(0, 50, 2)
+    ]
+    words = [WordTiming(index * 0.65, index * 0.65 + 0.2, "yeah") for index in range(70)]
+    words.extend([WordTiming(20.2, 20.6, "WHAT"), WordTiming(21.0, 21.4, "BRO")])
+
+    candidates = score_highlight_candidates(50, audio, words, candidate_seconds=50)
+
+    assert candidates
+    assert candidates[0]["payoff_score"] >= 0.85
+    assert "Montée en tension / payoff détecté" in candidates[0]["reasons"]
 
 
 def test_write_wav_chunk_sets_the_actual_frame_count(tmp_path: Path) -> None:
@@ -203,8 +220,9 @@ def test_store_migrates_existing_highlight_candidates_table(tmp_path: Path) -> N
     })
     store.save_highlight_candidates("legacy-scan", [{
         "rank": 1, "start_time": 0, "end_time": 25, "media_start": 0, "media_end": 25,
-        "score": 91, "opening_score": 0.7,
+        "score": 91, "opening_score": 0.7, "payoff_score": 0.8,
     }])
 
     candidates = store.list_highlight_candidates("legacy-scan")
     assert candidates[0]["opening_score"] == 0.7
+    assert candidates[0]["payoff_score"] == 0.8

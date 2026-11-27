@@ -206,13 +206,45 @@ def score_highlight_candidates(
                 baseline_rms=p50, audio_span=audio_span,
             )
 
+            # Reward a clear build-up/payoff rather than only sustained loudness.
+            # The peak is located inside the candidate, then compared with the
+            # audio immediately before it. Reaction words near that peak add evidence.
+            local_items = [
+                item for item in audio_windows
+                if float(item["end"]) > start and float(item["start"]) < end
+            ]
+            payoff_score = 0.0
+            if len(local_items) >= 3:
+                peak_index = max(range(len(local_items)), key=lambda i: float(local_items[i]["rms"]))
+                peak_item = local_items[peak_index]
+                peak_start = float(peak_item["start"])
+                preceding = [
+                    float(item["rms"]) for item in local_items[:peak_index]
+                    if peak_start - float(item["start"]) <= 12.0
+                ]
+                if preceding:
+                    pre_peak_rms = sorted(preceding)[len(preceding) // 2]
+                    peak_rms = float(peak_item["rms"])
+                    contrast_score = max(0.0, min(1.0, (peak_rms - pre_peak_rms) / audio_span))
+                else:
+                    contrast_score = 0.0
+                nearby_words = _words_for_window(words, max(start, peak_start - 3.0), min(end, peak_start + 8.0))
+                nearby_cues = sum(
+                    1 for word in nearby_words
+                    for token in re.findall(r"[a-z']+", word.text.lower())
+                    if token in REACTION_CUES
+                )
+                reaction_payoff = max(0.0, min(1.0, nearby_cues / 2.0))
+                payoff_score = max(contrast_score, reaction_payoff * 0.85)
+
             # Whisper may be unavailable or fail for a source. In that case,
             # audio is the only usable evidence and must not be capped at 55/100.
             if words:
                 base_score = 0.55 * audio_score + 0.25 * speech_score + 0.20 * reaction_score
             else:
                 base_score = audio_score
-            score = 100.0 * (0.90 * base_score + 0.10 * opening_score)
+            enriched_score = 0.90 * base_score + 0.10 * payoff_score
+            score = 100.0 * (0.90 * enriched_score + 0.10 * opening_score)
             reasons: list[str] = []
             if audio_score >= 0.55:
                 reasons.append("Pic d'énergie audio")
@@ -222,6 +254,8 @@ def score_highlight_candidates(
                 reasons.append("Mots de réaction détectés")
             if opening_score >= 0.65:
                 reasons.append("Accroche immédiate")
+            if payoff_score >= 0.55:
+                reasons.append("Montée en tension / payoff détecté")
             elif opening_score < 0.25:
                 reasons.append("Démarrage calme")
             if not reasons:
@@ -238,6 +272,7 @@ def score_highlight_candidates(
                 "speech_score": round(speech_score, 3),
                 "reaction_score": round(reaction_score, 3),
                 "opening_score": round(opening_score, 3),
+                "payoff_score": round(payoff_score, 3),
                 "reasons": reasons,
                 "transcript": transcript[:700],
             })

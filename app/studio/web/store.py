@@ -118,6 +118,7 @@ class Store:
                     speech_score REAL NOT NULL DEFAULT 0,
                     reaction_score REAL NOT NULL DEFAULT 0,
                     opening_score REAL NOT NULL DEFAULT 0,
+                    payoff_score REAL NOT NULL DEFAULT 0,
                     reasons_json TEXT NOT NULL DEFAULT '[]',
                     transcript TEXT NOT NULL DEFAULT '',
                     created_job_id TEXT,
@@ -134,6 +135,10 @@ class Store:
             if "opening_score" not in candidate_columns:
                 connection.execute(
                     "ALTER TABLE highlight_candidates ADD COLUMN opening_score REAL NOT NULL DEFAULT 0"
+                )
+            if "payoff_score" not in candidate_columns:
+                connection.execute(
+                    "ALTER TABLE highlight_candidates ADD COLUMN payoff_score REAL NOT NULL DEFAULT 0"
                 )
 
     @staticmethod
@@ -339,16 +344,16 @@ class Store:
                 connection.execute(
                     """INSERT INTO highlight_candidates (
                         id, scan_id, rank, start_time, end_time, media_start, media_end,
-                        score, audio_score, speech_score, reaction_score, opening_score, reasons_json,
+                        score, audio_score, speech_score, reaction_score, opening_score, payoff_score, reasons_json,
                         transcript, created_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                     (
                         candidate.get("id") or uuid4_hex(), scan_id, int(candidate["rank"]),
                         float(candidate["start_time"]), float(candidate["end_time"]),
                         float(candidate["media_start"]), float(candidate["media_end"]),
                         float(candidate["score"]), float(candidate.get("audio_score", 0)),
                         float(candidate.get("speech_score", 0)), float(candidate.get("reaction_score", 0)),
-                        float(candidate.get("opening_score", 0)),
+                        float(candidate.get("opening_score", 0)), float(candidate.get("payoff_score", 0)),
                         json.dumps(candidate.get("reasons", []), ensure_ascii=False),
                         str(candidate.get("transcript", "")), now,
                     ),
