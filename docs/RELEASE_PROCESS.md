@@ -34,7 +34,7 @@ La voie `workflow_dispatch` reste disponible pour préparer une Release brouillo
 
 ## État au 27 novembre 2026
 
-- Dernière Release stable publiée : [v0.9.0](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.9.0), avec le ZIP Windows et `SHA256SUMS.txt` (publication vérifiée le 27 novembre 2026).
+- Dernière Release stable publiée : [v0.9.1](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.9.1), avec le ZIP Windows et `SHA256SUMS.txt` (publication vérifiée le 27 novembre 2026).
 - PR #41 fusionnée : constructeur de sélection Daily Best Of, avec CI Linux et Windows réussies.
 - PR #42 fusionnée : relance des jobs Twitch en erreur depuis l'URL d'origine, conservation des options et réutilisation du média local.
 - CI PR #42 : Linux [46012357301](https://github.com/Sreleew/GTA_rankd/actions/runs/46012357301) et Windows [46012357283](https://github.com/Sreleew/GTA_rankd/actions/runs/46012357283) réussies.
@@ -73,4 +73,16 @@ Les PR suivantes sont fusionnées après la création de l'archive v0.8.9. Elles
 - **PR #60** : import groupé de jusqu'à 10 clips Twitch dans le parcours Short, merge `90504c7c282e9032fb2bc9d90cc03f83f018f4e2`.
 - **PR #61** : environnement développeur local persistant et commandes de tests ciblés, merge `a90c85c60a10618b7d465da39bb11ba1439a93de`.
 - **PR #62** : suivi persistant des lots Twitch avec progression agrégée, merge `6514b37077cacefd4e9274a0dfa5364ada61871c`.
-- La v0.9.1 est préparée explicitement pour livrer la nouvelle direction artistique des miniatures demandée par l'utilisateur. La v0.9.0 reste la dernière version stable publiée jusqu'à la validation de la PR de release.
+- La v0.9.1 a été publiée après validation de sa PR dédiée ; elle met à disposition la direction artistique des miniatures demandée par l'utilisateur.
+
+
+## Publication de la v0.9.1, 27 novembre 2026
+
+- PR #81 : nouvelle direction artistique par défaut pour les miniatures de Short. CI Linux et Windows réussies.
+- PR #82 : mise à jour du mémo après fusion de la fonctionnalité. CI Linux et Windows réussies.
+- PR #83 : préparation de la v0.9.1, synchronisation des versions et approbation de la release. CI PR Linux [46078299248](https://github.com/Sreleew/GTA_rankd/actions/runs/46078299248) et Windows [46078299263](https://github.com/Sreleew/GTA_rankd/actions/runs/46078299263) réussies.
+- Workflow officiel de publication : [46078578681](https://github.com/Sreleew/GTA_rankd/actions/runs/46078578681), terminé avec succès.
+- Release stable : [GTA Ranked Studio v0.9.1](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.9.1).
+- ZIP Windows `GTA-Ranked-Studio-v0.9.1.zip` : 249 800 octets ; SHA-256 `d798b112838ecccc9877267949035a6a7faaede5c76ab80898aab9b07e311200`.
+- Manifeste `SHA256SUMS.txt` : 95 octets ; SHA-256 `a2bc90f701dd022eab65dae71b1005b18b29939b222d5eef6617c78dddbcbfa9`.
+- Limite confirmée : la miniature garde la frame source entière. La webcam n'est pas isolée ni déplacée ; sa taille et sa position restent celles de la source.
