@@ -711,7 +711,7 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         hook_text: Annotated[str, Form()] = "",
         context_text: Annotated[str, Form()] = "",
     ) -> dict:
-        """Queue up to ten Twitch URLs with the same Short editing settings."""
+        """Queue up to ten Twitch URLs and expose durable batch progress."""
         if not rights_confirmed:
             raise HTTPException(status_code=400, detail="Confirme que tu disposes des droits ou autorisations nécessaires pour utiliser ces sources.")
         raw_urls = [line.strip() for line in str(urls or "").splitlines() if line.strip()]
@@ -721,36 +721,115 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         if len(unique_urls) > 10:
             raise HTTPException(status_code=400, detail="Maximum 10 URLs par lot. Divise ta liste en plusieurs lots.")
         options = _validate_edit_options(layout, crop_x, crop_y, dynamic_zoom, zoom_percent, captions_enabled, brand_enabled, hook_text, context_text, auto_trim_enabled, sfx_enabled, caption_voice_mode)
-        created: list[dict[str, str]] = []
+        validated_urls: list[str] = []
         rejected: list[dict[str, str]] = []
         clean_seen: set[str] = set()
         for raw_url in unique_urls:
             try:
                 clean_url = _validate_twitch_source(raw_url)
-                if clean_url in clean_seen:
-                    continue
-                clean_seen.add(clean_url)
+                if clean_url not in clean_seen:
+                    clean_seen.add(clean_url)
+                    validated_urls.append(clean_url)
             except HTTPException as exc:
                 rejected.append({"url": raw_url[:200], "reason": str(exc.detail)})
-                continue
-            job_id = uuid.uuid4().hex
-            store.create_job({
-                "id": job_id, "source_kind": "url", "source_url": clean_url,
-                "streamer": streamer.strip()[:120], "note": note.strip()[:1000],
-                "rights_confirmed": rights_confirmed, "message": "URL ajoutée au lot de traitement",
-                "metadata": {"options": options, "batch_import": True},
-            })
-            runner.submit(job_id)
-            created.append({"id": job_id, "url": clean_url, "status": "queued"})
-        if not created:
+        if not validated_urls:
             reasons = "; ".join(item["reason"] for item in rejected[:3])
             raise HTTPException(status_code=400, detail=f"Aucune URL Twitch valide. {reasons}")
+
+        batch_id = uuid.uuid4().hex
+        created: list[dict[str, str]] = []
+        for index, clean_url in enumerate(validated_urls, start=1):
+            job_id = uuid.uuid4().hex
+            store.create_job({
+                "id": job_id,
+                "batch_id": batch_id,
+                "source_kind": "url",
+                "source_url": clean_url,
+                "streamer": streamer.strip()[:120],
+                "note": note.strip()[:1000],
+                "rights_confirmed": rights_confirmed,
+                "message": "URL ajoutée au lot de traitement",
+                "metadata": {
+                    "options": options,
+                    "batch_import": True,
+                    "batch_index": index,
+                    "batch_count": len(validated_urls),
+                },
+            })
+            created.append({"id": job_id, "url": clean_url, "status": "queued"})
+        # Persist the complete batch before submitting jobs, so its progress
+        # endpoint can always return a consistent total.
+        for job in created:
+            runner.submit(job["id"])
         return {
+            "batch_id": batch_id,
             "created_count": len(created),
             "rejected_count": len(rejected),
             "jobs": created,
             "rejected": rejected,
             "message": f"{len(created)} Short(s) ajouté(s) à la file." + (f" {len(rejected)} URL(s) ignorée(s)." if rejected else ""),
+        }
+
+    @app.get("/api/shorts/batches/{batch_id}")
+    def get_short_batch_progress(batch_id: str) -> dict:
+        """Return durable aggregate progress for a Twitch Short import batch."""
+        if not re.fullmatch(r"[a-f0-9]{32}", batch_id):
+            raise HTTPException(status_code=400, detail="Identifiant de lot invalide.")
+        jobs = store.list_batch_jobs(batch_id)
+        if not jobs:
+            raise HTTPException(status_code=404, detail="Lot Twitch introuvable.")
+        active_statuses = {"queued", "running", "cancelling"}
+        terminal_statuses = {"ready", "validated", "rejected", "error", "cancelled"}
+        successful_statuses = {"ready", "validated"}
+        failed_statuses = {"error", "cancelled"}
+        total = len(jobs)
+        active_count = sum(job["status"] in active_statuses for job in jobs)
+        completed_count = sum(job["status"] in terminal_statuses for job in jobs)
+        ready_count = sum(job["status"] == "ready" for job in jobs)
+        validated_count = sum(job["status"] == "validated" for job in jobs)
+        failed_count = sum(job["status"] in failed_statuses for job in jobs)
+        cancelled_count = sum(job["status"] == "cancelled" for job in jobs)
+        rejected_count = sum(job["status"] == "rejected" for job in jobs)
+        progress_total = sum(
+            100 if job["status"] in terminal_statuses
+            else max(0, min(100, int(job.get("progress") or 0)))
+            for job in jobs
+        )
+        status = (
+            "running" if active_count
+            else "completed_with_errors" if failed_count
+            else "completed"
+        )
+        if active_count:
+            message = f"{completed_count}/{total} traités · {ready_count} à valider · {failed_count} échec(s)"
+        elif failed_count:
+            message = f"Lot terminé · {ready_count} prêt(s) à valider · {failed_count} échec(s)"
+        else:
+            message = f"Lot terminé · {ready_count} prêt(s) à valider · {validated_count} validé(s)"
+        return {
+            "batch_id": batch_id,
+            "status": status,
+            "total": total,
+            "completed_count": completed_count,
+            "active_count": active_count,
+            "ready_count": ready_count,
+            "validated_count": validated_count,
+            "failed_count": failed_count,
+            "cancelled_count": cancelled_count,
+            "rejected_count": rejected_count,
+            "progress": round(progress_total / total),
+            "message": message,
+            "jobs": [
+                {
+                    "id": job["id"],
+                    "status": job["status"],
+                    "progress": int(job.get("progress") or 0),
+                    "message": job.get("message") or "",
+                    "title": job.get("source_title") or job.get("streamer") or job.get("source_url") or "Clip Twitch",
+                    "error": job.get("error"),
+                }
+                for job in jobs
+            ],
         }
 
     def _whisper_gpu_fingerprint() -> dict | None:
