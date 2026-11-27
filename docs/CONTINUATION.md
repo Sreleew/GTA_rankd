@@ -460,3 +460,14 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Correctif :** remplacer cette dépendance à Chocolatey par le téléchargement direct de l'archive Windows statique FFmpeg depuis les releases BtbN, puis ajouter son dossier `bin` au PATH du runner.
 - **Portée :** uniquement l'environnement de validation GitHub Actions ; aucun changement dans l'installation locale utilisateur.
 - **Validation :** la CI Windows doit confirmer l'URL de release, l'extraction et la présence de ffmpeg/ffprobe avant fusion.
+
+
+## 33. Réutilisation des métadonnées FFprobe dans le workflow Short, 27 novembre 2026
+
+- **Constat :** le worker analysait déjà le fichier source pour déterminer sa durée, ses pistes et les paramètres de coupe, puis le renderer relançait FFprobe sur le même fichier. Après le rendu, le renderer analysait le MP4 exporté, puis le contrôle qualité relançait encore FFprobe sur ce même export.
+- **Changement :** le worker transmet maintenant les métadonnées source déjà obtenues au renderer. Le renderer renvoie également les métadonnées du MP4 qu'il vient de vérifier, et le contrôle qualité les réutilise.
+- **Résultat attendu :** deux appels FFprobe redondants supprimés par Short, tout en conservant l'analyse source, la vérification des dimensions exportées et les contrôles qualité image/son.
+- **Compatibilité :** les paramètres restent facultatifs. Les appels directs au renderer et au contrôle qualité qui ne fournissent pas de métadonnées continuent d'effectuer leur propre probe.
+- **Tests ajoutés :** vérifier que le renderer ne reprobe pas la source lorsqu'elle est déjà connue et que le contrôle qualité ne reprobe pas l'export lorsqu'il reçoit les métadonnées validées.
+- **Validation :** CI Linux et Windows requise avant fusion. Aucun benchmark chronométré sur une vidéo Twitch réelle ni sur le GPU AMD local n'a encore été effectué.
+- **Suite étape 2 :** examiner le coût du contrôle qualité FFmpeg et du choix de miniature sans dégrader la fiabilité ni le résultat visuel. Ne pas désactiver les contrôles ni réduire la qualité par défaut sans mesure.

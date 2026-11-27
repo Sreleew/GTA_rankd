@@ -90,6 +90,7 @@ def _word_timing_issues(words: Iterable[Any], duration: float) -> int:
 def analyze_export_quality(
     output_path: Path,
     *,
+    preprobed_info: dict[str, Any] | None = None,
     ffmpeg: str = "ffmpeg",
     ffprobe: str = "ffprobe",
     expected_duration: float | None = None,
@@ -130,7 +131,9 @@ def analyze_export_quality(
         _check(checks, "file_size", "Taille du fichier", "pass", f"{size_bytes / 1024:.0f} Ko")
 
     try:
-        info = probe_media(output_path, ffprobe, timeout=45)
+        # The renderer already probed the exported MP4 to verify its dimensions.
+        # Reuse that exact result for the quality report.
+        info = dict(preprobed_info) if preprobed_info is not None else probe_media(output_path, ffprobe, timeout=45)
     except (MediaError, OSError, ValueError) as exc:
         fatal = True
         message = f"Lecture du MP4 impossible : {str(exc)[:180]}"

@@ -186,3 +186,54 @@ def test_real_vertical_short_render(tmp_path: Path) -> None:
     assert rendered["has_audio"] is True
     assert output.is_file() and output.stat().st_size > 10_000
     assert thumbnail.is_file() and thumbnail.stat().st_size > 1_000
+
+
+def test_render_reuses_source_probe_and_returns_output_probe(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from studio.web import short_renderer
+
+    source = tmp_path / "source.mp4"
+    output = tmp_path / "short.mp4"
+    thumbnail = tmp_path / "thumbnail.jpg"
+    source.write_bytes(b"source")
+    source_info = {
+        "duration": 12.0, "width": 1920, "height": 1080, "has_audio": True,
+        "fps": 30.0, "video_codec": "h264", "audio_codec": "aac",
+    }
+    output_info = {
+        "duration": 8.0, "width": 360, "height": 640, "has_audio": True,
+        "fps": 30.0, "video_codec": "h264", "audio_codec": "aac",
+    }
+    probed: list[Path] = []
+
+    def fake_probe(path, ffprobe="ffprobe", **kwargs):
+        probed.append(Path(path))
+        return output_info
+
+    def fake_run(command, timeout=None, cwd=None):
+        output.write_bytes(b"rendered mp4")
+        return subprocess.CompletedProcess(command, 0, "", "")
+
+    monkeypatch.setattr(short_renderer, "probe_media", fake_probe)
+    monkeypatch.setattr(short_renderer, "_available_encoder_listing", lambda _: "libx264")
+    monkeypatch.setattr(short_renderer, "build_render_command", lambda *args, **kwargs: ["ffmpeg", str(output)])
+    monkeypatch.setattr(short_renderer, "run_command", fake_run)
+
+    def fake_thumbnail(*args, **kwargs):
+        thumbnail.write_bytes(b"jpeg")
+        return 2.0
+
+    monkeypatch.setattr(short_renderer, "_extract_best_thumbnail", fake_thumbnail)
+    result = short_renderer.render_vertical_short(
+        source, output, thumbnail,
+        source_media_info=source_info,
+        preferred_encoder="libx264",
+        fallback_encoder="libx264",
+        width=360,
+        height=640,
+        trim_start=1.0,
+        trim_duration=8.0,
+    )
+
+    assert probed == [output]
+    assert result["source_duration"] == 12.0
+    assert result["output_media_info"] == output_info
