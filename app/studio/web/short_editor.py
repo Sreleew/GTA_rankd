@@ -210,7 +210,7 @@ def _caption_events(words: list[WordTiming], width: int, height: int) -> list[st
     current: list[WordTiming] = []
     for word in words:
         pause = word.start - current[-1].end if current else 0.0
-        previous_text = current[-1].text.rstrip('"\\'”’)]}')
+        previous_text = current[-1].text.rstrip('"”’)]}')
         sentence_finished = bool(previous_text) and previous_text[-1] in ".!?"
         if current and (len(current) >= 4 or pause > 0.55 or sentence_finished):
             groups.append(current)
