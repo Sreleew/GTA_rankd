@@ -245,6 +245,8 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
     def _validate_twitch_source(url: str) -> str:
         from urllib.parse import urlparse
         clean = str(url or "").strip()
+        if len(clean) > 2000:
+            raise HTTPException(status_code=400, detail="URL trop longue. Utilise une URL Twitch publique valide.")
         parsed = urlparse(clean)
         host = (parsed.hostname or "").lower()
         allowed_hosts = {"twitch.tv", "www.twitch.tv", "m.twitch.tv", "clips.twitch.tv"}
@@ -656,9 +658,7 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
     ) -> dict:
         if not rights_confirmed:
             raise HTTPException(status_code=400, detail="Confirme que tu disposes des droits ou autorisations nécessaires pour utiliser cette source.")
-        clean_url = url.strip()
-        if not clean_url.startswith(("https://", "http://")) or len(clean_url) > 2000:
-            raise HTTPException(status_code=400, detail="URL invalide. Saisis une URL commençant par http:// ou https://.")
+        clean_url = _validate_twitch_source(url)
         job_id = uuid.uuid4().hex
         options = _validate_edit_options(layout, crop_x, crop_y, dynamic_zoom, zoom_percent, captions_enabled, brand_enabled, hook_text, context_text, auto_trim_enabled, sfx_enabled, caption_voice_mode)
         store.create_job({
