@@ -205,13 +205,8 @@ def build_filter_complex(
     zoom_timestamps: Sequence[float] | None = None,
     fps: int = 30,
     zoom_percent: int = 0,
-    webcam_zone: str = "none",
 ) -> str:
-    """Build a vertical canvas while preserving the complete source frame.
-
-    The legacy webcam_zone argument is accepted for compatibility with jobs
-    created by v0.5.0, but no webcam crop or extraction is performed.
-    """
+    """Build a vertical canvas while preserving the complete source frame."""
     if width <= 0 or height <= 0:
         raise ValueError("Les dimensions de sortie doivent être positives.")
     if layout not in {"fill", "blur", "smart"}:
@@ -328,7 +323,6 @@ def build_render_command(
     peak_timestamp: float = 0.0,
     zoom_timestamps: Sequence[float] | None = None,
     zoom_percent: int = 0,
-    webcam_zone: str = "none",
     duration: float | None = None,
     trim_start: float = 0.0,
     trim_duration: float | None = None,
@@ -408,7 +402,6 @@ def render_vertical_short(
     width: int = 1080,
     height: int = 1920,
     layout: str = "blur",
-    webcam_zone: str = "none",
     crop_x: int = 50,
     crop_y: int = 50,
     ass_file: Path | None = None,
