@@ -34,7 +34,7 @@ La voie `workflow_dispatch` reste disponible pour préparer une Release brouillo
 
 ## État au 27 novembre 2026
 
-- Dernière Release stable publiée : [v0.8.9](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.9), avec le ZIP Windows et `SHA256SUMS.txt`.
+- Dernière Release stable publiée : [v0.9.0](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.9.0), avec le ZIP Windows et `SHA256SUMS.txt` (publication vérifiée le 27 novembre 2026).
 - PR #41 fusionnée : constructeur de sélection Daily Best Of, avec CI Linux et Windows réussies.
 - PR #42 fusionnée : relance des jobs Twitch en erreur depuis l'URL d'origine, conservation des options et réutilisation du média local.
 - CI PR #42 : Linux [46012357301](https://github.com/Sreleew/GTA_rankd/actions/runs/46012357301) et Windows [46012357283](https://github.com/Sreleew/GTA_rankd/actions/runs/46012357283) réussies.
