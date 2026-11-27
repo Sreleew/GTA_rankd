@@ -447,8 +447,12 @@ class JobRunner:
                         if render_words:
                             source_srt = Path(str(transcription.get("srt_path") or ""))
                             if source_srt.is_file():
-                                captions_output_path = output_dir / "captions.srt"
-                                shutil.copy2(source_srt, captions_output_path)
+                                try:
+                                    captions_output_path = output_dir / "captions.srt"
+                                    shutil.copy2(source_srt, captions_output_path)
+                                except OSError:
+                                    captions_output_path = None
+                                    logger.warning("Le SRT de %s n'a pas pu être copié ; les captions intégrées restent disponibles.", job_id, exc_info=True)
                         else:
                             transcription_warning = str(
                                 transcription.get("reason") or "Aucune parole exploitable détectée."
