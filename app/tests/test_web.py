@@ -47,7 +47,7 @@ def test_edit_options_are_validated_and_clamped_by_api():
     assert options["captions_enabled"] is True
     assert options["caption_language"] == "fr"
     smart = _validate_edit_options("smart", 80, 50, False, 0, True, "", "")
-    assert smart["layout"] == "smart"
+    assert smart["layout"] == "blur"
     assert smart["crop_x"] == 80
     assert smart["caption_language"] == "config"
     try:
@@ -1536,6 +1536,7 @@ def test_short_audio_analysis_is_skipped_when_no_feature_needs_it():
 
 def test_short_ui_explains_full_frame_twitch_composition() -> None:
     html = Path("studio/web/static/index.html").read_text(encoding="utf-8-sig")
-    assert "Image Twitch entière, webcam comprise" in html
     assert "Utilisé uniquement en mode plein écran recadré." in html
-    assert "Composition 9:16, image complète et webcam Twitch préservées" in html
+    assert "La capture complète reste visible, sans cadre ni bande qui coupe l’image." in html
+    assert 'option value="blur" selected' in html
+    assert 'option value="smart"' not in html
