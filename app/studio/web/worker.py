@@ -27,6 +27,7 @@ from studio.web.store import Store
 from studio.web.transcribe import (
     TranscriptionError,
     detect_audio_peak_timestamp,
+    detect_audio_peak_timestamps,
     extract_audio_wav,
     transcribe_with_whisper_cpp,
 )
@@ -193,6 +194,7 @@ class JobRunner:
             else:
                 trim_start, trim_end = 0.0, float(source_info["duration"])
                 peak_timestamp = source_info["duration"] / 2
+            audio_peak_timestamps: list[float] = []
             transcript_result: dict[str, Any] = {
                 "status": "disabled", "reason": "Sous-titres désactivés dans les options.", "words": [], "text": ""
             }
@@ -206,7 +208,10 @@ class JobRunner:
                         duration_seconds=(trim_end - trim_start) if source_range else None,
                     )
                     local_peak = detect_audio_peak_timestamp(audio_path)
+                    audio_peak_timestamps = detect_audio_peak_timestamps(audio_path)
                     peak_timestamp = (trim_start + local_peak) if source_range and local_peak else (local_peak or peak_timestamp)
+                    if source_range:
+                        audio_peak_timestamps = [trim_start + item for item in audio_peak_timestamps]
                     if bool(options.get("captions_enabled", True)):
                         self.store.update_job(job_id, progress=30, message="Transcription locale si le modèle est installé")
                         model_path = self.config.path_for("transcription", "model_path")
@@ -251,6 +256,13 @@ class JobRunner:
                 )
             render_words = rebase_word_timings(all_words, trim_start, trim_end) if all_words else []
             render_peak_timestamp = max(0.0, peak_timestamp - trim_start)
+            render_zoom_timestamps = [
+                round(item - trim_start, 3)
+                for item in audio_peak_timestamps
+                if trim_start <= item <= trim_end
+            ]
+            if not render_zoom_timestamps:
+                render_zoom_timestamps = [render_peak_timestamp]
             render_thumbnail_timestamp = select_thumbnail_timestamp(
                 render_words, trim_end - trim_start, preferred=render_peak_timestamp
             )
@@ -363,6 +375,7 @@ class JobRunner:
                 project_root=self.config.root,
                 dynamic_zoom=bool(options.get("dynamic_zoom", True)),
                 peak_timestamp=render_peak_timestamp,
+                zoom_timestamps=render_zoom_timestamps,
                 thumbnail_timestamp=render_thumbnail_timestamp,
                 zoom_percent=int(options.get("zoom_percent", 8)),
                 trim_start=trim_start,
@@ -423,6 +436,7 @@ class JobRunner:
                 "hook_sound_style": hook_sound_style if bool(options.get("sfx_enabled", True)) else None,
                 "peak_timestamp": peak_timestamp,
                 "render_peak_timestamp": render_peak_timestamp,
+                "render_zoom_timestamps": render_zoom_timestamps,
                 "thumbnail_timestamp": result.get("thumbnail_timestamp"),
                 "source_duration": source_info["duration"],
                 "trim_start": trim_start,

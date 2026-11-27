@@ -32,6 +32,25 @@ def test_smart_layout_preserves_portrait_sources_without_aggressive_crop() -> No
     assert "crop=1080:921" not in graph
 
 
+def test_dynamic_zoom_uses_multiple_audio_moments_when_available() -> None:
+    graph = build_filter_complex(
+        width=1080, height=1920, layout="smart",
+        dynamic_zoom=True, peak_timestamp=2.0,
+        zoom_timestamps=[2.0, 8.0], zoom_percent=8,
+    )
+    assert "between(in_time,1.550,2.850)" in graph
+    assert "between(in_time,7.550,8.850)" in graph
+    assert graph.count("sin(PI*(in_time-") == 2
+
+
+def test_dynamic_zoom_falls_back_to_the_primary_peak() -> None:
+    graph = build_filter_complex(
+        width=1080, height=1920, layout="smart",
+        dynamic_zoom=True, peak_timestamp=3.0, zoom_percent=8,
+    )
+    assert "between(in_time,2.550,3.850)" in graph
+
+
 
 @pytest.mark.parametrize("style", ["impact", "question", "suspense", "reaction"])
 def test_hook_sound_effects_are_valid_and_distinct(tmp_path: Path, style: str) -> None:

@@ -401,10 +401,16 @@ def transcribe_with_whisper_cpp(
     }
 
 
-def detect_audio_peak_timestamp(wav_path: Path, window_seconds: float = 0.35) -> float:
-    """Repère la fenêtre audio la plus énergique dans un WAV mono 16 kHz."""
+def detect_audio_peak_timestamps(
+    wav_path: Path,
+    window_seconds: float = 0.35,
+    *,
+    minimum_gap_seconds: float = 4.5,
+    maximum_peaks: int = 5,
+) -> list[float]:
+    """Repère quelques accents audio nets, sans confondre bruit de fond et moments forts."""
     if not wav_path.is_file():
-        return 0.0
+        return []
     try:
         with wave.open(str(wav_path), "rb") as audio:
             sample_rate = audio.getframerate()
@@ -412,24 +418,51 @@ def detect_audio_peak_timestamp(wav_path: Path, window_seconds: float = 0.35) ->
             channels = audio.getnchannels()
             sample_width = audio.getsampwidth()
         if sample_width != 2 or sample_rate <= 0:
-            return 0.0
+            return []
         samples = array.array("h")
         samples.frombytes(frames)
         if channels > 1:
             samples = array.array("h", samples[::channels])
         window_size = max(1, int(sample_rate * window_seconds))
-        best_rms = -1.0
-        best_center = 0.0
-        for start in range(0, len(samples), window_size // 2 or 1):
+        hop_size = max(1, window_size // 2)
+        measurements: list[tuple[float, float]] = []
+        for start in range(0, len(samples), hop_size):
             chunk = samples[start:start + window_size]
             if len(chunk) < max(1, window_size // 3):
                 continue
             square_sum = sum(int(value) * int(value) for value in chunk)
-            rms = math.sqrt(square_sum / len(chunk))
-            if rms > best_rms:
-                best_rms = rms
-                best_center = (start + len(chunk) / 2) / sample_rate
-        return max(0.0, best_center)
+            rms = math.sqrt(square_sum / len(chunk)) / 32768.0
+            center = (start + len(chunk) / 2) / sample_rate
+            measurements.append((center, rms))
+        if not measurements:
+            return []
+        levels = sorted(level for _, level in measurements)
+        median_level = levels[len(levels) // 2]
+        maximum_level = max(levels)
+        # Avoid zooming on quiet room tone, compression noise or a uniformly loud mix.
+        if maximum_level < 0.015 or maximum_level < median_level * 1.3:
+            return []
+        threshold = max(0.015, median_level * 1.65, maximum_level * 0.42)
+        candidates: list[tuple[float, float]] = []
+        for index, (center, level) in enumerate(measurements):
+            before = measurements[index - 1][1] if index else -1.0
+            after = measurements[index + 1][1] if index + 1 < len(measurements) else -1.0
+            if level >= threshold and level >= before and level >= after:
+                candidates.append((level, center))
+        # Keep the strongest accents first, then restore chronological order.
+        selected: list[tuple[float, float]] = []
+        for candidate in sorted(candidates, reverse=True):
+            if all(abs(candidate[1] - existing[1]) >= minimum_gap_seconds for existing in selected):
+                selected.append(candidate)
+                if len(selected) >= max(1, int(maximum_peaks)):
+                    break
+        return sorted(center for _, center in selected)
     except (OSError, wave.Error, ValueError):
-        logger.exception("Impossible d'analyser le niveau audio pour détecter le pic.")
-        return 0.0
+        logger.exception("Impossible d'analyser les accents audio pour le cadrage dynamique.")
+        return []
+
+
+def detect_audio_peak_timestamp(wav_path: Path, window_seconds: float = 0.35) -> float:
+    """Compatibilité historique : renvoie le centre du pic audio le plus fort."""
+    peaks = detect_audio_peak_timestamps(wav_path, window_seconds, maximum_peaks=1)
+    return peaks[0] if peaks else 0.0
