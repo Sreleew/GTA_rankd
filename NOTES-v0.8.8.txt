@@ -1,0 +1,23 @@
+GTA Ranked Studio v0.8.8
+
+Création de Shorts depuis Twitch :
+- Si un téléchargement Twitch échoue avant l'enregistrement du fichier local, l'action « Relancer » recrée un job à partir de l'URL d'origine.
+- Le streamer, la note et les options de montage/sous-titrage sont conservés.
+- Si le média a déjà été téléchargé, la relance le réutilise au lieu de recommencer le téléchargement.
+
+Daily Best Of :
+- Nouveau constructeur de sélection des Shorts validés d'une journée.
+- Ajout, retrait et réorganisation manuelle des clips.
+- Calcul de la durée totale et repère de cible entre 9 et 11 minutes.
+- Validation serveur de la date, du statut des clips, des fichiers locaux et de l'ordre sélectionné.
+- Le rendu final horizontal 16:9 n'est pas encore inclus dans cette version.
+
+Mise à jour :
+- Mise à jour depuis la v0.8.7 via Paramètres > Mises à jour.
+- Les réglages, bases de données, projets, médias, modèles et exports locaux sont préservés.
+
+Validation :
+- PR #41 : CI Linux et Windows réussies.
+- PR #42 : CI Linux et Windows réussies.
+- Les validations post-fusion sur main et le workflow de publication restent à confirmer.
+- La validation matérielle AMF/Vulkan sur la RX 9060 XT reste à effectuer.
