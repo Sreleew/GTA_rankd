@@ -9,3 +9,7 @@ def test_short_creation_ui_keeps_subtitles_paused() -> None:
     assert "Sous-titres anglais" not in html
     assert "speakerFilterStatus" not in script
     assert "subtitleState" not in script
+    api = Path("studio/web/app.py").read_text(encoding="utf-8")
+    renderer = Path("studio/web/short_renderer.py").read_text(encoding="utf-8")
+    assert "webcam_zone" not in api
+    assert "webcam_zone" not in renderer
