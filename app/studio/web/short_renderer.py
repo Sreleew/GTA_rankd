@@ -14,9 +14,9 @@ import subprocess
 import tempfile
 from fractions import Fraction
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Callable, Sequence
 
-from studio.process import run_quiet
+from studio.process import run_quiet, run_quiet_with_progress
 
 logger = logging.getLogger(__name__)
 
@@ -98,14 +98,24 @@ def resolve_executable(name: str | Path) -> str:
 
 
 def run_command(
-    args: Sequence[str], timeout: int | None = None, cwd: Path | None = None
+    args: Sequence[str],
+    timeout: int | None = None,
+    cwd: Path | None = None,
+    *,
+    progress_callback: Callable[[float], None] | None = None,
 ) -> subprocess.CompletedProcess[str]:
     logger.info("Commande média : %s", " ".join(str(part) for part in args))
     try:
-        result = run_quiet(
-            list(args), capture_output=True, text=True, encoding="utf-8", errors="replace",
-            timeout=timeout, check=False, cwd=str(cwd) if cwd else None,
-        )
+        if progress_callback is None:
+            result = run_quiet(
+                list(args), capture_output=True, text=True, encoding="utf-8", errors="replace",
+                timeout=timeout, check=False, cwd=str(cwd) if cwd else None,
+            )
+        else:
+            result = run_quiet_with_progress(
+                list(args), timeout=timeout, cwd=str(cwd) if cwd else None,
+                progress_callback=progress_callback,
+            )
     except subprocess.TimeoutExpired as exc:
         raise MediaError(f"Commande interrompue après {timeout} secondes.") from exc
     except OSError as exc:
