@@ -384,7 +384,7 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Comportement :** même avec une seule voix, chaque mot doit désormais chevaucher un segment diarizé avec un recouvrement minimal. Les mots non attribués sont écartés ; si aucun mot ne correspond, le statut devient `no_word_attribution`.
 - **Compatibilité :** le statut `single_speaker` est conservé lorsque des mots sont attribués. Les seuils de dominance multi-voix, les timings DTW, la transcription et le rendu ne changent pas.
 - **Tests :** cas avec un mot streamer dans le segment et un mot hors segment, plus cas sans aucun mot attribuable.
-- **Validation :** CI Linux et Windows à effectuer sur la PR. Cette heuristique ne prouve toujours pas l'identité du streamer et ne sépare pas deux voix superposées dans un même segment.
+- **Validation :** PR #57 fusionnée après réussite de la CI Linux (`46044003129`) et Windows (`46044002914`). Cette heuristique ne prouve toujours pas l'identité du streamer et ne sépare pas deux voix superposées dans un même segment.
 
 
 ## 26. Premier moteur de rendu Daily Best Of 16:9, 27 novembre 2026
