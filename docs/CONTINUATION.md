@@ -3,20 +3,20 @@
 > Lire ce document en premier dans chaque nouvelle conversation sur le projet. Il décrit l'état réellement livré et la structure source actuelle.
 
 - **Dernière mise à jour :** 27 novembre 2026
-- **Dernière version stable confirmée :** 0.8.5, publiée avec le ZIP Windows et `SHA256SUMS.txt`. La candidate v0.8.6 regroupe la diversité des moments forts et l'indexation des fenêtres de scan.
-- **État :** PR #19 à #24 fusionnées. PR #23 ajoute la diversité des moments forts ; PR #24 accélère le scan par indexation temporelle. La préparation de la Release `v0.8.6` est en cours. Les validations Linux et Windows des PR #23 et #24 sont vertes.
+- **Dernière version stable confirmée :** [0.8.6](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.6), publiée le 27 novembre 2026 avec le ZIP Windows et `SHA256SUMS.txt`.
+- **État :** PR #19 à #25 fusionnées. PR #23 ajoute la diversité des moments forts ; PR #24 accélère le scan par indexation temporelle ; PR #25 prépare la Release v0.8.6. La release stable v0.8.6 est publiée et son workflow est entièrement vert.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
-- **Dernière Release stable confirmée :** [v0.8.5](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.5). Assets publiés : `GTA-Ranked-Studio-v0.8.5.zip` et `SHA256SUMS.txt`.
+- **Dernière Release stable confirmée :** [v0.8.6](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.6). Assets publiés : `GTA-Ranked-Studio-v0.8.6.zip` et `SHA256SUMS.txt`.
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
 - **Source active :** `app/`. Modifier directement les fichiers Python, JavaScript, CSS, HTML, tests et installateur présents dans ce dossier.
-- **Mise à jour intégrée :** l'application consulte les Releases GitHub. La Release v0.8.5 contient le ZIP Windows et `SHA256SUMS.txt`; installation depuis v0.8.5 via Paramètres > Mises à jour.
+- **Mise à jour intégrée :** l'application consulte les Releases GitHub. La Release v0.8.6 contient le ZIP Windows et `SHA256SUMS.txt`; les installations v0.8.5 peuvent passer à v0.8.6 via Paramètres > Mises à jour.
 - **CI PR #14 :** Linux et Windows terminés avec succès, y compris suites de régression, analyse statique, audit de dépendances et packaging. Les décomptes détaillés ne sont pas consignés ici.
 - **Sécurité et packaging :** Ruff et pip-audit réussis sur Linux et Windows, aucune vulnérabilité connue ; ZIP Windows et SHA-256 vérifiés.
 - **PR de maintenance :** [#10](https://github.com/Sreleew/GTA_rankd/pull/10), fusionnée dans `main`.
 - **PR coupes naturelles :** [#11](https://github.com/Sreleew/GTA_rankd/pull/11), fusionnée dans `main`. Le départ du Short préfère une frontière après ponctuation ou pause de 0,75 s ; fallback temporel conservé si aucune frontière fiable n'existe.
 - **PR profil de production :** [#12](https://github.com/Sreleew/GTA_rankd/pull/12), fusionnée dans `main`. VOD : candidats 60, 90, 120, 150 et 165 s ; sources Twitch plus courtes préservées.
 - **CI PR #12 :** Linux 155 réussis + 1 ignoré ; Windows 156 réussis. Ruff, pip-audit, ZIP et SHA-256 validés.
-- **Statut de livraison :** v0.8.5 publiée. Le ZIP Windows (191 287 octets) est attaché à la Release et GitHub expose son digest SHA-256 `39712b747d7401fe80cd78728ffe762c199ae0a982ee7d303e8f12b2fbe2ffa3`. Le fichier `SHA256SUMS.txt` est également publié.
+- **Statut de livraison :** v0.8.6 publiée. Le ZIP Windows (193 520 octets) est attaché à la Release et GitHub expose son digest SHA-256 `bcbe46f063fc3918b3a6a9b33a25f56ed87e453fb9e2f769b763878c870cee0e`. Le fichier `SHA256SUMS.txt` est également publié.
 - **Release v0.8.2 :** [publication officielle](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.2), workflow [réussi](https://github.com/Sreleew/GTA_rankd/actions/runs/45850248905).
 - **PR de livraison v0.7.9 :** [#8](https://github.com/Sreleew/GTA_rankd/pull/8), fusionnée dans `main`.
 - **PR cadrage intelligent v0.8.0 :** [#9](https://github.com/Sreleew/GTA_rankd/pull/9), fusionnée dans `main` et publiée.
@@ -65,7 +65,7 @@ Le projet doit rester local-first, sans abonnement ni API IA payante obligatoire
 - **Mise à jour :** `app/studio/web/updater.py` et `app/installer/`.
 - **Tests :** `app/tests/`.
 - **Documentation canonique :** `docs/` à la racine. Le constructeur de ZIP injecte les documents requis directement depuis cette source, sans copie de travail sous `app/docs/`.
-- **Métadonnées :** `VERSION.txt`, `app/VERSION.txt`, `app/pyproject.toml` et `app/config.yaml.default` doivent annoncer la même version. Les notes de version racine et leur copie applicative candidate doivent être identiques.
+- **Métadonnées :** `VERSION.txt`, `app/VERSION.txt`, `app/pyproject.toml` et `app/config.yaml.default` doivent annoncer la même version. Les notes de version racine et leur copie applicative doivent être identiques.
 - **Profil matériel :** Windows 10/11, AMD Radeon RX 9060 XT 16 Go, FFmpeg H.264 AMF avec fallback libx264, whisper.cpp Vulkan avec fallback CPU, Ollama/Qwen facultatif.
 
 ## 4. Limites connues
@@ -206,16 +206,19 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - PR #20 : score payoff basé sur le contraste du pic audio et les réactions proches, avec migration SQLite, fusionnée.
 - PR #21 : coupe intelligente qui préserve la réaction verbale retardée après un pic audio ou une pause, fusionnée.
 - PR #22 : préparation et publication de la v0.8.5, fusionnée.
-- Release v0.8.5 : workflow [45978493951](https://github.com/Sreleew/GTA_rankd/actions/runs/45978493951) réussi. ZIP Windows et SHA-256 publiés.
+- Release v0.8.5 : workflow [45978493951](https://github.com/Sreleew/GTA_rankd/actions/runs/45978493951) réussi.
 - PR #23 : diversité des candidats automatiques, fusionnée dans `main` (commit `6e088f0`). Les transcriptions longues quasi identiques sont dédoublonnées même lorsque les passages sont éloignés dans la VOD. Les transcriptions courtes et les scans audio seuls restent préservés.
 - CI PR #23 : Linux et Windows réussis. Ruff, pip-audit, contrôle documentaire, suites complètes et package Windows validés.
 - PR #24 : indexation des intervalles audio et Whisper pour limiter les recherches aux seules fenêtres qui chevauchent chaque candidat, fusionnée dans `main` (commit `66ac93d`).
 - Tests PR #24 : équivalence des résultats de recherche pour les données triées et non triées, y compris les intervalles qui chevauchent le début d'une fenêtre.
 - CI PR #24 : Linux et Windows réussis ; Ruff, pip-audit, contrôle de cohérence, suites complètes et package Windows validés.
 - Microbenchmark synthétique des recherches d'intervalles : 5 346 fenêtres candidates, 5 400 fenêtres audio et 10 800 mots sur une source de 3 heures. Les résultats sont identiques au balayage complet ; recherche indexée mesurée à 68,2 fois plus rapide. Ce chiffre porte sur la recherche d'intervalles, pas sur le temps total du scan.
-- Release v0.8.6 : préparation sur `release/v0.8.6`, versions et notes synchronisées. `.release-approval` passe à `0.8.6` dans la PR pour déclencher automatiquement le workflow stable après fusion. Retrait de l'ancienne copie de notes `app/NOTES-v0.8.5.txt`, conformément au contrôle de cohérence.
+- PR #25 : synchronisation de la v0.8.6 et activation de l'approbation explicite `.release-approval`, fusionnée dans `main` (commit `00fb4f2`).
+- CI PR #25 : Linux et Windows réussis, Ruff, pip-audit, contrôles de cohérence et packages Windows validés.
+- Release v0.8.6 : publiée le 27 novembre 2026. Workflow [45986253187](https://github.com/Sreleew/GTA_rankd/actions/runs/45986253187) réussi. ZIP de 193 520 octets et `SHA256SUMS.txt` publiés.
+- SHA-256 du ZIP v0.8.6 : `bcbe46f063fc3918b3a6a9b33a25f56ed87e453fb9e2f769b763878c870cee0e`.
+- CI post-fusion : Linux réussi ; le workflow Windows post-fusion est encore en cours au moment de cette mise à jour. La validation Windows complète de la PR #25 est toutefois réussie.
 - Validation matérielle : aucune validation réelle AMF/Vulkan sur la RX 9060 XT n'a été effectuée pendant ces lots.
-
 ## 12. Message de reprise prêt à copier
 
- > Nous reprenons GTA Ranked Studio. Lis `docs/CONTINUATION.md` puis `docs/WORKING-AGREEMENT.md`. La dernière Release stable est v0.8.5, publiée avec ZIP Windows et SHA256SUMS. Les PR #19 à #22 sont fusionnées. La source de développement est `app/`. Préserve les données locales, valide les changements transversaux sous Linux et Windows, et publie une Release stable après validation. La RX 9060 XT n'a pas encore été validée physiquement pour AMF/Vulkan. L'utilisateur demande de travailler de façon autonome, sans demander de confirmations répétitives, jusqu'à un résultat propre et publié.
+ > Nous reprenons GTA Ranked Studio. Lis `docs/CONTINUATION.md` puis `docs/WORKING-AGREEMENT.md`. La dernière Release stable est v0.8.6, publiée avec ZIP Windows et SHA256SUMS. Les PR #19 à #25 sont fusionnées. La source de développement est `app/`. Préserve les données locales, valide les changements transversaux sous Linux et Windows, et publie une Release stable après validation. La RX 9060 XT n'a pas encore été validée physiquement pour AMF/Vulkan. L'utilisateur demande de travailler de façon autonome, sans demander de confirmations répétitives, jusqu'à un résultat propre et publié.
