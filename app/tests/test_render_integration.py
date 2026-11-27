@@ -243,7 +243,7 @@ def test_render_reuses_source_probe_and_returns_output_probe(tmp_path: Path, mon
         progress_callback=reported_progress.append,
     )
 
-    assert reported_progress == [4.0]
+    assert reported_progress == [50.0]
     assert probed == [output]
     assert result["source_duration"] == 12.0
     assert result["output_media_info"] == output_info
