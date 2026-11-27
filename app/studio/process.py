@@ -1,11 +1,14 @@
 """Cross-platform subprocess helpers with cooperative job cancellation."""
 from __future__ import annotations
 
+import logging
 import os
+import queue
 import subprocess
 import threading
 import time
-from typing import Any
+from collections import deque
+from typing import Any, Callable, Sequence
 
 
 class ProcessingCancelled(RuntimeError):
@@ -96,3 +99,115 @@ def run_quiet(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
     if check and process.returncode:
         raise subprocess.CalledProcessError(process.returncode, result.args, output=stdout, stderr=stderr)
     return result
+
+
+
+def run_quiet_with_progress(
+    args: Sequence[str],
+    *,
+    timeout: int | float | None = None,
+    cwd: str | os.PathLike[str] | None = None,
+    progress_callback: Callable[[float], None] | None = None,
+) -> subprocess.CompletedProcess[str]:
+    """Run a media process while streaming FFmpeg's out_time progress safely.
+
+    FFmpeg's progress protocol is read from stdout while stderr is redirected
+    into the same pipe. A lightweight reader thread prevents the child process
+    from blocking on a full pipe, and the caller thread remains responsible for
+    timeout and cooperative cancellation checks.
+    """
+    command = [str(value) for value in args]
+    if not command:
+        raise ValueError("La commande ne peut pas être vide.")
+
+    kwargs: dict[str, Any] = {
+        "stdout": subprocess.PIPE,
+        "stderr": subprocess.STDOUT,
+        "text": True,
+        "encoding": "utf-8",
+        "errors": "replace",
+        "bufsize": 1,
+        "cwd": str(cwd) if cwd else None,
+    }
+    if os.name == "nt":
+        kwargs["creationflags"] = getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000)
+
+    event = current_cancel_event()
+    if event is not None:
+        check_cancelled()
+
+    process = subprocess.Popen(command, **kwargs)
+    output_queue: queue.Queue[str | None] = queue.Queue()
+
+    def _read_output() -> None:
+        try:
+            if process.stdout is not None:
+                for output_line in process.stdout:
+                    output_queue.put(output_line)
+        finally:
+            output_queue.put(None)
+
+    reader = threading.Thread(target=_read_output, name="media-progress-reader", daemon=True)
+    reader.start()
+    output_tail: deque[str] = deque(maxlen=180)
+    started = time.monotonic()
+    reader_finished = False
+
+    def _stop_child() -> None:
+        if process.poll() is not None:
+            return
+        try:
+            process.terminate()
+            process.wait(timeout=1.0)
+        except subprocess.TimeoutExpired:
+            try:
+                process.kill()
+            except OSError:
+                pass
+            process.wait()
+
+    try:
+        while not reader_finished:
+            if event is not None and event.is_set():
+                _stop_child()
+                raise ProcessingCancelled("Processus interrompu à la demande de l'utilisateur.")
+
+            if timeout is not None and time.monotonic() - started >= float(timeout):
+                _stop_child()
+                raise subprocess.TimeoutExpired(
+                    command, timeout, output="".join(output_tail), stderr=None,
+                )
+
+            try:
+                output_line = output_queue.get(timeout=0.2)
+            except queue.Empty:
+                if process.poll() is not None and not reader.is_alive():
+                    reader_finished = True
+                continue
+
+            if output_line is None:
+                reader_finished = True
+                continue
+
+            output_tail.append(output_line)
+            if progress_callback is not None and output_line.startswith("out_time="):
+                time_value = output_line.partition("=")[2].strip()
+                try:
+                    hours, minutes, seconds = time_value.split(":", 2)
+                    elapsed_seconds = int(hours) * 3600 + int(minutes) * 60 + float(seconds)
+                except (ValueError, TypeError):
+                    continue
+                if elapsed_seconds >= 0:
+                    try:
+                        progress_callback(elapsed_seconds)
+                    except Exception:
+                        logging.getLogger(__name__).exception("Le callback de progression média a échoué.")
+
+        return_code = process.wait()
+    finally:
+        if process.poll() is None:
+            _stop_child()
+        reader.join(timeout=2.0)
+
+    output = "".join(output_tail)
+    return subprocess.CompletedProcess(command, return_code, output, "")
