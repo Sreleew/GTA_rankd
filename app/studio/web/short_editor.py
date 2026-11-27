@@ -369,7 +369,8 @@ def _thumbnail_headline(text: str, streamer: str = "", *, max_words: int = 4) ->
         words = raw_words[-limit:]
 
     def normalise_token(value: str) -> str:
-        return re.sub(r"[^a-z0-9]+", "", value.casefold())
+        token = re.sub(r"[^a-z0-9]+", "", value.casefold())
+        return token[:-1] if value.casefold().endswith("'s") else token
 
     creator_tokens = {
         normalise_token(token)
@@ -455,7 +456,7 @@ def _thumbnail_webcam_crop(frame: Image.Image) -> tuple[Image.Image | None, str 
                 count += 1
                 xs.append(index % region.width)
                 ys.append(index // region.width)
-        if count < max(45, int(72 * 72 * 0.045)):
+        if count < max(65, int(72 * 72 * 0.022)):
             continue
         box_width = max(xs) - min(xs) + 1
         box_height = max(ys) - min(ys) + 1
