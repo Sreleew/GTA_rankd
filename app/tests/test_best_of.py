@@ -209,8 +209,5 @@ def test_best_of_renderer_reports_real_encoding_progress(tmp_path: Path, monkeyp
     )
 
     assert any(message == "Vérification des sources · 1/1" for _, message in callbacks)
-    assert (51, "Encodage 16:9 · 52%") in callbacks or any(
-        progress in {51, 52} and message.startswith("Encodage 16:9 ·")
-        for progress, message in callbacks
-    )
+    assert (52, "Encodage 16:9 · 52%") in callbacks
     assert callbacks[-1] == (95, "Vérification du fichier exporté")
