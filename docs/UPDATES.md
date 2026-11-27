@@ -2,13 +2,13 @@
 
 ## v0.8.7 : prise en charge des longues VOD Twitch
 
-Version candidate préparée, publication stable en attente de la validation du workflow de Release.
+Release stable publiée : https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.7. ZIP Windows : 197 246 octets. SHA-256 : `8239f0788fa788f793ae19228d589443e76ea32477cd04020e1f0267df1307f3`. Assets publiés : `GTA-Ranked-Studio-v0.8.7.zip` et `SHA256SUMS.txt`.
 
 - Les plages horaires acceptent les secondes ou `HH:MM:SS`.
 - Les VOD Twitch longues peuvent être découpées en lots de 48 tranches maximum, de 30 à 180 minutes chacune.
 - Une carte de lot consolide les candidats de chaque tranche, les reclasse et dédoublonne les répétitions inter-segments tout en gardant le lien vers la source de chaque Short.
 - Le classement reste indicatif, les scores audio étant normalisés à l'intérieur de chaque tranche.
-- Mise à jour depuis v0.8.6 via **Paramètres > Mises à jour** après publication effective.
+- Mise à jour depuis v0.8.6 via **Paramètres > Mises à jour**.
 
 ## v0.8.6 : diversité des moments forts et accélération des scans VOD
 ## v0.8.6 : diversité des moments forts et accélération des scans VOD
