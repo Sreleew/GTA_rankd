@@ -1,0 +1,23 @@
+GTA Ranked Studio v0.8.7
+
+VOD Twitch longues :
+- Les plages de scan peuvent être saisies en secondes ou au format HH:MM:SS.
+- Une plage complète peut être découpée automatiquement en tranches de 30, 45, 60, 90, 120 ou 180 minutes.
+- Un lot peut contenir jusqu'à 48 tranches indépendantes ; chaque tranche reste une analyse distincte et respecte la limite de trois heures.
+- La création du lot insère d'abord les scans en base de manière atomique, puis les ajoute à la file de traitement.
+- La carte du lot affiche la progression agrégée, les éventuelles erreurs et permet d'annuler les analyses restantes.
+
+Classement global :
+- Les candidats des tranches sont réunis, triés et dédoublonnés à l'échelle de la VOD.
+- La shortlist consolidée conserve le lien vers la tranche source de chaque candidat afin que la création du Short utilise le bon extrait.
+- Les réactions très courtes restent préservées par la règle de dédoublonnage.
+- Les scores audio sont normalisés par tranche : le classement global est indicatif et les meilleurs passages doivent être relus avant export.
+
+Mise à jour :
+- Mise à jour depuis la v0.8.6 via Paramètres > Mises à jour.
+- Les réglages, bases de données, projets, médias, modèles et exports locaux sont préservés.
+
+Validation :
+- Suites de régression Linux et Windows réussies sur les PR #26, #27 et #28.
+- Ruff, pip-audit et contrôle de cohérence réussis.
+- Package de mise à jour Windows construit et vérifié en CI.
