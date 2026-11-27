@@ -4,7 +4,7 @@
 
 - **Dernière mise à jour :** 27 novembre 2026
 - **Dernière version stable confirmée :** [v0.8.9](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.9), publiée le 27 novembre 2026. Correctif de redémarrage et de confirmation de version après mise à jour.
-- **État :** PR #38 à #48 fusionnées dans `main`. La v0.8.9 est la dernière Release stable publiée. La PR #47 ajoute quatre animations de hook selon l'intention éditoriale et une emphase cinétique du mot actif. La PR #48 ajoute la détection francophone des hooks et le cadre éditorial du gameplay.
+- **État :** PR #38 à #49 fusionnées dans `main`. La v0.8.9 est la dernière Release stable publiée. Les PR #47 à #49 ajoutent les hooks cinétiques, le cadre éditorial du gameplay et le sound design local adapté à l'intention du hook.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
 - **Source active :** `app/`. Modifier directement les fichiers Python, JavaScript, CSS, HTML, tests et installateur présents dans ce dossier.
@@ -312,8 +312,15 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 
 ## 19. Sound design adapté au hook, 27 novembre 2026
 
-- **Chantier en cours :** générer localement quatre cues audio originaux (impact, question, suspense, réaction) avec la bibliothèque standard Python. Aucun téléchargement, fichier tiers ou dépendance supplémentaire.
-- **Intégration prévue :** classifier le hook final généré, créer le WAV correspondant dans le dossier temporaire du job, puis le mixer au début du Short. Le son reste désactivable avec le réglage SFX existant.
-- **Objectif éditorial :** remplacer le whoosh identique appliqué à tous les Shorts par un accent sonore cohérent avec l'intention du hook.
-- **Tests ajoutés :** vérifier les propriétés WAV, la présence d'échantillons et le fallback sur le cue impact pour un style inconnu.
-- **Limite à vérifier :** le rendu synthétique doit encore être écouté sur un vrai Short et ajusté en volume sur le PC de l'utilisateur. Les contrôles CI Linux/Windows restent obligatoires avant fusion.
+- **PR #49 fusionnée :** https://github.com/Sreleew/GTA_rankd/pull/49, commit `2cbff49217d14a31312c722bbf0327e98a827d5b`. Les quatre cues originaux impact, question, suspense et réaction sont générés localement avec la bibliothèque standard Python, puis mixés au début du Short. Aucun asset externe ni dépendance supplémentaire ; le réglage SFX existant permet de désactiver le son.
+- **CI PR #49 :** Linux run [46029128765](https://github.com/Sreleew/GTA_rankd/actions/runs/46029128765) et Windows run [46029128709](https://github.com/Sreleew/GTA_rankd/actions/runs/46029128709) réussies.
+- **Limite utilisateur :** le son synthétique n'a pas encore été écouté sur un vrai Short ni validé sur le PC AMD. Ajuster le volume après retour d'écoute réel.
+
+
+## 20. Rythme de caméra piloté par les accents audio, 27 novembre 2026
+
+- **Décision de méthode utilisateur :** réduire le temps perdu dans les validations répétitives. Faire les contrôles ciblés pendant le développement et réserver la suite complète Linux/Windows aux changements transversaux, au packaging et aux releases. Ne pas sacrifier la stabilité ; expliquer les résultats en termes simples plutôt que lister des étapes CI sans contexte.
+- **Lot en cours :** remplacer le zoom unique au pic audio par plusieurs impulsions de zoom discrètes, déclenchées sur quelques accents audio réellement marqués. Le détecteur ignore les niveaux faibles et le bruit de fond uniforme, limite le nombre d'impulsions à cinq et les espace d'au moins 4,5 secondes. Si aucun accent fiable n'est trouvé, le zoom principal existant reste utilisé.
+- **Fichiers concernés :** `app/studio/web/transcribe.py` (détection multi-pics RMS), `app/studio/web/worker.py` (recalage des instants après coupe), `app/studio/web/short_renderer.py` (impulsions FFmpeg), tests de transcription et de rendu.
+- **Limite éditoriale :** un accent audio n'est pas une preuve d'événement visuel GTA. Le système pilote seulement le rythme du cadrage à partir de variations sonores ; il ne prétend pas détecter kills, crashs ou événements HUD.
+- **Validation en attente :** tests ciblés et CI Linux/Windows sur la PR ; l'intensité et le rendu final doivent être jugés sur un vrai clip Twitch sur le PC de l'utilisateur.
