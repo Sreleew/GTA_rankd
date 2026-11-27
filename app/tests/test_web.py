@@ -961,3 +961,62 @@ def test_download_size_suffix_handles_unknown_or_invalid_totals():
     assert _download_size_suffix({"downloaded_bytes": 2 * mib, "total_bytes": None}) == " · 2.0 MiB"
     assert _download_size_suffix({"downloaded_bytes": 0, "total_bytes": 10 * mib}) == ""
     assert _download_size_suffix({"downloaded_bytes": "invalid", "total_bytes": 10}) == ""
+
+def test_batch_twitch_short_import_queues_valid_urls_and_reports_invalid_ones(tmp_path: Path):
+    config = load_config(_make_isolated_app_config(tmp_path))
+    app = create_app(config)
+    queued = []
+    app.state.runner.submit = lambda job_id: queued.append(job_id)
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/shorts/url/batch",
+        data={
+            "urls": "\n".join([
+                "https://clips.twitch.tv/FirstClip",
+                "https://www.twitch.tv/videos/123456789",
+                "https://clips.twitch.tv/FirstClip",
+                "https://example.com/not-twitch",
+            ]),
+            "rights_confirmed": "true",
+            "streamer": "Test streamer",
+            "layout": "blur",
+            "captions_enabled": "true",
+            "dynamic_zoom": "false",
+        },
+    )
+
+    assert response.status_code == 202, response.text
+    payload = response.json()
+    assert payload["created_count"] == 2
+    assert payload["rejected_count"] == 1
+    assert len(queued) == 2
+    assert len(payload["jobs"]) == 2
+    assert payload["rejected"][0]["url"] == "https://example.com/not-twitch"
+    jobs = app.state.store.list_jobs(limit=10)
+    assert len(jobs) == 2
+    assert all(job["metadata"]["batch_import"] is True for job in jobs)
+    assert all(job["metadata"]["options"]["layout"] == "blur" for job in jobs)
+
+
+def test_batch_twitch_short_import_requires_rights_and_limits_urls(tmp_path: Path):
+    config = load_config(_make_isolated_app_config(tmp_path))
+    app = create_app(config)
+    app.state.runner.submit = lambda job_id: None
+    client = TestClient(app)
+
+    missing_rights = client.post(
+        "/api/shorts/url/batch",
+        data={"urls": "https://clips.twitch.tv/ClipOne", "rights_confirmed": "false"},
+    )
+    assert missing_rights.status_code == 400
+
+    too_many = client.post(
+        "/api/shorts/url/batch",
+        data={
+            "urls": "\n".join(f"https://clips.twitch.tv/Clip{i}" for i in range(11)),
+            "rights_confirmed": "true",
+        },
+    )
+    assert too_many.status_code == 400
+    assert "Maximum 10" in too_many.json()["detail"]
