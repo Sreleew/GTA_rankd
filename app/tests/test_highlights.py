@@ -196,7 +196,8 @@ def test_repeated_transcript_moments_are_deduplicated_even_when_far_apart() -> N
         for second in range(0, duration, 2)
     ]
     phrase = ["BRO", "WHAT", "NO", "WAIT", "OMG", "INSANE", "CRAZY", "HOLY",
-              "SHIT", "FUCK", "DAMN", "BRUH", "WTF", "HELP", "YO", "NAH"]
+              "SHIT", "FUCK", "DAMN", "BRUH", "the", "blue", "sports", "car",
+              "just", "exploded", "behind", "the", "garage", "while", "driving"]
     words = [
         WordTiming(start + 1.0 + index * 0.8, start + 1.3 + index * 0.8, token)
         for start in (42.0, 152.0) for index, token in enumerate(phrase)
@@ -218,9 +219,9 @@ def test_distinct_transcripts_at_separate_events_are_both_preserved() -> None:
         for second in range(0, duration, 2)
     ]
     first_phrase = ["BRO", "WHAT", "NO", "WAIT", "OMG", "INSANE", "CRAZY", "HOLY",
-                    "SHIT", "FUCK", "DAMN", "BRUH"]
-    second_phrase = ["POLICE", "RUN", "KILLED", "CLUTCH", "NICE", "SICK", "ACTUALLY",
-                     "SERIOUSLY", "IMPOSSIBLE", "LAUGHING", "SCREAMING", "YO"]
+                    "the", "blue", "sports", "car", "exploded", "behind", "the", "garage"]
+    second_phrase = ["POLICE", "RUN", "KILLED", "CLUTCH", "NICE", "SICK",
+                     "officers", "blocked", "the", "entire", "street", "after", "crash", "downtown"]
     words = [
         WordTiming(start + 1.0 + index * 0.8, start + 1.3 + index * 0.8, token)
         for start, phrase in ((42.0, first_phrase), (152.0, second_phrase))
