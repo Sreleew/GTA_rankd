@@ -297,7 +297,10 @@ def score_highlight_candidates(
         # Long VODs can contain repeated catchphrases or near-identical
         # reactions far apart in time. Avoid filling the shortlist with the
         # same spoken moment, while leaving short/audio-only transcripts alone.
-        tokens = set(re.findall(r"[a-z0-9']+", str(candidate.get("transcript", "")).lower()))
+        tokens = {
+            token for token in re.findall(r"[a-z0-9']+", str(candidate.get("transcript", "")).lower())
+            if token not in REACTION_CUES
+        }
         if len(tokens) >= minimum_transcript_tokens:
             duplicate = False
             for previous_tokens in selected_transcripts:
