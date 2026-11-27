@@ -1048,6 +1048,7 @@ def test_batch_twitch_short_import_queues_valid_urls_and_reports_invalid_ones(tm
             "urls": "\n".join([
                 "https://clips.twitch.tv/FirstClip",
                 "https://www.twitch.tv/videos/123456789",
+                "https://clips.twitch.tv/ThirdClip",
                 "https://clips.twitch.tv/FirstClip",
                 "https://example.com/not-twitch",
             ]),
@@ -1061,25 +1062,25 @@ def test_batch_twitch_short_import_queues_valid_urls_and_reports_invalid_ones(tm
 
     assert response.status_code == 202, response.text
     payload = response.json()
-    assert payload["created_count"] == 2
+    assert payload["created_count"] == 3
     assert payload["rejected_count"] == 1
-    assert len(queued) == 2
-    assert len(payload["jobs"]) == 2
+    assert len(queued) == 3
+    assert len(payload["jobs"]) == 3
     assert len(payload["batch_id"]) == 32
     assert payload["rejected"][0]["url"] == "https://example.com/not-twitch"
     jobs = app.state.store.list_jobs(limit=10)
-    assert len(jobs) == 2
+    assert len(jobs) == 3
     assert all(job["batch_id"] == payload["batch_id"] for job in jobs)
     assert all(job["metadata"]["batch_import"] is True for job in jobs)
-    assert all(job["metadata"]["batch_count"] == 2 for job in jobs)
-    assert sorted(job["metadata"]["batch_index"] for job in jobs) == [1, 2]
+    assert all(job["metadata"]["batch_count"] == 3 for job in jobs)
+    assert sorted(job["metadata"]["batch_index"] for job in jobs) == [1, 2, 3]
     assert all(job["metadata"]["options"]["layout"] == "blur" for job in jobs)
 
     queued_batch = client.get(f"/api/shorts/batches/{payload['batch_id']}")
     assert queued_batch.status_code == 200
     assert queued_batch.json()["status"] == "running"
     assert queued_batch.json()["progress"] == 0
-    assert queued_batch.json()["active_count"] == 2
+    assert queued_batch.json()["active_count"] == 3
 
     app.state.store.update_job(
         payload["jobs"][0]["id"], status="ready", progress=100, message="Short prêt"
@@ -1088,15 +1089,20 @@ def test_batch_twitch_short_import_queues_valid_urls_and_reports_invalid_ones(tm
         payload["jobs"][1]["id"], status="error", progress=0,
         message="Échec du téléchargement", error="Twitch indisponible",
     )
+    app.state.store.update_job(
+        payload["jobs"][2]["id"], status="cancelled", progress=20,
+        message="Traitement annulé",
+    )
     completed_batch = client.get(f"/api/shorts/batches/{payload['batch_id']}")
     assert completed_batch.status_code == 200
     summary = completed_batch.json()
     assert summary["status"] == "completed_with_errors"
     assert summary["progress"] == 100
-    assert summary["completed_count"] == 2
+    assert summary["completed_count"] == 3
     assert summary["ready_count"] == 1
     assert summary["failed_count"] == 1
-    assert {job["status"] for job in summary["jobs"]} == {"ready", "error"}
+    assert summary["cancelled_count"] == 1
+    assert {job["status"] for job in summary["jobs"]} == {"ready", "error", "cancelled"}
 
     assert client.get("/api/shorts/batches/not-a-batch").status_code == 400
     assert client.get(f"/api/shorts/batches/{'0' * 32}").status_code == 404
