@@ -763,6 +763,7 @@ def test_twitch_download_reports_throttled_yt_dlp_progress(tmp_path: Path, monke
     assert "512 KiB/s" in messages[1]
     assert "reste 00:05" in messages[1]
     assert messages[-1] == "Téléchargement terminé · préparation du Short"
+    assert all(job_id == "test-job" for job_id, _ in store.updates)
 
 
 def test_download_progress_metrics_ignore_missing_or_invalid_values():
@@ -771,7 +772,6 @@ def test_download_progress_metrics_ignore_missing_or_invalid_values():
     assert _download_metrics_suffix({"speed": None, "eta": None}) == ""
     assert _download_metrics_suffix({"speed": float("nan"), "eta": -1}) == ""
     assert _download_metrics_suffix({"speed": 512, "eta": 3661}) == " · 512 B/s · reste 1:01:01"
-    assert all(job_id == "test-job" for job_id, _ in store.updates)
 
 
 def test_short_url_api_accepts_only_public_twitch_clip_or_vod_urls(tmp_path: Path):
