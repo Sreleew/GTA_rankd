@@ -289,12 +289,7 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
             raise HTTPException(status_code=400, detail=f"{field_name} doit être un nombre valide.")
         return parsed
 
-    def _validate_webcam_zone(value: str) -> str:
-        allowed = {"none", "top-left", "top-right", "bottom-left", "bottom-right"}
-        zone = str(value or "none").strip().lower()
-        if zone not in allowed:
-            raise HTTPException(status_code=400, detail="Zone webcam invalide.")
-        return zone
+
 
     def _validate_highlight_window(start: float | None, end: float | None) -> tuple[float | None, float | None]:
         if (start is None) != (end is None):
@@ -314,7 +309,6 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         rights_confirmed: Annotated[bool, Form()] = False,
         window_start: Annotated[str | None, Form()] = None,
         window_end: Annotated[str | None, Form()] = None,
-        webcam_zone: Annotated[str, Form()] = "none",
     ) -> dict:
         if not rights_confirmed:
             raise HTTPException(status_code=400, detail="Confirme que tu disposes des droits ou autorisations nécessaires pour analyser cette source.")
@@ -322,13 +316,12 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         start = _parse_optional_seconds(window_start, "Début")
         end = _parse_optional_seconds(window_end, "Fin")
         start, end = _validate_highlight_window(start, end)
-        webcam_zone = _validate_webcam_zone(webcam_zone)
         scan_id = uuid.uuid4().hex
         store.create_highlight_scan({
             "id": scan_id, "source_kind": "url", "source_url": clean_url,
             "streamer": streamer.strip()[:120], "message": "VOD/clip ajouté à la file d'analyse",
             "window_start": start, "window_end": end, "rights_confirmed": True,
-            "metadata": {"note": note.strip()[:1000], "webcam_zone": webcam_zone},
+            "metadata": {"note": note.strip()[:1000]},
         })
         highlight_scanner.submit(scan_id)
         return {"id": scan_id, "status": "queued", "message": "Source Twitch ajoutée à l'analyse des moments forts."}
@@ -342,7 +335,6 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         streamer: Annotated[str, Form()] = "",
         note: Annotated[str, Form()] = "",
         rights_confirmed: Annotated[bool, Form()] = False,
-        webcam_zone: Annotated[str, Form()] = "none",
     ) -> dict:
         """Queue a long Twitch VOD range as independent scans of at most three hours."""
         if not rights_confirmed:
@@ -370,7 +362,6 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
                 status_code=400,
                 detail="La durée de tranche doit être de 30, 45, 60, 90, 120 ou 180 minutes.",
             )
-        webcam_zone = _validate_webcam_zone(webcam_zone)
         chunk_seconds = chunk_size_minutes * 60
         segment_count = math.ceil((end - start) / chunk_seconds)
         max_segments = 48
@@ -398,7 +389,6 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
                 "rights_confirmed": True,
                 "metadata": {
                     "note": note.strip()[:1000],
-                    "webcam_zone": webcam_zone,
                     "batch_id": batch_id,
                     "batch_index": index + 1,
                     "batch_count": segment_count,
@@ -437,7 +427,6 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         rights_confirmed: Annotated[bool, Form()] = False,
         window_start: Annotated[str | None, Form()] = None,
         window_end: Annotated[str | None, Form()] = None,
-        webcam_zone: Annotated[str, Form()] = "none",
     ) -> dict:
         if not rights_confirmed:
             raise HTTPException(status_code=400, detail="Confirme que tu disposes des droits ou autorisations nécessaires pour analyser cette vidéo.")
@@ -470,7 +459,7 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
             "id": scan_id, "source_kind": "upload", "source_path": str(target_path.resolve()),
             "source_title": Path(safe_name).stem, "streamer": streamer.strip()[:120],
             "message": "VOD/clip ajouté à la file d'analyse", "window_start": start, "window_end": end,
-            "rights_confirmed": True, "metadata": {"note": note.strip()[:1000], "file_size": written, "webcam_zone": webcam_zone},
+            "rights_confirmed": True, "metadata": {"note": note.strip()[:1000], "file_size": written},
         })
         highlight_scanner.submit(scan_id)
         return {"id": scan_id, "status": "queued", "message": "Fichier ajouté à l'analyse des moments forts."}
