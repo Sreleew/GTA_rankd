@@ -155,8 +155,8 @@ def build_filter_complex(
         # Editorial 9:16 composition: a large gameplay panel sits between
         # the hook and captions. Landscape sources are cropped to the panel
         # ratio; portrait sources stay intact and are centered over the blur.
-        panel_height = max(1, int(height * 0.42))
-        panel_y = int(height * 0.33)
+        panel_height = max(1, int(height * 0.48))
+        panel_y = int(height * 0.30)
         panel_ratio = width / panel_height
         source_ratio = max(0.01, float(source_width) / max(1, int(source_height)))
         base = (

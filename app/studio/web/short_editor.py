@@ -188,7 +188,7 @@ def _caption_events(words: list[WordTiming], width: int, height: int) -> list[st
             start_stamp = _ass_time(active.start)
             end_stamp = _ass_time(end)
             events.append(
-                f"Dialogue: 0,{start_stamp},{end_stamp},Caption,,0,0,0,,{{\\an2\\pos({x},{y})}}{line}"
+                f"Dialogue: 0,{start_stamp},{end_stamp},Caption,,0,0,0,,{{\\an2\\pos({x},{y})\\fad(45,65)}}{line}"
             )
     return events
 
@@ -220,11 +220,12 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name,Fontname,Fontsize,PrimaryColour,SecondaryColour,OutlineColour,BackColour,Bold,Italic,Underline,StrikeOut,ScaleX,ScaleY,Spacing,Angle,BorderStyle,Outline,Shadow,Alignment,MarginL,MarginR,MarginV,Encoding
-Style: Caption,{font},66,&H00FFFFFF,&H0000C8F5,&H00101010,&H80000000,-1,0,0,0,100,100,0,0,1,5,2,2,70,70,300,1
-Style: Hook,{font},78,&H0000C8F5,&H00FFFFFF,&H00101010,&H90000000,-1,0,0,0,100,100,1,0,1,5,2,8,75,75,340,1
-Style: Context,{font},34,&H00FFFFFF,&H00FFFFFF,&H00101010,&H90000000,-1,0,0,0,100,100,0,0,1,3,1,8,80,80,490,1
-Style: Brand,{font},27,&H00FFFFFF,&H00FFFFFF,&H00101010,&H80000000,-1,0,0,0,100,100,0,0,1,3,1,7,55,55,90,1
-Style: Handle,{font},25,&H00FFFFFF,&H00FFFFFF,&H00101010,&H80000000,-1,0,0,0,100,100,0,0,1,3,1,9,55,55,90,1
+Style: Caption,{font},68,&H00FFFFFF,&H0000C8F5,&H00050910,&HCC050910,-1,0,0,0,100,100,0,0,1,6,3,2,64,64,285,1
+Style: Hook,{font},86,&H0000C8F5,&H00FFFFFF,&H00050910,&HCC050910,-1,0,0,0,100,100,1,0,1,7,3,8,70,70,330,1
+Style: Context,{font},31,&H00FFFFFF,&H00FFFFFF,&H00050910,&HCC050910,-1,0,0,0,100,100,0,0,1,4,2,8,80,80,475,1
+Style: Brand,{font},25,&H00FFFFFF,&H00FFFFFF,&H00050910,&HCC050910,-1,0,0,0,100,100,1,0,1,4,2,7,55,55,82,1
+Style: Handle,{font},23,&H00FFFFFF,&H00FFFFFF,&H00050910,&HCC050910,-1,0,0,0,100,100,0,0,1,3,2,9,55,55,82,1
+Style: Kicker,{font},24,&H00E8F4F4,&H00E8F4F4,&H00050910,&HCC050910,-1,0,0,0,100,100,2,0,1,4,2,8,70,70,455,1
 
 [Events]
 Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
@@ -232,7 +233,7 @@ Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
     events: list[str] = []
     if brand_enabled:
         events.append(
-            f"Dialogue: 3,0:00:00.00,9:59:59.99,Brand,,0,0,0,,{{\\an7\\pos(65,90)}}{_clean_ass_text(badge_text)}"
+            f"Dialogue: 3,0:00:00.00,9:59:59.99,Brand,,0,0,0,,{{\\an7\\pos(65,90)}}GR  //  {_clean_ass_text(badge_text)}"
         )
         events.append(
             f"Dialogue: 3,0:00:00.00,9:59:59.99,Handle,,0,0,0,,{{\\an9\\pos({width - 65},90)}}{_clean_ass_text(handle)}"
@@ -240,7 +241,7 @@ Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
     clean_hook = _clean_ass_text(hook_text)
     if clean_hook:
         events.append(
-            f"Dialogue: 2,0:00:00.00,0:00:02.60,Hook,,0,0,0,,{{\\an8\\pos({width // 2},{int(height * 0.20)})}}{_wrap_words(clean_hook, 5)}"
+            f"Dialogue: 2,0:00:00.00,0:00:02.35,Hook,,0,0,0,,{{\\an8\\pos({width // 2},{int(height * 0.20)})\\fad(120,180)\\fscx88\\fscy88\\t(0,190,\\fscx100\\fscy100)}}{_wrap_words(clean_hook, 5)}"
         )
     clean_context = _clean_ass_text(context_text)
     if clean_context:
@@ -349,27 +350,29 @@ def apply_thumbnail_overlay(
     overlay = Image.new("RGBA", (width, height), (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay, "RGBA")
 
-    # Minimal brand header.
-    draw.rounded_rectangle((margin, 86, margin + 64, 150), radius=16, fill=accent)
+    # Vice City Dispatch identity: hazard yellow, cool cyan signal accents and compact broadcast typography.
+    cyan = (67, 224, 218, 255)
+    draw.rounded_rectangle((margin, 78, margin + 66, 144), radius=17, fill=accent)
     mark_font = load_font(34)
     mark = "GR"
     mark_box = draw.textbbox((0, 0), mark, font=mark_font)
-    draw.text((margin + (64 - (mark_box[2] - mark_box[0])) / 2, 96 - mark_box[1]),
+    draw.text((margin + (66 - (mark_box[2] - mark_box[0])) / 2, 88 - mark_box[1]),
               mark, font=mark_font, fill=(8, 10, 13, 255))
-    brand_font = load_font(32)
-    draw.text((margin + 82, 99), "GTA RANKED", font=brand_font, fill=white)
-    game_font = load_font(23)
+    brand_font = load_font(31)
+    draw.text((margin + 82, 83), "GTA RANKED", font=brand_font, fill=white)
+    micro_font = load_font(17)
+    draw.text((margin + 84, 119), "VICE CITY DISPATCH  /  CLIP FEED", font=micro_font, fill=cyan)
+    game_font = load_font(22)
     game_text = game.upper()
     game_box = draw.textbbox((0, 0), game_text, font=game_font)
-    game_width = game_box[2] - game_box[0] + 34
-    draw.rounded_rectangle((width - margin - game_width, 96, width - margin, 146),
-                           radius=14, fill=(9, 12, 16, 190), outline=(255, 255, 255, 70), width=2)
-    draw.text((width - margin - game_width + 17, 108 - game_box[1]), game_text,
-              font=game_font, fill=muted)
+    game_width = game_box[2] - game_box[0] + 38
+    draw.rounded_rectangle((width - margin - game_width, 88, width - margin, 140),
+                           radius=13, fill=(5, 9, 14, 220), outline=cyan, width=2)
+    draw.text((width - margin - game_width + 19, 99 - game_box[1]), game_text,
+              font=game_font, fill=white)
 
-    # The gameplay is the hero. Keep the full 16:9 frame visible so the streamer
-    # webcam and the surrounding game context are not cropped away.
-    panel_x, panel_y, panel_w, panel_h = 38, 410, 1004, 600
+    # Larger source frame: keep the streamer webcam and gameplay readable at phone size.
+    panel_x, panel_y, panel_w, panel_h = 30, 300, 1020, 720
     shadow = Image.new("RGBA", (width, height), (0, 0, 0, 0))
     shadow_draw = ImageDraw.Draw(shadow, "RGBA")
     shadow_draw.rounded_rectangle((panel_x - 10, panel_y + 14, panel_x + panel_w + 10, panel_y + panel_h + 14),
@@ -384,17 +387,20 @@ def apply_thumbnail_overlay(
     canvas.paste(panel, (panel_x, panel_y), mask)
     draw = ImageDraw.Draw(overlay, "RGBA")
     draw.rounded_rectangle((panel_x, panel_y, panel_x + panel_w, panel_y + panel_h),
-                           radius=27, outline=accent, width=4)
-    draw.rounded_rectangle((panel_x + 22, panel_y + 20, panel_x + 190, panel_y + 66),
-                           radius=13, fill=(8, 10, 13, 205))
+                           radius=27, outline=accent, width=5)
+    draw.rounded_rectangle((panel_x + 22, panel_y + 20, panel_x + 205, panel_y + 68),
+                           radius=13, fill=(5, 9, 14, 225), outline=cyan, width=1)
     tag_font = load_font(20)
-    draw.text((panel_x + 38, panel_y + 30), "THE CLIP", font=tag_font, fill=white)
+    draw.text((panel_x + 39, panel_y + 32), "LIVE FEED  /  01", font=tag_font, fill=white)
+    # Small signal marks make the frame feel like an in-world broadcast, not a generic card.
+    draw.line((panel_x + 20, panel_y + panel_h - 20, panel_x + 125, panel_y + panel_h - 20), fill=cyan, width=4)
+    draw.line((panel_x + panel_w - 125, panel_y + 20, panel_x + panel_w - 20, panel_y + 20), fill=cyan, width=4)
 
     # Editorial headline: short, complete and readable at phone size.
-    title_top = 1130
-    kicker_font = load_font(24)
-    draw.rounded_rectangle((margin, title_top - 36, margin + 8, title_top - 5), radius=4, fill=accent)
-    draw.text((margin + 24, title_top - 38), "THE MOMENT", font=kicker_font, fill=accent)
+    title_top = 1105
+    kicker_font = load_font(23)
+    draw.rounded_rectangle((margin, title_top - 34, margin + 8, title_top - 5), radius=4, fill=cyan)
+    draw.text((margin + 24, title_top - 38), "MOMENT / DETECTED", font=kicker_font, fill=cyan)
 
     def wrap_headline(candidate_font) -> list[str]:
         lines: list[str] = []

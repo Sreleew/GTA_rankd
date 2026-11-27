@@ -15,9 +15,9 @@ def test_smart_layout_builds_large_gameplay_panel_and_respects_horizontal_focus(
         width=1080, height=1920, layout="smart", crop_x=80,
         source_width=1920, source_height=1080,
     )
-    assert "scale=-2:806" in graph
-    assert "crop=1080:806:(in_w-out_w)*0.800" in graph
-    assert "overlay=(W-w)/2:633" in graph
+    assert "scale=-2:921" in graph
+    assert "crop=1080:921:(in_w-out_w)*0.800" in graph
+    assert "overlay=(W-w)/2:576" in graph
     assert "boxblur=28:10" in graph
 
 
@@ -26,8 +26,8 @@ def test_smart_layout_preserves_portrait_sources_without_aggressive_crop() -> No
         width=1080, height=1920, layout="smart",
         source_width=1080, source_height=1920,
     )
-    assert "scale=-2:806,setsar=1[panel]" in graph
-    assert "crop=1080:806" not in graph
+    assert "scale=-2:921,setsar=1[panel]" in graph
+    assert "crop=1080:921" not in graph
 
 
 def test_thumbnail_visual_score_rejects_blank_sky_frame(tmp_path: Path) -> None:
