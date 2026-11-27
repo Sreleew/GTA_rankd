@@ -275,6 +275,92 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         highlight_scanner.submit(scan_id)
         return {"id": scan_id, "status": "queued", "message": "Source Twitch ajoutée à l'analyse des moments forts."}
 
+    @app.post("/api/highlights/scan/url/batch", status_code=202)
+    def scan_highlight_url_batch(
+        url: Annotated[str, Form()],
+        window_start: Annotated[str | None, Form()] = None,
+        window_end: Annotated[str | None, Form()] = None,
+        chunk_minutes: Annotated[str, Form()] = "60",
+        streamer: Annotated[str, Form()] = "",
+        note: Annotated[str, Form()] = "",
+        rights_confirmed: Annotated[bool, Form()] = False,
+        webcam_zone: Annotated[str, Form()] = "none",
+    ) -> dict:
+        """Queue a long Twitch VOD range as independent scans of at most three hours."""
+        if not rights_confirmed:
+            raise HTTPException(status_code=400, detail="Confirme que tu disposes des droits ou autorisations nécessaires pour analyser cette source.")
+        clean_url = _validate_twitch_source(url)
+        start = _parse_optional_seconds(window_start, "Début")
+        end = _parse_optional_seconds(window_end, "Fin")
+        if start is None or end is None:
+            raise HTTPException(status_code=400, detail="Pour créer un lot, renseigne le début et la fin de la plage complète.")
+        if start < 0 or end <= start:
+            raise HTTPException(status_code=400, detail="La plage complète doit avoir un début positif et une fin supérieure au début.")
+        try:
+            chunk_size_minutes = int(chunk_minutes)
+        except (TypeError, ValueError) as exc:
+            raise HTTPException(status_code=400, detail="Choisis une durée de tranche valide.") from exc
+        allowed_chunk_sizes = {30, 45, 60, 90, 120, 180}
+        if chunk_size_minutes not in allowed_chunk_sizes:
+            raise HTTPException(
+                status_code=400,
+                detail="La durée de tranche doit être de 30, 45, 60, 90, 120 ou 180 minutes.",
+            )
+        webcam_zone = _validate_webcam_zone(webcam_zone)
+        chunk_seconds = chunk_size_minutes * 60
+        segment_count = math.ceil((end - start) / chunk_seconds)
+        max_segments = 48
+        if segment_count <= 0:
+            raise HTTPException(status_code=400, detail="La plage complète est invalide.")
+        if segment_count > max_segments:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Ce lot créerait {segment_count} analyses. La limite est de {max_segments} tranches par lot ; augmente la durée de chaque tranche.",
+            )
+
+        batch_id = uuid.uuid4().hex
+        scans = []
+        cursor = start
+        for index in range(segment_count):
+            segment_end = min(end, cursor + chunk_seconds)
+            scans.append({
+                "id": uuid.uuid4().hex,
+                "source_kind": "url",
+                "source_url": clean_url,
+                "streamer": streamer.strip()[:120],
+                "message": f"Tranche {index + 1}/{segment_count} ajoutée à la file d'analyse",
+                "window_start": round(cursor, 3),
+                "window_end": round(segment_end, 3),
+                "rights_confirmed": True,
+                "metadata": {
+                    "note": note.strip()[:1000],
+                    "webcam_zone": webcam_zone,
+                    "batch_id": batch_id,
+                    "batch_index": index + 1,
+                    "batch_count": segment_count,
+                    "batch_chunk_seconds": chunk_seconds,
+                },
+            })
+            cursor = segment_end
+
+        store.create_highlight_scans(scans)
+        for scan in scans:
+            highlight_scanner.submit(scan["id"])
+        return {
+            "batch_id": batch_id,
+            "count": segment_count,
+            "message": f"{segment_count} tranches ajoutées à la file d'analyse.",
+            "scans": [
+                {
+                    "id": scan["id"],
+                    "index": scan["metadata"]["batch_index"],
+                    "start": scan["window_start"],
+                    "end": scan["window_end"],
+                }
+                for scan in scans
+            ],
+        }
+
     @app.post("/api/highlights/scan/upload", status_code=202)
     async def scan_highlight_upload(
         file: Annotated[UploadFile, File(...)],
