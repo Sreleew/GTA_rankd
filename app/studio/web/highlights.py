@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import array
+from bisect import bisect_left, bisect_right
 import logging
 import math
 import queue
@@ -11,7 +12,7 @@ import threading
 import time
 import wave
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from studio.config import AppConfig
 from studio.process import ProcessingCancelled, check_cancelled, set_current_cancel_event
@@ -53,6 +54,57 @@ def _format_section_time(seconds: float) -> str:
 
 def _words_for_window(words: list[WordTiming], start: float, end: float) -> list[WordTiming]:
     return [word for word in words if word.end > start and word.start < end]
+
+
+class _IntervalIndex:
+    """Efficiently retrieve intervals that overlap a query time range.
+
+    Audio windows and Whisper word timings are normally chronological. For
+    sorted inputs, prefix maximum end times allow bisect-based lookup while
+    still handling unusually long intervals that start before the query.
+    Unsorted inputs retain the original linear behavior and ordering.
+    """
+
+    __slots__ = ("_items", "_start", "_end", "_starts", "_prefix_max_ends", "_ordered")
+
+    def __init__(
+        self,
+        items: list[Any],
+        *,
+        start_key: Callable[[Any], float],
+        end_key: Callable[[Any], float],
+    ) -> None:
+        self._items = items
+        self._start = start_key
+        self._end = end_key
+        self._ordered = all(
+            start_key(items[index - 1]) <= start_key(items[index])
+            for index in range(1, len(items))
+        )
+        self._starts: list[float] = []
+        self._prefix_max_ends: list[float] = []
+        if self._ordered:
+            maximum_end = float("-inf")
+            for item in items:
+                self._starts.append(float(start_key(item)))
+                maximum_end = max(maximum_end, float(end_key(item)))
+                self._prefix_max_ends.append(maximum_end)
+
+    def overlapping(self, start: float, end: float) -> list[Any]:
+        if end <= start or not self._items:
+            return []
+        if not self._ordered:
+            return [
+                item for item in self._items
+                if self._end(item) > start and self._start(item) < end
+            ]
+
+        first = bisect_right(self._prefix_max_ends, start)
+        last = bisect_left(self._starts, end)
+        return [
+            item for item in self._items[first:last]
+            if self._end(item) > start
+        ]
 
 
 def read_audio_energy(wav_path: Path, *, window_seconds: float = 2.0) -> list[dict[str, float]]:
@@ -97,12 +149,18 @@ def _opening_retention_score(
     *,
     baseline_rms: float,
     audio_span: float,
+    audio_index: _IntervalIndex | None = None,
+    words_index: _IntervalIndex | None = None,
 ) -> float:
     """Estimate whether a candidate gives the viewer a reason to stay quickly."""
     opening_end = min(end, start + 5.0)
     opening_duration = max(0.1, opening_end - start)
     opening_audio = []
-    for item in audio_windows:
+    opening_audio_windows = (
+        audio_index.overlapping(start, opening_end)
+        if audio_index is not None else audio_windows
+    )
+    for item in opening_audio_windows:
         overlap = max(0.0, min(opening_end, float(item["end"])) - max(start, float(item["start"])))
         if overlap > 0:
             opening_audio.append((float(item["rms"]), overlap))
@@ -116,7 +174,10 @@ def _opening_retention_score(
 
     # With no transcript, use the audio-only indicator rather than treating
     # the unavailable speech signals as negative evidence.
-    opening_words = _words_for_window(words, start, opening_end)
+    opening_words = (
+        words_index.overlapping(start, opening_end)
+        if words_index is not None else _words_for_window(words, start, opening_end)
+    )
     if not opening_words:
         return opening_audio_score
 
@@ -165,6 +226,16 @@ def score_highlight_candidates(
     else:
         p50 = p98 = 0.0
     audio_span = max(0.0001, p98 - p50)
+    audio_index = _IntervalIndex(
+        audio_windows,
+        start_key=lambda item: float(item["start"]),
+        end_key=lambda item: float(item["end"]),
+    )
+    words_index = _IntervalIndex(
+        words,
+        start_key=lambda word: float(word.start),
+        end_key=lambda word: float(word.end),
+    )
 
     ranked: list[dict[str, Any]] = []
     for clip_length in clip_lengths:
@@ -183,17 +254,14 @@ def score_highlight_candidates(
 
         for start in starts:
             end = min(duration, start + clip_length)
-            local_audio = [
-                float(item["rms"])
-                for item in audio_windows
-                if item["end"] > start and item["start"] < end
-            ]
+            local_items = audio_index.overlapping(start, end)
+            local_audio = [float(item["rms"]) for item in local_items]
             local_audio.sort(reverse=True)
             top_count = max(1, min(5, len(local_audio)))
             peak_average = sum(local_audio[:top_count]) / top_count if local_audio else 0.0
             audio_score = max(0.0, min(1.0, (peak_average - p50) / audio_span))
 
-            local_words = _words_for_window(words, start, end)
+            local_words = words_index.overlapping(start, end)
             speech_density = len(local_words) / max(1.0, end - start)
             speech_score = max(0.0, min(1.0, speech_density / 1.35))
             cue_count = 0
@@ -204,15 +272,12 @@ def score_highlight_candidates(
             opening_score = _opening_retention_score(
                 start, end, audio_windows, words,
                 baseline_rms=p50, audio_span=audio_span,
+                audio_index=audio_index, words_index=words_index,
             )
 
             # Reward a clear build-up/payoff rather than only sustained loudness.
             # The peak is located inside the candidate, then compared with the
             # audio immediately before it. Reaction words near that peak add evidence.
-            local_items = [
-                item for item in audio_windows
-                if float(item["end"]) > start and float(item["start"]) < end
-            ]
             payoff_score = 0.0
             if len(local_items) >= 3:
                 peak_index = max(range(len(local_items)), key=lambda i: float(local_items[i]["rms"]))
@@ -228,7 +293,9 @@ def score_highlight_candidates(
                     contrast_score = max(0.0, min(1.0, (peak_rms - pre_peak_rms) / audio_span))
                 else:
                     contrast_score = 0.0
-                nearby_words = _words_for_window(words, max(start, peak_start - 3.0), min(end, peak_start + 8.0))
+                nearby_words = words_index.overlapping(
+                    max(start, peak_start - 3.0), min(end, peak_start + 8.0),
+                )
                 nearby_cues = sum(
                     1 for word in nearby_words
                     for token in re.findall(r"[a-z']+", word.text.lower())
