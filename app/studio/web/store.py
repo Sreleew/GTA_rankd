@@ -303,6 +303,39 @@ class Store:
                 tuple(payload.values()),
             )
 
+    def create_highlight_scans(self, scans: list[dict[str, Any]]) -> None:
+        """Insert a batch of queued scans atomically."""
+        if not scans:
+            return
+        now = self.now()
+        payloads = []
+        for scan in scans:
+            payloads.append({
+                "id": scan["id"],
+                "status": scan.get("status", "queued"),
+                "progress": int(scan.get("progress", 0)),
+                "message": scan.get("message", "En attente"),
+                "source_kind": scan["source_kind"],
+                "source_path": scan.get("source_path"),
+                "source_url": scan.get("source_url"),
+                "source_title": scan.get("source_title"),
+                "streamer": scan.get("streamer", ""),
+                "source_duration": scan.get("source_duration"),
+                "window_start": scan.get("window_start"),
+                "window_end": scan.get("window_end"),
+                "metadata_json": json.dumps(scan.get("metadata", {}), ensure_ascii=False),
+                "rights_confirmed": int(bool(scan.get("rights_confirmed"))),
+                "created_at": now,
+                "updated_at": now,
+            })
+        columns = ", ".join(payloads[0].keys())
+        placeholders = ", ".join("?" for _ in payloads[0])
+        with self._connect() as connection:
+            connection.executemany(
+                f"INSERT INTO highlight_scans ({columns}) VALUES ({placeholders})",
+                [tuple(payload.values()) for payload in payloads],
+            )
+
     def update_highlight_scan(self, scan_id: str, **fields: Any) -> None:
         allowed = {
             "status", "progress", "message", "source_path", "source_title", "streamer",
