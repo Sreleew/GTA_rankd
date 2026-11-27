@@ -669,3 +669,16 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Périmètre :** correction du parcours Short uniquement ; aucune modification du modèle, des réglages locaux, de la langue, du moteur AMD/CPU ou de la version de l'application.
 - **Branche :** `fix/short-captions-enabled-in-render`. CI Linux/Windows de la PR à vérifier avant fusion. Aucun rendu matériel réel ni benchmark Whisper sur la RX 9060 XT n'est revendiqué.
 - **Suite :** après CI, valider sur Windows un clip réel avec sous-titres activés et un autre sans sous-titres ; vérifier le MP4, le SRT annexe, la synchronisation et le rapport de contrôle qualité.
+
+
+## 48. Sous-titres SRT de secours sans faux timing mot à mot, 28 novembre 2026
+
+- **Intégration précédente :** PR #85 fusionnée dans `main`, commit `5d693db6f9db6c9cc755f53c337053443f6ab769`. Les validations Linux et Windows de la PR ont réussi. Les contrôles post-fusion Linux/Windows étaient encore en cours au démarrage de ce lot.
+- **Problème ciblé :** lorsque whisper.cpp ne fournit pas de timestamps DTW, le fallback SRT ne connaît que les limites de chaque segment. Le moteur répartissait artificiellement la durée du segment entre ses mots en fonction de leur longueur, puis animait le surlignage mot par mot. Ce timing simulé pouvait donner une impression de précision qui n'existe pas.
+- **Amélioration :** le worker transmet maintenant le mode de timing réel au générateur ASS. En mode `word_dtw`, le traitement cinétique mot à mot est conservé. En mode `segment_srt`, chaque phrase reste affichée sur son intervalle SRT réel, sans inventer de transitions entre mots.
+- **Lisibilité :** les segments SRT sont automatiquement répartis sur plusieurs lignes et les mots exceptionnellement longs sont réduits horizontalement de façon bornée afin de limiter les débordements sur le format vertical.
+- **Tests ajoutés :** vérification de la conservation exacte des bornes temporelles d'un segment SRT, de l'absence de faux surlignage mot à mot et du traitement d'un mot très long.
+- **Périmètre :** aucune dépendance, aucun modèle, aucun réglage utilisateur, aucun changement AMD/CPU ou version de release. Le mode DTW existant reste inchangé.
+- **Branche :** `feat/accurate-segment-captions`. CI Linux/Windows à vérifier avant fusion.
+- **Limite :** la qualité et la vitesse de transcription restent à confirmer sur un vrai clip français/anglais avec le modèle local ; cette amélioration traite uniquement la fidélité d'affichage des timestamps disponibles.
+- **Suite :** après validation CI, comparer sur Windows un rendu DTW et un rendu SRT de secours, puis reprendre le travail sur les hooks et le rythme éditorial.

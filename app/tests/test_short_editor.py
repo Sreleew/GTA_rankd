@@ -112,6 +112,35 @@ def test_smart_layout_moves_captions_below_the_gameplay_panel(tmp_path: Path):
     assert r"\pos(540,1670)" in content
 
 
+def test_srt_fallback_keeps_real_segment_timing_without_fake_word_highlights(tmp_path: Path):
+    path = create_ass_file(
+        tmp_path / "segment-fallback.ass",
+        words=[WordTiming(1.2, 3.4, "We got away from the police!")],
+        captions_enabled=True,
+        word_timed_captions=False,
+        brand_enabled=False,
+    )
+    content = path.read_text(encoding="utf-8-sig")
+    caption_lines = [line for line in content.splitlines() if line.startswith("Dialogue: 0,")]
+    assert len(caption_lines) == 1
+    assert "0:00:01.20,0:00:03.40" in caption_lines[0]
+    assert "WE GOT AWAY FROM THE POLICE!" in caption_lines[0].replace(r"\N", " ")
+    assert r"\\c&H0000C8F5&" not in caption_lines[0]
+
+
+def test_srt_fallback_scales_a_long_unbreakable_word_instead_of_overflowing(tmp_path: Path):
+    path = create_ass_file(
+        tmp_path / "long-segment.ass",
+        words=[WordTiming(0.0, 1.8, "SUPERCALIFRAGILISTICEXPIALIDOCIOUS")],
+        captions_enabled=True,
+        word_timed_captions=False,
+        brand_enabled=False,
+    )
+    content = path.read_text(encoding="utf-8-sig")
+    assert r"\\fscx" in content
+    assert "SUPERCALIFRAGILISTICEXPIALIDOCIOUS" in content
+
+
 def test_ass_can_disable_captions_and_brand(tmp_path: Path):
     path = create_ass_file(
         tmp_path / "minimal.ass", words=[WordTiming(0, 0.3, "HELLO")],

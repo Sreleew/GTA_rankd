@@ -195,13 +195,51 @@ def _merge_punctuation(words: Iterable[WordTiming]) -> list[WordTiming]:
     return output
 
 
-def _caption_events(words: list[WordTiming], width: int, height: int) -> list[str]:
+def _wrap_caption_segment(value: str, max_line_chars: int = 24) -> tuple[str, int]:
+    """Wraps an SRT segment without inventing per-word timestamps."""
+    tokens = _clean_ass_text(value).upper().split()
+    lines: list[str] = []
+    current = ""
+    for token in tokens:
+        candidate = f"{current} {token}".strip()
+        if current and len(candidate) > max_line_chars:
+            lines.append(current)
+            current = token
+        else:
+            current = candidate
+    if current:
+        lines.append(current)
+    longest_line = max((len(line) for line in lines), default=0)
+    horizontal_scale = min(100, max(60, round(max_line_chars * 100 / longest_line))) if longest_line else 100
+    return r"\N".join(lines), horizontal_scale
+
+
+def _caption_events(
+    words: list[WordTiming], width: int, height: int, *, word_timed: bool = True,
+) -> list[str]:
     events: list[str] = []
     words = _merge_punctuation(words)
+    x = width // 2
+    y = int(height * 0.79)
 
-    # SRT fallback returns one timing per sentence/segment rather than per word.
-    # Split those phrases into approximate word timings so captions stay readable
-    # and the active-word treatment does not highlight an entire sentence.
+    if not word_timed:
+        # SRT fallback only provides sentence/segment boundaries. Keep each
+        # phrase visible for its real interval instead of fabricating word times.
+        for segment in words:
+            text, horizontal_scale = _wrap_caption_segment(segment.text)
+            if not text:
+                continue
+            start_stamp = _ass_time(segment.start)
+            end_stamp = _ass_time(max(segment.start + 0.06, segment.end))
+            scale_tag = f"\\fscx{horizontal_scale}" if horizontal_scale < 100 else ""
+            events.append(
+                f"Dialogue: 0,{start_stamp},{end_stamp},Caption,,0,0,0,,"
+                f"{{\\an2\\pos({x},{y})\\fad(45,65){scale_tag}}}{text}"
+            )
+        return events
+
+    # DTW mode provides genuine word boundaries, so the active-word treatment
+    # is safe to use. SRT segments deliberately do not enter this branch.
     expanded: list[WordTiming] = []
     for item in words:
         parts = item.text.split()
@@ -234,8 +272,6 @@ def _caption_events(words: list[WordTiming], width: int, height: int) -> list[st
     if current:
         groups.append(current)
 
-    y = int(height * 0.79)
-    x = width // 2
     for group in groups:
         for index, active in enumerate(group):
             next_word = group[index + 1] if index + 1 < len(group) else None
@@ -266,7 +302,6 @@ def _caption_events(words: list[WordTiming], width: int, height: int) -> list[st
             )
     return events
 
-
 def create_ass_file(
     output_path: Path,
     *,
@@ -279,6 +314,7 @@ def create_ass_file(
     height: int = 1920,
     font_name: str = "Arial",
     captions_enabled: bool = True,
+    word_timed_captions: bool = True,
     brand_enabled: bool = True,
     layout: str = "blur",
     hook_style: str = "auto",
@@ -338,7 +374,9 @@ Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
             f"Dialogue: 2,0:00:00.35,0:00:03.50,Context,,0,0,0,,{{\\an8\\pos({width // 2},{int(height * 0.29)})}}{_wrap_words(clean_context, 7)}"
         )
     if captions_enabled and words:
-        caption_events = _caption_events(words, width, height)
+        caption_events = _caption_events(
+            words, width, height, word_timed=word_timed_captions
+        )
         if layout == "smart":
             # Keep subtitles in the dedicated lower safe area, below gameplay.
             caption_events = [

@@ -537,6 +537,7 @@ class JobRunner:
                 height=int(self.config.get("encoding", "height_short", default=1920)),
                 font_name=str(self.config.get("branding", "font_name", default="Arial")),
                 captions_enabled=captions_active,
+                word_timed_captions=transcription_timestamp_mode == "word_dtw",
                 brand_enabled=bool(options.get("brand_enabled", True)),
                 layout=str(options.get("layout", self.config.get("shorts", "layout", default="smart"))),
             )
