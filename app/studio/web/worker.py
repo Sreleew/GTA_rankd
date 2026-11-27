@@ -274,19 +274,27 @@ class JobRunner:
                 except ProcessingCancelled:
                     raise
                 except Exception as exc:
-                    render_words = original_words
+                    # Do not silently restore every voice: that reintroduces game dialogue.
+                    render_words = []
                     speaker_filter = {
                         "mode": "dominant",
-                        "status": "fallback_all_voices",
+                        "status": "diarization_unavailable",
                         "reason": str(exc)[:500],
+                        "words_before": len(original_words),
+                        "words_after": 0,
                     }
-                    logger.warning("Filtrage des voix ignoré pour le job %s : %s", job_id, exc)
+                    logger.warning("Filtrage des voix indisponible pour le job %s : %s", job_id, exc)
                 finally:
                     speaker_audio_path.unlink(missing_ok=True)
             elif speaker_filter["mode"] != "dominant":
                 speaker_filter["status"] = "all_voices"
             render_transcript = " ".join(word.text for word in render_words).strip()
-            if not render_transcript and trim_start == 0 and trim_end >= float(source_info["duration"]):
+            if (
+                not render_transcript
+                and speaker_filter["mode"] != "dominant"
+                and trim_start == 0
+                and trim_end >= float(source_info["duration"])
+            ):
                 render_transcript = transcript_result.get("text", "")
 
             self.store.update_job(job_id, progress=48, message="Préparation du montage vertical")

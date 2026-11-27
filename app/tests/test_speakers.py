@@ -23,7 +23,7 @@ def test_filter_keeps_words_assigned_to_a_clear_dominant_voice() -> None:
     assert report["selected_speaker"] == "SPEAKER_00"
 
 
-def test_filter_falls_back_to_all_voices_when_dominance_is_ambiguous() -> None:
+def test_filter_omits_captions_when_dominance_is_ambiguous() -> None:
     words = [WordTiming(0.2, 0.6, "BRO"), WordTiming(0.7, 1.0, "WHAT")]
     segments = [
         {"start": 0.0, "end": 1.0, "speaker": "SPEAKER_00"},
@@ -31,8 +31,9 @@ def test_filter_falls_back_to_all_voices_when_dominance_is_ambiguous() -> None:
     ]
     filtered, report = filter_dominant_speaker(words, segments)
 
-    assert filtered == words
-    assert report["status"] == "fallback_all_voices"
+    assert filtered == []
+    assert report["status"] == "ambiguous_speakers"
+    assert report["words_after"] == 0
 
 
 def test_filter_keeps_words_when_only_one_voice_is_present() -> None:
@@ -45,7 +46,7 @@ def test_filter_keeps_words_when_only_one_voice_is_present() -> None:
     assert report["status"] == "single_speaker"
 
 
-def test_filter_falls_back_if_too_few_words_match_dominant_voice() -> None:
+def test_filter_omits_captions_if_too_few_words_match_dominant_voice() -> None:
     words = [WordTiming(0.1, 0.2, "A"), WordTiming(4.0, 4.1, "B")]
     segments = [
         {"start": 0.0, "end": 3.0, "speaker": "SPEAKER_00"},
@@ -53,5 +54,6 @@ def test_filter_falls_back_if_too_few_words_match_dominant_voice() -> None:
     ]
     filtered, report = filter_dominant_speaker(words, segments)
 
-    assert filtered == words
-    assert report["status"] == "fallback_all_voices"
+    assert filtered == []
+    assert report["status"] == "low_word_attribution"
+    assert report["words_after"] == 0
