@@ -139,7 +139,7 @@ def test_highlight_scans_and_candidates_are_persisted(tmp_path: Path) -> None:
 def test_payoff_scoring_rewards_a_rising_audio_peak_with_a_nearby_reaction() -> None:
     audio = [
         {"start": float(second), "end": float(second + 2),
-         "rms": 0.045 if 18 <= second < 26 else 0.006}
+         "rms": 0.045 if 18 <= second < 32 else 0.006}
         for second in range(0, 50, 2)
     ]
     words = [WordTiming(index * 0.65, index * 0.65 + 0.2, "yeah") for index in range(70)]
