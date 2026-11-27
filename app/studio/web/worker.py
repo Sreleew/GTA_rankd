@@ -9,6 +9,7 @@ import queue
 import re
 import shutil
 import threading
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -434,6 +435,57 @@ class JobRunner:
         download_dir = self.config.path_for("paths", "temp") / "downloads"
         download_dir.mkdir(parents=True, exist_ok=True)
         output_template = str(download_dir / f"{job_id}.%(ext)s")
+        last_progress_at: float | None = None
+        last_download_percent: int | None = None
+
+        def report_download_progress(data: dict[str, Any]) -> None:
+            nonlocal last_progress_at, last_download_percent
+            check_cancelled()
+            status = str(data.get("status") or "")
+            if status == "finished":
+                self.store.update_job(
+                    job_id,
+                    progress=19,
+                    message="Téléchargement terminé · préparation du Short",
+                )
+                last_download_percent = 100
+                return
+            if status != "downloading":
+                return
+
+            try:
+                downloaded = max(0, int(data.get("downloaded_bytes") or 0))
+                total = max(0, int(data.get("total_bytes") or data.get("total_bytes_estimate") or 0))
+            except (TypeError, ValueError, OverflowError):
+                downloaded, total = 0, 0
+
+            now = time.monotonic()
+            if total > 0:
+                percent = min(100, max(0, downloaded * 100 // total))
+                if last_download_percent is not None:
+                    percent = max(last_download_percent, percent)
+                progress = 10 + int(round(percent * 0.09))
+                message = f"Téléchargement de la source · {percent} %"
+                should_update = (
+                    last_progress_at is None
+                    or now - last_progress_at >= 1.0
+                    or (
+                        percent - (last_download_percent or 0) >= 5
+                        and now - last_progress_at >= 0.4
+                    )
+                    or percent >= 100
+                )
+            else:
+                progress = 10 + int(round((last_download_percent or 0) * 0.09))
+                message = "Téléchargement de la source…"
+                should_update = last_progress_at is None or now - last_progress_at >= 1.25
+
+            if should_update:
+                self.store.update_job(job_id, progress=progress, message=message)
+                last_progress_at = now
+                if total > 0:
+                    last_download_percent = percent
+
         options = {
             "outtmpl": output_template,
             "format": "bv*[height<=1080]+ba/b[height<=1080]/bv*+ba/best",
@@ -447,7 +499,7 @@ class JobRunner:
             "retries": 8,
             "fragment_retries": 8,
             "file_access_retries": 5,
-            "progress_hooks": [lambda _data: check_cancelled()],
+            "progress_hooks": [report_download_progress],
         }
         try:
             with YoutubeDL(options) as downloader:
