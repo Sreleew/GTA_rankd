@@ -216,7 +216,7 @@ class Store:
         """Return the persisted jobs belonging to one Twitch import batch."""
         with self._connect() as connection:
             rows = connection.execute(
-                "SELECT * FROM jobs WHERE batch_id = ? ORDER BY created_at ASC, id ASC",
+                "SELECT * FROM jobs WHERE batch_id = ? ORDER BY rowid ASC",
                 (batch_id,),
             ).fetchall()
         return [self._job_dict(row) for row in rows]
