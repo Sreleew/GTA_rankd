@@ -4,12 +4,12 @@
 
 - **Dernière mise à jour :** 27 novembre 2026
 - **Progression des releases :** à chaque relance de développement, le compte rendu doit indiquer le lot livré, les PR/CI, l'état d'avancement vers la prochaine version et une estimation actualisée du nombre de lots restants avant sa publication. Cette estimation doit être réévaluée à chaque session, sans promettre une date artificielle.
-- **Dernière version stable confirmée :** [v0.8.9](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.9), publiée le 27 novembre 2026. Correctif de redémarrage et de confirmation de version après mise à jour.
-- **État :** PR #64 à #69 et #72 à #75 fusionnées dans `main`. Les lots récents couvrent la simplification Short, les performances, les relances Twitch, la miniature de secours, la composition Twitch complète en cadrage intelligent, l'historique et la relance Daily Best Of, ainsi que la progression réelle de rendu 16:9. La v0.8.9 reste la dernière Release stable publiée ; les améliorations récentes seront regroupées dans une release ultérieure. Les PR #47 à #50 ajoutent les hooks cinétiques, le cadre éditorial, le sound design et le zoom audio.
+- **Version en préparation :** v0.9.0. La dernière version stable publiée reste v0.8.9 jusqu'à la réussite du workflow de publication.
+- **État :** PR #64 à #76 fusionnées dans `main`. La release v0.9.0 regroupe le parcours Short Twitch, la composition complète, les sous-titres locaux optionnels, le Daily Best Of persistant et la progression de rendu réelle. La publication officielle reste soumise au workflow de Release.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
 - **Source active :** `app/`. Modifier directement les fichiers Python, JavaScript, CSS, HTML, tests et installateur présents dans ce dossier.
-- **Mise à jour intégrée :** l'application consulte les Releases GitHub. La Release v0.8.8 contient le ZIP Windows et `SHA256SUMS.txt`; les installations v0.8.7 peuvent passer à v0.8.8 via Paramètres > Mises à jour.
+- **Mise à jour intégrée :** l'application consulte les Releases GitHub et installe le ZIP Windows publié, avec vérification SHA-256.
 - **CI PR #14 :** Linux et Windows terminés avec succès, y compris suites de régression, analyse statique, audit de dépendances et packaging. Les décomptes détaillés ne sont pas consignés ici.
 - **Sécurité et packaging :** Ruff et pip-audit réussis sur Linux et Windows, aucune vulnérabilité connue ; ZIP Windows et SHA-256 vérifiés.
 - **PR de maintenance :** [#10](https://github.com/Sreleew/GTA_rankd/pull/10), fusionnée dans `main`.
@@ -618,3 +618,13 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Cache UI :** `0.8.9-short-live-progress-captions`.
 - **Limites :** les tests ne mesurent pas encore la vitesse réelle de Whisper sur la RX 9060 XT. Le modèle large-v3-turbo reste volontairement optionnel ; une transcription longue peut prolonger le traitement lorsque l'option est activée.
 - **Suite :** validation CI Linux/Windows de la PR groupée, puis validation manuelle sur un clip Twitch réel avec le modèle présent, en comparant durée de transcription, synchronisation et lisibilité mobile.
+
+
+## 44. Préparation de la release v0.9.0, 27 novembre 2026
+
+- **Décision :** l'utilisateur a demandé la publication stable v0.9.0 après intégration et validation de la PR #76.
+- **Contenu :** la version regroupe l'import et la relance de lots Twitch, le cadrage 9:16 qui préserve l'image complète, la progression réelle du rendu Short et Best Of, les sous-titres Whisper locaux facultatifs, le rendu Daily Best Of persistant et la récupération manuelle des épisodes interrompus.
+- **Version :** `VERSION.txt`, `app/VERSION.txt`, `app/pyproject.toml`, `app/config.yaml.default`, les notes de version et `.release-approval` sont synchronisés en `0.9.0` sur la branche `release/v0.9.0`.
+- **Validation déjà obtenue :** la PR #76 a passé l'audit Linux et la validation Windows, y compris les régressions, l'audit de dépendances, les scripts PowerShell et le package Windows.
+- **Limite :** le workflow ne remplace pas la validation physique AMD : AMF, Vulkan et la vitesse Whisper sur la RX 9060 XT restent à mesurer sur le PC utilisateur après installation.
+- **Suite :** fusionner la préparation après CI, puis laisser le workflow officiel publier le ZIP v0.9.0 et son SHA-256.
