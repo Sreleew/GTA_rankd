@@ -1162,3 +1162,12 @@ def test_store_adds_batch_id_to_existing_database_without_losing_jobs(tmp_path: 
         columns = {row[1] for row in connection.execute("PRAGMA table_info(jobs)")}
     assert "batch_id" in columns
     assert migrated.get_job("existing-job")["status"] == "ready"
+
+
+def test_short_audio_analysis_is_skipped_when_no_feature_needs_it():
+    from studio.web.worker import _needs_audio_analysis
+
+    assert _needs_audio_analysis(True, 30, dynamic_zoom=False, auto_trim=True) is False
+    assert _needs_audio_analysis(True, 90, dynamic_zoom=False, auto_trim=True) is True
+    assert _needs_audio_analysis(True, 30, dynamic_zoom=True, auto_trim=False) is True
+    assert _needs_audio_analysis(False, 90, dynamic_zoom=True, auto_trim=True) is False
