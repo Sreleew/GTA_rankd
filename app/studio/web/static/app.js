@@ -187,7 +187,7 @@ function highlightBatchCard(scan, summary) {
     : errors
       ? 'LOT TERMINÉ AVEC ERREURS'
       : cancelled
-        ? 'LOT PARTIELLEMENT ANNULÉ'
+        ? (cancelled === total ? 'LOT ANNULÉ' : 'LOT PARTIELLEMENT ANNULÉ')
         : 'LOT TERMINÉ';
   const statusClass = active ? 'running' : errors ? 'error' : 'validated';
   const pendingIds = (summary.scans || [])
@@ -246,12 +246,15 @@ async function cancelHighlightBatch(button) {
   if (!scanIds.length) return;
   button.disabled = true;
   button.textContent = 'Annulation du lot…';
-  const results = await Promise.all(
-    scanIds.map(scanId => api(`/api/highlights/${scanId}/cancel`, { method: 'POST' })
-      .then(() => true)
-      .catch(() => false))
-  );
-  const cancelled = results.filter(Boolean).length;
+  let cancelled = 0;
+  for (const scanId of scanIds) {
+    try {
+      await api(`/api/highlights/${scanId}/cancel`, { method: 'POST' });
+      cancelled += 1;
+    } catch {
+      // A segment may finish or enter cancellation while the batch is being stopped.
+    }
+  }
   toast(`${cancelled}/${scanIds.length} analyses annulées.`, cancelled !== scanIds.length);
   await loadHighlights();
 }
