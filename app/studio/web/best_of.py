@@ -154,7 +154,7 @@ def render_best_of_episode(
             progress_callback(max(0, min(99, int(progress))), message)
         except Exception:
             # An unavailable progress display must never interrupt a video render.
-            logger.exception("Impossible de mettre à jour la progression du Daily Best Of.")
+            return
 
     report_progress(4, "Vérification des clips sources")
     output_path = Path(output_path)
