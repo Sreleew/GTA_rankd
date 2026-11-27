@@ -59,3 +59,21 @@ def test_probe_media_uses_the_supplied_timeout(
     assert calls == [420]
     assert result["duration"] == 900
     assert result["has_audio"] is True
+
+
+def test_encoder_listing_is_cached_between_short_renders(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[list[str]] = []
+
+    def fake_run_command(args, timeout=None, cwd=None):
+        calls.append(list(args))
+        return subprocess.CompletedProcess(args, 0, " V..... h264_amf", "")
+
+    monkeypatch.setattr(short_renderer, "run_command", fake_run_command)
+    short_renderer._available_encoder_listing.cache_clear()
+    try:
+        first = short_renderer._available_encoder_listing("ffmpeg-test")
+        second = short_renderer._available_encoder_listing("ffmpeg-test")
+        assert first == second == " V..... h264_amf"
+        assert len(calls) == 1
+    finally:
+        short_renderer._available_encoder_listing.cache_clear()
