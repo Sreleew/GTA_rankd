@@ -242,7 +242,7 @@ class JobRunner:
                 peak_timestamp = source_info["duration"] / 2
             audio_peak_timestamps: list[float] = []
             transcript_result: dict[str, Any] = {
-                "status": "disabled", "reason": "Sous-titres désactivés dans les options.", "words": [], "text": ""
+                "status": "disabled", "reason": "Transcription mise en pause.", "words": [], "text": ""
             }
             if source_info["has_audio"]:
                 audio_path = temp_dir / "audio-16k.wav"
