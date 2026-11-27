@@ -337,3 +337,24 @@ def test_thumbnail_headline_prefers_complete_meaningful_tail_over_filler():
     assert _thumbnail_headline("YEAH HUH SHIT GOT MY LAMBO", "Tminnzy") == "GOT MY LAMBO"
     assert _thumbnail_headline("YEAH HUH SHIT GOT", "Tminnzy") == "Tminnzy GTA MOMENT"
     assert _thumbnail_headline("YEAH HUH SHIT", "Tminnzy") == "Tminnzy GTA MOMENT"
+
+
+def test_caption_groups_break_at_sentence_punctuation(tmp_path: Path):
+    from studio.web.short_editor import _caption_events
+
+    words = [
+        WordTiming(0.00, 0.20, "I"),
+        WordTiming(0.21, 0.55, "got"),
+        WordTiming(0.56, 0.90, "him."),
+        WordTiming(1.00, 1.30, "Wait"),
+        WordTiming(1.31, 1.70, "what?"),
+    ]
+    events = _caption_events(words, 1080, 1920)
+
+    # The first phrase must not be displayed together with the next sentence.
+    first_phrase = events[:3]
+    second_phrase = events[3:]
+    assert first_phrase
+    assert all("WAIT" not in event for event in first_phrase)
+    assert second_phrase
+    assert all("GOT" not in event for event in second_phrase)
