@@ -2,9 +2,9 @@
 
 Application Windows locale pour transformer des clips et VOD GTA en Shorts verticaux prêts à relire et publier.
 
-**Version candidate préparée : v0.8.6.**
+**Dernière version stable : v0.8.6.**
 
-[Consulter la Release v0.8.6 après publication](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.6)
+[Consulter la Release stable v0.8.6](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.6)
 
 ## Fonctionnalités
 
