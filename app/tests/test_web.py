@@ -361,6 +361,48 @@ def _make_isolated_app_config(tmp_path: Path) -> Path:
     return config_path
 
 
+def test_highlight_url_accepts_hhmmss_ranges_for_long_vods(tmp_path: Path):
+    app = create_app(load_config(_make_isolated_app_config(tmp_path)))
+    submitted: list[str] = []
+    app.state.highlight_scanner.submit = lambda scan_id: submitted.append(scan_id)
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/highlights/scan/url",
+        data={
+            "url": "https://www.twitch.tv/videos/123456",
+            "rights_confirmed": "true",
+            "window_start": "12:30:00",
+            "window_end": "15:00:00",
+        },
+    )
+
+    assert response.status_code == 202, response.text
+    scan = app.state.store.get_highlight_scan(response.json()["id"])
+    assert scan is not None
+    assert scan["window_start"] == 12 * 3600 + 30 * 60
+    assert scan["window_end"] == 15 * 3600
+    assert submitted == [response.json()["id"]]
+
+
+def test_highlight_url_rejects_invalid_hhmmss_components(tmp_path: Path):
+    app = create_app(load_config(_make_isolated_app_config(tmp_path)))
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/highlights/scan/url",
+        data={
+            "url": "https://www.twitch.tv/videos/123456",
+            "rights_confirmed": "true",
+            "window_start": "12:75:00",
+            "window_end": "14:00:00",
+        },
+    )
+
+    assert response.status_code == 400
+    assert "HH:MM:SS" in response.json()["detail"]
+
+
 def test_highlight_url_accepts_blank_optional_range_and_queues_scan(tmp_path: Path):
     app = create_app(load_config(_make_isolated_app_config(tmp_path)))
     submitted: list[str] = []
