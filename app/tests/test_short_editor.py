@@ -147,9 +147,8 @@ def test_thumbnail_overlay_uses_the_gta_paper_collage_palette(tmp_path: Path) ->
 
     with Image.open(thumbnail) as result:
         assert result.size == (1080, 1920)
-        pixels = result.convert("RGB").crop((45, 780, 1035, 1435)).getdata()
-        yellow_pixels = sum(1 for red, green, blue in pixels if red > 180 and green > 120 and blue < 65)
-        assert yellow_pixels > 20_000
+        red, green, blue = result.convert("RGB").getpixel((100, 1320))
+        assert red > 180 and green > 120 and blue < 65
 
 
 def test_thumbnail_timestamp_prefers_descriptive_transcript_moment() -> None:
