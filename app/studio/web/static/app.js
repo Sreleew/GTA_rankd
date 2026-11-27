@@ -117,7 +117,7 @@ function jobCard(job) {
     ? ' · Habillage de miniature indisponible, image source conservée'
     : '';
   const captionNote = metadata.transcription_warning
-    ? ` · Sous-titres non générés : ${escapeHtml(metadata.transcription_warning)}`
+    ? ` · ${escapeHtml(metadata.transcription_warning)}`
     : (Number(metadata.transcribed_words) > 0
       ? ` · Sous-titres · ${Number(metadata.transcribed_words)} mots`
       : '');
