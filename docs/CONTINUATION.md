@@ -203,19 +203,26 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 ## 10 bis. État après PR #37
 
 - Le mode de sous-titrage « voix principale » est désormais conservateur : il préfère ne rien afficher lorsque la diarisation ne fournit pas une attribution suffisamment fiable, plutôt que d'inclure les dialogues du jeu. Cela réduit les faux sous-titres, mais ne prouve pas que la voix restante est celle du streamer.
-- Le parcours de création de Short depuis une URL Twitch dispose maintenant de validations d'URL, d'une progression de téléchargement, d'une extraction du broadcaster et d'un filtrage conservateur des voix, tous couverts par des tests/CI. Ces validations ne remplacent pas un essai réel avec un clip Twitch.
+- Le parcours de création de Short depuis une URL Twitch dispose maintenant de validations d'URL, d'une progression de téléchargement, d'une extraction du broadcaster et d'un filtrage conservateur des voix. PR #40 ajoute une entrée directe sur URL Twitch et polit le hook/la miniature. Ces validations ne remplacent pas un essai réel avec un clip Twitch.
 - PR #37 : https://github.com/Sreleew/GTA_rankd/pull/37. Commit de merge : `e531be2a11343b9b4b29f2264d4e843ce4a91437`.
 
 ## 10 ter. État au 27 novembre 2026
 
 - **PR #39 fusionnée** : FFprobe utilise désormais un timeout adaptatif selon la taille du fichier, avec un plancher de 5 minutes et un plafond de 30 minutes. Les timeouts explicitement fournis restent prioritaires. CI Linux et Windows réussie. Commit de merge : `d673c385e48f1957bb32bc064e6e65ff35a5cabe`.
-- **PR #40 en cours** : le formulaire de création de Short s'ouvre par défaut sur la saisie d'une URL Twitch ; le texte sur le filtrage des voix correspond au comportement réel ; le hook d'ouverture passe à 2,6 secondes ; le kicker de miniature décrit correctement un clip Twitch. Les clés de cache des fichiers statiques sont actualisées pour la prochaine version. CI Linux/Windows en cours.
+- **PR #40 fusionnée** : la création de Short s'ouvre par défaut sur la saisie d'une URL Twitch ; le texte sur le filtrage des voix correspond au comportement réel ; le hook d'ouverture passe à 2,6 secondes ; le kicker de miniature décrit correctement un clip Twitch. Les clés de cache statique sont actualisées. CI Linux et Windows réussie. Commit de merge : `88b5c29e66dc529dc8360f2f7bbc8068f4bc4dfe`.
 - **Priorité utilisateur confirmée** : travailler d'abord sur la création de Shorts depuis une URL de clip Twitch, puis sur le Daily Best Of. La fonctionnalité « Moments forts » est explicitement en pause ; ne pas la développer ni l'optimiser sauf blocage direct d'une priorité.
+
+## 10 quater. Daily Best Of : premier module de composition
+
+- Le placeholder a été remplacé par un constructeur d'épisode : filtre par journée, bibliothèque des Shorts validés, ajout/retrait, ordre manuel avec flèches, durée cumulée et jauge cible 9 à 11 minutes.
+- Nouvelle API `POST /api/bestof/plan` : valide les IDs, l'appartenance à la journée, le statut validé, l'existence des rendus locaux et l'ordre choisi. Les médias sources ne sont ni déplacés ni modifiés.
+- Nouveau module `app/studio/web/best_of.py` avec validation indépendante et bornes 540 à 660 secondes. Le rendu final 16:9 n'est pas encore implémenté ; l'interface l'indique explicitement.
+- PR #41 en cours : constructeur de sélection Daily Best Of. Tests ciblés ajoutés pour l'ordre, la durée, les fichiers manquants et l'API.
 
 ## 11. Prochaines étapes priorisées
 
 1. **Créer un Short depuis un clip Twitch : priorité immédiate.** PR #32 corrige la progression réelle du téléchargement et PR #34 valide strictement les URLs Twitch ; les deux sont fusionnées et leurs CI Linux/Windows sont réussies. Les URL Twitch sont validées, la progression du téléchargement est réelle et le titre/nom du broadcaster sont extraits avec des replis sûrs. Prochain lot : auditer le parcours de sélection et de durée de l'extrait, puis vérifier le filtrage des voix du jeu, le hook, la miniature et la review. Le pipeline existant passe par `JobRunner`, ffprobe/audio/Whisper, métadonnées locales avec Ollama facultatif, ASS, rendu vertical FFmpeg et contrôle qualité. Les sources de moins de 165 secondes sont préservées intégralement. Distinguer tests simulés et téléchargements/rendus réels.
-2. **Daily Best Of : deuxième priorité.** L'écran actuel est un placeholder ; aucun moteur de scoring, de sélection ou d'assemblage n'est encore implémenté. La table locale `clips` contient déjà les Shorts validés avec leur source, leur rendu, leur miniature, leur streamer, durée et date. Partir de ces clips validés, établir le flux MVP de sélection/ordre/inclusion, classement quotidien et assemblage horizontal 16:9 de 9 à 11 minutes. Préserver leurs fichiers sources, rendus, métadonnées et données locales.
+2. **Daily Best Of : deuxième priorité.** Le premier module de sélection/ordre/inclusion est en cours (PR #41). La table `clips` fournit les Shorts validés ; prochaine étape : rendre le plan persistant, puis implémenter l'assemblage horizontal 16:9 de 9 à 11 minutes à partir des rendus 9:16, avec mixage audio et contrôle qualité. Préserver leurs fichiers sources, rendus, métadonnées et données locales.
 3. Conserver le pipeline de Short comme socle : les actions de prévisualisation, téléchargement, miniature et copie des métadonnées doivent rester accessibles après validation.
 4. **Moments forts : en pause.** Ne pas ajouter de fonctions, optimiser les scores ou étendre les scans VOD pour le moment. N'intervenir que si un bug bloque directement les parcours prioritaires ou une dépendance existante.
 5. Vérifier sur la RX 9060 XT l'encodage AMD AMF, Whisper Vulkan et Ollama/Qwen pendant des cycles réels de création de Short et de Best Of. Ne pas présenter la CI comme une validation matérielle.
