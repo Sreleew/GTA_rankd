@@ -32,16 +32,15 @@ La voie `workflow_dispatch` reste disponible pour préparer une Release brouillo
 - Les scripts PowerShell doivent conserver le BOM UTF-8 et les CRLF ; cette règle est versionnée dans `.gitattributes` et contrôlée par les tests.
 - L'archive `archive/releases/v0.7.8/` est conservée uniquement comme provenance historique de la Release v0.7.8.
 
-## État au 26 novembre 2026
+## État au 27 novembre 2026
 
-- Release stable actuelle : [v0.8.2](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.2).
-- PR #10 maintenance, PR #11 coupes naturelles et PR #12 profil de durée de production sont fusionnées dans `main`.
-- CI PR #12 : Linux 155 tests réussis + 1 ignoré ; Windows 156 tests réussis.
+- Dernière Release stable confirmée avant la candidate : [v0.8.5](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.5).
+- PR #19 à #24 sont fusionnées dans `main`. Les PR #23 et #24 ajoutent respectivement la diversité des candidats et l'indexation des fenêtres de scan.
+- CI PR #23 et #24 : suites Linux et Windows complètes réussies, Ruff, pip-audit et package Windows validés.
 - CI `main` après fusion : Linux et Windows validés avant préparation de la Release v0.8.2.
 - Profil de production : passages VOD de 60, 90, 120, 150 et 165 secondes ; clips Twitch plus courts préservés sans rallongement artificiel.
 - La migration des anciennes valeurs de configuration v0.8.1 s'effectue en mémoire uniquement et préserve les valeurs personnalisées.
-- Workflow de publication v0.8.2 réussi : https://github.com/Sreleew/GTA_rankd/actions/runs/45850248905.
-- Assets publiés : `GTA-Ranked-Studio-v0.8.2.zip` et `SHA256SUMS.txt`.
+- Release v0.8.6 en préparation sur la branche `release/v0.8.6`. La publication stable sera déclenchée après fusion de la préparation et approbation de version sur `main`.
 - La validation physique de la RX 9060 XT pour AMF/Vulkan reste à faire.
 
 ## Protection de main
