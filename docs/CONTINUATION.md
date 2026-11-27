@@ -659,3 +659,13 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Intégration :** PR #81 fusionnée dans `main`, commit squash `398afdb47ef649970d14b5cc1f1764ee1b3c282e`.
 - **Release :** PR #83 fusionnée ; workflow officiel [46078578681](https://github.com/Sreleew/GTA_rankd/actions/runs/46078578681) réussi. La [v0.9.1](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.9.1) et son ZIP Windows sont publiés.
 - **Suite :** installer v0.9.1 et examiner une miniature issue d'un nouveau Short réel.
+
+
+## 47. Correction des sous-titres absents du rendu final, 28 novembre 2026
+
+- **Problème trouvé sur main :** le worker calculait correctement la présence de mots Whisper, puis réinitialisait systématiquement `captions_active` à `False` juste avant la création du fichier ASS. Les sous-titres demandés n'étaient donc jamais intégrés au MP4 et le contrôle qualité ne les vérifiait pas.
+- **Correction :** `captions_active` est maintenant déterminé une seule fois à partir de deux conditions : l'utilisateur a demandé les sous-titres et Whisper a effectivement fourni des mots horodatés. Cette valeur pilote à la fois le fichier ASS, le rendu FFmpeg et le contrôle qualité. Le fallback sans sous-titres reste actif si aucune parole exploitable n'est disponible.
+- **Régression :** ajout d'un test ciblé couvrant les trois cas (demande + mots, option désactivée, transcription vide).
+- **Périmètre :** correction du parcours Short uniquement ; aucune modification du modèle, des réglages locaux, de la langue, du moteur AMD/CPU ou de la version de l'application.
+- **Branche :** `fix/short-captions-enabled-in-render`. CI Linux/Windows de la PR à vérifier avant fusion. Aucun rendu matériel réel ni benchmark Whisper sur la RX 9060 XT n'est revendiqué.
+- **Suite :** après CI, valider sur Windows un clip réel avec sous-titres activés et un autre sans sous-titres ; vérifier le MP4, le SRT annexe, la synchronisation et le rapport de contrôle qualité.

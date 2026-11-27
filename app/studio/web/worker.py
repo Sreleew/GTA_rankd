@@ -138,6 +138,11 @@ def _validate_short_excerpt_duration(duration: float, maximum: float) -> float:
     return selected
 
 
+def _captions_should_render(captions_requested: bool, words: list[Any]) -> bool:
+    """Only burn captions when they were requested and Whisper returned timed words."""
+    return bool(captions_requested and words)
+
+
 def _transcribe_short_excerpt(
     source_path: Path,
     temp_dir: Path,
@@ -488,7 +493,7 @@ class JobRunner:
                 timings["transcription_ms"] = max(0, int(round((time.perf_counter() - stage_started) * 1000)))
                 check_cancelled()
 
-            captions_active = bool(render_words)
+            captions_active = _captions_should_render(captions_requested, render_words)
             render_peak_timestamp = max(0.0, peak_timestamp - trim_start)
             render_zoom_timestamps = [
                 round(item - trim_start, 3)
@@ -520,7 +525,6 @@ class JobRunner:
             timings["metadata_generation_ms"] = max(0, int(round((time.perf_counter() - stage_started) * 1000)))
             check_cancelled()
 
-            captions_active = False
             ass_path = temp_dir / "overlay.ass"
             create_ass_file(
                 ass_path,

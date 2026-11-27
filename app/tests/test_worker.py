@@ -128,3 +128,11 @@ def test_short_excerpt_duration_is_rejected_before_expensive_transcription():
 
     with pytest.raises(worker.MediaError, match="supérieure à zéro"):
         worker._validate_short_excerpt_duration(0.0, 165.0)
+
+
+def test_requested_short_captions_stay_enabled_for_the_final_overlay():
+    words = [object(), object()]
+
+    assert worker._captions_should_render(True, words) is True
+    assert worker._captions_should_render(False, words) is False
+    assert worker._captions_should_render(True, []) is False
