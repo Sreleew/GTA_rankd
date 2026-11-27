@@ -2,6 +2,8 @@
 
 ## v0.8.6 : diversité des moments forts et accélération des scans VOD
 
+Release stable publiée : https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.6. Le ZIP Windows (193 520 octets) et `SHA256SUMS.txt` sont disponibles. SHA-256 du ZIP : `bcbe46f063fc3918b3a6a9b33a25f56ed87e453fb9e2f769b763878c870cee0e`.
+
 - La sélection automatique écarte les passages éloignés dont les transcriptions longues sont quasi identiques, sans éliminer les réactions très courtes ni les scans audio seuls.
 - L'analyse indexe les intervalles audio et les horodatages Whisper pour éviter de reparcourir l'ensemble de la VOD pour chaque fenêtre candidate.
 - Le comportement de repli reste compatible avec les entrées non triées et les intervalles qui chevauchent une fenêtre.
