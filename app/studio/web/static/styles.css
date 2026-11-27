@@ -203,6 +203,8 @@
 .bestof-history-main>small,.bestof-history-main>p{margin:0;color:#9099a3;font-size:9px;line-height:1.5;overflow-wrap:anywhere}
 .bestof-history-progress{height:4px;margin-top:3px;border-radius:6px;overflow:hidden;background:#353a40}
 .bestof-history-progress span{display:block;height:100%;background:var(--accent);transition:width .25s}
+.bestof-history-progress.is-indeterminate span{width:34%!important;animation:bestof-history-indeterminate 1.6s ease-in-out infinite}
+@keyframes bestof-history-indeterminate{0%{transform:translateX(-110%)}100%{transform:translateX(320%)}}
 .bestof-history-action{display:flex;align-items:center;gap:6px;flex:none;flex-wrap:wrap}
 .bestof-history-missing{font-size:9px;color:#b99161}
 @media(max-width:560px){.bestof-history-item{align-items:flex-start;flex-direction:column}.bestof-history-action{width:100%}.bestof-history-action .mini-button{width:100%;justify-content:center}}
