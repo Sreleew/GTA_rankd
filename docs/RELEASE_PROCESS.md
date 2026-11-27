@@ -73,4 +73,4 @@ Les PR suivantes sont fusionnées après la création de l'archive v0.8.9. Elles
 - **PR #60** : import groupé de jusqu'à 10 clips Twitch dans le parcours Short, merge `90504c7c282e9032fb2bc9d90cc03f83f018f4e2`.
 - **PR #61** : environnement développeur local persistant et commandes de tests ciblés, merge `a90c85c60a10618b7d465da39bb11ba1439a93de`.
 - **PR #62** : suivi persistant des lots Twitch avec progression agrégée, merge `6514b37077cacefd4e9274a0dfa5364ada61871c`.
-- Les versions racine et applicative restent à `0.9.0` jusqu'à la préparation explicite de la prochaine Release stable. Ne pas modifier la version ni publier automatiquement à chaque PR produit.
+- La v0.9.1 est préparée explicitement pour livrer la nouvelle direction artistique des miniatures demandée par l'utilisateur. La v0.9.0 reste la dernière version stable publiée jusqu'à la validation de la PR de release.

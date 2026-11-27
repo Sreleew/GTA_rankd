@@ -655,7 +655,7 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Branche :** `feat/gta-thumbnail-default-art-direction`.
 - **Limites :** le rendu automatique conserve la frame vidéo réelle et n'extrait pas une webcam séparée ; sa position dépend donc de la composition de la source.
 - **CI PR #81 :** audit Linux [46076837564](https://github.com/Sreleew/GTA_rankd/actions/runs/46076837564) et validation Windows [46076837526](https://github.com/Sreleew/GTA_rankd/actions/runs/46076837526) réussis après correction du chevauchement du bandeau avec la frame de gameplay.
-- **Version :** v0.9.0 reste la release stable. La procédure de release exige une demande explicite pour préparer la suivante ; aucune nouvelle release n'est déclenchée par cette PR.
+- **Version :** préparation explicite de la v0.9.1 à la demande de l'utilisateur afin que le template soit disponible dans l'application installée.
 - **Intégration :** PR #81 fusionnée dans `main`, commit squash `398afdb47ef649970d14b5cc1f1764ee1b3c282e`.
-- **Release :** aucune version stable n'a été préparée ; la v0.9.0 reste la version publiée.
-- **Suite :** vérifier le rendu sur un nouveau Short réel après installation de la prochaine release.
+- **Release :** v0.9.1 en préparation dans la PR de release ; la v0.9.0 demeure la dernière version publiée jusqu'à validation finale.
+- **Suite :** valider la PR de release v0.9.1, puis vérifier le nouveau rendu dans l'application mise à jour.
