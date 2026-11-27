@@ -933,7 +933,6 @@ def test_retry_failed_twitch_url_creates_a_fresh_download_job(tmp_path: Path):
             "streamer": "ExampleStreamer",
             "note": "Retry this clip",
             "layout": "smart",
-            "captions_enabled": "false",
         },
     )
     assert created.status_code == 202, created.text
@@ -954,7 +953,6 @@ def test_retry_failed_twitch_url_creates_a_fresh_download_job(tmp_path: Path):
     assert new_job["source_url"] == "https://clips.twitch.tv/ExampleClipSlug"
     assert new_job["streamer"] == "ExampleStreamer"
     assert new_job["note"] == "Retry this clip"
-    assert new_job["metadata"]["options"]["captions_enabled"] is False
 
 
 def test_download_size_suffix_handles_unknown_or_invalid_totals():
@@ -1055,7 +1053,6 @@ def test_batch_twitch_short_import_queues_valid_urls_and_reports_invalid_ones(tm
             "rights_confirmed": "true",
             "streamer": "Test streamer",
             "layout": "blur",
-            "captions_enabled": "true",
             "dynamic_zoom": "false",
         },
     )
