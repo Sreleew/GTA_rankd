@@ -452,3 +452,11 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **API et compatibilité :** les champs webcam ont été retirés des endpoints de scan et d'import. Les champs de sous-titres ont été retirés des endpoints Short ; les anciennes métadonnées de jobs restent lisibles mais ne déclenchent plus de transcription.
 - **Validation :** vérifier les tests ciblés worker, renderer et interface, puis CI Linux/Windows. Ne pas annoncer de gain chiffré sans mesure sur une source réelle.
 - **À ne pas reprendre dans les prochains lots :** sous-titres, diarisation, webcam, « Moments forts ». Priorité : temps de traitement, robustesse du téléchargement et du rendu Short.
+
+
+## 32. Fiabilisation de l'installation FFmpeg dans la CI Windows, 27 novembre 2026
+
+- **Constat :** la CI Windows échouait sur l'installation Chocolatey de FFmpeg avec une réponse HTTP 504 du dépôt communautaire, avant les tests de l'application.
+- **Correctif :** remplacer cette dépendance à Chocolatey par le téléchargement direct de l'archive Windows statique FFmpeg depuis les releases BtbN, puis ajouter son dossier `bin` au PATH du runner.
+- **Portée :** uniquement l'environnement de validation GitHub Actions ; aucun changement dans l'installation locale utilisateur.
+- **Validation :** la CI Windows doit confirmer l'URL de release, l'extraction et la présence de ffmpeg/ffprobe avant fusion.
