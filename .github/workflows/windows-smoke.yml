@@ -133,6 +133,25 @@ jobs:
           }
           [System.IO.File]::AppendAllText($env:GITHUB_ENV, "APP_VERSION=$version" + [Environment]::NewLine, [System.Text.UTF8Encoding]::new($false))
 
+      - name: Validate developer PowerShell scripts
+        shell: pwsh
+        run: |
+          $scripts = @(
+            "scripts/dev-setup.ps1",
+            "scripts/test-quick.ps1",
+            "scripts/test-full.ps1"
+          )
+          foreach ($relativePath in $scripts) {
+            $path = Join-Path $env:GITHUB_WORKSPACE $relativePath
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($path, [ref]$tokens, [ref]$errors) | Out-Null
+            if ($errors.Count -gt 0) {
+              $details = ($errors | ForEach-Object { $_.Message }) -join "; "
+              throw "Erreur de syntaxe PowerShell dans $relativePath : $details"
+            }
+          }
+
       - name: Run complete Windows regression suite
         shell: pwsh
         run: |

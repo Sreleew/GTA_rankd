@@ -412,3 +412,14 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Interface :** panneau repliable sous l'import Twitch simple, retour du nombre de Shorts créés et liste des URLs rejetées.
 - **Validation :** tests API ajoutés pour les lots mixtes, la déduplication, les options partagées, l'obligation de confirmation et la limite de 10. Test statique de l'interface ajouté. CI Linux/Windows requise sur la PR.
 - **Objectif :** accélérer la préparation quotidienne de plusieurs Shorts et alimenter plus facilement le Clip Bank pour le Daily Best Of. Ce lot ne touche pas à « Moments forts » ni à la webcam.
+
+## 29. Fondation du workflow développeur et cadence de livraison, 27 novembre 2026
+
+- **Retour utilisateur :** le projet doit avancer par lots réellement utiles, sans perdre du temps à réinstaller l'application ou à rejouer toute la suite de tests après chaque petite modification. La cible est un outil propre, rapide, stable et maintenable sur plusieurs années.
+- **PR #58 fusionnée :** le moteur Daily Best Of 16:9 est intégré dans main. CI Linux run 46045887877 et Windows run 46045887918 réussies.
+- **PR #59 fermée volontairement :** elle a été remplacée par la PR #60, recréée sur main à jour pour éviter un conflit documentaire.
+- **PR #60 fusionnée :** import groupé de jusqu'à 10 URLs Twitch dans « Créer un Short », déduplication, validation individuelle et mise en file des URLs valides. CI Linux run 46046378763 et Windows run 46046378773 réussies. Commit de merge 90504c7c282e9032fb2bc9d90cc03f83f018f4e2.
+- **Fondation développeur en cours :** scripts PowerShell pour installer une seule fois un environnement Python .venv persistant, lancer les tests ciblés Shorts/Twitch/Best Of/Web, et exécuter la suite complète uniquement quand c'est justifié. Guide dédié docs/DEVELOPMENT.md.
+- **Règle de validation :** ne pas refaire l'installation ni les tests inchangés. Tests ciblés pendant le lot ; CI Linux/Windows avant fusion d'un lot cohérent ; validation manuelle sur le PC AMD uniquement pour les changements qui touchent réellement le rendu ou le matériel. La CI ne prouve jamais la qualité visuelle d'un vrai Short.
+- **Décision produit à respecter :** pas de chantier webcam dédié. La capture source contient déjà l'écran complet et la webcam ; conserver ce cadrage. webcam_zone n'est pas une priorité. « Moments forts » reste en pause.
+- **Suite :** fusionner la fondation du workflow développeur après validation, puis reprendre les améliorations concrètes du parcours Short Twitch et du rendu Daily Best Of, sans réécriture globale ni PR de micro-correctifs.
