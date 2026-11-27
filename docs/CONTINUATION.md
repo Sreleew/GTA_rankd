@@ -3,10 +3,9 @@
 > Lire ce document en premier dans chaque nouvelle conversation sur le projet. Il décrit l'état réellement livré et la structure source actuelle.
 
 - **Dernière mise à jour :** 27 novembre 2026
-- **Dernière version stable confirmée :** [0.8.7](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.7), publiée le 27 novembre 2026 avec le ZIP Windows et `SHA256SUMS.txt`.
-- **État :** PR #19 à #29 fusionnées. PR #26 ajoute la saisie `HH:MM:SS`, PR #27 les lots Twitch multi-tranches, PR #28 le classement global des lots et PR #29 prépare la Release v0.8.7. La v0.8.7 est publiée et constitue la dernière version stable.
+- **Dernière version stable confirmée :** [v0.8.7](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.7), publiée le 27 novembre 2026 avec le ZIP Windows et `SHA256SUMS.txt` (SHA-256 : `8239f0788fa788f793ae19228d589443e76ea32477cd04020e1f0267df1307f3`).
+- **État :** PR #19 à #29 fusionnées. PR #26 ajoute la saisie `HH:MM:SS`, PR #27 les lots Twitch multi-tranches, PR #28 le classement global des lots et PR #29 prépare la publication de la v0.8.7, désormais publiée et dernière version stable.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
-- **Dernière Release stable confirmée :** [v0.8.7](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.7). Assets publiés : `GTA-Ranked-Studio-v0.8.7.zip` et `SHA256SUMS.txt`.
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
 - **Source active :** `app/`. Modifier directement les fichiers Python, JavaScript, CSS, HTML, tests et installateur présents dans ce dossier.
 - **Mise à jour intégrée :** l'application consulte les Releases GitHub. La Release v0.8.7 contient le ZIP Windows et `SHA256SUMS.txt`; les installations v0.8.6 peuvent passer à v0.8.7 via Paramètres > Mises à jour.
@@ -16,7 +15,7 @@
 - **PR coupes naturelles :** [#11](https://github.com/Sreleew/GTA_rankd/pull/11), fusionnée dans `main`. Le départ du Short préfère une frontière après ponctuation ou pause de 0,75 s ; fallback temporel conservé si aucune frontière fiable n'existe.
 - **PR profil de production :** [#12](https://github.com/Sreleew/GTA_rankd/pull/12), fusionnée dans `main`. VOD : candidats 60, 90, 120, 150 et 165 s ; sources Twitch plus courtes préservées.
 - **CI PR #12 :** Linux 155 réussis + 1 ignoré ; Windows 156 réussis. Ruff, pip-audit, ZIP et SHA-256 validés.
-- **Statut de livraison :** v0.8.6 publiée. Le ZIP Windows (193 520 octets) est attaché à la Release et GitHub expose son digest SHA-256 `bcbe46f063fc3918b3a6a9b33a25f56ed87e453fb9e2f769b763878c870cee0e`. Le fichier `SHA256SUMS.txt` est également publié.
+- **Historique v0.8.6 :** ZIP Windows de 193 520 octets et `SHA256SUMS.txt` publiés. Cette version a été remplacée par la v0.8.7, dernière Release stable.
 - **Release v0.8.2 :** [publication officielle](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.2), workflow [réussi](https://github.com/Sreleew/GTA_rankd/actions/runs/45850248905).
 - **PR de livraison v0.7.9 :** [#8](https://github.com/Sreleew/GTA_rankd/pull/8), fusionnée dans `main`.
 - **PR cadrage intelligent v0.8.0 :** [#9](https://github.com/Sreleew/GTA_rankd/pull/9), fusionnée dans `main` et publiée.
@@ -142,9 +141,9 @@ finally {
 }
 Set-Location app
 node --check studio/web/static/app.js
-py -3.11 installer/build_release_package.py --version 0.8.1 --output-dir dist
+py -3.11 installer/build_release_package.py --version 0.8.7 --output-dir dist
 Set-Location ..
-py -3.11 tools/verify_release_package.py --package app/dist/GTA-Ranked-Studio-v0.8.1.zip --checksum app/dist/SHA256SUMS.txt --version 0.8.1
+py -3.11 tools/verify_release_package.py --package app/dist/GTA-Ranked-Studio-v0.8.7.zip --checksum app/dist/SHA256SUMS.txt --version 0.8.7
 ```
 
 Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquement si aucun fichier de configuration personnel n'existe. Ne jamais écraser un `config.yaml` existant.
@@ -175,32 +174,30 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Direction des miniatures :** rendu propre, esthétique, lisible et immédiatement compréhensible, construit autour d'une vraie image du clip. Le visuel doit donner envie de cliquer sans surcharge, faux événement ou texte tronqué.
 - **Évaluer sur des exemples réels.** Quand l'utilisateur envoie un clip ou un Short généré, examiner concrètement le rendu avant de décider des corrections. Distinguer les observations réelles des hypothèses.
 - **Garder les contrôles accessibles après validation.** Ne pas retirer les actions de prévisualisation, téléchargement, miniature et copie du titre/description/hashtags après validation d'un Short.
-- **Communication :** être direct et concis, donner les résultats concrets et signaler clairement ce qui reste non testé. Une seule prochaine action prioritaire dans le bilan.
+- **Communication :** être direct et concis, donner les résultats concrets et signaler clairement ce qui reste non testé. Les réponses doivent rester courtes et les gros travaux être découpés en petits lots pour éviter les expirations de réception de ChatGPT. Une seule prochaine action prioritaire dans le bilan.
 
 ## 10. Journal de travail récent
 
-- **Correctif installateur v0.8.4 :** PR #14 fusionnée. `installer/check_runtime.py` ajoute `app/` à `sys.path` avant les imports. Test de régression depuis un cwd externe sans `PYTHONPATH`. CI Linux et Windows réussies (tests, Ruff, pip-audit et package). Le tag `v0.8.4` est présent ; vérifier les assets de Release avant installation.
-
-- **Correctif v0.8.3 en préparation :** le serveur local attend 8 secondes après le lancement de PowerShell avant de s'arrêter, pour laisser le navigateur recevoir la réponse HTTP et lire le statut. Ajout d'un test de régression. Branche `fix/updater-shutdown-handshake` ; publication après validation Linux/Windows.
-
-- **v0.8.1 publiée :** séparation runtime/dev, retrait du scaffold Best Of non relié, suppression des duplications documentaires et rapports historiques, exclusion des outils développeur et données locales du ZIP, contrôle Ruff/pip-audit, analyse PowerShell, tests Linux/Windows et vérification ZIP/SHA-256. PR #10 fusionnée et Release stable publiée.
-- **v0.8.2 publiée :** PR #11 ajoute les coupes naturelles après ponctuation ou pause de 0,75 s ; PR #12 ajoute le profil 60-165 s, le scan VOD multi-durée et la migration non destructive des anciennes configurations. Les clips Twitch courts sont conservés.
-
-- **v0.7.9 publiée :** refonte des miniatures verticales, sélection de phrases plus complètes pour les hooks/titres, garde-fous contre les événements inventés dans les métadonnées, raccords audio plus doux et conservation des clips Twitch sélectionnés.
-- **Intégration :** PR #8 fusionnée dans `main`, Release stable [v0.7.9](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.7.9).
-- **v0.8.0 publiée :** PR #9 fusionnée, cadrage intelligent activé par défaut, ZIP Windows et SHA-256 publiés. README, guide des mises à jour et processus de release synchronisés après publication.
-- **Validation :** Linux 147 réussis + 1 ignoré ; Windows 148 réussis. ZIP et SHA-256 publiés.
-- **À vérifier sur le PC utilisateur :** mise à jour depuis v0.8.0, préservation des données, rendu d'un Short avec cadrage intelligent et fonctionnement matériel AMD AMF/Vulkan sur RX 9060 XT.
+- **v0.8.5 publiée :** PR #19 à #22 fusionnées. Refonte éditoriale Vice City Dispatch, score payoff fondé sur les pics audio et réactions proches, coupes préservant les réactions verbales retardées, puis synchronisation et publication de la version.
+- **v0.8.6 publiée :** PR #23 à #25 fusionnées. Diversité des candidats par dédoublonnage des transcriptions longues similaires, indexation temporelle des fenêtres audio/Whisper et préparation de la Release stable. Le benchmark synthétique a mesuré un facteur 68,2 sur la recherche d'intervalles uniquement, pas sur le temps total d'analyse.
+- **PR #26 fusionnée :** saisie des plages en secondes ou `HH:MM:SS` pour les analyses locales et Twitch, avec validation des minutes et secondes. CI Linux/Windows réussie.
+- **PR #27 fusionnée :** analyse de plages VOD Twitch en lots de tranches de 30, 45, 60, 90, 120 ou 180 minutes, jusqu'à 48 segments. Chaque tranche est un scan indépendant, inséré en base de façon atomique ; les plages sont téléchargées séparément et la VOD entière n'est pas récupérée en un seul fichier.
+- **PR #28 fusionnée :** carte de lot avec progression agrégée, erreurs, shortlist globale limitée à 30 candidats, dédoublonnage inter-segments et conservation du `scan_id` d'origine pour créer chaque Short depuis le bon média. L'annulation globale arrête les tranches encore en attente/en cours.
+- **Limite du classement global :** les scores audio sont normalisés à l'intérieur de chaque segment. Le classement entre tranches est donc indicatif ; relire les moments avant export.
+- **PR #29 fusionnée :** synchronisation des versions, notes de release, documentation et approbation explicite de publication pour la v0.8.7.
+- **Release stable v0.8.7 :** publiée le 27 novembre 2026. Workflow officiel [45991509028](https://github.com/Sreleew/GTA_rankd/actions/runs/45991509028) réussi. ZIP Windows de 197 246 octets et `SHA256SUMS.txt` publiés. SHA-256 du ZIP : `8239f0788fa788f793ae19228d589443e76ea32477cd04020e1f0267df1307f3`.
+- **CI post-fusion sur main :** Linux [45991878153](https://github.com/Sreleew/GTA_rankd/actions/runs/45991878153) et Windows [45991878149](https://github.com/Sreleew/GTA_rankd/actions/runs/45991878149) réussis sur le commit `0dab6b152acd353ab3e84594f9cb3a1401290f55`.
+- **Validation matérielle restante :** aucune validation réelle sur la RX 9060 XT pour l'encodage AMD AMF et Whisper Vulkan n'a encore été effectuée. Les runners CI ne remplacent pas ce test sur le PC utilisateur.
 
 ## 11. Prochaines étapes priorisées
 
-1. Mettre à jour le Studio depuis la v0.8.6 via **Paramètres > Mises à jour**.
-2. Tester le nouveau flux sur une vraie VOD longue, idéalement celle de 19 heures : saisir la plage en `HH:MM:SS`, choisir des tranches horaires, lancer le lot et vérifier progression, erreurs et shortlist consolidée.
-3. Relire les meilleurs moments avant export. Les scores audio sont normalisés à l'intérieur de chaque segment ; le classement global est indicatif.
-4. Vérifier sur la RX 9060 XT l'encodage AMF, Whisper Vulkan et Ollama/Qwen pendant un cycle complet de téléchargement, analyse et rendu. Cette validation matérielle n'a pas encore été faite.
-5. Corriger uniquement les défauts récurrents constatés sur les vrais rendus : coupe incompréhensible, cadrage raté, sous-titres illisibles, audio défectueux ou métadonnées trompeuses.
-6. Démarrer la publication régulière et mesurer les résultats avant d'investir du temps dans les fonctions secondaires.
+1. Mettre à jour une installation v0.8.6 vers la v0.8.7 depuis **Paramètres > Mises à jour** et vérifier que les réglages, projets et médias locaux sont préservés.
+2. Tester le lot sur une vraie VOD longue, idéalement celle de 19 heures : saisir la plage en `HH:MM:SS`, choisir par exemple des tranches de 60 minutes et vérifier que les 19 analyses sont créées, traitées et suivies correctement sans télécharger la VOD entière en un seul fichier.
+3. Vérifier la progression agrégée, l'affichage des erreurs, l'annulation, la shortlist consolidée et la création d'un Short depuis plusieurs tranches pour confirmer que chaque candidat utilise bien sa source d'origine.
+4. Relire les moments retenus avant export : les scores restent normalisés par segment et le classement global est indicatif.
+5. Vérifier sur la RX 9060 XT l'encodage AMF, Whisper Vulkan et Ollama/Qwen pendant un cycle complet. Noter précisément les erreurs et performances observées.
+6. Corriger les défauts réellement constatés, puis lancer la production et la publication régulières. Éviter de développer des fonctions secondaires avant d'avoir exploité les résultats réels.
 
 ## 12. Message de reprise prêt à copier
 
- > Nous reprenons GTA Ranked Studio. Lis `docs/CONTINUATION.md` puis `docs/WORKING-AGREEMENT.md`. La dernière Release stable est v0.8.6, publiée avec ZIP Windows et SHA256SUMS. Les PR #19 à #26 sont fusionnées. La source de développement est `app/`. Préserve les données locales, valide les changements transversaux sous Linux et Windows, et publie une Release stable après validation. La RX 9060 XT n'a pas encore été validée physiquement pour AMF/Vulkan. L'utilisateur demande de travailler de façon autonome, sans demander de confirmations répétitives, jusqu'à un résultat propre et publié.
+> Nous reprenons GTA Ranked Studio. Lis `docs/CONTINUATION.md` puis `docs/WORKING-AGREEMENT.md`. Dernière Release stable : v0.8.7, publiée avec ZIP Windows et SHA-256. PR #19 à #29 fusionnées ; la saisie `HH:MM:SS`, les lots Twitch de 30 à 180 minutes (48 tranches maximum) et la shortlist globale par lot sont disponibles. La source de développement est `app/`. Travaille directement dans GitHub, par petits lots ciblés, avec tests adaptés, fusion et publication lorsque les validations passent. Mets impérativement ce mémo à jour à chaque lot pour conserver les décisions et préférences importantes de l'utilisateur. Garde les réponses courtes pour éviter les expirations de réception, évite les confirmations répétitives, préserve les données locales et distingue toujours CI et validation matérielle réelle. Prochaine étape : tester une VOD réelle de 19 heures et valider le comportement AMF/Vulkan sur la RX 9060 XT.
