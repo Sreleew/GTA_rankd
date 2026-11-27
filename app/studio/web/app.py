@@ -52,8 +52,10 @@ def _validate_edit_options(
     auto_trim_enabled: bool = True, sfx_enabled: bool = True,
     captions_enabled: bool = False, caption_language: str = "config",
 ) -> dict:
-    if layout not in {"fill", "blur", "smart"}:
-        raise HTTPException(status_code=400, detail="Le cadrage doit être 'smart', 'fill' ou 'blur'.")
+    if layout == "smart":
+        layout = "blur"
+    if layout not in {"fill", "blur"}:
+        raise HTTPException(status_code=400, detail="Le cadrage doit être 'fill' ou 'blur'.")
     if not 0 <= int(crop_x) <= 100 or not 0 <= int(crop_y) <= 100:
         raise HTTPException(status_code=400, detail="La position du cadrage doit être comprise entre 0 et 100.")
     if not 0 <= int(zoom_percent) <= 20:
@@ -531,8 +533,8 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
             raise HTTPException(status_code=409, detail="La durée du passage candidat est invalide pour un Short.")
         job_id = uuid.uuid4().hex
         options = {
-            "layout": "smart", "crop_x": 80, "crop_y": 50, "dynamic_zoom": False, "zoom_percent": 0,
-            "brand_enabled": True, "auto_trim_enabled": False, "sfx_enabled": True,
+            "layout": "blur", "crop_x": 80, "crop_y": 50, "dynamic_zoom": False, "zoom_percent": 0,
+            "brand_enabled": False, "auto_trim_enabled": False, "sfx_enabled": True,
             "hook_text": "", "context_text": "",
             "source_range": {"start": media_start, "end": media_end},
         }
@@ -668,12 +670,12 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         streamer: Annotated[str, Form()] = "",
         note: Annotated[str, Form()] = "",
         rights_confirmed: Annotated[bool, Form()] = False,
-        layout: Annotated[str, Form()] = "smart",
+        layout: Annotated[str, Form()] = "blur",
         crop_x: Annotated[int, Form()] = 80,
         crop_y: Annotated[int, Form()] = 50,
         dynamic_zoom: Annotated[bool, Form()] = True,
         zoom_percent: Annotated[int, Form()] = 8,
-        brand_enabled: Annotated[bool, Form()] = True,
+        brand_enabled: Annotated[bool, Form()] = False,
         auto_trim_enabled: Annotated[bool, Form()] = True,
         sfx_enabled: Annotated[bool, Form()] = True,
         captions_enabled: Annotated[bool, Form()] = False,
@@ -732,12 +734,12 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         streamer: Annotated[str, Form()] = "",
         note: Annotated[str, Form()] = "",
         rights_confirmed: Annotated[bool, Form()] = False,
-        layout: Annotated[str, Form()] = "smart",
+        layout: Annotated[str, Form()] = "blur",
         crop_x: Annotated[int, Form()] = 80,
         crop_y: Annotated[int, Form()] = 50,
         dynamic_zoom: Annotated[bool, Form()] = True,
         zoom_percent: Annotated[int, Form()] = 8,
-        brand_enabled: Annotated[bool, Form()] = True,
+        brand_enabled: Annotated[bool, Form()] = False,
         auto_trim_enabled: Annotated[bool, Form()] = True,
         sfx_enabled: Annotated[bool, Form()] = True,
         captions_enabled: Annotated[bool, Form()] = False,
@@ -772,12 +774,12 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         streamer: Annotated[str, Form()] = "",
         note: Annotated[str, Form()] = "",
         rights_confirmed: Annotated[bool, Form()] = False,
-        layout: Annotated[str, Form()] = "smart",
+        layout: Annotated[str, Form()] = "blur",
         crop_x: Annotated[int, Form()] = 80,
         crop_y: Annotated[int, Form()] = 50,
         dynamic_zoom: Annotated[bool, Form()] = True,
         zoom_percent: Annotated[int, Form()] = 8,
-        brand_enabled: Annotated[bool, Form()] = True,
+        brand_enabled: Annotated[bool, Form()] = False,
         auto_trim_enabled: Annotated[bool, Form()] = True,
         sfx_enabled: Annotated[bool, Form()] = True,
         captions_enabled: Annotated[bool, Form()] = False,

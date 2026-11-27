@@ -2,10 +2,10 @@
 
 > Lire ce document en premier dans chaque nouvelle conversation sur le projet. Il décrit l'état réellement livré et la structure source actuelle.
 
-- **Dernière mise à jour :** 27 novembre 2026
+- **Dernière mise à jour :** 28 novembre 2026
 - **Progression des releases :** à chaque relance de développement, le compte rendu doit indiquer le lot livré, les PR/CI, l'état d'avancement vers la prochaine version et une estimation actualisée du nombre de lots restants avant sa publication. Cette estimation doit être réévaluée à chaque session, sans promettre une date artificielle.
-- **Dernière version stable confirmée :** [v0.9.0](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.9.0), publiée le 27 novembre 2026.
-- **État :** PR #64 à #77 fusionnées dans `main`. La release v0.9.0 est publiée avec le parcours Short Twitch, la composition complète, les sous-titres locaux optionnels, le Daily Best Of persistant et la progression de rendu réelle.
+- **Dernière version stable confirmée :** [v0.9.2](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.9.2), publiée le 28 novembre 2026.
+- **État :** PR #64 à #88 fusionnées dans `main`. La release v0.9.2 est publiée. Le prochain lot retire les miniatures graphiques personnalisées et simplifie le cadrage Short à la demande de l'utilisateur.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
 - **Source active :** `app/`. Modifier directement les fichiers Python, JavaScript, CSS, HTML, tests et installateur présents dans ce dossier.
@@ -687,3 +687,13 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Limite :** la webcam n'est pas extraite d'une piste distincte. La détection dépend de la webcam déjà incrustée dans la capture ; sans détection suffisamment fiable, le rendu conserve la scène complète.
 - **Préparation release :** branche `release/v0.9.2`, versions synchronisées à 0.9.2, notes racine/app synchronisées et approbation de release préparée. La PR dédiée doit passer la CI avant fusion ; le workflow stable produira alors le ZIP Windows et SHA256SUMS.
 - **Suite :** vérifier la PR de release, puis confirmer la publication de la v0.9.2.
+## 50. Direction simple pour les miniatures et le montage Short, 28 novembre 2026
+
+- **Retour utilisateur :** la miniature v0.9.2 répète un fallback et duplique la scène ; elle ne correspond pas à la référence approuvée. L'utilisateur met en pause les miniatures custom et veut laisser les plateformes sélectionner leur image au moment de publier.
+- **Retour sur le Short généré :** l'utilisateur refuse le cadre blanc et l'accent jaune qui encadrent/coupent l'image, ainsi que l'identité incorrecte `GR // GTA` et `@GTARankedStudio`. Le seul nom de chaîne à utiliser est `GTA_rankd`.
+- **Choix faisable pour le montage v0.9.3 :** utiliser le mode existant `blur`, qui conserve la capture Twitch complète (caméra incrustée comprise) au centre et remplit le 9:16 avec un fond flouté. Désactiver les signatures par défaut ; si elles sont activées, n'afficher que `GTA_rankd` en bas et en petit. Retirer le mode smart du formulaire et convertir en `blur` les anciens jobs/configurations qui demandaient `smart`.
+- **Pourquoi ce choix :** la source actuelle est une seule image de stream où la caméra est déjà incrustée. Le mode `blur` est directement disponible et ne jette pas de contenu ; le mode plein écran vertical coupe des côtés et peut supprimer la webcam ; séparer la webcam nécessiterait une source caméra distincte ou une sélection manuelle, qui n'est pas prévue.
+- **Miniatures :** retirer le traitement graphique et le bouton d'export custom. Garder seulement une image brute interne pour prévisualiser le Short ; elle n'est pas attachée au MP4 ni présentée comme la miniature de la plateforme.
+- **Préférences durables :** mises à jour dans `docs/WORKING-AGREEMENT.md`. Pas de formes, cadres blanc/jaune, logo GR, tag @GTARankedStudio ou branding ajouté sans demande explicite.
+- **Branche de travail :** `fix/platform-default-thumbnails`. Le lot regroupe suppression de l'overlay de miniature, mode blur par défaut, branding off, repli des anciens jobs smart vers blur, interface simplifiée et synchronisation v0.9.3.
+- **Suite :** valider Linux/Windows sur la PR, publier v0.9.3, puis évaluer un rendu réel avant d'ajouter d'autres traitements.

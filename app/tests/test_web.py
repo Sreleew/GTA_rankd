@@ -47,7 +47,7 @@ def test_edit_options_are_validated_and_clamped_by_api():
     assert options["captions_enabled"] is True
     assert options["caption_language"] == "fr"
     smart = _validate_edit_options("smart", 80, 50, False, 0, True, "", "")
-    assert smart["layout"] == "smart"
+    assert smart["layout"] == "blur"
     assert smart["crop_x"] == 80
     assert smart["caption_language"] == "config"
     try:
@@ -152,7 +152,7 @@ def test_whisper_gpu_button_uses_fresh_script_and_visible_feedback():
     static = Path(__file__).resolve().parents[1] / "studio" / "web" / "static"
     html = (static / "index.html").read_text(encoding="utf-8")
     js = (static / "app.js").read_text(encoding="utf-8")
-    assert '<script src="/static/app.js?v=0.9.0-short-caption-language"></script>' in html
+    assert '<script src="/static/app.js?v=0.9.3-platform-defaults"></script>' in html
     assert '<button type="button" class="mini-button" id="verify-whisper-gpu"' in html
     assert "/api/models/whisper/verify" in js
     assert "if (verifyGpuButton) verifyGpuButton.addEventListener('click', verifyWhisperGpu);" in js
@@ -225,7 +225,7 @@ def test_ollama_verify_button_has_a_dedicated_visible_handler():
     static = Path(__file__).resolve().parents[1] / "studio" / "web" / "static"
     html = (static / "index.html").read_text(encoding="utf-8")
     js = (static / "app.js").read_text(encoding="utf-8")
-    assert '<script src="/static/app.js?v=0.9.0-short-caption-language"></script>' in html
+    assert '<script src="/static/app.js?v=0.9.3-platform-defaults"></script>' in html
     assert '<button type="button" class="mini-button" id="verify-ollama"' in html
     assert "#refresh-models-secondary" in js
     assert "/api/models/ollama/verify" in js
@@ -1426,13 +1426,11 @@ def test_batch_twitch_import_is_available_in_shorts_ui():
     assert 'id="short-batch-urls"' in html
     assert 'id="short-batch-submit"' in html
     assert 'id="short-batch-tracker"' in html
-    assert "v=0.9.0-short-caption-language" in html
+    assert "v=0.9.3-platform-defaults" in html
     assert "JUSQU'À 10 URLS" in html
     assert "/api/shorts/url/batch" in js
     assert "/api/shorts/batches/" in js
     assert "data-retry-short-batch" in js
-    assert "thumbnail_overlay_status" in js
-    assert "image source conservée" in js
     assert "/api/jobs/${encodeURIComponent(jobId)}/reprocess" in js
     assert "gta-ranked-short-batches" in js
     assert html.count('name="captions_enabled"') == 2
@@ -1538,6 +1536,7 @@ def test_short_audio_analysis_is_skipped_when_no_feature_needs_it():
 
 def test_short_ui_explains_full_frame_twitch_composition() -> None:
     html = Path("studio/web/static/index.html").read_text(encoding="utf-8-sig")
-    assert "Image Twitch entière, webcam comprise" in html
     assert "Utilisé uniquement en mode plein écran recadré." in html
-    assert "Composition 9:16, image complète et webcam Twitch préservées" in html
+    assert "La capture complète reste visible, sans cadre ni bande qui coupe l’image." in html
+    assert 'option value="blur" selected' in html
+    assert 'option value="smart"' not in html

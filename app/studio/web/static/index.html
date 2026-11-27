@@ -69,7 +69,7 @@
               <details class="edit-options" open>
                 <summary>Personnaliser le montage <span>HOOK · CADRAGE · AUDIO</span></summary>
                 <div class="edit-options-grid">
-                  <label>Format vidéo<select name="layout"><option value="smart" selected>Composition éditoriale 9:16</option><option value="fill">Plein écran recadré 9:16</option><option value="blur">Vidéo entière + fond flouté</option></select><small>Image Twitch entière, webcam comprise, intégrée dans un cadre avec fond flouté.</small></label>
+                  <label>Format vidéo<select name="layout"><option value="blur" selected>Vidéo entière + fond flouté</option><option value="fill">Plein écran recadré 9:16</option></select><small>La capture complète reste visible, sans cadre ni bande qui coupe l’image.</small></label>
                   <label>Focus horizontal (mode recadré) <output data-crop-output>80 %</output><input type="range" name="crop_x" min="0" max="100" value="80" data-crop-slider><small>Utilisé uniquement en mode plein écran recadré.</small></label>
                   <label>Position verticale (mode recadré) <output data-crop-output>50 %</output><input type="range" name="crop_y" min="0" max="100" value="50" data-crop-slider><small>Utilisé uniquement en mode plein écran recadré.</small></label>
                   <label>Puissance du zoom <output data-zoom-output>0 %</output><input type="range" name="zoom_percent" min="0" max="20" value="0" data-zoom-slider><small>Zoom progressif avant et après le pic audio détecté.</small></label>
@@ -77,7 +77,7 @@
                 <div class="edit-toggles">
                   <label><input type="checkbox" name="auto_trim_enabled" checked data-option-checkbox> Recadrer automatiquement les sources de plus de 2 min 45</label>
                   <label><input type="checkbox" name="dynamic_zoom" data-option-checkbox> Zoom dynamique</label>
-                  <label><input type="checkbox" name="brand_enabled" checked data-option-checkbox> Signature GTA Ranked + handle</label>
+                  <label><input type="checkbox" name="brand_enabled" data-option-checkbox> Afficher GTA_rankd discrètement</label>
                   <label><input type="checkbox" name="sfx_enabled" checked data-option-checkbox> Whoosh discret au moment fort</label>
                   <label><input type="checkbox" name="captions_enabled" data-option-checkbox> Sous-titres automatiques (Whisper local)</label>
                 </div>
@@ -106,7 +106,7 @@
               <details class="edit-options" open>
                 <summary>Personnaliser le montage <span>HOOK · CADRAGE · AUDIO</span></summary>
                 <div class="edit-options-grid">
-                  <label>Format vidéo<select name="layout"><option value="smart" selected>Composition éditoriale 9:16</option><option value="fill">Plein écran recadré 9:16</option><option value="blur">Vidéo entière + fond flouté</option></select><small>Image Twitch entière, webcam comprise, avec un cadre éditorial.</small></label>
+                  <label>Format vidéo<select name="layout"><option value="blur" selected>Vidéo entière + fond flouté</option><option value="fill">Plein écran recadré 9:16</option></select><small>La capture complète reste visible, sans cadre ni bande qui coupe l’image.</small></label>
                   <label>Focus horizontal (mode recadré) <output data-crop-output>80 %</output><input type="range" name="crop_x" min="0" max="100" value="80" data-crop-slider><small>Utilisé uniquement en mode plein écran recadré.</small></label>
                   <label>Position verticale (mode recadré) <output data-crop-output>50 %</output><input type="range" name="crop_y" min="0" max="100" value="50" data-crop-slider><small>Utilisée avec le plein écran recadré.</small></label>
                   <label>Puissance du zoom <output data-zoom-output>0 %</output><input type="range" name="zoom_percent" min="0" max="20" value="0" data-zoom-slider><small>Zoom progressif avant et après le pic audio détecté.</small></label>
@@ -114,7 +114,7 @@
                 <div class="edit-toggles">
                   <label><input type="checkbox" name="auto_trim_enabled" checked data-option-checkbox> Recadrer automatiquement les sources de plus de 2 min 45</label>
                   <label><input type="checkbox" name="dynamic_zoom" data-option-checkbox> Zoom dynamique</label>
-                  <label><input type="checkbox" name="brand_enabled" checked data-option-checkbox> Signature GTA Ranked + handle</label>
+                  <label><input type="checkbox" name="brand_enabled" data-option-checkbox> Afficher GTA_rankd discrètement</label>
                   <label><input type="checkbox" name="sfx_enabled" checked data-option-checkbox> Whoosh discret au moment fort</label>
                   <label><input type="checkbox" name="captions_enabled" data-option-checkbox> Sous-titres automatiques (Whisper local)</label>
                 </div>
@@ -247,6 +247,6 @@
     </main>
   </div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="/static/app.js?v=0.9.0-short-caption-language"></script>
+  <script src="/static/app.js?v=0.9.3-platform-defaults"></script>
 </body>
 </html>

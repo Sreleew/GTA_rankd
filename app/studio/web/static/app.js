@@ -66,8 +66,7 @@ function processingTimingsHtml(metadata) {
       ['render_encode_ms', 'Encodage vidéo'],
       ['render_output_probe_ms', 'Vérification du rendu'],
       ['export_quality_ms', 'Contrôle qualité'],
-      ['render_thumbnail_ms', 'Création miniature'],
-      ['thumbnail_overlay_ms', 'Finition miniature'],
+      ['render_thumbnail_ms', 'Capture de l’aperçu vidéo'],
     ]},
   ];
   const sections = groups.map(group => {
@@ -94,8 +93,7 @@ function jobCard(job) {
   // indépendamment du statut éditorial (à valider ou déjà validé).
   const mediaActions = [
     outputUrl ? `<a class="mini-button" href="${outputUrl}" target="_blank" rel="noopener">Prévisualiser ↗</a><a class="mini-button" href="${outputUrl}" download>Télécharger ↓</a>` : '',
-    thumbUrl ? `<a class="mini-button" href="${thumbUrl}" download="${escapeHtml((metadata.title || 'gta-ranked-cover').replace(/[^a-z0-9]+/gi,'-').toLowerCase())}.jpg">Miniature ↓</a>` : '',
-  ].join('');
+      ].join('');
   const metadataActions = `<button class="mini-button" data-action="copy-title" data-id="${job.id}">Copier le titre</button><button class="mini-button" data-action="copy-description" data-id="${job.id}">Copier la description</button><button class="mini-button" data-action="copy-hashtags" data-id="${job.id}">Copier les hashtags</button><button class="mini-button good" data-action="copy-social" data-id="${job.id}">Copier le post</button>`;
   if (job.status === 'ready') {
     actions = `<div class="job-actions">${mediaActions}${metadataActions}<button class="mini-button good" data-action="validate" data-id="${job.id}">Valider ✓</button><button class="mini-button" data-action="reject" data-id="${job.id}">Rejeter</button></div>`;
@@ -114,17 +112,14 @@ function jobCard(job) {
   const qualityLabels = { passed: 'QC OK', review: 'À vérifier', partial: 'Contrôle partiel', failed: 'Problème détecté' };
   const qualityHtml = quality ? `<details class="quality-report ${escapeHtml(quality.status || 'partial')}"><summary><span>Contrôle qualité</span><strong>${escapeHtml(qualityLabels[quality.status] || 'Contrôle')}</strong></summary><p>${escapeHtml(quality.summary || '')}</p>${(quality.warnings || []).length ? `<ul>${quality.warnings.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>` : ''}</details>` : '';
   const timingsHtml = processingTimingsHtml(metadata);
-  const thumbnailNote = metadata.thumbnail_overlay_status === 'fallback'
-    ? ' · Habillage de miniature indisponible, image source conservée'
-    : '';
   const captionNote = metadata.transcription_warning
     ? ` · ${escapeHtml(metadata.transcription_warning)}`
     : (Number(metadata.transcribed_words) > 0
       ? ` · Sous-titres · ${Number(metadata.transcribed_words)} mots`
       : '');
   return `<article class="job-card">
-    ${thumbUrl ? `<img class="job-thumb" src="${thumbUrl}" alt="Miniature du Short">` : `<div class="job-thumb job-thumb-placeholder">▶</div>`}
-    <div class="job-main"><strong title="${escapeHtml(title)}">${escapeHtml(title)}</strong>${socialCaption ? `<div class="job-caption">${escapeHtml(socialCaption)}</div>` : ''}<div class="job-meta">${escapeHtml(meta || (job.source_kind || 'clip').toUpperCase())}</div><div class="job-message">${escapeHtml(job.message || '')}${thumbnailNote}${captionNote}${job.error ? ` · ${escapeHtml(job.error.slice(0, 200))}` : ''}</div>${qualityHtml}${timingsHtml}${['queued','running'].includes(job.status) ? `<div class="job-progress"><span style="width:${progress}%"></span></div><small class="job-progress-label">${progress}%</small>` : ''}${actions}</div>
+    ${thumbUrl ? `<img class="job-thumb" src="${thumbUrl}" alt="Image d’aperçu du Short" title="Image d’aperçu interne ; la plateforme choisira l’image publiée">` : `<div class="job-thumb job-thumb-placeholder">▶</div>`}
+    <div class="job-main"><strong title="${escapeHtml(title)}">${escapeHtml(title)}</strong>${socialCaption ? `<div class="job-caption">${escapeHtml(socialCaption)}</div>` : ''}<div class="job-meta">${escapeHtml(meta || (job.source_kind || 'clip').toUpperCase())}</div><div class="job-message">${escapeHtml(job.message || '')}${captionNote}${job.error ? ` · ${escapeHtml(job.error.slice(0, 200))}` : ''}</div>${qualityHtml}${timingsHtml}${['queued','running'].includes(job.status) ? `<div class="job-progress"><span style="width:${progress}%"></span></div><small class="job-progress-label">${progress}%</small>` : ''}${actions}</div>
     <div class="job-side"><span class="status-pill ${escapeHtml(job.status)}">${statusLabel(job.status)}</span></div>
   </article>`;
 }
