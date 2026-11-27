@@ -720,3 +720,50 @@ def test_twitch_download_reports_throttled_yt_dlp_progress(tmp_path: Path, monke
     assert "75 %" in messages[1]
     assert messages[-1] == "Téléchargement terminé · préparation du Short"
     assert all(job_id == "test-job" for job_id, _ in store.updates)
+
+
+def test_short_url_api_accepts_only_public_twitch_clip_or_vod_urls(tmp_path: Path):
+    app = create_app(load_config(_make_isolated_app_config(tmp_path)))
+    submitted: list[str] = []
+    app.state.runner.submit = lambda job_id: submitted.append(job_id)
+    client = TestClient(app)
+
+    invalid_urls = [
+        "https://www.youtube.com/watch?v=example",
+        "https://example.com/clip/ExampleClip",
+        "https://twitch.tv.example.com/clip/ExampleClip",
+        "http://clips.twitch.tv/ExampleClip",
+        "https://www.twitch.tv/some-streamer",
+        "not-a-url",
+        "https://clips.twitch.tv/" + ("a" * 2100),
+    ]
+    for url in invalid_urls:
+        response = client.post(
+            "/api/shorts/url",
+            data={"url": url, "rights_confirmed": "true"},
+        )
+        assert response.status_code == 400, (url, response.text)
+
+    assert app.state.store.list_jobs(100) == []
+    assert submitted == []
+
+    valid_urls = [
+        "https://clips.twitch.tv/ExampleClip",
+        "https://www.twitch.tv/some-streamer/clip/ExampleClip",
+        "https://www.twitch.tv/videos/123456?t=1h2m3s",
+    ]
+    created_ids = []
+    for url in valid_urls:
+        response = client.post(
+            "/api/shorts/url",
+            data={"url": url, "rights_confirmed": "true"},
+        )
+        assert response.status_code == 202, response.text
+        job_id = response.json()["id"]
+        created_ids.append(job_id)
+        job = app.state.store.get_job(job_id)
+        assert job is not None
+        assert job["source_url"] == url
+        assert job["status"] == "queued"
+
+    assert submitted == created_ids
