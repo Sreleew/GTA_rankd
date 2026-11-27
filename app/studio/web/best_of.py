@@ -74,3 +74,122 @@ def build_best_of_plan(
         "over_maximum": round(max(0.0, total_duration - MAX_EPISODE_SECONDS), 2),
         "date_key": date_key or (ordered[0]["date_key"] if ordered else ""),
     }
+
+
+def build_best_of_filter_graph(
+    clip_count: int,
+    audio_input_indices: list[int],
+    *,
+    width: int = 1920,
+    height: int = 1080,
+    fps: int = 30,
+) -> str:
+    """Build a 16:9 landscape canvas for vertical Shorts and concatenate them."""
+    if clip_count < 1 or len(audio_input_indices) != clip_count:
+        raise ValueError("Le plan vidéo Daily Best Of est invalide.")
+    if width < 2 or height < 2 or fps < 1:
+        raise ValueError("Les paramètres de sortie sont invalides.")
+    parts: list[str] = []
+    concat_inputs: list[str] = []
+    for index, audio_index in enumerate(audio_input_indices):
+        parts.append(
+            f"[{index}:v:0]split=2[bgsrc{index}][fgsrc{index}];"
+            f"[bgsrc{index}]scale={width}:{height}:force_original_aspect_ratio=increase,"
+            f"crop={width}:{height},boxblur=24:8,setsar=1[bg{index}];"
+            f"[fgsrc{index}]scale={width}:{height}:force_original_aspect_ratio=decrease,"
+            f"setsar=1[fg{index}];"
+            f"[bg{index}][fg{index}]overlay=(W-w)/2:(H-h)/2,"
+            f"fps={fps},format=yuv420p,setsar=1[v{index}];"
+            f"[{audio_index}:a:0]aresample=48000,"
+            f"aformat=sample_fmts=fltp:channel_layouts=stereo[a{index}]"
+        )
+        concat_inputs.extend([f"[v{index}]", f"[a{index}]"])
+    parts.append(
+        "".join(concat_inputs) + f"concat=n={clip_count}:v=1:a=1[outv][outa]"
+    )
+    return ";".join(parts)
+
+
+def render_best_of_episode(
+    plan: dict[str, Any],
+    output_path: Path,
+    *,
+    ffmpeg: str = "ffmpeg",
+    ffprobe: str = "ffprobe",
+    encoder: str = "h264_amf",
+) -> dict[str, Any]:
+    """Render validated vertical Shorts into one 1920x1080 landscape episode."""
+    from studio.web.short_renderer import MediaError, probe_media, resolve_executable, run_command
+
+    clips = plan.get("clips") if isinstance(plan, dict) else None
+    if not plan.get("ready_for_render") or not isinstance(clips, list) or not clips:
+        raise ValueError("La sélection doit être vérifiée et durer entre 9 et 11 minutes.")
+    if len(clips) > MAX_SELECTED_CLIPS:
+        raise ValueError(f"Un épisode ne peut pas contenir plus de {MAX_SELECTED_CLIPS} Shorts.")
+    if encoder not in {"h264_amf", "libx264"}:
+        raise ValueError("Encodeur vidéo non pris en charge.")
+
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    command = [resolve_executable(ffmpeg), "-hide_banner", "-y"]
+    audio_input_indices: list[int] = []
+    expected_audio = False
+    for clip in clips:
+        source = Path(str(clip.get("output_path") or ""))
+        if not source.is_file():
+            raise MediaError(f"Le rendu du Short {str(clip.get('id') or '')[:8]} est introuvable.")
+        info = probe_media(source, ffprobe)
+        if not info.get("width") or not info.get("height"):
+            raise MediaError(f"Impossible de lire la vidéo du Short {str(clip.get('id') or '')[:8]}.")
+        command.extend(["-i", str(source.resolve())])
+        if info.get("has_audio"):
+            audio_input_indices.append(len(audio_input_indices))
+            expected_audio = True
+        else:
+            silence_index = len(audio_input_indices) + sum(
+                1 for item in audio_input_indices if item < 0
+            )
+            # Inputs are appended sequentially, so the next input index is
+            # the current number of source inputs plus previously added silences.
+            silence_index = len(clips[:len(audio_input_indices)]) if False else -1
+            audio_input_indices.append(-1)
+
+    # Add explicit silent tracks for Shorts without audio. Keeping each source
+    # as a separate input avoids concat-demuxer assumptions about stream layouts.
+    source_input_count = len(clips)
+    for index, clip in enumerate(clips):
+        if audio_input_indices[index] < 0:
+            duration = max(0.1, float(clip.get("duration") or 0.1))
+            audio_input_indices[index] = source_input_count
+            command.extend([
+                "-f", "lavfi", "-t", f"{duration:.3f}",
+                "-i", "anullsrc=channel_layout=stereo:sample_rate=48000",
+            ])
+            source_input_count += 1
+        else:
+            audio_input_indices[index] = index
+
+    graph = build_best_of_filter_graph(len(clips), audio_input_indices)
+    command.extend([
+        "-filter_complex", graph,
+        "-map", "[outv]", "-map", "[outa]",
+        "-c:v", encoder, "-b:v", "12M",
+        "-r", "30", "-pix_fmt", "yuv420p",
+        "-c:a", "aac", "-b:a", "192k",
+        "-movflags", "+faststart", "-max_muxing_queue_size", "2048",
+        str(output_path.resolve()),
+    ])
+    run_command(command, timeout=3600)
+    result = probe_media(output_path, ffprobe, timeout=90)
+    if int(result.get("width") or 0) != 1920 or int(result.get("height") or 0) != 1080:
+        raise MediaError("Le fichier Daily Best Of exporté n'est pas au format 1920 × 1080.")
+    if not result.get("has_audio"):
+        raise MediaError("La vidéo finale ne contient aucune piste audio.")
+    return {
+        "output_path": str(output_path.resolve()),
+        "duration": round(float(result.get("duration") or 0.0), 2),
+        "width": 1920,
+        "height": 1080,
+        "clip_count": len(clips),
+        "file_size_bytes": output_path.stat().st_size,
+    }
