@@ -334,3 +334,12 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Tests ajoutés :** le test de progression simule les débits et ETA ; un test couvre les valeurs manquantes, invalides et les ETA longues.
 - **PR :** [#52](https://github.com/Sreleew/GTA_rankd/pull/52), branche `feat/twitch-download-speed-eta`, commit de code/tests `3bce968efbab655da1d117f5a20dd0f3dfb0eaf1`. La CI Linux/Windows doit réussir avant fusion. Le commit documentaire final relancera également les validations.
 - **Suite :** après validation, reprendre la vérification du rendu réel Twitch et de l'intégration webcam ; Daily Best Of reste la priorité suivante. « Moments forts » reste en pause.
+
+
+## 21 bis. Retour visuel sur le filtrage des voix, 27 novembre 2026
+
+- **Amélioration :** les cartes de Short indiquent désormais explicitement le résultat du filtrage des sous-titres : voix principale isolée, une seule voix détectée, toutes les voix sous-titrées ou sous-titres omis lorsque l'attribution est incertaine.
+- **Pourquoi :** le mode dominant peut volontairement supprimer les sous-titres si plusieurs voix sont trop proches ou si la diarisation échoue. L'interface affichait jusque-là les cas d'omission, mais ne disait pas quand une voix avait bien été isolée.
+- **Précision technique :** la diarisation distingue des locuteurs, mais ne sait pas lequel est le streamer. Le filtrage dominant reste une heuristique prudente, pas une identification garantie du streamer. La documentation de la fonction reflète désormais ce comportement réel.
+- **Tests :** vérification du rendu des libellés de statut et conservation des tests de filtrage existants. La validation complète Linux/Windows sera faite sur la PR.
+- **Limite :** aucun algorithme ne peut garantir que le locuteur dominant est le streamer sur tous les clips. Une sélection explicite du locuteur nécessitera un vrai parcours d'écoute/choix utilisateur, qui reste à concevoir.
