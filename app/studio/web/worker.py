@@ -128,6 +128,35 @@ def safe_slug(value: str, fallback: str = "gta-clip") -> str:
     return cleaned[:70] or fallback
 
 
+def _apply_thumbnail_overlay_safely(
+    image_path: Path,
+    text: str,
+    *,
+    font_path: Path | None = None,
+    streamer: str = "",
+    game_label: str = "GTA",
+) -> tuple[str, str | None]:
+    """Keep a rendered Short usable when its optional cover decoration fails."""
+    try:
+        apply_thumbnail_overlay(
+            image_path,
+            text,
+            font_path=font_path,
+            streamer=streamer,
+            game_label=game_label,
+        )
+        return "applied", None
+    except Exception as exc:
+        warning = str(exc).strip()[:180] or exc.__class__.__name__
+        logger.warning(
+            "Habillage de miniature indisponible pour %s ; conservation de l'image source : %s",
+            image_path,
+            warning,
+            exc_info=True,
+        )
+        return "fallback", warning
+
+
 class JobRunner:
     def __init__(self, config: AppConfig, store: Store) -> None:
         self.config = config
@@ -437,13 +466,16 @@ class JobRunner:
             if thumbnail_path.is_file():
                 stage_started = time.perf_counter()
                 custom_font = self.config.root / str(self.config.get("branding", "font_file", default="assets/fonts/Anton-Regular.ttf"))
-                apply_thumbnail_overlay(
+                overlay_status, overlay_warning = _apply_thumbnail_overlay_safely(
                     thumbnail_path,
                     str(metadata.get("thumbnail_text") or metadata.get("title") or "GTA MOMENT"),
                     font_path=custom_font if custom_font.is_file() else None,
                     streamer=str(job.get("streamer", "")),
                     game_label=str(metadata.get("game_keyword") or "GTA"),
                 )
+                metadata["thumbnail_overlay_status"] = overlay_status
+                if overlay_warning:
+                    metadata["thumbnail_overlay_warning"] = overlay_warning
                 timings["thumbnail_overlay_ms"] = max(0, int(round((time.perf_counter() - stage_started) * 1000)))
             renderer_timings = result.get("performance_timings_ms", {})
             for timing_name, timing_value in renderer_timings.items():
