@@ -1406,6 +1406,7 @@ def test_batch_twitch_import_is_available_in_shorts_ui():
     assert html.count('name="captions_enabled"') == 2
     assert "large-v3-turbo" in html
     assert "metadata.transcription_warning" in js
+    assert "Transcription Whisper" in js
     assert "$('[data-option-checkbox]', form).forEach" in js
     assert "submitShortBatch($('#url-form'))" in js
 
