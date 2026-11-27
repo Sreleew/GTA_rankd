@@ -3,13 +3,13 @@
 > Lire ce document en premier dans chaque nouvelle conversation sur le projet. Il décrit l'état réellement livré et la structure source actuelle.
 
 - **Dernière mise à jour :** 27 novembre 2026
-- **Dernière version stable confirmée :** [0.8.6](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.6), publiée le 27 novembre 2026 avec le ZIP Windows et `SHA256SUMS.txt`.
-- **État :** PR #19 à #28 fusionnées. PR #26 ajoute la saisie `HH:MM:SS`, PR #27 les lots Twitch multi-tranches et PR #28 le classement global de ces lots. La candidate v0.8.7 est préparée sur `release/v0.8.7` ; la dernière version stable publiée reste la v0.8.6.
+- **Dernière version stable confirmée :** [0.8.7](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.7), publiée le 27 novembre 2026 avec le ZIP Windows et `SHA256SUMS.txt`.
+- **État :** PR #19 à #29 fusionnées. PR #26 ajoute la saisie `HH:MM:SS`, PR #27 les lots Twitch multi-tranches, PR #28 le classement global des lots et PR #29 prépare la Release v0.8.7. La v0.8.7 est publiée et constitue la dernière version stable.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
-- **Dernière Release stable confirmée :** [v0.8.6](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.6). Assets publiés : `GTA-Ranked-Studio-v0.8.6.zip` et `SHA256SUMS.txt`.
+- **Dernière Release stable confirmée :** [v0.8.7](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.7). Assets publiés : `GTA-Ranked-Studio-v0.8.7.zip` et `SHA256SUMS.txt`.
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
 - **Source active :** `app/`. Modifier directement les fichiers Python, JavaScript, CSS, HTML, tests et installateur présents dans ce dossier.
-- **Mise à jour intégrée :** l'application consulte les Releases GitHub. La Release v0.8.6 contient le ZIP Windows et `SHA256SUMS.txt`; les installations v0.8.5 peuvent passer à v0.8.6 via Paramètres > Mises à jour.
+- **Mise à jour intégrée :** l'application consulte les Releases GitHub. La Release v0.8.7 contient le ZIP Windows et `SHA256SUMS.txt`; les installations v0.8.6 peuvent passer à v0.8.7 via Paramètres > Mises à jour.
 - **CI PR #14 :** Linux et Windows terminés avec succès, y compris suites de régression, analyse statique, audit de dépendances et packaging. Les décomptes détaillés ne sont pas consignés ici.
 - **Sécurité et packaging :** Ruff et pip-audit réussis sur Linux et Windows, aucune vulnérabilité connue ; ZIP Windows et SHA-256 vérifiés.
 - **PR de maintenance :** [#10](https://github.com/Sreleew/GTA_rankd/pull/10), fusionnée dans `main`.
@@ -194,13 +194,12 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 
 ## 11. Prochaines étapes priorisées
 
-1. Finaliser la validation post-fusion de PR #28 et du mémo de reprise sur Linux et Windows.
-2. Finaliser et publier la Release stable v0.8.7 après réussite du workflow officiel. Mise à jour depuis v0.8.6 via **Paramètres > Mises à jour**.
-3. Tester sur une vraie VOD longue, idéalement celle de 19 heures : choisir une plage, lancer le lot horaire, vérifier les progressions, les erreurs éventuelles et la shortlist globale.
-4. Relire le classement global avant export, car les scores audio sont normalisés par segment et ne constituent pas une mesure parfaitement calibrée entre tranches.
-5. Vérifier sur la RX 9060 XT l'encodage AMF, Whisper Vulkan et Ollama/Qwen pendant un cycle complet de téléchargement, analyse et rendu. Cette validation matérielle n'a pas encore été faite.
-6. Corriger uniquement les défauts récurrents constatés sur les vrais rendus : coupe incompréhensible, cadrage raté, sous-titres illisibles, audio défectueux ou métadonnées trompeuses.
-7. Démarrer la publication régulière et mesurer les résultats avant d'investir du temps dans les fonctions secondaires.
+1. Mettre à jour le Studio depuis la v0.8.6 via **Paramètres > Mises à jour**.
+2. Tester le nouveau flux sur une vraie VOD longue, idéalement celle de 19 heures : saisir la plage en `HH:MM:SS`, choisir des tranches horaires, lancer le lot et vérifier progression, erreurs et shortlist consolidée.
+3. Relire les meilleurs moments avant export. Les scores audio sont normalisés à l'intérieur de chaque segment ; le classement global est indicatif.
+4. Vérifier sur la RX 9060 XT l'encodage AMF, Whisper Vulkan et Ollama/Qwen pendant un cycle complet de téléchargement, analyse et rendu. Cette validation matérielle n'a pas encore été faite.
+5. Corriger uniquement les défauts récurrents constatés sur les vrais rendus : coupe incompréhensible, cadrage raté, sous-titres illisibles, audio défectueux ou métadonnées trompeuses.
+6. Démarrer la publication régulière et mesurer les résultats avant d'investir du temps dans les fonctions secondaires.
 
 ## 12. Message de reprise prêt à copier
 
