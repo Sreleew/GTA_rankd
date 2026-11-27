@@ -353,8 +353,10 @@ Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
 
 
 def _thumbnail_headline(text: str, streamer: str = "", *, max_words: int = 4) -> str:
+    """Keep only a short, meaningful hook; never use creator/game boilerplate."""
     raw_words = _clean_ass_text(text).split()
-    words = raw_words[:max(1, int(max_words))]
+    limit = max(1, int(max_words))
+    words = raw_words[:limit]
     incomplete_endings = {
         "a", "an", "and", "are", "as", "at", "because", "but", "by", "for",
         "from", "got", "had", "has", "have", "he", "her", "him", "his",
@@ -364,14 +366,109 @@ def _thumbnail_headline(text: str, streamer: str = "", *, max_words: int = 4) ->
         "yeah", "yea", "huh", "shit", "uh", "um", "like",
     }
     if words and words[-1].strip(".,!?;:").lower() in incomplete_endings and len(raw_words) > len(words):
-        words = raw_words[-max(1, int(max_words)):]
+        words = raw_words[-limit:]
+
+    def normalise_token(value: str) -> str:
+        token = re.sub(r"[^a-z0-9]+", "", value.casefold())
+        return token[:-1] if value.casefold().endswith("'s") else token
+
+    creator_tokens = {
+        normalise_token(token)
+        for token in re.split(r"[\s_]+", str(streamer or "").strip())
+        if normalise_token(token)
+    }
+    boilerplate = {"gta", "gtav", "gtavi", "5", "v", "vi", "moment", "moments", "clip", "clips"}
     filler_openers = {"yeah", "yea", "huh", "uh", "um", "bro", "man", "shit", "like"}
-    while len(words) > 1 and words[0].strip(".,!?;:").lower() in filler_openers:
+    while len(words) > 1 and normalise_token(words[0]) in filler_openers:
         words = words[1:]
-    if not words or words[-1].strip(".,!?;:").lower() in incomplete_endings:
-        first_name = re.sub(r"\s+", " ", str(streamer or "")).strip().split()
-        return f"{first_name[0]} GTA MOMENT" if first_name else "GTA MOMENT"
-    return " ".join(words).upper()
+    meaningful = [
+        word for word in words
+        if normalise_token(word) not in creator_tokens | boilerplate
+    ]
+    while meaningful and normalise_token(meaningful[0]) in filler_openers:
+        meaningful.pop(0)
+    if (not meaningful or normalise_token(meaningful[-1]) in incomplete_endings
+            or all(normalise_token(word) in filler_openers for word in meaningful)):
+        return "WAIT FOR THE REACTION"
+    return " ".join(meaningful).upper()
+
+
+def _thumbnail_scene_frame(source: Image.Image) -> Image.Image:
+    """Remove inactive letterbox areas from an already-vertical Short frame."""
+    if source.width / max(1, source.height) >= 0.82:
+        return source.copy()
+
+    gray = source.convert("L")
+    pixels = gray.load()
+    step_x = max(1, source.width // 100)
+    scores: list[float] = []
+    for y in range(source.height):
+        row = [pixels[x, y] for x in range(0, source.width, step_x)]
+        if not row:
+            scores.append(0.0)
+            continue
+        mean = sum(row) / len(row)
+        variance = sum((value - mean) ** 2 for value in row) / len(row)
+        scores.append(variance ** 0.5 if mean > 12 else 0.0)
+
+    active = [score > 17 for score in scores]
+    runs: list[tuple[int, int]] = []
+    run_start = None
+    for index, is_active in enumerate(active + [False]):
+        if is_active and run_start is None:
+            run_start = index
+        elif not is_active and run_start is not None:
+            runs.append((run_start, index))
+            run_start = None
+    if not runs:
+        return source.copy()
+    top, bottom = max(runs, key=lambda run: run[1] - run[0])
+    if bottom - top < source.height * 0.28:
+        return source.copy()
+    padding = int((bottom - top) * 0.018)
+    top = max(0, top - padding)
+    bottom = min(source.height, bottom + padding)
+    return source.crop((0, top, source.width, bottom))
+
+
+def _thumbnail_webcam_crop(frame: Image.Image) -> tuple[Image.Image | None, str | None]:
+    """Find a likely facecam in a screen corner using a conservative skin-tone cue."""
+    width, height = frame.size
+    crop_width = max(1, round(width * 0.38))
+    crop_height = max(1, round(height * 0.48))
+    candidates = {
+        "top-left": (0, 0, crop_width, crop_height),
+        "top-right": (width - crop_width, 0, width, crop_height),
+        "bottom-left": (0, height - crop_height, crop_width, height),
+        "bottom-right": (width - crop_width, height - crop_height, width, height),
+    }
+    best: tuple[float, Image.Image, str] | None = None
+    for corner, box in candidates.items():
+        region = frame.crop(box)
+        hsv = region.convert("HSV").resize((72, 72))
+        data = list(hsv.getdata())
+        xs: list[int] = []
+        ys: list[int] = []
+        count = 0
+        for index, (hue, saturation, value) in enumerate(data):
+            skin_hue = hue <= 28 or hue >= 246
+            if skin_hue and 20 <= saturation <= 175 and 65 <= value <= 245:
+                count += 1
+                xs.append(index % region.width)
+                ys.append(index // region.width)
+        if count < max(65, int(72 * 72 * 0.022)):
+            continue
+        box_width = max(xs) - min(xs) + 1
+        box_height = max(ys) - min(ys) + 1
+        # A face-like patch should occupy a coherent part of the corner region.
+        if box_width < 72 * 0.14 or box_height < 72 * 0.14:
+            continue
+        score = count / max(1, region.width * region.height)
+        if best is None or score > best[0]:
+            best = (score, region, corner)
+    if best is None:
+        return None, None
+    return best[1], best[2]
 
 
 def apply_thumbnail_overlay(
@@ -383,7 +480,7 @@ def apply_thumbnail_overlay(
     streamer: str = "",
     game_label: str = "GTA",
 ) -> Path:
-    """Create a GTA-inspired, real-frame thumbnail with a restrained paper-collage style."""
+    """Build a compact GTA paper-collage cover from the real clip frame."""
     if not image_path.is_file():
         raise FileNotFoundError(f"Miniature introuvable : {image_path}")
 
@@ -392,17 +489,15 @@ def apply_thumbnail_overlay(
 
     with Image.open(image_path) as source:
         source_image = source.convert("RGB")
+    scene = _thumbnail_scene_frame(source_image)
 
     width, height = 1080, 1920
     resampling = getattr(Image, "Resampling", Image).LANCZOS
-
-    # Keep the real clip frame as the main visual and use a soft, darkened copy
-    # to fill the portrait canvas around it.
     background = ImageOps.fit(
         source_image, (width, height), method=resampling, centering=(0.5, 0.45),
     ).filter(ImageFilter.GaussianBlur(radius=48))
     background = ImageEnhance.Color(background).enhance(0.72)
-    background = ImageEnhance.Brightness(background).enhance(0.34)
+    background = ImageEnhance.Brightness(background).enhance(0.43)
     canvas = background.convert("RGBA")
 
     font_candidates: list[Path] = []
@@ -429,40 +524,41 @@ def apply_thumbnail_overlay(
     paper = (11, 12, 14, 248)
     white = (249, 246, 235, 255)
 
-    # Use a genuine frame as a large photograph, with the headline strip
-    # overlapping its lower edge like a manually assembled GTA fan edit.
-    photo_height = 900
-    photo = ImageOps.fit(
-        source_image, (width, photo_height), method=resampling, centering=(0.5, 0.42),
-    )
-    photo = ImageEnhance.Contrast(photo).enhance(1.06)
-    canvas.alpha_composite(photo.convert("RGBA"), (0, 165))
+    # Keep the authentic Twitch frame. If a likely facecam is already embedded
+    # in a corner, give it the visual emphasis from the approved cover direction.
+    facecam, corner = _thumbnail_webcam_crop(scene)
+    top_image = facecam if facecam is not None else scene
+    top_image = ImageOps.fit(top_image, (width, 760), method=resampling, centering=(0.5, 0.42))
+    top_image = ImageEnhance.Contrast(top_image).enhance(1.06)
+    canvas.alpha_composite(top_image.convert("RGBA"), (0, 72))
+
+    gameplay = scene
+    if corner in {"top-left", "bottom-left"} and scene.width > 4:
+        gameplay = scene.crop((round(scene.width * 0.38), 0, scene.width, scene.height))
+    elif corner in {"top-right", "bottom-right"} and scene.width > 4:
+        gameplay = scene.crop((0, 0, round(scene.width * 0.62), scene.height))
+    gameplay = ImageOps.fit(gameplay, (width, 610), method=resampling, centering=(0.5, 0.54))
+    gameplay = ImageEnhance.Contrast(gameplay).enhance(1.05)
+    canvas.alpha_composite(gameplay.convert("RGBA"), (0, 1220))
 
     overlay = Image.new("RGBA", (width, height), (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay, "RGBA")
-
-    # Restrained streamer label and channel signature; no extra badges or slogans.
     if creator:
-        draw.text((58, 66), creator.upper(), font=load_font(38), fill=white,
-                  stroke_width=3, stroke_fill=(0, 0, 0, 190))
+        draw.text((48, 26), creator.upper(), font=load_font(34), fill=white,
+                  stroke_width=3, stroke_fill=(0, 0, 0, 200))
 
-    paper_top, paper_bottom = 1005, 1575
+    # Short torn-paper strip that joins the face and gameplay images.
+    paper_top, paper_bottom = 765, 1248
+    top_edge = [(-20, 18), (160, 6), (340, 15), (540, 3), (760, 17), (940, 5), (1100, 15)]
+    bottom_edge = [(-20, 10), (175, 2), (360, 13), (565, 4), (760, 14), (950, 3), (1100, 11)]
     draw.polygon(
-        [(-30, paper_top + 18), (105, paper_top + 5), (270, paper_top + 17),
-         (440, paper_top - 1), (620, paper_top + 14), (805, paper_top + 2),
-         (970, paper_top + 16), (1110, paper_top + 4), (1110, paper_bottom - 8),
-         (950, paper_bottom + 8), (780, paper_bottom - 4), (590, paper_bottom + 12),
-         (410, paper_bottom - 3), (225, paper_bottom + 9), (70, paper_bottom - 5),
-         (-30, paper_bottom + 12)], fill=paper,
+        [(x, paper_top + y) for x, y in top_edge]
+        + [(x, paper_bottom + y) for x, y in reversed(bottom_edge)],
+        fill=paper,
     )
     torn = (249, 246, 235, 225)
-    draw.line([(-10, paper_top + 14), (170, paper_top + 8), (345, paper_top + 12),
-               (520, paper_top + 2), (710, paper_top + 11), (900, paper_top + 6),
-               (1090, paper_top + 12)], fill=torn, width=5)
-    draw.line([(-10, paper_bottom + 7), (175, paper_bottom + 2),
-               (350, paper_bottom + 8), (530, paper_bottom + 1),
-               (710, paper_bottom + 9), (890, paper_bottom + 3),
-               (1090, paper_bottom + 6)], fill=torn, width=5)
+    draw.line([(x, paper_top + y) for x, y in top_edge], fill=torn, width=4)
+    draw.line([(x, paper_bottom + y) for x, y in bottom_edge], fill=torn, width=4)
 
     words = label.split()
     if len(words) > 1:
@@ -471,70 +567,64 @@ def apply_thumbnail_overlay(
     else:
         lines = [label]
 
-    font_size = 142
+    font_size = 132
     headline_font = load_font(font_size)
-    while font_size > 70:
+    while font_size > 68:
         headline_font = load_font(font_size)
-        widths = [
-            draw.textbbox((0, 0), line, font=headline_font, stroke_width=1)[2]
-            for line in lines
-        ]
-        if max(widths, default=0) <= width - 128:
+        widths = [draw.textbbox((0, 0), line, font=headline_font)[2] for line in lines]
+        if max(widths, default=0) <= width - 116:
             break
         font_size -= 4
-
-    first_y = 1070
-    line_height = font_size + 12
+    line_height = font_size + 8
+    first_y = 832
+    second_y = first_y + line_height + 28
     if len(lines) == 2:
-        second_y = first_y + line_height + 24
+        marker_y = second_y - 8
         draw.polygon(
-            [(45, second_y + 1), (230, second_y - 8), (420, second_y + 2),
-             (610, second_y - 5), (805, second_y + 2), (1034, second_y - 7),
-             (1024, second_y + line_height + 16), (815, second_y + line_height + 7),
-             (610, second_y + line_height + 17), (410, second_y + line_height + 8),
-             (220, second_y + line_height + 15), (54, second_y + line_height + 6)],
+            [(45, marker_y + 8), (220, marker_y), (410, marker_y + 7),
+             (615, marker_y - 2), (830, marker_y + 8), (1035, marker_y),
+             (1028, marker_y + line_height + 18), (820, marker_y + line_height + 10),
+             (610, marker_y + line_height + 20), (405, marker_y + line_height + 10),
+             (215, marker_y + line_height + 16), (52, marker_y + line_height + 8)],
             fill=accent,
         )
-        for index, line in enumerate(lines):
-            bounds = draw.textbbox((0, 0), line, font=headline_font, stroke_width=1)
-            line_width = bounds[2] - bounds[0]
-            x = (width - line_width) // 2 - bounds[0]
-            y = first_y if index == 0 else second_y
-            fill = white if index == 0 else (9, 10, 12, 255)
-            draw.text((x + 2, y + 5 - bounds[1]), line, font=headline_font,
-                      fill=(0, 0, 0, 170), stroke_width=5, stroke_fill=(0, 0, 0, 170))
-            draw.text((x, y - bounds[1]), line, font=headline_font, fill=fill)
     else:
-        bounds = draw.textbbox((0, 0), lines[0], font=headline_font, stroke_width=1)
+        marker_y = first_y - 2
+        draw.polygon(
+            [(50, marker_y + 5), (260, marker_y - 4), (480, marker_y + 4),
+             (710, marker_y - 2), (1030, marker_y + 5),
+             (1026, marker_y + line_height + 14), (800, marker_y + line_height + 7),
+             (580, marker_y + line_height + 16), (350, marker_y + line_height + 8),
+             (55, marker_y + line_height + 14)], fill=accent,
+        )
+
+    for index, line in enumerate(lines):
+        bounds = draw.textbbox((0, 0), line, font=headline_font)
         line_width = bounds[2] - bounds[0]
         x = (width - line_width) // 2 - bounds[0]
-        draw.polygon(
-            [(58, first_y - 5), (255, first_y - 13), (470, first_y - 4),
-             (700, first_y - 11), (1022, first_y - 2),
-             (1016, first_y + line_height + 12), (775, first_y + line_height + 5),
-             (550, first_y + line_height + 14), (330, first_y + line_height + 6),
-             (66, first_y + line_height + 12)], fill=accent,
-        )
-        draw.text((x + 2, first_y + 5 - bounds[1]), lines[0], font=headline_font,
-                  fill=(0, 0, 0, 170), stroke_width=5, stroke_fill=(0, 0, 0, 170))
-        draw.text((x, first_y - bounds[1]), lines[0], font=headline_font, fill=(9, 10, 12, 255))
+        y = first_y if index == 0 else second_y
+        fill = white if len(lines) == 2 and index == 0 else (9, 10, 12, 255)
+        draw.text((x + 2, y + 5 - bounds[1]), line, font=headline_font,
+                  fill=(0, 0, 0, 180), stroke_width=4, stroke_fill=(0, 0, 0, 190))
+        draw.text((x, y - bounds[1]), line, font=headline_font, fill=fill)
 
     channel_text = "GTA_Rankd"
-    channel_font = load_font(30)
+    channel_font = load_font(29)
     channel_box = draw.textbbox((0, 0), channel_text, font=channel_font)
     channel_width = channel_box[2] - channel_box[0]
-    draw.text((width - 58 - channel_width, 1792 - channel_box[1]), channel_text,
+    draw.text((width - 48 - channel_width, 1842 - channel_box[1]), channel_text,
               font=channel_font, fill=white, stroke_width=2, stroke_fill=(0, 0, 0, 180))
 
     final_image = Image.alpha_composite(canvas, overlay).convert("RGB")
     temporary_path = image_path.with_name(f"{image_path.stem}.overlay.tmp.jpg")
     try:
-        final_image.save(temporary_path, format="JPEG", quality=95, optimize=True, progressive=True, subsampling=0)
+        final_image.save(temporary_path, format="JPEG", quality=96, optimize=True, progressive=True, subsampling=0)
         temporary_path.replace(image_path)
     except Exception:
         temporary_path.unlink(missing_ok=True)
         raise
     return image_path
+
 def select_excerpt_range(
     duration: float,
     peak_timestamp: float,
