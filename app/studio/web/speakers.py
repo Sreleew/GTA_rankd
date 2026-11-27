@@ -103,7 +103,7 @@ def filter_dominant_speaker(
     if not words:
         return words, {**base, "status": "no_words"}
     if not durations:
-        return words, {**base, "reason": "Aucun segment vocal exploitable."}
+        return [], {**base, "status": "no_speaker_segments", "words_after": 0, "reason": "Aucun segment vocal exploitable."}
     if len(durations) == 1:
         only_speaker = next(iter(durations))
         return words, {
@@ -121,9 +121,11 @@ def filter_dominant_speaker(
     share = selected_duration / max(0.001, total_duration)
     ratio = selected_duration / max(0.001, second_duration)
     if selected_duration < minimum_speech_seconds or share < minimum_share or ratio < minimum_ratio:
-        return words, {
+        return [], {
             **base,
-            "reason": "Plusieurs voix sont trop proches pour choisir sans risque.",
+            "status": "ambiguous_speakers",
+            "words_after": 0,
+            "reason": "Plusieurs voix sont trop proches pour en sélectionner une sans risque.",
             "dominant_share": round(share, 3),
             "dominance_ratio": round(ratio, 3),
         }
@@ -145,9 +147,11 @@ def filter_dominant_speaker(
 
     minimum_kept = max(2, math.ceil(len(words) * 0.22))
     if len(filtered) < minimum_kept:
-        return words, {
+        return [], {
             **base,
-            "reason": "Trop peu de mots peuvent être attribués à la voix dominante.",
+            "status": "low_word_attribution",
+            "words_after": 0,
+            "reason": "Trop peu de mots peuvent être attribués à la voix principale.",
             "dominant_share": round(share, 3),
             "dominance_ratio": round(ratio, 3),
         }
