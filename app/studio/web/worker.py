@@ -148,6 +148,7 @@ def _transcribe_short_excerpt(
     existing_audio_path: Path | None = None,
     existing_audio_start: float = 0.0,
     existing_audio_duration: float | None = None,
+    language: str | None = None,
 ) -> dict[str, Any]:
     """Transcribe only the selected Short excerpt, reusing an exact analysis WAV when possible."""
     duration = float(trim_end) - float(trim_start)
@@ -189,7 +190,7 @@ def _transcribe_short_excerpt(
         whisper_cli=config.path_for("executables", "whisper_cli"),
         model_path=config.path_for("transcription", "model_path"),
         output_dir=temp_dir / "transcription",
-        language=str(config.get("transcription", "language", default="en") or "en"),
+        language=str(language or config.get("transcription", "language", default="en") or "en"),
         threads=threads,
         vad_model_path=vad_model_path,
         timeout=timeout,
@@ -455,6 +456,7 @@ class JobRunner:
                             existing_audio_path=audio_path,
                             existing_audio_start=audio_path_start,
                             existing_audio_duration=audio_path_duration,
+                            language=str(options.get("caption_language") or ""),
                         )
                         transcription_status = str(transcription.get("status") or "unknown")
                         transcription_timestamp_mode = transcription.get("timestamp_mode")
@@ -652,6 +654,10 @@ class JobRunner:
                 "audio_analysis_skipped": not audio_analysis_needed,
                 "transcription_status": transcription_status,
                 "transcription_timestamp_mode": transcription_timestamp_mode,
+                "transcription_language_requested": (
+                    str(options.get("caption_language") or self.config.get("transcription", "language", default="en"))
+                    if captions_requested else None
+                ),
                 "transcribed_words": len(render_words),
                 "transcription_warning": transcription_warning,
                 "captions_enabled": captions_requested,
