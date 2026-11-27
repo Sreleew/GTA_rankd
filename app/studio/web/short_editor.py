@@ -240,8 +240,18 @@ Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
         )
     clean_hook = _clean_ass_text(hook_text)
     if clean_hook:
+        # A compact editorial kicker establishes the series identity without
+        # delaying the clip. The headline then lands with a short overshoot,
+        # like a broadcast title card rather than a static subtitle.
+        kicker = f"RANKED DISPATCH  //  {_clean_ass_text(badge_text).upper()}"
         events.append(
-            f"Dialogue: 2,0:00:00.00,0:00:02.60,Hook,,0,0,0,,{{\\an8\\pos({width // 2},{int(height * 0.20)})\\fad(120,180)\\fscx88\\fscy88\\t(0,190,\\fscx100\\fscy100)}}{_wrap_words(clean_hook, 5)}"
+            f"Dialogue: 2,0:00:00.00,0:00:02.60,HookKicker,,0,0,0,,"
+            f"{{\\an8\\pos({width // 2},{int(height * 0.155)})\\fad(65,120)\\fscx78\\fscy78\\t(0,180,\\fscx100\\fscy100)}}{kicker}"
+        )
+        events.append(
+            f"Dialogue: 2,0:00:00.00,0:00:02.60,Hook,,0,0,0,,"
+            f"{{\\an8\\pos({width // 2},{int(height * 0.20)})\\fad(55,150)\\fscx82\\fscy82\\frz2\\blur2"
+            f"\\t(0,190,\\fscx108\\fscy108\\frz0\\blur0)\\t(190,270,\\fscx100\\fscy100)}}{_wrap_words(clean_hook, 5)}"
         )
     clean_context = _clean_ass_text(context_text)
     if clean_context:
