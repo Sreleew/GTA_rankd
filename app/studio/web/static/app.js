@@ -1,4 +1,4 @@
-const state = { page: 'dashboard', file: null, toastTimer: null, modelPoll: null, whisperGpuProbeRunning: false, ollamaVerifyRunning: false, ollamaVerificationResult: null, updatePoll: null, updateInProgress: false, updateTargetVersion: '', bestOfClips: [], bestOfSelectedIds: [], bestOfDate: '', bestOfPlan: null, bestOfRenderJob: null, shortBatchIds: [] };
+const state = { page: 'dashboard', file: null, toastTimer: null, modelPoll: null, whisperGpuProbeRunning: false, ollamaVerifyRunning: false, ollamaVerificationResult: null, updatePoll: null, updateInProgress: false, updateTargetVersion: '', bestOfClips: [], bestOfSelectedIds: [], bestOfDate: '', bestOfPlan: null, bestOfRenderJob: null, shortBatchIds: [], shortBatchRetrying: new Set() };
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 
@@ -145,8 +145,13 @@ function renderShortBatchTracker(batches) {
             : job.status === 'validated' ? 'Validé'
               : job.status === 'rejected' ? 'Rejeté'
                 : statusLabel(job.status);
-      const detail = job.error || job.message || '';
-      return `<li><span class="short-batch-job-title" title="${escapeHtml(job.title || '')}">${escapeHtml(job.title || 'Clip Twitch')}<small>${escapeHtml(detail)}</small></span><span class="status-pill ${escapeHtml(job.status)}">${escapeHtml(label)}</span></li>`;
+      const attemptNote = Number(job.attempts) > 1 ? ` · tentative ${Number(job.attempts)}` : '';
+      const detail = `${job.error || job.message || ''}${attemptNote}`;
+      const retryLabel = job.status === 'rejected' ? 'Recréer' : 'Relancer';
+      const retryButton = job.retryable
+        ? `<button type="button" class="mini-button" data-retry-short-batch="${escapeHtml(job.id)}" ${state.shortBatchRetrying.has(job.id) ? 'disabled' : ''}>${retryLabel}</button>`
+        : '';
+      return `<li><span class="short-batch-job-title" title="${escapeHtml(job.title || '')}">${escapeHtml(job.title || 'Clip Twitch')}<small>${escapeHtml(detail)}</small></span><span class="short-batch-job-actions"><span class="status-pill ${escapeHtml(job.status)}">${escapeHtml(label)}</span>${retryButton}</span></li>`;
     }).join('');
     return `<article class="short-batch-card">
       <div class="short-batch-heading"><div><strong>Lot Twitch · ${batch.total} clips</strong><small>${escapeHtml(statusText)}</small></div><button type="button" class="text-button" data-dismiss-short-batch="${escapeHtml(batch.batch_id)}">Masquer</button></div>
@@ -169,6 +174,29 @@ async function refreshShortBatchTracker() {
   state.shortBatchIds = results.filter(item => !item.missing).map(item => item.batchId).slice(0, 4);
   persistShortBatchIds();
   renderShortBatchTracker(results.filter(item => item.batch).map(item => item.batch));
+}
+
+async function retryShortBatchJob(button) {
+  const jobId = String(button.dataset.retryShortBatch || '');
+  if (!jobId || state.shortBatchRetrying.has(jobId)) return;
+  state.shortBatchRetrying.add(jobId);
+  const oldText = button.textContent;
+  button.disabled = true;
+  button.textContent = 'Relance…';
+  try {
+    const result = await api(`/api/jobs/${encodeURIComponent(jobId)}/reprocess`, { method: 'POST' });
+    toast(result.message || 'Nouvelle tentative ajoutée à la file.');
+    await Promise.all([loadJobs(), loadDashboard()]);
+  } catch (error) {
+    toast(error.message, true);
+    await refreshShortBatchTracker();
+  } finally {
+    state.shortBatchRetrying.delete(jobId);
+    if (button.isConnected) {
+      button.disabled = false;
+      button.textContent = oldText;
+    }
+  }
 }
 
 async function loadJobs() {
@@ -1003,6 +1031,11 @@ function setupEvents() {
   $('#url-form').addEventListener('submit', event => { event.preventDefault(); submitForm(event.currentTarget, '/api/shorts/url'); });
   $('#short-batch-submit').addEventListener('click', () => submitShortBatch($('#url-form')));
   $('#short-batch-tracker').addEventListener('click', event => {
+    const retry = event.target.closest('[data-retry-short-batch]');
+    if (retry) {
+      retryShortBatchJob(retry);
+      return;
+    }
     const dismiss = event.target.closest('[data-dismiss-short-batch]');
     if (!dismiss) return;
     const batchId = dismiss.dataset.dismissShortBatch;
