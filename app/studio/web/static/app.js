@@ -337,6 +337,9 @@ async function loadBestOfHistory(silent = false) {
         : (job.status === 'completed'
           ? '<small class="bestof-history-missing">Fichier exporté introuvable sur ce PC.</small>'
           : '');
+      const restoreButton = Array.isArray(job.clip_ids) && job.clip_ids.length
+        ? `<button type="button" class="mini-button" data-bestof-restore="${escapeHtml(job.id)}">Recharger la sélection</button>`
+        : '';
       const detail = job.error || job.message || '';
       return `<article class="bestof-history-item">
         <div class="bestof-history-main">
@@ -345,7 +348,7 @@ async function loadBestOfHistory(silent = false) {
           <p>${escapeHtml(detail)}</p>
           ${['queued', 'running'].includes(job.status) ? `<div class="bestof-history-progress"><span style="width:${progress}%"></span></div>` : ''}
         </div>
-        <div class="bestof-history-action">${link}</div>
+        <div class="bestof-history-action">${restoreButton}${link}</div>
       </article>`;
     }).join('') : '<div class="empty-state compact-empty">Aucun épisode généré pour le moment.</div>';
 
@@ -360,6 +363,35 @@ async function loadBestOfHistory(silent = false) {
     if (!silent) toast(error.message, true);
   } finally {
     state.bestOfHistoryLoading = false;
+  }
+}
+
+async function restoreBestOfSelection(button) {
+  const jobId = String(button.dataset.bestofRestore || '');
+  if (!jobId) return;
+  const originalText = button.textContent;
+  button.disabled = true;
+  button.textContent = 'Chargement…';
+  try {
+    const job = await api(`/api/bestof/jobs/${encodeURIComponent(jobId)}`);
+    const clipIds = Array.isArray(job.clip_ids) ? job.clip_ids.map(String).filter(Boolean) : [];
+    if (!clipIds.length) throw new Error("La sélection de cet épisode n'est pas disponible.");
+    state.bestOfDate = String(job.date_key || '');
+    state.bestOfSelectedIds = clipIds;
+    state.bestOfPlan = null;
+    await loadBestOf();
+    if (state.bestOfSelectedIds.length !== clipIds.length) {
+      throw new Error("Certains Shorts de cette ancienne sélection ne sont plus dans la bibliothèque.");
+    }
+    await validateBestOfSelection();
+    toast('Sélection rechargée. Vérifie-la avant de relancer le rendu.');
+  } catch (error) {
+    toast(error.message, true);
+  } finally {
+    if (button.isConnected) {
+      button.disabled = false;
+      button.textContent = originalText;
+    }
   }
 }
 
@@ -1156,6 +1188,10 @@ function setupEvents() {
   $('#refresh-bestof').addEventListener('click', loadBestOf);
   $('#bestof-validate').addEventListener('click', validateBestOfSelection);
   $('#bestof-render').addEventListener('click', renderBestOfEpisode);
+  $('#bestof-history').addEventListener('click', event => {
+    const restore = event.target.closest('[data-bestof-restore]');
+    if (restore) restoreBestOfSelection(restore);
+  });
   $('#bestof-available').addEventListener('click', event => {
     const button = event.target.closest('[data-bestof-add]');
     if (!button) return;
