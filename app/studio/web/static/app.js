@@ -116,9 +116,14 @@ function jobCard(job) {
   const thumbnailNote = metadata.thumbnail_overlay_status === 'fallback'
     ? ' · Habillage de miniature indisponible, image source conservée'
     : '';
+  const captionNote = metadata.transcription_warning
+    ? ` · Sous-titres non générés : ${escapeHtml(metadata.transcription_warning)}`
+    : (Number(metadata.transcribed_words) > 0
+      ? ` · Sous-titres · ${Number(metadata.transcribed_words)} mots`
+      : '');
   return `<article class="job-card">
     ${thumbUrl ? `<img class="job-thumb" src="${thumbUrl}" alt="Miniature du Short">` : `<div class="job-thumb job-thumb-placeholder">▶</div>`}
-    <div class="job-main"><strong title="${escapeHtml(title)}">${escapeHtml(title)}</strong>${socialCaption ? `<div class="job-caption">${escapeHtml(socialCaption)}</div>` : ''}<div class="job-meta">${escapeHtml(meta || (job.source_kind || 'clip').toUpperCase())}</div><div class="job-message">${escapeHtml(job.message || '')}${thumbnailNote}${job.error ? ` · ${escapeHtml(job.error.slice(0, 200))}` : ''}</div>${qualityHtml}${timingsHtml}${['queued','running'].includes(job.status) ? `<div class="job-progress"><span style="width:${progress}%"></span></div><small class="job-progress-label">${progress}%</small>` : ''}${actions}</div>
+    <div class="job-main"><strong title="${escapeHtml(title)}">${escapeHtml(title)}</strong>${socialCaption ? `<div class="job-caption">${escapeHtml(socialCaption)}</div>` : ''}<div class="job-meta">${escapeHtml(meta || (job.source_kind || 'clip').toUpperCase())}</div><div class="job-message">${escapeHtml(job.message || '')}${thumbnailNote}${captionNote}${job.error ? ` · ${escapeHtml(job.error.slice(0, 200))}` : ''}</div>${qualityHtml}${timingsHtml}${['queued','running'].includes(job.status) ? `<div class="job-progress"><span style="width:${progress}%"></span></div><small class="job-progress-label">${progress}%</small>` : ''}${actions}</div>
     <div class="job-side"><span class="status-pill ${escapeHtml(job.status)}">${statusLabel(job.status)}</span></div>
   </article>`;
 }
