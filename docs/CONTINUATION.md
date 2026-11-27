@@ -555,3 +555,14 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Branche :** `feat/retry-daily-bestof-from-history`. CI Linux et Windows à exécuter sur la PR.
 - **Arbitrage ROI :** réutiliser le plan déjà persisté est plus simple et plus sûr que créer un deuxième système de sauvegarde/reconstruction d'épisode.
 - **Suite :** après validation, la prochaine priorité est de préparer une validation utilisateur guidée de la création Short et du Daily Best Of sur l'installation Windows/AMD, puis de décider si la v0.9.0 est prête.
+
+
+## 39. Préserver la composition Twitch complète dans le cadrage intelligent, 27 novembre 2026
+
+- **Objectif :** éviter que le cadrage vertical « smart » coupe une webcam déjà intégrée au clip Twitch lorsqu'elle se trouve sur un bord de l'image.
+- **Rendu :** le panneau central utilise désormais une version complète de la source ajustée à sa zone. Une copie floutée remplit l'espace restant dans le panneau, tandis que le fond vertical conserve le traitement existant. Les bandes latérales de la vidéo 16:9 ne sont plus coupées.
+- **Périmètre webcam :** aucune détection, extraction ou superposition séparée n'est ajoutée. Le studio conserve la composition Twitch telle qu'elle est fournie par le clip, conformément à la décision de ne pas construire de composant webcam dédié.
+- **Interface :** le format est renommé « Composition éditoriale 9:16 » et précise que l'image Twitch entière, webcam comprise, est préservée. La clé de cache statique est mise à jour.
+- **Tests :** tests de graphe pour sources paysage et portrait, plus un test FFmpeg réel avec des bandes colorées sur les deux bords afin de vérifier que le contenu périphérique survit au rendu vertical.
+- **Sous-titres :** le brief actuel les mentionne à nouveau, mais le pipeline actif ne les génère toujours pas depuis la simplification précédente. Leur éventuelle réactivation doit être traitée dans un lot dédié, avec un mode facultatif et un budget de temps explicite, plutôt que de réintroduire Whisper silencieusement dans chaque rendu.
+- **Validation :** CI Linux et Windows à effectuer sur la PR. Aucun rendu sur le PC AMD de l'utilisateur n'est revendiqué.
