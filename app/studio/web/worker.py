@@ -361,6 +361,7 @@ class JobRunner:
             self.store.update_job(job_id, progress=60, message="Rendu vertical 9:16 plein écran et finitions")
             result = render_vertical_short(
                 source_path, output_path, thumbnail_path,
+                source_media_info=source_info,
                 ffmpeg=str(self.config.get("executables", "ffmpeg", default="ffmpeg")),
                 ffprobe=str(self.config.get("executables", "ffprobe", default="ffprobe")),
                 preferred_encoder=str(self.config.get("encoding", "video_codec", default="h264_amf")),
@@ -395,6 +396,7 @@ class JobRunner:
                     ffmpeg=str(self.config.get("executables", "ffmpeg", default="ffmpeg")),
                     ffprobe=str(self.config.get("executables", "ffprobe", default="ffprobe")),
                     expected_duration=float(result["duration"]),
+                    preprobed_info=result.get("output_media_info"),
                     expected_width=int(result["output_width"]),
                     expected_height=int(result["output_height"]),
                     expect_audio=bool(result.get("has_audio", source_info["has_audio"])),
