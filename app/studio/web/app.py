@@ -945,6 +945,8 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
             raise HTTPException(status_code=400, detail="La sélection doit durer entre 9 et 11 minutes.")
         job_id = uuid.uuid4().hex
         date_folder = str(plan.get("date_key") or "episode")
+        if not re.fullmatch(r"\\d{4}-\\d{2}-\\d{2}", date_folder):
+            date_folder = "episode"
         output_dir = outputs / "bestof" / date_folder
         output_path = output_dir / f"daily-best-of-{job_id[:8]}.mp4"
         with app.state.bestof_jobs_lock:
