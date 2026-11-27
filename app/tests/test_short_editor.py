@@ -41,6 +41,24 @@ def test_ass_contains_hook_branding_and_active_word_highlight(tmp_path: Path):
     assert r"\c&H0000C8F5&" in content
 
 
+def test_hook_uses_animated_ranked_dispatch_identity(tmp_path: Path):
+    path = create_ass_file(
+        tmp_path / "cinematic-hook.ass",
+        words=[],
+        hook_text="HE THOUGHT HE WAS SAFE",
+        badge_text="GTA",
+        captions_enabled=False,
+        brand_enabled=False,
+    )
+    content = path.read_text(encoding="utf-8-sig")
+    assert "Style: HookKicker" in content
+    assert "RANKED DISPATCH  //  GTA" in content
+    assert "HE THOUGHT HE WAS SAFE" in content
+    assert r"\\frz2\\blur2" in content
+    assert r"\\t(0,190,\\fscx108\\fscy108\\frz0\\blur0)" in content
+    assert "0:00:02.60,Hook" in content
+
+
 def test_smart_layout_moves_captions_below_the_gameplay_panel(tmp_path: Path):
     path = create_ass_file(
         tmp_path / "smart-captions.ass",
