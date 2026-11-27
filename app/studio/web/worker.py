@@ -18,10 +18,10 @@ from studio.config import AppConfig
 from studio.process import ProcessingCancelled, check_cancelled, set_current_cancel_event
 from studio.web.metadata import generate_short_metadata
 from studio.web.short_editor import (
-    apply_thumbnail_overlay, create_ass_file, rebase_word_timings, select_thumbnail_timestamp,
-    select_excerpt_range, write_srt_file,
+    apply_thumbnail_overlay, create_ass_file, infer_hook_style, rebase_word_timings,
+    select_thumbnail_timestamp, select_excerpt_range, write_srt_file,
 )
-from studio.web.short_renderer import MediaError, probe_media, render_vertical_short
+from studio.web.short_renderer import MediaError, create_hook_sound_effect, probe_media, render_vertical_short
 from studio.web.export_quality import analyze_export_quality
 from studio.web.store import Store
 from studio.web.transcribe import (
@@ -336,6 +336,12 @@ class JobRunner:
             shutil.copy2(ass_path, output_dir / "captions.ass")
 
             check_cancelled()
+            hook_text = str(metadata.get("hook_text", ""))
+            hook_context = str(metadata.get("context_card", ""))
+            hook_sound_style = infer_hook_style(hook_text, hook_context)
+            hook_sound_path = temp_dir / "hook-sound.wav"
+            if bool(options.get("sfx_enabled", True)):
+                create_hook_sound_effect(hook_sound_path, hook_sound_style)
             self.store.update_job(job_id, progress=60, message="Rendu vertical 9:16 plein écran et finitions")
             result = render_vertical_short(
                 source_path, output_path, thumbnail_path,
@@ -361,9 +367,8 @@ class JobRunner:
                 zoom_percent=int(options.get("zoom_percent", 8)),
                 trim_start=trim_start,
                 trim_duration=trim_end - trim_start,
-                sound_effect_path=(self.config.root / "assets" / "sfx" / "soft_whoosh.wav")
-                    if bool(options.get("sfx_enabled", True)) else None,
-                sound_effect_offset=max(0.0, min(render_peak_timestamp, (trim_end - trim_start) - 0.12)),
+                sound_effect_path=hook_sound_path if bool(options.get("sfx_enabled", True)) else None,
+                sound_effect_offset=min(0.12, max(0.0, (trim_end - trim_start) - 0.12)),
                 sound_effect_volume=float(self.config.get("shorts", "sfx_volume", default=0.14)),
             )
             check_cancelled()
@@ -415,6 +420,7 @@ class JobRunner:
                 "output_height": result["output_height"],
                 "layout": result["layout"],
                 "sound_effect_used": result.get("sound_effect_used", False),
+                "hook_sound_style": hook_sound_style if bool(options.get("sfx_enabled", True)) else None,
                 "peak_timestamp": peak_timestamp,
                 "render_peak_timestamp": render_peak_timestamp,
                 "thumbnail_timestamp": result.get("thumbnail_timestamp"),
