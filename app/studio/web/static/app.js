@@ -346,7 +346,7 @@ async function loadBestOfHistory(silent = false) {
           <div class="bestof-history-heading"><strong>Daily Best Of</strong><span class="status-pill ${escapeHtml(job.status)}">${escapeHtml(labels[job.status] || job.status || '')}</span></div>
           <small>${escapeHtml(details)}${createdLabel ? ` · créé le ${escapeHtml(createdLabel)}` : ''}</small>
           <p>${escapeHtml(detail)}</p>
-          ${['queued', 'running'].includes(job.status) ? `<div class="bestof-history-progress"><span style="width:${progress}%"></span></div>` : ''}
+          ${['queued', 'running'].includes(job.status) ? `<div class="bestof-history-progress"><span style="width:${progress}%"></span></div><small class="bestof-history-progress-label">${progress}%</small>` : ''}
         </div>
         <div class="bestof-history-action">${link}${retryButton}</div>
       </article>`;
