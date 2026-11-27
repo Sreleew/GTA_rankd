@@ -198,6 +198,8 @@ class JobRunner:
                 self._queue.task_done()
 
     def _process_job(self, job_id: str) -> None:
+        processing_started = time.perf_counter()
+        timings: dict[str, int] = {}
         with self._lock:
             job = self.store.get_job(job_id)
             if not job or job["status"] not in {"queued", "running"}:
@@ -209,12 +211,16 @@ class JobRunner:
             source_url = job.get("source_url") or ""
             if source_path is None and source_url:
                 self.store.update_job(job_id, progress=10, message="Téléchargement de la source")
+                stage_started = time.perf_counter()
                 source_path, info = self._download(job_id, source_url)
+                timings["download_ms"] = max(0, int(round((time.perf_counter() - stage_started) * 1000)))
                 extracted_title, extracted_streamer = extract_twitch_source_metadata(info)
                 job["source_title"] = job.get("source_title") or extracted_title
                 job["streamer"] = job.get("streamer") or extracted_streamer
                 job["source_path"] = str(source_path)
+                stage_started = time.perf_counter()
                 source_hash = self._hash_file(source_path)
+                timings["source_hash_ms"] = max(0, int(round((time.perf_counter() - stage_started) * 1000)))
                 duplicate = self.store.find_duplicate_hash(source_hash)
                 if duplicate and duplicate["id"] != job_id:
                     raise MediaError(f"Cette vidéo a déjà été importée dans le job {duplicate['id'][:8]}.")
@@ -240,9 +246,11 @@ class JobRunner:
             temp_dir.mkdir(parents=True, exist_ok=True)
 
             self.store.update_job(job_id, progress=20, message="Analyse de la vidéo et de l'audio")
+            stage_started = time.perf_counter()
             source_info = probe_media(
                 source_path, str(self.config.get("executables", "ffprobe", default="ffprobe"))
             )
+            timings["source_probe_ms"] = max(0, int(round((time.perf_counter() - stage_started) * 1000)))
             source_range = options.get("source_range") if isinstance(options, dict) else None
             if source_range:
                 trim_start = max(0.0, float(source_range.get("start", 0.0)))
@@ -272,6 +280,7 @@ class JobRunner:
             )
             audio_peak_timestamps: list[float] = []
             if audio_analysis_needed:
+                stage_started = time.perf_counter()
                 audio_path = temp_dir / "audio-16k.wav"
                 try:
                     extract_audio_wav(
@@ -287,6 +296,7 @@ class JobRunner:
 
                 except TranscriptionError as exc:
                     logger.warning("Analyse audio ignorée pour le job %s : %s", job_id, exc)
+                timings["audio_analysis_ms"] = max(0, int(round((time.perf_counter() - stage_started) * 1000)))
 
             if not source_range:
                 trim_start, trim_end = 0.0, float(source_info["duration"])
@@ -317,6 +327,7 @@ class JobRunner:
 
             self.store.update_job(job_id, progress=48, message="Préparation du montage vertical")
             prompt_path = self.config.path_for("paths", "prompts") / "short_metadata.txt"
+            stage_started = time.perf_counter()
             metadata = generate_short_metadata(
                 streamer=job.get("streamer", ""),
                 note=job.get("note", ""),
@@ -331,6 +342,7 @@ class JobRunner:
                 timeout=min(8, max(3, int(self.config.get("ollama", "request_timeout_seconds", default=8)))),
                 retries=0,
             )
+            timings["metadata_generation_ms"] = max(0, int(round((time.perf_counter() - stage_started) * 1000)))
             check_cancelled()
 
             captions_active = False
@@ -357,7 +369,9 @@ class JobRunner:
             hook_sound_style = infer_hook_style(hook_text, hook_context)
             hook_sound_path = temp_dir / "hook-sound.wav"
             if bool(options.get("sfx_enabled", True)):
+                stage_started = time.perf_counter()
                 create_hook_sound_effect(hook_sound_path, hook_sound_style)
+                timings["hook_sound_ms"] = max(0, int(round((time.perf_counter() - stage_started) * 1000)))
             self.store.update_job(job_id, progress=60, message="Rendu vertical 9:16 plein écran et finitions")
             result = render_vertical_short(
                 source_path, output_path, thumbnail_path,
@@ -389,6 +403,7 @@ class JobRunner:
                 sound_effect_volume=float(self.config.get("shorts", "sfx_volume", default=0.14)),
             )
             check_cancelled()
+            stage_started = time.perf_counter()
             self.store.update_job(job_id, progress=88, message="Contrôle qualité de l'export")
             try:
                 quality_report = analyze_export_quality(
@@ -415,10 +430,12 @@ class JobRunner:
                     "warnings": [str(exc)[:180]],
                     "metrics": {},
                 }
+            timings["export_quality_ms"] = max(0, int(round((time.perf_counter() - stage_started) * 1000)))
             check_cancelled()
             metadata["quality_report"] = quality_report
 
             if thumbnail_path.is_file():
+                stage_started = time.perf_counter()
                 custom_font = self.config.root / str(self.config.get("branding", "font_file", default="assets/fonts/Anton-Regular.ttf"))
                 apply_thumbnail_overlay(
                     thumbnail_path,
@@ -427,6 +444,14 @@ class JobRunner:
                     streamer=str(job.get("streamer", "")),
                     game_label=str(metadata.get("game_keyword") or "GTA"),
                 )
+                timings["thumbnail_overlay_ms"] = max(0, int(round((time.perf_counter() - stage_started) * 1000)))
+            renderer_timings = result.get("performance_timings_ms", {})
+            for timing_name, timing_value in renderer_timings.items():
+                try:
+                    timings[f"render_{timing_name}"] = max(0, int(timing_value))
+                except (TypeError, ValueError, OverflowError):
+                    continue
+            timings["total_processing_ms"] = max(0, int(round((time.perf_counter() - processing_started) * 1000)))
             metadata.update({
                 "streamer": job.get("streamer", ""),
                 "source_url": source_url,
@@ -448,6 +473,8 @@ class JobRunner:
                 "trim_end": trim_end,
                 "auto_trim_enabled": auto_trim_enabled,
                 "generation_stage": "short_edit_v0.6.0",
+                "processing_timings_ms": timings,
+                "audio_analysis_skipped": not audio_analysis_needed,
                 "options": options,
             })
             self.store.update_job(job_id, progress=92, message="Écriture des métadonnées et de la miniature")
