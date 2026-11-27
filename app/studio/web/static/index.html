@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#101113">
   <title>GTA Ranked Studio</title>
-  <link rel="stylesheet" href="/static/styles.css?v=0.8.9-thumbnail-fallback">
+  <link rel="stylesheet" href="/static/styles.css?v=0.8.9-bestof-history">
 </head>
 <body>
   <div class="app-shell">
@@ -208,6 +208,10 @@
             </div>
           </section>
         </div>
+        <section class="panel output-panel bestof-history-panel">
+          <div class="panel-heading"><div><div class="eyebrow">RENDER HISTORY</div><h3>Historique des épisodes</h3></div></div>
+          <div id="bestof-history" class="bestof-history-list"><div class="empty-state compact-empty">Chargement de l’historique…</div></div>
+        </section>
       </section>
 
       <section class="page" id="page-settings">
@@ -237,6 +241,6 @@
     </main>
   </div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="/static/app.js?v=0.8.9-thumbnail-fallback"></script>
+  <script src="/static/app.js?v=0.8.9-bestof-history"></script>
 </body>
 </html>
