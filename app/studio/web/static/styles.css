@@ -94,3 +94,13 @@
 .quality-report p{margin:0;padding:0 10px 7px;line-height:1.5}
 .quality-report ul{margin:0;padding:0 12px 9px 27px;line-height:1.5;color:#d7bd82}
 .quality-report li+li{margin-top:3px}
+
+
+.highlight-batch-panel{margin-top:15px;padding-top:13px;border-top:1px solid #343941}
+.highlight-batch-panel .form-grid{align-items:end;margin:10px 0 5px}
+.highlight-batch-panel select{width:100%;height:41px;border:1px solid #373c43;border-radius:8px;background:#111315;color:#f0f0ed;padding:0 10px;font:11px var(--sans);outline:none}
+.highlight-batch-panel select:focus{border-color:#8e7935}
+.highlight-batch-control{display:flex;align-items:end}
+.button-secondary{width:100%;background:#2a3036;border:1px solid #434b54;color:#e3e7eb}
+.button-secondary:hover{background:#343b43;border-color:#b39a45;color:#f2d36a}
+.button-secondary:disabled{opacity:.55;cursor:wait}
