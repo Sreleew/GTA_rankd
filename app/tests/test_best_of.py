@@ -116,3 +116,16 @@ def test_best_of_renderer_reencodes_landscape_and_adds_silence_when_needed(tmp_p
     assert "anullsrc=channel_layout=stereo:sample_rate=48000" in command
     assert "concat=n=2:v=1:a=1[outv][outa]" in graph
     assert command[-1] == str(output.resolve())
+
+
+def test_best_of_plan_rejects_non_finite_clip_durations(tmp_path: Path):
+    clip = _clip(tmp_path, "invalid-duration", float("nan"))
+    with pytest.raises(ValueError, match="Durée du Short"):
+        build_best_of_plan([clip], ["invalid-duration"])
+
+
+def test_best_of_filter_graph_rejects_non_finite_durations():
+    from studio.web.best_of import build_best_of_filter_graph
+
+    with pytest.raises(ValueError, match="durées"):
+        build_best_of_filter_graph(1, [0], clip_durations=[float("inf")])
