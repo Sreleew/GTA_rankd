@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from studio.web.transcribe import (
-    detect_audio_peak_timestamp, detect_audio_peak_timestamps,
+    analyze_audio_peaks, detect_audio_peak_timestamp, detect_audio_peak_timestamps,
     parse_whisper_json_words, transcribe_with_whisper_cpp,
 )
 
@@ -40,11 +40,14 @@ def test_audio_accents_detect_separated_peaks_and_ignore_silence(tmp_path: Path)
         audio.setframerate(sample_rate)
         audio.writeframes(struct.pack(f"<{len(samples)}h", *samples))
 
+    strongest, peaks_from_single_pass = analyze_audio_peaks(path)
     peaks = detect_audio_peak_timestamps(path)
     assert len(peaks) == 2
     assert peaks[0] == pytest.approx(1.35, abs=0.35)
     assert peaks[1] == pytest.approx(7.35, abs=0.35)
     assert detect_audio_peak_timestamp(path) in peaks
+    assert strongest in peaks_from_single_pass
+    assert peaks_from_single_pass == peaks
 
 
 def test_audio_accents_ignore_silence(tmp_path: Path):

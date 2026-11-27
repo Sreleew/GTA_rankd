@@ -56,7 +56,7 @@
       </section>
 
       <section class="page" id="page-shorts">
-        <div class="section-intro"><div><div class="eyebrow">SHORTS WORKFLOW / STEP 01</div><h2>Transformer un clip</h2><p>Importe une vidéo ou colle une URL. Durée cible : 1 min à 2 min 45. Le studio sélectionne les passages VOD de 60 à 165 secondes ; les clips Twitch plus courts sont conservés tels quels. Le cadrage intelligent agrandit le gameplay dans une vraie zone centrale, avec le hook au-dessus et les sous-titres en dessous.</p></div><div class="format-pill"><span>▯</span> 9:16 · 1080 × 1920</div></div>
+        <div class="section-intro"><div><div class="eyebrow">SHORTS WORKFLOW / STEP 01</div><h2>Transformer un clip</h2><p>Importe une vidéo ou colle une URL. Durée cible : 1 min à 2 min 45. Le studio sélectionne les passages VOD de 60 à 165 secondes ; les clips Twitch plus courts sont conservés tels quels. Le cadrage intelligent compose le gameplay au centre avec un hook éditorial.</p></div><div class="format-pill"><span>▯</span> 9:16 · 1080 × 1920</div></div>
         <div class="create-layout">
           <section class="panel create-panel">
             <div class="panel-heading"><div><div class="eyebrow">NEW SHORT</div><h3>Source du clip</h3></div><span class="step-number">01</span></div>
@@ -67,18 +67,16 @@
               <label class="rights-check"><input type="checkbox" name="rights_confirmed" required><span>Je confirme disposer des droits ou autorisations nécessaires pour utiliser cette vidéo et son audio.</span></label>
 
               <details class="edit-options" open>
-                <summary>Personnaliser le montage <span>CADRAGE · RYTHME · CAPTIONS</span></summary>
+                <summary>Personnaliser le montage <span>HOOK · CADRAGE · AUDIO</span></summary>
                 <div class="edit-options-grid">
-                  <label>Format vidéo<select name="layout"><option value="smart" selected>Cadrage intelligent 9:16</option><option value="fill">Plein écran recadré 9:16</option><option value="blur">Vidéo entière + fond flouté</option></select><small>Gameplay agrandi au centre, hook en haut et sous-titres en bas. Le fond flouté préserve l’image entière.</small></label>
-                  <label>Focus horizontal <output data-crop-output>80 %</output><input type="range" name="crop_x" min="0" max="100" value="80" data-crop-slider><small>Décale le cadrage pour garder le streamer ou l’action dans l’image.</small></label>
+                  <label>Format vidéo<select name="layout"><option value="smart" selected>Cadrage intelligent 9:16</option><option value="fill">Plein écran recadré 9:16</option><option value="blur">Vidéo entière + fond flouté</option></select><small>Gameplay agrandi au centre, hook en haut. Le fond flouté préserve l’image entière.</small></label>
+                  <label>Focus horizontal <output data-crop-output>80 %</output><input type="range" name="crop_x" min="0" max="100" value="80" data-crop-slider><small>Déplace le cadrage pour centrer l’action principale.</small></label>
                   <label>Position verticale <output data-crop-output>50 %</output><input type="range" name="crop_y" min="0" max="100" value="50" data-crop-slider><small>Ajuste le cadrage vertical du gameplay si nécessaire.</small></label>
                   <label>Puissance du zoom <output data-zoom-output>0 %</output><input type="range" name="zoom_percent" min="0" max="20" value="0" data-zoom-slider><small>Zoom progressif avant et après le pic audio détecté.</small></label>
                 </div>
                 <div class="edit-toggles">
                   <label><input type="checkbox" name="auto_trim_enabled" checked data-option-checkbox> Recadrer automatiquement les sources de plus de 2 min 45</label>
                   <label><input type="checkbox" name="dynamic_zoom" data-option-checkbox> Zoom dynamique</label>
-                  <label><input type="checkbox" name="captions_enabled" checked data-option-checkbox> Sous-titres anglais (mot à mot si DTW disponible)</label>
-                  <label>Voix à sous-titrer <select name="caption_voice_mode"><option value="dominant" selected>Voix principale uniquement (bêta)</option><option value="all">Toutes les voix</option></select><small>Si le moteur ne distingue pas clairement une voix, les sous-titres sont omis pour éviter les dialogues du jeu. Le mode bêta ne garantit pas l’identité du streamer.</small></label>
                   <label><input type="checkbox" name="brand_enabled" checked data-option-checkbox> Signature GTA Ranked + handle</label>
                   <label><input type="checkbox" name="sfx_enabled" checked data-option-checkbox> Whoosh discret au moment fort</label>
                 </div>
@@ -103,18 +101,16 @@
               <label class="rights-check"><input type="checkbox" name="rights_confirmed" required><span>Je confirme disposer des droits ou autorisations nécessaires pour télécharger et utiliser cette source.</span></label>
 
               <details class="edit-options" open>
-                <summary>Personnaliser le montage <span>CADRAGE · RYTHME · CAPTIONS</span></summary>
+                <summary>Personnaliser le montage <span>HOOK · CADRAGE · AUDIO</span></summary>
                 <div class="edit-options-grid">
-                  <label>Format vidéo<select name="layout"><option value="smart" selected>Cadrage intelligent 9:16</option><option value="fill">Plein écran recadré 9:16</option><option value="blur">Vidéo entière + fond flouté</option></select><small>Gameplay agrandi au centre, hook en haut et sous-titres en bas.</small></label>
-                  <label>Focus horizontal <output data-crop-output>80 %</output><input type="range" name="crop_x" min="0" max="100" value="80" data-crop-slider><small>Décale le cadrage pour garder le streamer ou l’action dans l’image.</small></label>
+                  <label>Format vidéo<select name="layout"><option value="smart" selected>Cadrage intelligent 9:16</option><option value="fill">Plein écran recadré 9:16</option><option value="blur">Vidéo entière + fond flouté</option></select><small>Gameplay agrandi au centre avec le hook en haut.</small></label>
+                  <label>Focus horizontal <output data-crop-output>80 %</output><input type="range" name="crop_x" min="0" max="100" value="80" data-crop-slider><small>Déplace le cadrage pour centrer l’action principale.</small></label>
                   <label>Position verticale <output data-crop-output>50 %</output><input type="range" name="crop_y" min="0" max="100" value="50" data-crop-slider><small>Utilisée avec le plein écran recadré.</small></label>
                   <label>Puissance du zoom <output data-zoom-output>0 %</output><input type="range" name="zoom_percent" min="0" max="20" value="0" data-zoom-slider><small>Zoom progressif avant et après le pic audio détecté.</small></label>
                 </div>
                 <div class="edit-toggles">
                   <label><input type="checkbox" name="auto_trim_enabled" checked data-option-checkbox> Recadrer automatiquement les sources de plus de 2 min 45</label>
                   <label><input type="checkbox" name="dynamic_zoom" data-option-checkbox> Zoom dynamique</label>
-                  <label><input type="checkbox" name="captions_enabled" checked data-option-checkbox> Sous-titres anglais (mot à mot si DTW disponible)</label>
-                  <label>Voix à sous-titrer <select name="caption_voice_mode"><option value="dominant" selected>Voix dominante uniquement (bêta)</option><option value="all">Toutes les voix</option></select><small>Si le moteur ne distingue pas clairement une voix, les sous-titres sont omis pour éviter les dialogues du jeu. Le mode bêta ne garantit pas l’identité du streamer.</small></label>
                   <label><input type="checkbox" name="brand_enabled" checked data-option-checkbox> Signature GTA Ranked + handle</label>
                   <label><input type="checkbox" name="sfx_enabled" checked data-option-checkbox> Whoosh discret au moment fort</label>
                 </div>

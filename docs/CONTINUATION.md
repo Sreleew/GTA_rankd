@@ -439,3 +439,24 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **CI post-fusion #62 :** Linux [46048367366](https://github.com/Sreleew/GTA_rankd/actions/runs/46048367366) et Windows [46048367349](https://github.com/Sreleew/GTA_rankd/actions/runs/46048367349) réussies.
 - **Limites :** aucun vrai téléchargement Twitch ni rendu matériel AMD n'a été exécuté. La progression agrégée est validée par tests API et la migration SQLite est couverte, mais le comportement visuel reste à vérifier dans la prochaine version installée.
 - **Suite :** valider le parcours complet avec un vrai clip Twitch sur le PC Windows/AMD, puis poursuivre les améliorations de fiabilité du rendu Short avant de traiter la persistance des tâches Daily Best Of.
+
+
+## 31. Simplification du moteur Short et pause des sous-titres, 27 novembre 2026
+
+- **Décision utilisateur :** mettre tout le chantier sous-titres en pause. Aucun besoin de transcription Whisper, d'identification de voix, de diarisation, de génération SRT ou de contrôle qualité des sous-titres dans le parcours Short actuel.
+- **Décision utilisateur :** supprimer le composant et les paramètres dédiés à la webcam. Le cadrage traite la vidéo source comme une image complète ; aucune extraction, zone ou superposition webcam.
+- **Étape 1 terminée :** parcours Short cartographié de l'import Twitch au rendu et au contrôle qualité. L'import groupé et son suivi persistant sont déjà intégrés dans main.
+- **Étape 2 en cours :** réduire le travail inutile dans le chemin de rendu. L'analyse audio reste conditionnelle : pas d'extraction WAV si le clip est sous le seuil de recadrage automatique et que le zoom dynamique est désactivé. Si elle est nécessaire, les pics et accents sont calculés en une seule lecture ; Whisper et la diarisation sont retirés du workflow. Le recadrage automatique autour du pic reste actif pour les sources qui dépassent le seuil. Le hook, le branding, le whoosh, la miniature, le cadrage et l'encodage restent actifs.
+- **Interface :** retrait des options de sous-titres et de sélection de voix, qui ne doivent plus suggérer une fonctionnalité active.
+- **Optimisations additionnelles :** les pics audio et les accents pour le zoom sont maintenant calculés en une seule lecture du WAV au lieu de deux. La liste des encodeurs FFmpeg est mise en cache pour éviter de relancer `ffmpeg -encoders` à chaque Short d'un lot.
+- **API et compatibilité :** les champs webcam ont été retirés des endpoints de scan et d'import. Les champs de sous-titres ont été retirés des endpoints Short ; les anciennes métadonnées de jobs restent lisibles mais ne déclenchent plus de transcription.
+- **Validation :** vérifier les tests ciblés worker, renderer et interface, puis CI Linux/Windows. Ne pas annoncer de gain chiffré sans mesure sur une source réelle.
+- **À ne pas reprendre dans les prochains lots :** sous-titres, diarisation, webcam, « Moments forts ». Priorité : temps de traitement, robustesse du téléchargement et du rendu Short.
+
+
+## 32. Fiabilisation de l'installation FFmpeg dans la CI Windows, 27 novembre 2026
+
+- **Constat :** la CI Windows échouait sur l'installation Chocolatey de FFmpeg avec une réponse HTTP 504 du dépôt communautaire, avant les tests de l'application.
+- **Correctif :** remplacer cette dépendance à Chocolatey par le téléchargement direct de l'archive Windows statique FFmpeg depuis les releases BtbN, puis ajouter son dossier `bin` au PATH du runner.
+- **Portée :** uniquement l'environnement de validation GitHub Actions ; aucun changement dans l'installation locale utilisateur.
+- **Validation :** la CI Windows doit confirmer l'URL de release, l'extraction et la présence de ffmpeg/ffprobe avant fusion.

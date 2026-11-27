@@ -48,9 +48,8 @@ def safe_upload_name(filename: str) -> str:
 
 def _validate_edit_options(
     layout: str, crop_x: int, crop_y: int, dynamic_zoom: bool, zoom_percent: int,
-    captions_enabled: bool, brand_enabled: bool, hook_text: str, context_text: str,
+    brand_enabled: bool, hook_text: str, context_text: str,
     auto_trim_enabled: bool = True, sfx_enabled: bool = True,
-    caption_voice_mode: str = "dominant",
 ) -> dict:
     if layout not in {"fill", "blur", "smart"}:
         raise HTTPException(status_code=400, detail="Le cadrage doit être 'smart', 'fill' ou 'blur'.")
@@ -58,13 +57,10 @@ def _validate_edit_options(
         raise HTTPException(status_code=400, detail="La position du cadrage doit être comprise entre 0 et 100.")
     if not 0 <= int(zoom_percent) <= 20:
         raise HTTPException(status_code=400, detail="Le zoom doit être compris entre 0 et 20 %.")
-    if caption_voice_mode not in {"all", "dominant"}:
-        raise HTTPException(status_code=400, detail="Le mode de voix doit être 'all' ou 'dominant'.")
     return {
         "layout": layout, "crop_x": int(crop_x), "crop_y": int(crop_y),
         "dynamic_zoom": bool(dynamic_zoom), "zoom_percent": int(zoom_percent),
-        "captions_enabled": bool(captions_enabled), "brand_enabled": bool(brand_enabled),
-        "caption_voice_mode": caption_voice_mode,
+        "brand_enabled": bool(brand_enabled),
         "auto_trim_enabled": bool(auto_trim_enabled), "sfx_enabled": bool(sfx_enabled),
         "hook_text": str(hook_text or "").strip()[:100],
         "context_text": str(context_text or "").strip()[:150],
@@ -289,12 +285,7 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
             raise HTTPException(status_code=400, detail=f"{field_name} doit être un nombre valide.")
         return parsed
 
-    def _validate_webcam_zone(value: str) -> str:
-        allowed = {"none", "top-left", "top-right", "bottom-left", "bottom-right"}
-        zone = str(value or "none").strip().lower()
-        if zone not in allowed:
-            raise HTTPException(status_code=400, detail="Zone webcam invalide.")
-        return zone
+
 
     def _validate_highlight_window(start: float | None, end: float | None) -> tuple[float | None, float | None]:
         if (start is None) != (end is None):
@@ -314,7 +305,6 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         rights_confirmed: Annotated[bool, Form()] = False,
         window_start: Annotated[str | None, Form()] = None,
         window_end: Annotated[str | None, Form()] = None,
-        webcam_zone: Annotated[str, Form()] = "none",
     ) -> dict:
         if not rights_confirmed:
             raise HTTPException(status_code=400, detail="Confirme que tu disposes des droits ou autorisations nécessaires pour analyser cette source.")
@@ -322,13 +312,12 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         start = _parse_optional_seconds(window_start, "Début")
         end = _parse_optional_seconds(window_end, "Fin")
         start, end = _validate_highlight_window(start, end)
-        webcam_zone = _validate_webcam_zone(webcam_zone)
         scan_id = uuid.uuid4().hex
         store.create_highlight_scan({
             "id": scan_id, "source_kind": "url", "source_url": clean_url,
             "streamer": streamer.strip()[:120], "message": "VOD/clip ajouté à la file d'analyse",
             "window_start": start, "window_end": end, "rights_confirmed": True,
-            "metadata": {"note": note.strip()[:1000], "webcam_zone": webcam_zone},
+            "metadata": {"note": note.strip()[:1000]},
         })
         highlight_scanner.submit(scan_id)
         return {"id": scan_id, "status": "queued", "message": "Source Twitch ajoutée à l'analyse des moments forts."}
@@ -342,7 +331,6 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         streamer: Annotated[str, Form()] = "",
         note: Annotated[str, Form()] = "",
         rights_confirmed: Annotated[bool, Form()] = False,
-        webcam_zone: Annotated[str, Form()] = "none",
     ) -> dict:
         """Queue a long Twitch VOD range as independent scans of at most three hours."""
         if not rights_confirmed:
@@ -370,7 +358,6 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
                 status_code=400,
                 detail="La durée de tranche doit être de 30, 45, 60, 90, 120 ou 180 minutes.",
             )
-        webcam_zone = _validate_webcam_zone(webcam_zone)
         chunk_seconds = chunk_size_minutes * 60
         segment_count = math.ceil((end - start) / chunk_seconds)
         max_segments = 48
@@ -398,7 +385,6 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
                 "rights_confirmed": True,
                 "metadata": {
                     "note": note.strip()[:1000],
-                    "webcam_zone": webcam_zone,
                     "batch_id": batch_id,
                     "batch_index": index + 1,
                     "batch_count": segment_count,
@@ -437,7 +423,6 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         rights_confirmed: Annotated[bool, Form()] = False,
         window_start: Annotated[str | None, Form()] = None,
         window_end: Annotated[str | None, Form()] = None,
-        webcam_zone: Annotated[str, Form()] = "none",
     ) -> dict:
         if not rights_confirmed:
             raise HTTPException(status_code=400, detail="Confirme que tu disposes des droits ou autorisations nécessaires pour analyser cette vidéo.")
@@ -470,7 +455,7 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
             "id": scan_id, "source_kind": "upload", "source_path": str(target_path.resolve()),
             "source_title": Path(safe_name).stem, "streamer": streamer.strip()[:120],
             "message": "VOD/clip ajouté à la file d'analyse", "window_start": start, "window_end": end,
-            "rights_confirmed": True, "metadata": {"note": note.strip()[:1000], "file_size": written, "webcam_zone": webcam_zone},
+            "rights_confirmed": True, "metadata": {"note": note.strip()[:1000], "file_size": written},
         })
         highlight_scanner.submit(scan_id)
         return {"id": scan_id, "status": "queued", "message": "Fichier ajouté à l'analyse des moments forts."}
@@ -500,7 +485,6 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         job_id = uuid.uuid4().hex
         options = {
             "layout": "smart", "crop_x": 80, "crop_y": 50, "dynamic_zoom": False, "zoom_percent": 0,
-            "captions_enabled": True, "caption_voice_mode": "dominant",
             "brand_enabled": True, "auto_trim_enabled": False, "sfx_enabled": True,
             "hook_text": "", "context_text": "",
             "source_range": {"start": media_start, "end": media_end},
@@ -611,8 +595,6 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         crop_y: Annotated[int, Form()] = 50,
         dynamic_zoom: Annotated[bool, Form()] = True,
         zoom_percent: Annotated[int, Form()] = 8,
-        captions_enabled: Annotated[bool, Form()] = True,
-        caption_voice_mode: Annotated[str, Form()] = "dominant",
         brand_enabled: Annotated[bool, Form()] = True,
         auto_trim_enabled: Annotated[bool, Form()] = True,
         sfx_enabled: Annotated[bool, Form()] = True,
@@ -621,7 +603,7 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
     ) -> dict:
         if not rights_confirmed:
             raise HTTPException(status_code=400, detail="Confirme que tu disposes des droits ou autorisations nécessaires pour utiliser ce clip.")
-        options = _validate_edit_options(layout, crop_x, crop_y, dynamic_zoom, zoom_percent, captions_enabled, brand_enabled, hook_text, context_text, auto_trim_enabled, sfx_enabled, caption_voice_mode)
+        options = _validate_edit_options(layout, crop_x, crop_y, dynamic_zoom, zoom_percent, brand_enabled, hook_text, context_text, auto_trim_enabled, sfx_enabled)
         safe_name = safe_upload_name(file.filename or "clip.mp4")
         max_mb = int(config.get("web", "max_upload_mb", default=2048))
         max_bytes = max_mb * 1024 * 1024
@@ -669,8 +651,6 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         crop_y: Annotated[int, Form()] = 50,
         dynamic_zoom: Annotated[bool, Form()] = True,
         zoom_percent: Annotated[int, Form()] = 8,
-        captions_enabled: Annotated[bool, Form()] = True,
-        caption_voice_mode: Annotated[str, Form()] = "dominant",
         brand_enabled: Annotated[bool, Form()] = True,
         auto_trim_enabled: Annotated[bool, Form()] = True,
         sfx_enabled: Annotated[bool, Form()] = True,
@@ -681,7 +661,7 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
             raise HTTPException(status_code=400, detail="Confirme que tu disposes des droits ou autorisations nécessaires pour utiliser cette source.")
         clean_url = _validate_twitch_source(url)
         job_id = uuid.uuid4().hex
-        options = _validate_edit_options(layout, crop_x, crop_y, dynamic_zoom, zoom_percent, captions_enabled, brand_enabled, hook_text, context_text, auto_trim_enabled, sfx_enabled, caption_voice_mode)
+        options = _validate_edit_options(layout, crop_x, crop_y, dynamic_zoom, zoom_percent, brand_enabled, hook_text, context_text, auto_trim_enabled, sfx_enabled)
         store.create_job({
             "id": job_id, "source_kind": "url", "source_url": clean_url,
             "streamer": streamer.strip()[:120], "note": note.strip()[:1000],
@@ -703,8 +683,6 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         crop_y: Annotated[int, Form()] = 50,
         dynamic_zoom: Annotated[bool, Form()] = True,
         zoom_percent: Annotated[int, Form()] = 8,
-        captions_enabled: Annotated[bool, Form()] = True,
-        caption_voice_mode: Annotated[str, Form()] = "dominant",
         brand_enabled: Annotated[bool, Form()] = True,
         auto_trim_enabled: Annotated[bool, Form()] = True,
         sfx_enabled: Annotated[bool, Form()] = True,
@@ -720,7 +698,7 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
             raise HTTPException(status_code=400, detail="Colle au moins une URL Twitch.")
         if len(unique_urls) > 10:
             raise HTTPException(status_code=400, detail="Maximum 10 URLs par lot. Divise ta liste en plusieurs lots.")
-        options = _validate_edit_options(layout, crop_x, crop_y, dynamic_zoom, zoom_percent, captions_enabled, brand_enabled, hook_text, context_text, auto_trim_enabled, sfx_enabled, caption_voice_mode)
+        options = _validate_edit_options(layout, crop_x, crop_y, dynamic_zoom, zoom_percent, brand_enabled, hook_text, context_text, auto_trim_enabled, sfx_enabled)
         validated_urls: list[str] = []
         rejected: list[dict[str, str]] = []
         clean_seen: set[str] = set()

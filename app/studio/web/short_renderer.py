@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from functools import lru_cache
 import logging
 import math
 import shutil
@@ -187,6 +188,13 @@ def _filter_path(path: Path | str, project_root: Path | None) -> str:
     return f"'{text}'"
 
 
+@lru_cache(maxsize=8)
+def _available_encoder_listing(ffmpeg_bin: str) -> str:
+    """Cache FFmpeg encoder capabilities for repeated Short renders in one session."""
+    result = run_command([ffmpeg_bin, "-hide_banner", "-encoders"], timeout=30)
+    return result.stdout + result.stderr
+
+
 def build_filter_complex(
     width: int = 1080,
     height: int = 1920,
@@ -205,13 +213,8 @@ def build_filter_complex(
     zoom_timestamps: Sequence[float] | None = None,
     fps: int = 30,
     zoom_percent: int = 0,
-    webcam_zone: str = "none",
 ) -> str:
-    """Build a vertical canvas while preserving the complete source frame.
-
-    The legacy webcam_zone argument is accepted for compatibility with jobs
-    created by v0.5.0, but no webcam crop or extraction is performed.
-    """
+    """Build a vertical canvas while preserving the complete source frame."""
     if width <= 0 or height <= 0:
         raise ValueError("Les dimensions de sortie doivent être positives.")
     if layout not in {"fill", "blur", "smart"}:
@@ -328,7 +331,6 @@ def build_render_command(
     peak_timestamp: float = 0.0,
     zoom_timestamps: Sequence[float] | None = None,
     zoom_percent: int = 0,
-    webcam_zone: str = "none",
     duration: float | None = None,
     trim_start: float = 0.0,
     trim_duration: float | None = None,
@@ -408,7 +410,6 @@ def render_vertical_short(
     width: int = 1080,
     height: int = 1920,
     layout: str = "blur",
-    webcam_zone: str = "none",
     crop_x: int = 50,
     crop_y: int = 50,
     ass_file: Path | None = None,
@@ -439,8 +440,7 @@ def render_vertical_short(
         raise MediaError("Les bornes de coupe dépassent la durée de la vidéo source.")
     fps = 60 if info["fps"] >= 50 else 30
     ffmpeg_bin = resolve_executable(ffmpeg)
-    encoders_result = run_command([ffmpeg_bin, "-hide_banner", "-encoders"], timeout=30)
-    encoder_text = encoders_result.stdout + encoders_result.stderr
+    encoder_text = _available_encoder_listing(ffmpeg_bin)
     encoders = [preferred_encoder, fallback_encoder]
     if preferred_encoder not in encoder_text:
         encoders = [fallback_encoder]

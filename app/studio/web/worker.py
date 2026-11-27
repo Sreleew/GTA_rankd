@@ -1,4 +1,4 @@
-"""File de traitement locale : téléchargement, transcription et montage des Shorts."""
+"""File de traitement locale : téléchargement et montage des Shorts."""
 
 from __future__ import annotations
 
@@ -19,18 +19,16 @@ from studio.config import AppConfig
 from studio.process import ProcessingCancelled, check_cancelled, set_current_cancel_event
 from studio.web.metadata import generate_short_metadata
 from studio.web.short_editor import (
-    apply_thumbnail_overlay, create_ass_file, infer_hook_style, rebase_word_timings,
-    select_thumbnail_timestamp, select_excerpt_range, write_srt_file,
+    apply_thumbnail_overlay, create_ass_file, infer_hook_style,
+    select_thumbnail_timestamp, select_excerpt_range,
 )
 from studio.web.short_renderer import MediaError, create_hook_sound_effect, probe_media, render_vertical_short
 from studio.web.export_quality import analyze_export_quality
 from studio.web.store import Store
 from studio.web.transcribe import (
     TranscriptionError,
-    detect_audio_peak_timestamp,
-    detect_audio_peak_timestamps,
+    analyze_audio_peaks,
     extract_audio_wav,
-    transcribe_with_whisper_cpp,
 )
 
 logger = logging.getLogger(__name__)
@@ -109,6 +107,20 @@ def extract_twitch_source_metadata(info: dict[str, Any]) -> tuple[str, str]:
         info, "channel", "channel_name", "broadcaster_name", "uploader", "uploader_id"
     )
     return title, streamer
+
+
+def _needs_audio_analysis(
+    has_audio: bool,
+    duration: float,
+    *,
+    dynamic_zoom: bool,
+    auto_trim: bool,
+    trim_threshold_seconds: float = 45.0,
+) -> bool:
+    """Avoid extracting a full WAV when neither zoom nor long-source trimming needs it."""
+    return bool(has_audio and (
+        dynamic_zoom or (auto_trim and float(duration) > max(0.0, trim_threshold_seconds))
+    ))
 
 
 def safe_slug(value: str, fallback: str = "gta-clip") -> str:
@@ -242,11 +254,24 @@ class JobRunner:
             else:
                 trim_start, trim_end = 0.0, float(source_info["duration"])
                 peak_timestamp = source_info["duration"] / 2
+                auto_trim_enabled = bool(options.get(
+                    "auto_trim_enabled",
+                    self.config.get("shorts", "auto_trim_enabled", default=True),
+                ))
+            dynamic_zoom_enabled = bool(options.get(
+                "dynamic_zoom", self.config.get("shorts", "dynamic_zoom", default=True)
+            ))
+            audio_analysis_needed = _needs_audio_analysis(
+                source_info["has_audio"],
+                float(source_info["duration"]),
+                dynamic_zoom=dynamic_zoom_enabled,
+                auto_trim=auto_trim_enabled,
+                trim_threshold_seconds=float(self.config.get(
+                    "shorts", "peak_trim_threshold_seconds", default=45
+                )),
+            )
             audio_peak_timestamps: list[float] = []
-            transcript_result: dict[str, Any] = {
-                "status": "disabled", "reason": "Sous-titres désactivés dans les options.", "words": [], "text": ""
-            }
-            if source_info["has_audio"]:
+            if audio_analysis_needed:
                 audio_path = temp_dir / "audio-16k.wav"
                 try:
                     extract_audio_wav(
@@ -255,54 +280,28 @@ class JobRunner:
                         start_seconds=trim_start if source_range else None,
                         duration_seconds=(trim_end - trim_start) if source_range else None,
                     )
-                    local_peak = detect_audio_peak_timestamp(audio_path)
-                    audio_peak_timestamps = detect_audio_peak_timestamps(audio_path)
+                    local_peak, audio_peak_timestamps = analyze_audio_peaks(audio_path)
                     peak_timestamp = (trim_start + local_peak) if source_range and local_peak else (local_peak or peak_timestamp)
                     if source_range:
                         audio_peak_timestamps = [trim_start + item for item in audio_peak_timestamps]
-                    if bool(options.get("captions_enabled", True)):
-                        self.store.update_job(job_id, progress=30, message="Transcription locale si le modèle est installé")
-                        model_path = self.config.path_for("transcription", "model_path")
-                        vad_model_raw = self.config.get("transcription", "vad_model_path", default="")
-                        vad_model_path = self.config.root / str(vad_model_raw) if vad_model_raw else None
-                        try:
-                            transcript_result = transcribe_with_whisper_cpp(
-                                audio_path,
-                                whisper_cli=self.config.path_for("executables", "whisper_cli"),
-                                model_path=model_path,
-                                output_dir=temp_dir,
-                                language=str(self.config.get("transcription", "language", default="en")),
-                                threads=int(self.config.get("transcription", "threads", default=0)),
-                                vad_model_path=vad_model_path,
-                            )
-                            if source_range and transcript_result.get("words"):
-                                transcript_result["words"] = [
-                                    type(word)(word.start + trim_start, word.end + trim_start, word.text)
-                                    for word in transcript_result["words"]
-                                ]
-                        except TranscriptionError as exc:
-                            transcript_result = {"status": "error", "reason": str(exc), "words": [], "text": ""}
-                            logger.warning("Transcription ignorée pour le job %s : %s", job_id, exc)
+
                 except TranscriptionError as exc:
                     logger.warning("Analyse audio ignorée pour le job %s : %s", job_id, exc)
-                    transcript_result = {"status": "error", "reason": str(exc), "words": [], "text": ""}
-            else:
-                transcript_result = {"status": "no_audio", "reason": "La vidéo ne contient pas de piste audio.", "words": [], "text": ""}
 
             if not source_range:
-                auto_trim_enabled = bool(options.get("auto_trim_enabled", self.config.get("shorts", "auto_trim_enabled", default=True)))
                 trim_start, trim_end = 0.0, float(source_info["duration"])
-            all_words = transcript_result.get("words", [])
             if auto_trim_enabled and not source_range:
                 trim_start, trim_end = select_excerpt_range(
-                    float(source_info["duration"]), peak_timestamp, all_words,
+                    float(source_info["duration"]),
+                    peak_timestamp,
+                    [],
                     threshold_seconds=float(self.config.get("shorts", "peak_trim_threshold_seconds", default=45)),
                     lead_seconds=float(self.config.get("shorts", "peak_lead_seconds", default=1.5)),
                     tail_seconds=float(self.config.get("shorts", "payoff_tail_seconds", default=2.0)),
                     minimum_seconds=float(self.config.get("shorts", "auto_trim_min_seconds", default=15)),
                     maximum_seconds=float(self.config.get("shorts", "auto_trim_max_seconds", default=45)),
                 )
-            render_words = rebase_word_timings(all_words, trim_start, trim_end) if all_words else []
+            render_words: list[Any] = []
             render_peak_timestamp = max(0.0, peak_timestamp - trim_start)
             render_zoom_timestamps = [
                 round(item - trim_start, 3)
@@ -312,50 +311,9 @@ class JobRunner:
             if not render_zoom_timestamps:
                 render_zoom_timestamps = [render_peak_timestamp]
             render_thumbnail_timestamp = select_thumbnail_timestamp(
-                render_words, trim_end - trim_start, preferred=render_peak_timestamp
+                [], trim_end - trim_start, preferred=render_peak_timestamp
             )
-            speaker_filter: dict[str, Any] = {"mode": str(options.get("caption_voice_mode", "dominant")), "status": "not_requested"}
-            if render_words and speaker_filter["mode"] == "dominant":
-                original_words = render_words
-                speaker_audio_path = temp_dir / "speaker-audio.wav"
-                try:
-                    self.store.update_job(job_id, progress=43, message="Identification locale des voix du Short")
-                    extract_audio_wav(
-                        source_path,
-                        speaker_audio_path,
-                        ffmpeg=str(self.config.get("executables", "ffmpeg", default="ffmpeg")),
-                        start_seconds=trim_start,
-                        duration_seconds=trim_end - trim_start,
-                    )
-                    from studio.web.speakers import diarize_and_filter
-
-                    render_words, speaker_filter = diarize_and_filter(speaker_audio_path, render_words)
-                    logger.info("Filtrage des sous-titres pour le job %s : %s", job_id, speaker_filter)
-                except ProcessingCancelled:
-                    raise
-                except Exception as exc:
-                    # Do not silently restore every voice: that reintroduces game dialogue.
-                    render_words = []
-                    speaker_filter = {
-                        "mode": "dominant",
-                        "status": "diarization_unavailable",
-                        "reason": str(exc)[:500],
-                        "words_before": len(original_words),
-                        "words_after": 0,
-                    }
-                    logger.warning("Filtrage des voix indisponible pour le job %s : %s", job_id, exc)
-                finally:
-                    speaker_audio_path.unlink(missing_ok=True)
-            elif speaker_filter["mode"] != "dominant":
-                speaker_filter["status"] = "all_voices"
-            render_transcript = " ".join(word.text for word in render_words).strip()
-            if (
-                not render_transcript
-                and speaker_filter["mode"] != "dominant"
-                and trim_start == 0
-                and trim_end >= float(source_info["duration"])
-            ):
-                render_transcript = transcript_result.get("text", "")
+            render_transcript = ""
 
             self.store.update_job(job_id, progress=48, message="Préparation du montage vertical")
             prompt_path = self.config.path_for("paths", "prompts") / "short_metadata.txt"
@@ -375,10 +333,8 @@ class JobRunner:
             )
             check_cancelled()
 
-            if render_words:
-                write_srt_file(output_dir / "captions.srt", render_words)
-            captions_active = bool(options.get("captions_enabled", True)) and transcript_result.get("status") in {"completed", "completed_segment_fallback"}
-            ass_path = temp_dir / "captions.ass"
+            captions_active = False
+            ass_path = temp_dir / "overlay.ass"
             create_ass_file(
                 ass_path,
                 words=render_words,
@@ -393,7 +349,7 @@ class JobRunner:
                 brand_enabled=bool(options.get("brand_enabled", True)),
                 layout=str(options.get("layout", self.config.get("shorts", "layout", default="smart"))),
             )
-            shutil.copy2(ass_path, output_dir / "captions.ass")
+            shutil.copy2(ass_path, output_dir / "overlay.ass")
 
             check_cancelled()
             hook_text = str(metadata.get("hook_text", ""))
@@ -415,13 +371,12 @@ class JobRunner:
                 width=int(self.config.get("encoding", "width_short", default=1080)),
                 height=int(self.config.get("encoding", "height_short", default=1920)),
                 layout=str(options.get("layout", self.config.get("shorts", "layout", default="smart"))),
-                webcam_zone=str(options.get("webcam_zone", "none")),
                 crop_x=int(options.get("crop_x", self.config.get("shorts", "default_crop_x", default=80))),
                 crop_y=int(options.get("crop_y", 50)),
                 ass_file=ass_path,
                 fonts_dir=self.config.path_for("paths", "fonts"),
                 project_root=self.config.root,
-                dynamic_zoom=bool(options.get("dynamic_zoom", True)),
+                dynamic_zoom=dynamic_zoom_enabled,
                 peak_timestamp=render_peak_timestamp,
                 zoom_timestamps=render_zoom_timestamps,
                 thumbnail_timestamp=render_thumbnail_timestamp,
@@ -443,9 +398,9 @@ class JobRunner:
                     expected_width=int(result["output_width"]),
                     expected_height=int(result["output_height"]),
                     expect_audio=bool(result.get("has_audio", source_info["has_audio"])),
-                    ass_file=ass_path if captions_active else None,
-                    caption_words=render_words if captions_active else None,
-                    caption_expected=bool(render_words) and captions_active,
+                    ass_file=None,
+                    caption_words=None,
+                    caption_expected=False,
                 )
             except ProcessingCancelled:
                 raise
@@ -490,11 +445,6 @@ class JobRunner:
                 "trim_start": trim_start,
                 "trim_end": trim_end,
                 "auto_trim_enabled": auto_trim_enabled,
-                "transcription_status": transcript_result.get("status"),
-                "transcription_timestamp_mode": transcript_result.get("timestamp_mode"),
-                "transcription_message": transcript_result.get("reason"),
-                "transcript": render_transcript,
-                "speaker_filter": speaker_filter,
                 "generation_stage": "short_edit_v0.6.0",
                 "options": options,
             })
