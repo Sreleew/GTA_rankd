@@ -3,6 +3,7 @@
 > Lire ce document en premier dans chaque nouvelle conversation sur le projet. Il décrit l'état réellement livré et la structure source actuelle.
 
 - **Dernière mise à jour :** 27 novembre 2026
+- **Progression des releases :** à chaque relance de développement, le compte rendu doit indiquer le lot livré, les PR/CI, l'état d'avancement vers la prochaine version et une estimation actualisée du nombre de lots restants avant sa publication. Cette estimation doit être réévaluée à chaque session, sans promettre une date artificielle.
 - **Dernière version stable confirmée :** [v0.8.9](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.9), publiée le 27 novembre 2026. Correctif de redémarrage et de confirmation de version après mise à jour.
 - **État :** PR #64 (pause des sous-titres et suppression webcam), #65 (réutilisation des probes FFprobe) et #66 (mesure des temps de traitement Short) fusionnées dans `main`. La v0.8.9 reste la dernière Release stable publiée ; les changements récents ne sont pas encore publiés dans une nouvelle release. Les PR #47 à #49 ajoutent les hooks cinétiques, le cadre éditorial du gameplay et le sound design local adapté à l'intention du hook. La PR #50 ajoute plusieurs impulsions de zoom pilotées par les accents audio.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
@@ -174,7 +175,8 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Direction des miniatures :** rendu propre, esthétique, lisible et immédiatement compréhensible, construit autour d'une vraie image du clip. Le visuel doit donner envie de cliquer sans surcharge, faux événement ou texte tronqué.
 - **Évaluer sur des exemples réels.** Quand l'utilisateur envoie un clip ou un Short généré, examiner concrètement le rendu avant de décider des corrections. Distinguer les observations réelles des hypothèses.
 - **Garder les contrôles accessibles après validation.** Ne pas retirer les actions de prévisualisation, téléchargement, miniature et copie du titre/description/hashtags après validation d'un Short.
-- **Communication :** être direct et concis, donner les résultats concrets et signaler clairement ce qui reste non testé. Les réponses doivent rester courtes et les gros travaux être découpés en petits lots pour éviter les expirations de réception de ChatGPT. Une seule prochaine action prioritaire dans le bilan.
+- **Communication :** être direct et concis, donner les résultats concrets et signaler clairement ce qui reste non testé.
+- **Suivi de progression demandé le 27 novembre 2026 :** terminer chaque relance par un indicateur lisible de progression vers la prochaine Release (lots terminés/restants, contenu restant et estimation de la prochaine mise à jour). Ne pas laisser l'utilisateur deviner où en est le chantier. Les réponses doivent rester courtes et les gros travaux être découpés en petits lots pour éviter les expirations de réception de ChatGPT. Une seule prochaine action prioritaire dans le bilan.
 
 ## 10. Journal de travail récent
 
@@ -482,3 +484,9 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Impact :** mesures uniquement, aucun changement au rendu ou à la qualité. Le coût est limité à quelques appels à `perf_counter`.
 - **Livraison :** PR #66 fusionnée après succès CI Linux et Windows, y compris la suite de régression Windows et la génération du package de mise à jour.
 - **Suite :** après un vrai rendu sur la machine utilisateur, exploiter ces durées pour prioriser le goulot dominant. Ne pas publier de chiffres de performance avant cette mesure réelle.
+
+
+## Journal de développement récent
+
+- **27 novembre 2026, lot de visibilité des performances Short :** ajout en cours d'un panneau repliable « Temps de traitement » sur les cartes de Shorts prêts/validés. Il expose les mesures déjà présentes dans `metadata.processing_timings_ms` sans relancer de traitement ni modifier le rendu. Affiche les étapes de préparation, d'encodage et de contrôle qualité, le temps total et l'indication lorsque l'analyse audio a été sautée. Branche `feat/short-processing-timings-ui`, PR #67 ouverte. Les clés de cache CSS/JS ont été incrémentées pour forcer le chargement de l'interface mise à jour ; le test HTML associé vérifie ces clés. CI Linux réussie sur le premier commit, CI Windows en cours ; les workflows repartent après l'ajout des clés de cache.
+- **Méthode de compte rendu :** à chaque relance, annoncer le nombre de lots estimés avant la prochaine Release v0.9.0 et réviser cette estimation selon les résultats réels. La prochaine release doit regrouper plusieurs améliorations cohérentes, pas un patch isolé.
