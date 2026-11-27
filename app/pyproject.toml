@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gta-ranked-studio"
-version = "0.8.8"
+version = "0.8.9"
 description = "Outil local d'automatisation vidéo pour une chaîne GTA VI"
 readme = "README.md"
 requires-python = ">=3.11"
