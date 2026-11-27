@@ -345,9 +345,29 @@ def score_highlight_candidates(
             })
 
     ranked.sort(key=lambda item: item["score"], reverse=True)
+    return select_distinct_highlight_candidates(ranked, max_candidates=max_candidates)
+
+
+def select_distinct_highlight_candidates(
+    ranked_candidates: list[dict[str, Any]],
+    *,
+    max_candidates: int | None = None,
+    minimum_gap: float = 6.0,
+) -> list[dict[str, Any]]:
+    """Select a globally ranked, non-overlapping and transcript-diverse shortlist.
+
+    Shared by individual scans and multi-segment VOD batches. Candidate
+    timestamps must be expressed on the same source timeline.
+    """
+    if max_candidates is not None and max_candidates <= 0:
+        return []
+    ranked = sorted(
+        ranked_candidates,
+        key=lambda item: float(item.get("score", 0.0)),
+        reverse=True,
+    )
     selected: list[dict[str, Any]] = []
     selected_transcripts: list[set[str]] = []
-    minimum_gap = 6.0
     minimum_transcript_tokens = 8
     transcript_similarity_threshold = 0.82
     for candidate in ranked:
@@ -361,22 +381,17 @@ def score_highlight_candidates(
         if overlaps:
             continue
 
-        # Long VODs can contain repeated catchphrases or near-identical
-        # reactions far apart in time. Avoid filling the shortlist with the
-        # same spoken moment, while leaving short/audio-only transcripts alone.
         tokens = {
             token for token in re.findall(r"[a-z0-9']+", str(candidate.get("transcript", "")).lower())
             if token not in REACTION_CUES
         }
         if len(tokens) >= minimum_transcript_tokens:
-            duplicate = False
-            for previous_tokens in selected_transcripts:
-                if len(previous_tokens) < minimum_transcript_tokens:
-                    continue
-                similarity = len(tokens & previous_tokens) / len(tokens | previous_tokens)
-                if similarity >= transcript_similarity_threshold:
-                    duplicate = True
-                    break
+            duplicate = any(
+                len(tokens & previous_tokens) / len(tokens | previous_tokens)
+                >= transcript_similarity_threshold
+                for previous_tokens in selected_transcripts
+                if len(previous_tokens) >= minimum_transcript_tokens
+            )
             if duplicate:
                 continue
         else:
@@ -390,6 +405,8 @@ def score_highlight_candidates(
     for index, candidate in enumerate(selected, start=1):
         candidate["rank"] = index
     return selected
+
+
 
 def write_wav_chunk(
     source: wave.Wave_read,
