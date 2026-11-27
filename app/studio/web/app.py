@@ -107,12 +107,19 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         message = str(job.get("message") or "")
         if job.get("status") == "completed" and not file_available:
             message = "Le rendu est terminé, mais le fichier exporté est introuvable sur ce PC."
+        plan = job.get("plan") or {}
+        clip_ids = [
+            str(clip.get("id"))
+            for clip in plan.get("clips", [])
+            if isinstance(clip, dict) and clip.get("id")
+        ]
         return {
             "id": job["id"],
             "status": job["status"],
             "progress": int(job.get("progress") or 0),
             "message": message,
             "date_key": job.get("date_key") or "",
+            "clip_ids": clip_ids,
             "clip_count": int(job.get("clip_count") or 0),
             "total_duration": float(job.get("total_duration") or 0),
             "created_at": job.get("created_at"),
