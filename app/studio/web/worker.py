@@ -109,6 +109,20 @@ def extract_twitch_source_metadata(info: dict[str, Any]) -> tuple[str, str]:
     return title, streamer
 
 
+def _needs_audio_analysis(
+    has_audio: bool,
+    duration: float,
+    *,
+    dynamic_zoom: bool,
+    auto_trim: bool,
+    trim_threshold_seconds: float = 45.0,
+) -> bool:
+    """Avoid extracting a full WAV when neither zoom nor long-source trimming needs it."""
+    return bool(has_audio and (
+        dynamic_zoom or (auto_trim and float(duration) > max(0.0, trim_threshold_seconds))
+    ))
+
+
 def safe_slug(value: str, fallback: str = "gta-clip") -> str:
     cleaned = re.sub(r"[^a-zA-Z0-9_-]+", "-", value.strip().lower()).strip("-_")
     return cleaned[:70] or fallback
@@ -240,8 +254,24 @@ class JobRunner:
             else:
                 trim_start, trim_end = 0.0, float(source_info["duration"])
                 peak_timestamp = source_info["duration"] / 2
+                auto_trim_enabled = bool(options.get(
+                    "auto_trim_enabled",
+                    self.config.get("shorts", "auto_trim_enabled", default=True),
+                ))
+            dynamic_zoom_enabled = bool(options.get(
+                "dynamic_zoom", self.config.get("shorts", "dynamic_zoom", default=True)
+            ))
+            audio_analysis_needed = _needs_audio_analysis(
+                source_info["has_audio"],
+                float(source_info["duration"]),
+                dynamic_zoom=dynamic_zoom_enabled,
+                auto_trim=auto_trim_enabled,
+                trim_threshold_seconds=float(self.config.get(
+                    "shorts", "peak_trim_threshold_seconds", default=45
+                )),
+            )
             audio_peak_timestamps: list[float] = []
-            if source_info["has_audio"]:
+            if audio_analysis_needed:
                 audio_path = temp_dir / "audio-16k.wav"
                 try:
                     extract_audio_wav(
@@ -259,7 +289,6 @@ class JobRunner:
                     logger.warning("Analyse audio ignorée pour le job %s : %s", job_id, exc)
 
             if not source_range:
-                auto_trim_enabled = bool(options.get("auto_trim_enabled", self.config.get("shorts", "auto_trim_enabled", default=True)))
                 trim_start, trim_end = 0.0, float(source_info["duration"])
             render_words: list[Any] = []
             render_peak_timestamp = max(0.0, peak_timestamp - trim_start)
@@ -336,7 +365,7 @@ class JobRunner:
                 ass_file=ass_path,
                 fonts_dir=self.config.path_for("paths", "fonts"),
                 project_root=self.config.root,
-                dynamic_zoom=bool(options.get("dynamic_zoom", True)),
+                dynamic_zoom=dynamic_zoom_enabled,
                 peak_timestamp=render_peak_timestamp,
                 zoom_timestamps=render_zoom_timestamps,
                 thumbnail_timestamp=render_thumbnail_timestamp,
