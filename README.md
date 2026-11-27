@@ -2,7 +2,7 @@
 
 Application Windows locale pour transformer des clips et VOD GTA en Shorts verticaux prêts à relire et publier.
 
-**Dernière version stable : v0.8.8.** [Consulter la Release stable v0.8.8](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.8).
+**Dernière version stable : v0.8.9.** [Consulter la Release stable v0.8.9](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.9).
 
 ## Fonctionnalités
 
@@ -21,7 +21,7 @@ Application Windows locale pour transformer des clips et VOD GTA en Shorts verti
 - Métadonnées locales avec Ollama/Qwen facultatif et fallback sans IA.
 - Contrôle qualité post-export et revue humaine.
 - Relance des jobs Twitch échoués directement depuis l'URL d'origine, avec conservation des réglages et réutilisation du média déjà téléchargé.
-- Constructeur de sélection Daily Best Of : clips validés par date, ordre manuel et contrôle de la durée cible 9 à 11 minutes. Le rendu vidéo final 16:9 reste à venir..
+- Constructeur de sélection Daily Best Of : clips validés par date, ordre manuel et contrôle de la durée cible 9 à 11 minutes. Le rendu vidéo final 16:9 reste à venir.
 
 Le pipeline reste local-first. Les médias, modèles, bases de données, réglages et exports ne sont pas envoyés vers un service cloud.
 
@@ -36,7 +36,7 @@ L'ancien flux d'URL par fichier texte a été retiré. Le Daily Best Of dispose 
 
 ## Installation et mise à jour
 
-Pour une première installation, extraire l'archive puis lancer `app/INSTALL.bat`. Pour une installation existante en v0.8.6, utiliser **Paramètres > Mises à jour** pour passer à la v0.8.7.
+Pour une première installation, extraire l'archive puis lancer `app/INSTALL.bat`. Pour une installation existante, utiliser **Paramètres > Mises à jour** pour installer la dernière version stable.
 
 La mise à jour préserve les données locales. Ne jamais remplacer manuellement `config.yaml`.
 
@@ -65,8 +65,8 @@ finally {
     Set-Location ..
 }
 
-py -3.11 app/installer/build_release_package.py --version 0.8.7 --output-dir app/dist
-py -3.11 tools/verify_release_package.py --package app/dist/GTA-Ranked-Studio-v0.8.7.zip --checksum app/dist/SHA256SUMS.txt --version 0.8.7
+py -3.11 app/installer/build_release_package.py --version 0.8.9 --output-dir app/dist
+py -3.11 tools/verify_release_package.py --package app/dist/GTA-Ranked-Studio-v0.8.9.zip --checksum app/dist/SHA256SUMS.txt --version 0.8.9
 ```
 
 Les dépendances utilisateur sont limitées au runtime. Pytest, HTTPX2, Ruff et pip-audit restent dans les environnements de développement et CI.
