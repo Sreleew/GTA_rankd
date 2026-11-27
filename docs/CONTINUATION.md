@@ -645,3 +645,15 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Version :** aucun numéro de version ni fichier d'approbation de release modifié. La Release publique reste v0.9.0 ; cette évolution est destinée à une prochaine release.
 - **Validation :** CI Linux/Windows de la PR à vérifier avant fusion. Aucun rendu Whisper réel ni mesure sur la RX 9060 XT n'est revendiqué.
 - **Suite :** valider les deux plateformes, puis tester sur un clip français et un clip anglais en mode auto et en langue forcée ; comparer la qualité des mots, la synchronisation et le temps de transcription.
+
+
+## 46. Direction artistique par défaut des miniatures, 27 novembre 2026
+
+- **Demande utilisateur :** appliquer aux futures miniatures la composition validée sur l'exemple CaseOh, avec une esthétique plus directement GTA, une typographie nette et peu d'éléments de marque.
+- **Implémentation :** refonte du compositeur Pillow dans `app/studio/web/short_editor.py`. Le rendu garde une vraie image du clip, un fond assombri, un papier noir aux bords irréguliers, un seul aplat jaune sous le hook, une police condensée système, le nom du streamer et la signature `GTA_Rankd`. Aucun texte ni visuel n'est confié à un générateur d'images.
+- **Test ajouté :** contrôle du format vertical 1080 × 1920 et de la présence de la palette jaune/noir sur le bandeau du hook.
+- **Branche :** `feat/gta-thumbnail-default-art-direction`.
+- **Limites :** le rendu automatique conserve la frame vidéo réelle et n'extrait pas une webcam séparée ; sa position dépend donc de la composition de la source.
+- **CI PR #81 :** audit Linux [46076837564](https://github.com/Sreleew/GTA_rankd/actions/runs/46076837564) et validation Windows [46076837526](https://github.com/Sreleew/GTA_rankd/actions/runs/46076837526) réussis après correction du chevauchement du bandeau avec la frame de gameplay.
+- **Version :** v0.9.0 reste la release stable. La procédure de release exige une demande explicite pour préparer la suivante ; aucune nouvelle release n'est déclenchée par cette PR.
+- **Suite :** fusionner la PR #81 après les contrôles CI réussis.

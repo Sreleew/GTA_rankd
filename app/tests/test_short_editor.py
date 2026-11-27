@@ -137,6 +137,20 @@ def test_thumbnail_overlay_adds_editorial_text(tmp_path: Path) -> None:
         assert thumbnail.stat().st_size > 10_000
 
 
+def test_thumbnail_overlay_uses_the_gta_paper_collage_palette(tmp_path: Path) -> None:
+    from PIL import Image
+
+    thumbnail = tmp_path / "gta-thumbnail.jpg"
+    Image.new("RGB", (640, 360), (42, 61, 75)).save(thumbnail, quality=92)
+
+    apply_thumbnail_overlay(thumbnail, "DID HE REALLY SAY THAT?", streamer="CASEOH")
+
+    with Image.open(thumbnail) as result:
+        assert result.size == (1080, 1920)
+        red, green, blue = result.convert("RGB").getpixel((100, 1320))
+        assert red > 180 and green > 120 and blue < 65
+
+
 def test_thumbnail_timestamp_prefers_descriptive_transcript_moment() -> None:
     from studio.web.short_editor import select_thumbnail_timestamp
 

@@ -383,12 +383,11 @@ def apply_thumbnail_overlay(
     streamer: str = "",
     game_label: str = "GTA",
 ) -> Path:
-    """Create a clean, high-contrast 9:16 cover built around the actual clip frame."""
+    """Create a GTA-inspired, real-frame thumbnail with a restrained paper-collage style."""
     if not image_path.is_file():
         raise FileNotFoundError(f"Miniature introuvable : {image_path}")
 
     creator = re.sub(r"\s+", " ", str(streamer or "")).strip()[:30]
-    game = re.sub(r"[^A-Za-z0-9 ]", "", str(game_label or "GTA")).upper()[:18] or "GTA"
     label = _thumbnail_headline(text, creator, max_words=max_words)
 
     with Image.open(image_path) as source:
@@ -396,21 +395,15 @@ def apply_thumbnail_overlay(
 
     width, height = 1080, 1920
     resampling = getattr(Image, "Resampling", Image).LANCZOS
-    background = ImageOps.fit(source_image, (width, height), method=resampling, centering=(0.5, 0.48))
-    background = background.filter(ImageFilter.GaussianBlur(radius=42))
-    background = ImageEnhance.Color(background).enhance(1.12)
-    background = ImageEnhance.Brightness(background).enhance(0.24)
-    canvas = background.convert("RGBA")
 
-    # A subtle vertical veil keeps the blurred image atmospheric without competing
-    # with the actual gameplay frame or the headline.
-    shade = Image.new("RGBA", (width, height), (0, 0, 0, 0))
-    shade_draw = ImageDraw.Draw(shade, "RGBA")
-    for y in range(height):
-        progress = y / max(1, height - 1)
-        alpha = int(72 + 92 * abs(progress - 0.48))
-        shade_draw.line((0, y, width, y), fill=(3, 5, 8, alpha))
-    canvas = Image.alpha_composite(canvas, shade)
+    # Keep the real clip frame as the main visual and use a soft, darkened copy
+    # to fill the portrait canvas around it.
+    background = ImageOps.fit(
+        source_image, (width, height), method=resampling, centering=(0.5, 0.45),
+    ).filter(ImageFilter.GaussianBlur(radius=48))
+    background = ImageEnhance.Color(background).enhance(0.72)
+    background = ImageEnhance.Brightness(background).enhance(0.34)
+    canvas = background.convert("RGBA")
 
     font_candidates: list[Path] = []
     if font_path:
@@ -418,7 +411,7 @@ def apply_thumbnail_overlay(
     font_candidates.extend([
         Path("C:/Windows/Fonts/Anton-Regular.ttf"),
         Path("C:/Windows/Fonts/impact.ttf"),
-        Path("C:/Windows/Fonts/arialbd.ttf"),
+        Path("C:/Windows/Fonts/arialbi.ttf"),
         Path("/usr/share/fonts/truetype/dejavu/DejaVuSansCondensed-Bold.ttf"),
         Path("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"),
     ])
@@ -432,138 +425,116 @@ def apply_thumbnail_overlay(
                     continue
         return ImageFont.load_default()
 
-    accent = (255, 197, 42, 255)
-    white = (250, 249, 244, 255)
-    muted = (205, 210, 216, 230)
-    margin = 52
+    accent = (245, 196, 0, 255)
+    paper = (11, 12, 14, 248)
+    white = (249, 246, 235, 255)
+
+    # Use a genuine frame as a large photograph, with the headline strip
+    # overlapping its lower edge like a manually assembled GTA fan edit.
+    photo_height = 900
+    photo = ImageOps.fit(
+        source_image, (width, photo_height), method=resampling, centering=(0.5, 0.42),
+    )
+    photo = ImageEnhance.Contrast(photo).enhance(1.06)
+    canvas.alpha_composite(photo.convert("RGBA"), (0, 165))
+
     overlay = Image.new("RGBA", (width, height), (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay, "RGBA")
 
-    # Vice City Dispatch identity: hazard yellow, cool cyan signal accents and compact broadcast typography.
-    cyan = (67, 224, 218, 255)
-    draw.rounded_rectangle((margin, 78, margin + 66, 144), radius=17, fill=accent)
-    mark_font = load_font(34)
-    mark = "GR"
-    mark_box = draw.textbbox((0, 0), mark, font=mark_font)
-    draw.text((margin + (66 - (mark_box[2] - mark_box[0])) / 2, 88 - mark_box[1]),
-              mark, font=mark_font, fill=(8, 10, 13, 255))
-    brand_font = load_font(31)
-    draw.text((margin + 82, 83), "GTA RANKED", font=brand_font, fill=white)
-    micro_font = load_font(17)
-    draw.text((margin + 84, 119), "VICE CITY DISPATCH  /  CLIP FEED", font=micro_font, fill=cyan)
-    game_font = load_font(22)
-    game_text = game.upper()
-    game_box = draw.textbbox((0, 0), game_text, font=game_font)
-    game_width = game_box[2] - game_box[0] + 38
-    draw.rounded_rectangle((width - margin - game_width, 88, width - margin, 140),
-                           radius=13, fill=(5, 9, 14, 220), outline=cyan, width=2)
-    draw.text((width - margin - game_width + 19, 99 - game_box[1]), game_text,
-              font=game_font, fill=white)
+    # Restrained streamer label and channel signature; no extra badges or slogans.
+    if creator:
+        draw.text((58, 66), creator.upper(), font=load_font(38), fill=white,
+                  stroke_width=3, stroke_fill=(0, 0, 0, 190))
 
-    # Larger source frame: keep the full source image readable at phone size.
-    panel_x, panel_y, panel_w, panel_h = 30, 300, 1020, 720
-    shadow = Image.new("RGBA", (width, height), (0, 0, 0, 0))
-    shadow_draw = ImageDraw.Draw(shadow, "RGBA")
-    shadow_draw.rounded_rectangle((panel_x - 10, panel_y + 14, panel_x + panel_w + 10, panel_y + panel_h + 14),
-                                  radius=32, fill=(0, 0, 0, 190))
-    canvas = Image.alpha_composite(canvas, shadow)
+    paper_top, paper_bottom = 1005, 1575
+    draw.polygon(
+        [(-30, paper_top + 18), (105, paper_top + 5), (270, paper_top + 17),
+         (440, paper_top - 1), (620, paper_top + 14), (805, paper_top + 2),
+         (970, paper_top + 16), (1110, paper_top + 4), (1110, paper_bottom - 8),
+         (950, paper_bottom + 8), (780, paper_bottom - 4), (590, paper_bottom + 12),
+         (410, paper_bottom - 3), (225, paper_bottom + 9), (70, paper_bottom - 5),
+         (-30, paper_bottom + 12)], fill=paper,
+    )
+    torn = (249, 246, 235, 225)
+    draw.line([(-10, paper_top + 14), (170, paper_top + 8), (345, paper_top + 12),
+               (520, paper_top + 2), (710, paper_top + 11), (900, paper_top + 6),
+               (1090, paper_top + 12)], fill=torn, width=5)
+    draw.line([(-10, paper_bottom + 7), (175, paper_bottom + 2),
+               (350, paper_bottom + 8), (530, paper_bottom + 1),
+               (710, paper_bottom + 9), (890, paper_bottom + 3),
+               (1090, paper_bottom + 6)], fill=torn, width=5)
 
-    gameplay = ImageOps.contain(source_image, (panel_w - 20, panel_h - 20), method=resampling)
-    panel = Image.new("RGB", (panel_w, panel_h), (8, 10, 13))
-    panel.paste(gameplay, ((panel_w - gameplay.width) // 2, (panel_h - gameplay.height) // 2))
-    mask = Image.new("L", (panel_w, panel_h), 0)
-    ImageDraw.Draw(mask).rounded_rectangle((0, 0, panel_w - 1, panel_h - 1), radius=27, fill=255)
-    canvas.paste(panel, (panel_x, panel_y), mask)
-    draw = ImageDraw.Draw(overlay, "RGBA")
-    draw.rounded_rectangle((panel_x, panel_y, panel_x + panel_w, panel_y + panel_h),
-                           radius=27, outline=accent, width=5)
-    draw.rounded_rectangle((panel_x + 22, panel_y + 20, panel_x + 205, panel_y + 68),
-                           radius=13, fill=(5, 9, 14, 225), outline=cyan, width=1)
-    tag_font = load_font(20)
-    draw.text((panel_x + 39, panel_y + 32), "LIVE FEED  /  01", font=tag_font, fill=white)
-    # Small signal marks make the frame feel like an in-world broadcast, not a generic card.
-    draw.line((panel_x + 20, panel_y + panel_h - 20, panel_x + 125, panel_y + panel_h - 20), fill=cyan, width=4)
-    draw.line((panel_x + panel_w - 125, panel_y + 20, panel_x + panel_w - 20, panel_y + 20), fill=cyan, width=4)
-
-    # Editorial headline: short, complete and readable at phone size.
-    title_top = 1105
-    kicker_font = load_font(23)
-    draw.rounded_rectangle((margin, title_top - 34, margin + 8, title_top - 5), radius=4, fill=cyan)
-    draw.text((margin + 24, title_top - 38), "TWITCH CLIP / GTA RANKED", font=kicker_font, fill=cyan)
-
-    def wrap_headline(candidate_font) -> list[str]:
-        lines: list[str] = []
-        current = ""
-        for token in label.split():
-            trial = f"{current} {token}".strip()
-            box = draw.textbbox((0, 0), trial, font=candidate_font, stroke_width=1)
-            if current and box[2] - box[0] > width - 2 * margin:
-                lines.append(current)
-                current = token
-            else:
-                current = trial
-        if current:
-            lines.append(current)
-        return lines
-
-    font_size = 112
-    headline_font = load_font(font_size)
-    lines = wrap_headline(headline_font)
-    while len(lines) > 2 and font_size > 68:
-        font_size -= 4
-        headline_font = load_font(font_size)
-        lines = wrap_headline(headline_font)
-    if len(lines) > 2:
-        label = "GTA MOMENT"
-        headline_font = load_font(112)
+    words = label.split()
+    if len(words) > 1:
+        split_at = (len(words) + 1) // 2
+        lines = [" ".join(words[:split_at]), " ".join(words[split_at:])]
+    else:
         lines = [label]
 
-    y = title_top + 20
-    for index, line in enumerate(lines):
-        box = draw.textbbox((0, 0), line, font=headline_font, stroke_width=1)
-        line_height = box[3] - box[1]
-        x = (width - (box[2] - box[0])) // 2 - box[0]
-        fill = accent if index == 0 else white
-        draw.text((x + 3, y + 7 - box[1]), line, font=headline_font,
-                  fill=(0, 0, 0, 220), stroke_width=5, stroke_fill=(0, 0, 0, 220))
-        draw.text((x, y - box[1]), line, font=headline_font,
-                  fill=fill, stroke_width=1, stroke_fill=(8, 10, 13, 255))
-        y += line_height + 8
+    font_size = 142
+    headline_font = load_font(font_size)
+    while font_size > 70:
+        headline_font = load_font(font_size)
+        widths = [
+            draw.textbbox((0, 0), line, font=headline_font, stroke_width=1)[2]
+            for line in lines
+        ]
+        if max(widths, default=0) <= width - 128:
+            break
+        font_size -= 4
 
-    # Small creator credit, never a second headline.
-    credit_y = max(y + 26, 1510)
-    if creator:
-        credit_font = load_font(27)
-        creator_text = creator.upper()
-        creator_box = draw.textbbox((0, 0), creator_text, font=credit_font)
-        creator_width = creator_box[2] - creator_box[0] + 46
-        draw.rounded_rectangle((margin, credit_y, margin + creator_width, credit_y + 58),
-                               radius=16, fill=(8, 10, 13, 210), outline=(255, 255, 255, 70), width=2)
-        draw.text((margin + 23, credit_y + 13 - creator_box[1]), creator_text,
-                  font=credit_font, fill=white)
+    first_y = 1070
+    line_height = font_size + 12
+    if len(lines) == 2:
+        second_y = first_y + line_height + 24
+        draw.polygon(
+            [(45, second_y + 1), (230, second_y - 8), (420, second_y + 2),
+             (610, second_y - 5), (805, second_y + 2), (1034, second_y - 7),
+             (1024, second_y + line_height + 16), (815, second_y + line_height + 7),
+             (610, second_y + line_height + 17), (410, second_y + line_height + 8),
+             (220, second_y + line_height + 15), (54, second_y + line_height + 6)],
+            fill=accent,
+        )
+        for index, line in enumerate(lines):
+            bounds = draw.textbbox((0, 0), line, font=headline_font, stroke_width=1)
+            line_width = bounds[2] - bounds[0]
+            x = (width - line_width) // 2 - bounds[0]
+            y = first_y if index == 0 else second_y
+            fill = white if index == 0 else (9, 10, 12, 255)
+            draw.text((x + 2, y + 5 - bounds[1]), line, font=headline_font,
+                      fill=(0, 0, 0, 170), stroke_width=5, stroke_fill=(0, 0, 0, 170))
+            draw.text((x, y - bounds[1]), line, font=headline_font, fill=fill)
+    else:
+        bounds = draw.textbbox((0, 0), lines[0], font=headline_font, stroke_width=1)
+        line_width = bounds[2] - bounds[0]
+        x = (width - line_width) // 2 - bounds[0]
+        draw.polygon(
+            [(58, first_y - 5), (255, first_y - 13), (470, first_y - 4),
+             (700, first_y - 11), (1022, first_y - 2),
+             (1016, first_y + line_height + 12), (775, first_y + line_height + 5),
+             (550, first_y + line_height + 14), (330, first_y + line_height + 6),
+             (66, first_y + line_height + 12)], fill=accent,
+        )
+        draw.text((x + 2, first_y + 5 - bounds[1]), lines[0], font=headline_font,
+                  fill=(0, 0, 0, 170), stroke_width=5, stroke_fill=(0, 0, 0, 170))
+        draw.text((x, first_y - bounds[1]), lines[0], font=headline_font, fill=(9, 10, 12, 255))
 
-    footer_y = 1770
-    draw.line((margin, footer_y, width - margin, footer_y), fill=(255, 255, 255, 72), width=2)
-    footer_font = load_font(21)
-    draw.text((margin, footer_y + 25), "@GTARANKEDSTUDIO", font=footer_font, fill=muted)
-    footer_right = "GTA CLIPS"
-    right_box = draw.textbbox((0, 0), footer_right, font=footer_font)
-    draw.text((width - margin - (right_box[2] - right_box[0]), footer_y + 25),
-              footer_right, font=footer_font, fill=accent)
+    channel_text = "GTA_Rankd"
+    channel_font = load_font(30)
+    channel_box = draw.textbbox((0, 0), channel_text, font=channel_font)
+    channel_width = channel_box[2] - channel_box[0]
+    draw.text((width - 58 - channel_width, 1792 - channel_box[1]), channel_text,
+              font=channel_font, fill=white, stroke_width=2, stroke_fill=(0, 0, 0, 180))
 
     final_image = Image.alpha_composite(canvas, overlay).convert("RGB")
-    # Write the finished cover beside the source and replace it only after a
-    # successful encode. A Pillow or disk error must not destroy the fallback
-    # frame that the renderer already extracted.
     temporary_path = image_path.with_name(f"{image_path.stem}.overlay.tmp.jpg")
     try:
-        final_image.save(temporary_path, format="JPEG", quality=94, optimize=True, progressive=True, subsampling=0)
+        final_image.save(temporary_path, format="JPEG", quality=95, optimize=True, progressive=True, subsampling=0)
         temporary_path.replace(image_path)
     except Exception:
         temporary_path.unlink(missing_ok=True)
         raise
     return image_path
-
 def select_excerpt_range(
     duration: float,
     peak_timestamp: float,
