@@ -1,0 +1,16 @@
+GTA Ranked Studio v0.8.9
+
+Mise à jour de l'application :
+- Correction du faux message « Failed to fetch » pendant le redémarrage du serveur local lors d'une mise à jour.
+- Le tableau de bord ignore les erreurs réseau transitoires attendues pendant l'installation.
+- Le suivi de mise à jour continue pendant la coupure et attend le retour du serveur.
+- Après redémarrage, l'application vérifie que la version cible est installée, affiche le résultat puis recharge l'interface.
+- En cas de délai dépassé ou de version inattendue, un message explicite invite à relancer l'application et à vérifier la version.
+
+Validation :
+- PR #45 : correctif et test de régression dédiés.
+- CI Linux : run 46015871458 réussie.
+- CI Windows : run 46015871444 réussie.
+- Le test réel de mise à jour sur le PC utilisateur reste à confirmer après installation de cette version.
+
+Les réglages, bases de données, projets, médias, modèles et exports locaux sont préservés.
