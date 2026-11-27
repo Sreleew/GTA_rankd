@@ -300,3 +300,11 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Fichiers modifiés :** `app/studio/web/short_renderer.py` et `app/tests/test_render_integration.py`. Le cadre est généré directement par FFmpeg et ne nécessite aucun asset externe.
 - **Limite assumée :** cette évolution ne prétend pas isoler une webcam. Les clips Twitch déjà composés sont rendus tels quels ; la séparation réelle d'une webcam n'est possible que si une source webcam distincte est disponible.
 - **Suite :** valider le nouveau cadre sur les runners Linux/Windows, puis s'attaquer à une composition verticale plus ambitieuse et à la gestion de la webcam selon les médias réellement disponibles.
+
+
+## 18. Détection des hooks francophones, 27 novembre 2026
+
+- **Amélioration ajoutée à la PR #48 :** la classification des hooks reconnaît maintenant les formulations françaises (question, suspense, réaction) en plus de l'anglais. Les accents sont normalisés avant l'analyse afin que les caractères accentués soient correctement traités.
+- **Exemples couverts :** « POURQUOI IL A FAIT ÇA ? » -> question ; « ATTENDS DE VOIR LA SUITE » -> suspense ; « C'EST INCROYABLE ! » -> réaction.
+- **Effet utilisateur :** les hooks français reçoivent eux aussi une animation cohérente avec leur intention, au lieu de tomber systématiquement sur l'animation impact par défaut.
+- **Suite :** finaliser le cadre éditorial du layout smart, puis travailler sur les transitions sonores et les vrais médias source webcam disponibles.
