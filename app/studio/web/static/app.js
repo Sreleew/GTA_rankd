@@ -109,9 +109,12 @@ function jobCard(job) {
   const qualityLabels = { passed: 'QC OK', review: 'À vérifier', partial: 'Contrôle partiel', failed: 'Problème détecté' };
   const qualityHtml = quality ? `<details class="quality-report ${escapeHtml(quality.status || 'partial')}"><summary><span>Contrôle qualité</span><strong>${escapeHtml(qualityLabels[quality.status] || 'Contrôle')}</strong></summary><p>${escapeHtml(quality.summary || '')}</p>${(quality.warnings || []).length ? `<ul>${quality.warnings.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>` : ''}</details>` : '';
   const timingsHtml = processingTimingsHtml(metadata);
+  const thumbnailNote = metadata.thumbnail_overlay_status === 'fallback'
+    ? ' · Habillage de miniature indisponible, image source conservée'
+    : '';
   return `<article class="job-card">
     ${thumbUrl ? `<img class="job-thumb" src="${thumbUrl}" alt="Miniature du Short">` : `<div class="job-thumb job-thumb-placeholder">▶</div>`}
-    <div class="job-main"><strong title="${escapeHtml(title)}">${escapeHtml(title)}</strong>${socialCaption ? `<div class="job-caption">${escapeHtml(socialCaption)}</div>` : ''}<div class="job-meta">${escapeHtml(meta || (job.source_kind || 'clip').toUpperCase())}</div><div class="job-message">${escapeHtml(job.message || '')}${job.error ? ` · ${escapeHtml(job.error.slice(0, 200))}` : ''}</div>${qualityHtml}${timingsHtml}${['queued','running'].includes(job.status) ? `<div class="job-progress"><span style="width:${progress}%"></span></div>` : ''}${actions}</div>
+    <div class="job-main"><strong title="${escapeHtml(title)}">${escapeHtml(title)}</strong>${socialCaption ? `<div class="job-caption">${escapeHtml(socialCaption)}</div>` : ''}<div class="job-meta">${escapeHtml(meta || (job.source_kind || 'clip').toUpperCase())}</div><div class="job-message">${escapeHtml(job.message || '')}${thumbnailNote}${job.error ? ` · ${escapeHtml(job.error.slice(0, 200))}` : ''}</div>${qualityHtml}${timingsHtml}${['queued','running'].includes(job.status) ? `<div class="job-progress"><span style="width:${progress}%"></span></div>` : ''}${actions}</div>
     <div class="job-side"><span class="status-pill ${escapeHtml(job.status)}">${statusLabel(job.status)}</span></div>
   </article>`;
 }
