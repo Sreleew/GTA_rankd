@@ -66,7 +66,7 @@ function processingTimingsHtml(metadata) {
       ['render_encode_ms', 'Encodage vidéo'],
       ['render_output_probe_ms', 'Vérification du rendu'],
       ['export_quality_ms', 'Contrôle qualité'],
-      ['render_thumbnail_ms', 'Création miniature'],
+      ['render_thumbnail_ms', 'Capture de l’aperçu vidéo'],
     ]},
   ];
   const sections = groups.map(group => {
@@ -118,7 +118,7 @@ function jobCard(job) {
       ? ` · Sous-titres · ${Number(metadata.transcribed_words)} mots`
       : '');
   return `<article class="job-card">
-    ${thumbUrl ? `<img class="job-thumb" src="${thumbUrl}" alt="Image d’aperçu du Short">` : `<div class="job-thumb job-thumb-placeholder">▶</div>`}
+    ${thumbUrl ? `<img class="job-thumb" src="${thumbUrl}" alt="Image d’aperçu du Short" title="Image d’aperçu interne ; la plateforme choisira l’image publiée">` : `<div class="job-thumb job-thumb-placeholder">▶</div>`}
     <div class="job-main"><strong title="${escapeHtml(title)}">${escapeHtml(title)}</strong>${socialCaption ? `<div class="job-caption">${escapeHtml(socialCaption)}</div>` : ''}<div class="job-meta">${escapeHtml(meta || (job.source_kind || 'clip').toUpperCase())}</div><div class="job-message">${escapeHtml(job.message || '')}${captionNote}${job.error ? ` · ${escapeHtml(job.error.slice(0, 200))}` : ''}</div>${qualityHtml}${timingsHtml}${['queued','running'].includes(job.status) ? `<div class="job-progress"><span style="width:${progress}%"></span></div><small class="job-progress-label">${progress}%</small>` : ''}${actions}</div>
     <div class="job-side"><span class="status-pill ${escapeHtml(job.status)}">${statusLabel(job.status)}</span></div>
   </article>`;
