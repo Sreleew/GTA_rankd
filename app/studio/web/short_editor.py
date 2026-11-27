@@ -386,7 +386,8 @@ def _thumbnail_headline(text: str, streamer: str = "", *, max_words: int = 4) ->
     ]
     while meaningful and normalise_token(meaningful[0]) in filler_openers:
         meaningful.pop(0)
-    if not meaningful or normalise_token(meaningful[-1]) in incomplete_endings:
+    if (not meaningful or normalise_token(meaningful[-1]) in incomplete_endings
+            or all(normalise_token(word) in filler_openers for word in meaningful)):
         return "WAIT FOR THE REACTION"
     return " ".join(meaningful).upper()
 
@@ -443,7 +444,7 @@ def _thumbnail_webcam_crop(frame: Image.Image) -> tuple[Image.Image | None, str 
     best: tuple[float, Image.Image, str] | None = None
     for corner, box in candidates.items():
         region = frame.crop(box)
-        hsv = region.convert("HSV")
+        hsv = region.convert("HSV").resize((72, 72))
         data = list(hsv.getdata())
         xs: list[int] = []
         ys: list[int] = []
@@ -454,12 +455,12 @@ def _thumbnail_webcam_crop(frame: Image.Image) -> tuple[Image.Image | None, str 
                 count += 1
                 xs.append(index % region.width)
                 ys.append(index // region.width)
-        if count < max(160, int(region.width * region.height * 0.045)):
+        if count < max(45, int(72 * 72 * 0.045)):
             continue
         box_width = max(xs) - min(xs) + 1
         box_height = max(ys) - min(ys) + 1
         # A face-like patch should occupy a coherent part of the corner region.
-        if box_width < region.width * 0.14 or box_height < region.height * 0.14:
+        if box_width < 72 * 0.14 or box_height < 72 * 0.14:
             continue
         score = count / max(1, region.width * region.height)
         if best is None or score > best[0]:
