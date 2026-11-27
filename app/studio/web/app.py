@@ -50,6 +50,7 @@ def _validate_edit_options(
     layout: str, crop_x: int, crop_y: int, dynamic_zoom: bool, zoom_percent: int,
     brand_enabled: bool, hook_text: str, context_text: str,
     auto_trim_enabled: bool = True, sfx_enabled: bool = True,
+    captions_enabled: bool = False,
 ) -> dict:
     if layout not in {"fill", "blur", "smart"}:
         raise HTTPException(status_code=400, detail="Le cadrage doit être 'smart', 'fill' ou 'blur'.")
@@ -62,9 +63,25 @@ def _validate_edit_options(
         "dynamic_zoom": bool(dynamic_zoom), "zoom_percent": int(zoom_percent),
         "brand_enabled": bool(brand_enabled),
         "auto_trim_enabled": bool(auto_trim_enabled), "sfx_enabled": bool(sfx_enabled),
+        "captions_enabled": bool(captions_enabled),
         "hook_text": str(hook_text or "").strip()[:100],
         "context_text": str(context_text or "").strip()[:150],
     }
+
+
+def _require_whisper_ready(config: AppConfig, model_manager: ModelManager) -> None:
+    """Reject an opt-in caption request before any upload or Twitch download is queued."""
+    whisper_cli = config.path_for("executables", "whisper_cli")
+    if not whisper_cli.is_file():
+        raise HTTPException(
+            status_code=409,
+            detail="Installe d'abord le moteur whisper.cpp dans Paramètres pour générer les sous-titres.",
+        )
+    if not model_manager.status().get("valid"):
+        raise HTTPException(
+            status_code=409,
+            detail="Télécharge d'abord le modèle Whisper large-v3-turbo (environ 1,6 Go) dans Paramètres.",
+        )
 
 
 def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAPI:
@@ -619,7 +636,10 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         metadata = dict(original.get("metadata") or {})
         # Les résultats du précédent rendu ne doivent pas être réutilisés comme
         # s'ils provenaient du nouveau traitement.
-        for key in ("title", "description", "transcription_status", "captions_path", "transcript"):
+        for key in (
+            "title", "description", "transcription_status", "transcription_timestamp_mode",
+            "transcribed_words", "transcription_warning", "captions_path", "transcript",
+        ):
             metadata.pop(key, None)
         store.create_job({
             "id": new_id,
@@ -649,12 +669,18 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         brand_enabled: Annotated[bool, Form()] = True,
         auto_trim_enabled: Annotated[bool, Form()] = True,
         sfx_enabled: Annotated[bool, Form()] = True,
+        captions_enabled: Annotated[bool, Form()] = False,
         hook_text: Annotated[str, Form()] = "",
         context_text: Annotated[str, Form()] = "",
     ) -> dict:
         if not rights_confirmed:
             raise HTTPException(status_code=400, detail="Confirme que tu disposes des droits ou autorisations nécessaires pour utiliser ce clip.")
-        options = _validate_edit_options(layout, crop_x, crop_y, dynamic_zoom, zoom_percent, brand_enabled, hook_text, context_text, auto_trim_enabled, sfx_enabled)
+        if captions_enabled:
+            _require_whisper_ready(config, model_manager)
+        options = _validate_edit_options(
+            layout, crop_x, crop_y, dynamic_zoom, zoom_percent, brand_enabled,
+            hook_text, context_text, auto_trim_enabled, sfx_enabled, captions_enabled,
+        )
         safe_name = safe_upload_name(file.filename or "clip.mp4")
         max_mb = int(config.get("web", "max_upload_mb", default=2048))
         max_bytes = max_mb * 1024 * 1024
@@ -705,6 +731,7 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         brand_enabled: Annotated[bool, Form()] = True,
         auto_trim_enabled: Annotated[bool, Form()] = True,
         sfx_enabled: Annotated[bool, Form()] = True,
+        captions_enabled: Annotated[bool, Form()] = False,
         hook_text: Annotated[str, Form()] = "",
         context_text: Annotated[str, Form()] = "",
     ) -> dict:
@@ -712,7 +739,12 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
             raise HTTPException(status_code=400, detail="Confirme que tu disposes des droits ou autorisations nécessaires pour utiliser cette source.")
         clean_url = _validate_twitch_source(url)
         job_id = uuid.uuid4().hex
-        options = _validate_edit_options(layout, crop_x, crop_y, dynamic_zoom, zoom_percent, brand_enabled, hook_text, context_text, auto_trim_enabled, sfx_enabled)
+        if captions_enabled:
+            _require_whisper_ready(config, model_manager)
+        options = _validate_edit_options(
+            layout, crop_x, crop_y, dynamic_zoom, zoom_percent, brand_enabled,
+            hook_text, context_text, auto_trim_enabled, sfx_enabled, captions_enabled,
+        )
         store.create_job({
             "id": job_id, "source_kind": "url", "source_url": clean_url,
             "streamer": streamer.strip()[:120], "note": note.strip()[:1000],
@@ -737,6 +769,7 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         brand_enabled: Annotated[bool, Form()] = True,
         auto_trim_enabled: Annotated[bool, Form()] = True,
         sfx_enabled: Annotated[bool, Form()] = True,
+        captions_enabled: Annotated[bool, Form()] = False,
         hook_text: Annotated[str, Form()] = "",
         context_text: Annotated[str, Form()] = "",
     ) -> dict:
@@ -749,7 +782,12 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
             raise HTTPException(status_code=400, detail="Colle au moins une URL Twitch.")
         if len(unique_urls) > 10:
             raise HTTPException(status_code=400, detail="Maximum 10 URLs par lot. Divise ta liste en plusieurs lots.")
-        options = _validate_edit_options(layout, crop_x, crop_y, dynamic_zoom, zoom_percent, brand_enabled, hook_text, context_text, auto_trim_enabled, sfx_enabled)
+        if captions_enabled:
+            _require_whisper_ready(config, model_manager)
+        options = _validate_edit_options(
+            layout, crop_x, crop_y, dynamic_zoom, zoom_percent, brand_enabled,
+            hook_text, context_text, auto_trim_enabled, sfx_enabled, captions_enabled,
+        )
         validated_urls: list[str] = []
         rejected: list[dict[str, str]] = []
         clean_seen: set[str] = set()
