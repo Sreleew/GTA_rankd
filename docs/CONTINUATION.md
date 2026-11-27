@@ -679,3 +679,11 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Branche :** fix/thumbnail-collage-framing. La validation CI Linux/Windows de la PR devra confirmer le rendu et les régressions avant intégration.
 - **Limite :** le repérage de webcam est heuristique à partir des couleurs de peau et ne fonctionne que si elle est déjà visible dans la capture. Il ne remplace ni ne télécharge une webcam séparée.
 - **Suite :** ouvrir la PR, traiter les résultats CI Linux/Windows et livrer la nouvelle version stable selon le flux de release.
+## 49. Préparation de la release v0.9.2 pour les miniatures, 28 novembre 2026
+
+- **Livrable utilisateur :** corriger le template partagé pour que toutes les futures miniatures aient une composition GTA simple et cohérente. L'image partagée par l'utilisateur a servi de diagnostic uniquement ; elle n'a pas été modifiée.
+- **PR #87 fusionnée :** commit `905b8d6b0dda04b06802ee8ebe8d2207a552a6af`. Cadrage de la scène active des sources portrait, webcam intégrée mise en avant quand une heuristique locale la repère, accroche sur bande papier courte, gameplay en dessous et signature discrète GTA_Rankd. Les accroches génériques (streamer/GTA/moment) sont nettoyées, avec « WAIT FOR THE REACTION » en fallback.
+- **CI de PR #87 :** audit Linux [46082008049](https://github.com/Sreleew/GTA_rankd/actions/runs/46082008049) et validation Windows [46082007964](https://github.com/Sreleew/GTA_rankd/actions/runs/46082007964) réussis, avec tests, audit, scripts PowerShell et package.
+- **Limite :** la webcam n'est pas extraite d'une piste distincte. La détection dépend de la webcam déjà incrustée dans la capture ; sans détection suffisamment fiable, le rendu conserve la scène complète.
+- **Préparation release :** branche `release/v0.9.2`, versions synchronisées à 0.9.2, notes racine/app synchronisées et approbation de release préparée. La PR dédiée doit passer la CI avant fusion ; le workflow stable produira alors le ZIP Windows et SHA256SUMS.
+- **Suite :** vérifier la PR de release, puis confirmer la publication de la v0.9.2.
