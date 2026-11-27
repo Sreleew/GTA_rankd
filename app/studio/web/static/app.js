@@ -58,6 +58,7 @@ function processingTimingsHtml(metadata) {
       ['source_hash_ms', 'Vérification du fichier'],
       ['source_probe_ms', 'Lecture des propriétés'],
       ['audio_analysis_ms', 'Analyse audio'],
+      ['transcription_ms', 'Transcription Whisper'],
       ['metadata_generation_ms', 'Préparation des métadonnées'],
       ['hook_sound_ms', 'Sound design'],
     ]},
