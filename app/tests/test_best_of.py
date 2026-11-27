@@ -129,3 +129,42 @@ def test_best_of_filter_graph_rejects_non_finite_durations():
 
     with pytest.raises(ValueError, match="durées"):
         build_best_of_filter_graph(1, [0], clip_durations=[float("inf")])
+
+
+def test_best_of_renderer_falls_back_to_cpu_when_amf_cannot_initialize(tmp_path: Path, monkeypatch):
+    from studio.web import short_renderer
+    from studio.web.best_of import render_best_of_episode
+
+    source = tmp_path / "source.mp4"
+    source.write_bytes(b"source")
+    output = tmp_path / "episode.mp4"
+    calls = []
+
+    def fake_probe(path, ffprobe="ffprobe", timeout=None):
+        if Path(path) == output:
+            return {"width": 1920, "height": 1080, "duration": 560, "has_audio": True}
+        return {"width": 1080, "height": 1920, "duration": 560, "has_audio": True}
+
+    def fake_run(command, timeout=None, cwd=None):
+        calls.append(list(command))
+        if len(calls) == 1:
+            raise short_renderer.MediaError("AMF encoder device initialization failed")
+        output.write_bytes(b"cpu rendered episode")
+
+    monkeypatch.setattr(short_renderer, "probe_media", fake_probe)
+    monkeypatch.setattr(short_renderer, "resolve_executable", lambda value: str(value))
+    monkeypatch.setattr(short_renderer, "run_command", fake_run)
+
+    result = render_best_of_episode(
+        {
+            "ready_for_render": True,
+            "clips": [{"id": "source", "output_path": str(source), "duration": 560}],
+        },
+        output,
+        encoder="h264_amf",
+    )
+
+    assert len(calls) == 2
+    assert calls[1][calls[1].index("-c:v") + 1] == "libx264"
+    assert "-crf" in calls[1]
+    assert result["width"] == 1920
