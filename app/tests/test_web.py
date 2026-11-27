@@ -406,6 +406,7 @@ def test_highlight_url_rejects_invalid_hhmmss_components(tmp_path: Path):
 def test_highlight_url_batch_splits_nineteen_hour_vod_into_atomic_hourly_scans(tmp_path: Path):
     app = create_app(load_config(_make_isolated_app_config(tmp_path)))
     submitted: list[str] = []
+    app.state.highlight_scanner.start = lambda: None
     app.state.highlight_scanner.submit = lambda scan_id: submitted.append(scan_id)
     client = TestClient(app)
 
@@ -439,6 +440,28 @@ def test_highlight_url_batch_splits_nineteen_hour_vod_into_atomic_hourly_scans(t
     assert [scan["metadata"]["batch_index"] for scan in scans] == list(range(1, 20))
     assert all(scan["metadata"]["batch_count"] == 19 for scan in scans)
     assert set(submitted) == {scan["id"] for scan in scans}
+
+
+def test_highlight_url_batch_rejects_short_twitch_clips(tmp_path: Path):
+    app = create_app(load_config(_make_isolated_app_config(tmp_path)))
+    app.state.highlight_scanner.start = lambda: None
+    app.state.highlight_scanner.submit = lambda _scan_id: None
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/highlights/scan/url/batch",
+        data={
+            "url": "https://clips.twitch.tv/ExampleClip",
+            "rights_confirmed": "true",
+            "window_start": "00:00:00",
+            "window_end": "01:00:00",
+            "chunk_minutes": "30",
+        },
+    )
+
+    assert response.status_code == 400
+    assert "réservé aux VOD Twitch" in response.json()["detail"]
+    assert app.state.store.list_highlight_scans(100) == []
 
 
 def test_highlight_url_batch_rejects_too_many_segments_and_invalid_chunk_size(tmp_path: Path):
