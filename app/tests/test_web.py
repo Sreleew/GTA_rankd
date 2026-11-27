@@ -1020,3 +1020,16 @@ def test_batch_twitch_short_import_requires_rights_and_limits_urls(tmp_path: Pat
     )
     assert too_many.status_code == 400
     assert "Maximum 10" in too_many.json()["detail"]
+
+
+def test_batch_twitch_import_is_available_in_shorts_ui():
+    static = Path(__file__).resolve().parents[1] / "studio" / "web" / "static"
+    html = (static / "index.html").read_text(encoding="utf-8")
+    js = (static / "app.js").read_text(encoding="utf-8")
+
+    assert 'id="short-batch-urls"' in html
+    assert 'id="short-batch-submit"' in html
+    assert "JUSQU'À 10 URLS" in html
+    assert "/api/shorts/url/batch" in js
+    assert "$$('[data-option-checkbox]', form).forEach" in js
+    assert "submitShortBatch($('#url-form'))" in js
