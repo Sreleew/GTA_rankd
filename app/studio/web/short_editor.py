@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
@@ -115,19 +116,29 @@ def infer_hook_style(hook_text: str, context_text: str = "") -> str:
     # The actual hook drives the treatment. Context is only a fallback when no
     # headline was produced, so a summary cannot override the editorial promise.
     source_text = hook or _clean_ass_text(context_text).casefold()
-    tokens = set(re.findall(r"[a-z0-9']+", source_text))
+    normalized_text = "".join(
+        char for char in unicodedata.normalize("NFKD", source_text)
+        if not unicodedata.combining(char)
+    )
+    tokens = set(re.findall(r"[a-z0-9']+", normalized_text))
 
     question_words = {
         "why", "how", "what", "who", "where", "when", "which",
         "did", "does", "could", "would", "can", "will",
+        "pourquoi", "comment", "quoi", "que", "qui", "ou", "quand",
+        "est", "ce", "vraiment",
     }
     suspense_words = {
         "wait", "watch", "until", "before", "thought", "safe",
         "almost", "then", "just", "secret", "never",
+        "attends", "regarde", "jusque", "avant", "croyait", "pensait",
+        "presque", "ensuite", "jamais", "tranquille", "jusqu",
     }
     reaction_words = {
         "no", "way", "wtf", "omg", "holy", "damn", "crazy",
         "insane", "unreal", "nah", "bro", "wow", "sheesh",
+        "incroyable", "dingue", "fou", "folle", "serieux", "impossible",
+        "putain", "merde", "abuse", "non",
     }
 
     scores = {
