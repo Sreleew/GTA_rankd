@@ -191,7 +191,7 @@ function highlightBatchCard(scan, summary) {
         : 'LOT TERMINÉ';
   const statusClass = active ? 'running' : errors ? 'error' : 'validated';
   const pendingIds = (summary.scans || [])
-    .filter(item => ['queued', 'running', 'cancelling'].includes(item.status))
+    .filter(item => ['queued', 'running'].includes(item.status))
     .map(item => item.id)
     .join(',');
   const cancelAction = pendingIds
