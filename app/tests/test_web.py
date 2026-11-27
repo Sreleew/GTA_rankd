@@ -1225,3 +1225,42 @@ def test_cancelled_twitch_short_can_be_reprocessed(tmp_path: Path):
     assert new_job["status"] == "queued"
     assert new_job["source_url"] == "https://clips.twitch.tv/CancelledClip"
     assert submitted == [new_job["id"]]
+
+
+def test_reprocess_preserves_twitch_url_when_reusing_local_download(tmp_path: Path):
+    config = load_config(_make_isolated_app_config(tmp_path))
+    app = create_app(config)
+    submitted: list[str] = []
+    app.state.runner.submit = lambda job_id: submitted.append(job_id)
+    client = TestClient(app)
+
+    source = tmp_path / "downloaded-twitch.mp4"
+    source.write_bytes(b"local Twitch media")
+    app.state.store.create_job({
+        "id": "local-twitch-source",
+        "source_kind": "url",
+        "source_url": "https://clips.twitch.tv/OriginalClip",
+        "source_path": str(source),
+        "streamer": "ExampleStreamer",
+        "rights_confirmed": True,
+    })
+    app.state.store.update_job("local-twitch-source", status="error", error="Render failed")
+    submitted.clear()
+
+    first_retry = client.post("/api/jobs/local-twitch-source/reprocess")
+    assert first_retry.status_code == 202, first_retry.text
+    first_job = app.state.store.get_job(first_retry.json()["id"])
+    assert first_job["source_kind"] == "upload"
+    assert first_job["source_path"] == str(source.resolve())
+    assert first_job["source_url"] == "https://clips.twitch.tv/OriginalClip"
+
+    # If the cached download later disappears, a subsequent retry can still
+    # fall back to the original Twitch URL rather than becoming unrecoverable.
+    source.unlink()
+    app.state.store.update_job(first_job["id"], status="error", error="Local media missing")
+    second_retry = client.post(f"/api/jobs/{first_job['id']}/reprocess")
+    assert second_retry.status_code == 202, second_retry.text
+    second_job = app.state.store.get_job(second_retry.json()["id"])
+    assert second_job["source_kind"] == "url"
+    assert second_job["source_url"] == "https://clips.twitch.tv/OriginalClip"
+    assert submitted == [first_job["id"], second_job["id"]]
