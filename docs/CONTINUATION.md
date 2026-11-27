@@ -384,4 +384,22 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Comportement :** même avec une seule voix, chaque mot doit désormais chevaucher un segment diarizé avec un recouvrement minimal. Les mots non attribués sont écartés ; si aucun mot ne correspond, le statut devient `no_word_attribution`.
 - **Compatibilité :** le statut `single_speaker` est conservé lorsque des mots sont attribués. Les seuils de dominance multi-voix, les timings DTW, la transcription et le rendu ne changent pas.
 - **Tests :** cas avec un mot streamer dans le segment et un mot hors segment, plus cas sans aucun mot attribuable.
-- **Validation :** CI Linux et Windows à effectuer sur la PR. Cette heuristique ne prouve toujours pas l'identité du streamer et ne sépare pas deux voix superposées dans un même segment.
+- **Validation :** PR #57 fusionnée après réussite de la CI Linux (`46044003129`) et Windows (`46044002914`). Cette heuristique ne prouve toujours pas l'identité du streamer et ne sépare pas deux voix superposées dans un même segment.
+
+
+## 26. Premier moteur de rendu Daily Best Of 16:9, 27 novembre 2026
+
+- **Changement produit :** le Daily Best Of ne s'arrête plus au constructeur de sélection. Une sélection de Shorts validés entre 9 et 11 minutes peut maintenant lancer un rendu asynchrone depuis l'interface.
+- **Composition :** chaque Short vertical est placé au centre d'une toile 1920 × 1080, avec un arrière-plan agrandi et flouté issu de la même vidéo. Les séquences sont concaténées dans l'ordre choisi. L'audio est normalisé en 48 kHz stéréo ; une piste silencieuse est prévue pour un Short sans audio.
+- **Sortie :** MP4 H.264, AAC, 30 FPS, pixel format yuv420p et faststart. AMF est privilégié sur AMD ; si le driver ne s'initialise pas, le rendu réessaie une fois en libx264 CPU. Les Shorts sources ne sont jamais modifiés. Les exports sont rangés dans le dossier local output/bestof/<date>.
+- **Interface :** bouton de génération après vérification, tâche asynchrone, interrogation du statut et lien de récupération à la fin.
+- **Limites connues à valider :** le statut est conservé en mémoire du serveur et disparaît si l'application redémarre pendant le rendu ; la progression est actuellement par phase, pas un pourcentage FFmpeg détaillé. La qualité visuelle, la synchronisation audio et le temps de rendu doivent être vérifiés sur un épisode réel sous Windows/AMD avant publication stable.
+- **Validation automatisée :** tests du graphe FFmpeg et CI Linux/Windows à exécuter sur la PR. Aucune vidéo réelle n'a été rendue dans l'environnement de développement.
+- **Méthode :** les prochains lots doivent apporter une avancée fonctionnelle visible et groupée, plutôt qu'une succession de micro-correctifs. Priorités maintenues : création Short Twitch, qualité du Short, Daily Best Of. Ne pas reprendre « Moments forts ».
+
+
+## 27. Orientation du cadrage Shorts et Daily Best Of, 27 novembre 2026
+
+- **Décision produit confirmée :** ne pas développer d'extraction, de recadrage ou d'overlay webcam séparé. La webcam est déjà présente dans la capture d'écran source et doit rester visible dans le rendu qui conserve l'image entière. Le paramètre historique `webcam_zone` n'est pas une priorité produit.
+- **Priorités :** améliorer le parcours de création d'un Short Twitch de bout en bout, puis finaliser le moteur Daily Best Of 16:9. Ne pas détourner du temps vers un composant webcam dédié ni vers « Moments forts ».
+- **PR #58 :** le premier échec CI provenait d'un import `pytest` manquant dans un nouveau test de graphe FFmpeg, avant même l'exécution de la suite de tests. Correctif ajouté sur la branche, nouvelle CI requise. Ne pas fusionner avant réussite Linux et Windows.

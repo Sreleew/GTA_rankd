@@ -30,7 +30,7 @@ from studio.web.transcribe import inspect_whisper_cli, probe_whisper_vulkan
 from studio.web.model_manager import ModelManager
 from studio.web.updater import UpdateService
 from studio.web.highlights import HighlightScanner, select_distinct_highlight_candidates
-from studio.web.best_of import build_best_of_plan
+from studio.web.best_of import build_best_of_plan, render_best_of_episode
 
 logger = logging.getLogger(__name__)
 ALLOWED_EXTENSIONS = {".mp4", ".mov", ".mkv", ".webm", ".m4v"}
@@ -102,6 +102,8 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
     app.state.highlight_scanner = highlight_scanner
     app.state.project_root = root
     app.state.uvicorn_server = None
+    app.state.bestof_jobs = {}
+    app.state.bestof_jobs_lock = threading.Lock()
 
     @app.get("/api/health")
     def health() -> dict:
@@ -986,6 +988,78 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
             )
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+    @app.post("/api/bestof/render", status_code=202)
+    def render_best_of(payload: dict) -> dict:
+        """Queue a validated Daily Best Of render without blocking the browser."""
+        clip_ids = payload.get("clip_ids") if isinstance(payload, dict) else None
+        date_key = payload.get("date_key") if isinstance(payload, dict) else None
+        if date_key is not None:
+            date_key = str(date_key).strip()
+            if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", date_key):
+                raise HTTPException(status_code=400, detail="La date de l'épisode est invalide.")
+        try:
+            plan = build_best_of_plan(store.list_clips(200), clip_ids, date_key=date_key or None)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        if not plan.get("ready_for_render"):
+            raise HTTPException(status_code=400, detail="La sélection doit durer entre 9 et 11 minutes.")
+        job_id = uuid.uuid4().hex
+        date_folder = str(plan.get("date_key") or "episode")
+        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", date_folder):
+            date_folder = "episode"
+        output_dir = outputs / "bestof" / date_folder
+        output_path = output_dir / f"daily-best-of-{job_id[:8]}.mp4"
+        with app.state.bestof_jobs_lock:
+            app.state.bestof_jobs[job_id] = {
+                "id": job_id, "status": "queued", "progress": 0,
+                "message": "Épisode en attente de rendu", "output_url": None, "error": None,
+            }
+
+        def _run_best_of() -> None:
+            with app.state.bestof_jobs_lock:
+                app.state.bestof_jobs[job_id].update(status="running", progress=10, message="Assemblage et encodage 16:9")
+            try:
+                ffmpeg_bin = str(config.get("executables", "ffmpeg", default="ffmpeg"))
+                ffprobe_bin = str(config.get("executables", "ffprobe", default="ffprobe"))
+                encoder_check = run_quiet(
+                    [ffmpeg_bin, "-hide_banner", "-encoders"],
+                    capture_output=True, text=True, encoding="utf-8", errors="replace",
+                    timeout=12, check=False,
+                )
+                encoder = (
+                    "h264_amf"
+                    if encoder_check.returncode == 0 and "h264_amf" in (encoder_check.stdout + encoder_check.stderr)
+                    else "libx264"
+                )
+                result = render_best_of_episode(
+                    plan, output_path, ffmpeg=ffmpeg_bin, ffprobe=ffprobe_bin, encoder=encoder,
+                )
+                relative = output_path.relative_to(outputs).as_posix()
+                with app.state.bestof_jobs_lock:
+                    app.state.bestof_jobs[job_id].update(
+                        status="completed", progress=100, message="Daily Best Of prêt",
+                        output_url=f"/outputs/{relative}", result=result,
+                    )
+            except Exception as exc:
+                logger.exception("Échec du Daily Best Of %s", job_id)
+                with app.state.bestof_jobs_lock:
+                    app.state.bestof_jobs[job_id].update(
+                        status="error", progress=100, message="Le rendu Daily Best Of a échoué",
+                        error=str(exc)[:500],
+                    )
+
+        threading.Thread(target=_run_best_of, name=f"bestof-{job_id[:8]}", daemon=True).start()
+        return {"id": job_id, "status": "queued", "message": "Rendu Daily Best Of lancé."}
+
+    @app.get("/api/bestof/jobs/{job_id}")
+    def get_best_of_job(job_id: str) -> dict:
+        with app.state.bestof_jobs_lock:
+            job = app.state.bestof_jobs.get(job_id)
+            if job is None:
+                raise HTTPException(status_code=404, detail="Rendu Daily Best Of introuvable.")
+            return dict(job)
 
     @app.post("/api/shutdown")
     def shutdown() -> dict:

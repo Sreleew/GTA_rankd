@@ -1,4 +1,4 @@
-const state = { page: 'dashboard', file: null, toastTimer: null, modelPoll: null, whisperGpuProbeRunning: false, ollamaVerifyRunning: false, ollamaVerificationResult: null, updatePoll: null, updateInProgress: false, updateTargetVersion: '', bestOfClips: [], bestOfSelectedIds: [], bestOfDate: '', bestOfPlan: null };
+const state = { page: 'dashboard', file: null, toastTimer: null, modelPoll: null, whisperGpuProbeRunning: false, ollamaVerifyRunning: false, ollamaVerificationResult: null, updatePoll: null, updateInProgress: false, updateTargetVersion: '', bestOfClips: [], bestOfSelectedIds: [], bestOfDate: '', bestOfPlan: null, bestOfRenderJob: null };
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 
@@ -176,6 +176,9 @@ function renderBestOf() {
   $('#bestof-feedback').textContent = feedback;
   $('#bestof-validate').disabled = !valid;
   state.bestOfPlan = null;
+  state.bestOfRenderJob = null;
+  const renderButton = $('#bestof-render');
+  if (renderButton) renderButton.classList.add('hidden');
 }
 
 async function loadBestOf() {
@@ -215,7 +218,8 @@ async function validateBestOfSelection() {
       body: JSON.stringify({ clip_ids: state.bestOfSelectedIds, date_key: state.bestOfDate }),
     });
     state.bestOfPlan = plan;
-    $('#bestof-feedback').textContent = `Sélection vérifiée : ${plan.clip_count} Shorts, ${plan.formatted_duration}. Tous les rendus sont présents et la durée cible est respectée. L'assemblage 16:9 sera branché dans la prochaine étape.`;
+    $('#bestof-feedback').textContent = `Sélection vérifiée : ${plan.clip_count} Shorts, ${plan.formatted_duration}. Prêt pour l'assemblage 16:9.`;
+    $('#bestof-render').classList.remove('hidden');
     toast('Sélection Daily Best Of vérifiée.');
   } catch (error) {
     $('#bestof-feedback').textContent = error.message;
@@ -227,6 +231,54 @@ async function validateBestOfSelection() {
     const currentDuration = currentClips.reduce((sum, clip) => sum + Math.max(0, Number(clip.duration) || 0), 0);
     button.disabled = !(currentClips.length && currentDuration >= 540 && currentDuration <= 660);
     button.textContent = 'Vérifier la sélection';
+  }
+}
+
+
+async function renderBestOfEpisode() {
+  if (!state.bestOfPlan || !state.bestOfPlan.ready_for_render) {
+    toast('Vérifie d’abord la sélection.', true);
+    return;
+  }
+  const button = $('#bestof-render');
+  button.disabled = true;
+  button.textContent = 'Démarrage…';
+  $('#bestof-feedback').textContent = 'Préparation du rendu horizontal 1920 × 1080…';
+  try {
+    const started = await api('/api/bestof/render', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clip_ids: state.bestOfSelectedIds, date_key: state.bestOfDate }),
+    });
+    state.bestOfRenderJob = started.id;
+    let finished = false;
+    const deadline = Date.now() + 45 * 60 * 1000;
+    while (!finished && Date.now() < deadline) {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      const job = await api(`/api/bestof/jobs/${encodeURIComponent(started.id)}`);
+      $('#bestof-feedback').textContent = job.error
+        ? `Échec du rendu : ${job.error}`
+        : job.message || 'Assemblage en cours…';
+      if (job.status === 'completed') {
+        const link = document.createElement('a');
+        link.href = job.output_url;
+        link.download = '';
+        link.className = 'mini-button bestof-download';
+        link.textContent = 'Ouvrir / télécharger le Daily Best Of';
+        $('#bestof-feedback').append(' ', link);
+        toast('Daily Best Of exporté en 16:9.');
+        finished = true;
+      } else if (job.status === 'error') {
+        throw new Error(job.error || 'Le rendu a échoué.');
+      }
+    }
+    if (!finished) throw new Error('Le rendu prend plus de temps que prévu. Vérifie la bibliothèque dans quelques instants.');
+  } catch (error) {
+    $('#bestof-feedback').textContent = error.message;
+    toast(error.message, true);
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Générer le Daily Best Of 16:9';
   }
 }
 
@@ -870,6 +922,7 @@ function setupEvents() {
   });
   $('#refresh-bestof').addEventListener('click', loadBestOf);
   $('#bestof-validate').addEventListener('click', validateBestOfSelection);
+  $('#bestof-render').addEventListener('click', renderBestOfEpisode);
   $('#bestof-available').addEventListener('click', event => {
     const button = event.target.closest('[data-bestof-add]');
     if (!button) return;

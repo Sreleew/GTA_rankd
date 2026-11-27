@@ -64,3 +64,107 @@ def test_best_of_plan_rejects_missing_local_render(tmp_path: Path):
     Path(clip["output_path"]).unlink()
     with pytest.raises(ValueError, match="introuvable sur ce PC"):
         build_best_of_plan([clip], ["gone"])
+
+
+def test_best_of_renderer_reencodes_landscape_and_adds_silence_when_needed(tmp_path: Path, monkeypatch):
+    from studio.web import short_renderer
+    from studio.web.best_of import render_best_of_episode
+
+    first = tmp_path / "first.mp4"
+    second = tmp_path / "second.mp4"
+    first.write_bytes(b"first source")
+    second.write_bytes(b"second source")
+    output = tmp_path / "episode.mp4"
+    probes = []
+
+    def fake_probe(path, ffprobe="ffprobe", timeout=None):
+        probes.append(Path(path))
+        if Path(path) == output:
+            return {"width": 1920, "height": 1080, "duration": 560.0, "has_audio": True}
+        return {
+            "width": 1080, "height": 1920, "duration": 280.0,
+            "has_audio": Path(path) == first,
+        }
+
+    commands = []
+
+    def fake_run(command, timeout=None, cwd=None):
+        commands.append(command)
+        output.write_bytes(b"rendered episode")
+        return None
+
+    monkeypatch.setattr(short_renderer, "probe_media", fake_probe)
+    monkeypatch.setattr(short_renderer, "resolve_executable", lambda value: str(value))
+    monkeypatch.setattr(short_renderer, "run_command", fake_run)
+
+    result = render_best_of_episode(
+        {
+            "ready_for_render": True,
+            "clips": [
+                {"id": "first", "output_path": str(first), "duration": 280},
+                {"id": "second", "output_path": str(second), "duration": 280},
+            ],
+        },
+        output,
+        encoder="libx264",
+    )
+
+    command = commands[0]
+    graph = command[command.index("-filter_complex") + 1]
+    assert result["width"] == 1920 and result["height"] == 1080
+    assert result["clip_count"] == 2
+    assert "anullsrc=channel_layout=stereo:sample_rate=48000" in command
+    assert "concat=n=2:v=1:a=1[outv][outa]" in graph
+    assert command[-1] == str(output.resolve())
+
+
+def test_best_of_plan_rejects_non_finite_clip_durations(tmp_path: Path):
+    clip = _clip(tmp_path, "invalid-duration", float("nan"))
+    with pytest.raises(ValueError, match="durée du Short"):
+        build_best_of_plan([clip], ["invalid-duration"])
+
+
+def test_best_of_filter_graph_rejects_non_finite_durations():
+    from studio.web.best_of import build_best_of_filter_graph
+
+    with pytest.raises(ValueError, match="durées"):
+        build_best_of_filter_graph(1, [0], clip_durations=[float("inf")])
+
+
+def test_best_of_renderer_falls_back_to_cpu_when_amf_cannot_initialize(tmp_path: Path, monkeypatch):
+    from studio.web import short_renderer
+    from studio.web.best_of import render_best_of_episode
+
+    source = tmp_path / "source.mp4"
+    source.write_bytes(b"source")
+    output = tmp_path / "episode.mp4"
+    calls = []
+
+    def fake_probe(path, ffprobe="ffprobe", timeout=None):
+        if Path(path) == output:
+            return {"width": 1920, "height": 1080, "duration": 560, "has_audio": True}
+        return {"width": 1080, "height": 1920, "duration": 560, "has_audio": True}
+
+    def fake_run(command, timeout=None, cwd=None):
+        calls.append(list(command))
+        if len(calls) == 1:
+            raise short_renderer.MediaError("AMF encoder device initialization failed")
+        output.write_bytes(b"cpu rendered episode")
+
+    monkeypatch.setattr(short_renderer, "probe_media", fake_probe)
+    monkeypatch.setattr(short_renderer, "resolve_executable", lambda value: str(value))
+    monkeypatch.setattr(short_renderer, "run_command", fake_run)
+
+    result = render_best_of_episode(
+        {
+            "ready_for_render": True,
+            "clips": [{"id": "source", "output_path": str(source), "duration": 560}],
+        },
+        output,
+        encoder="h264_amf",
+    )
+
+    assert len(calls) == 2
+    assert calls[1][calls[1].index("-c:v") + 1] == "libx264"
+    assert "-crf" in calls[1]
+    assert result["width"] == 1920
