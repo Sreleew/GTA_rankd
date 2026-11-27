@@ -439,3 +439,16 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **CI post-fusion #62 :** Linux [46048367366](https://github.com/Sreleew/GTA_rankd/actions/runs/46048367366) et Windows [46048367349](https://github.com/Sreleew/GTA_rankd/actions/runs/46048367349) réussies.
 - **Limites :** aucun vrai téléchargement Twitch ni rendu matériel AMD n'a été exécuté. La progression agrégée est validée par tests API et la migration SQLite est couverte, mais le comportement visuel reste à vérifier dans la prochaine version installée.
 - **Suite :** valider le parcours complet avec un vrai clip Twitch sur le PC Windows/AMD, puis poursuivre les améliorations de fiabilité du rendu Short avant de traiter la persistance des tâches Daily Best Of.
+
+
+## 31. Relance des clips échoués directement depuis le suivi Twitch, 27 novembre 2026
+
+- **Amélioration produit :** le suivi d'un lot Twitch propose désormais une action directe « Relancer » pour les clips en erreur ou annulés et « Recréer » pour les clips rejetés, lorsque leur source locale ou URL d'origine est encore disponible.
+- **Continuité du lot :** une nouvelle tentative conserve l'identifiant du lot, le rang du clip, le nombre initial de clips et les options de montage. L'URL Twitch d'origine est conservée même lorsqu'une tentative réutilise le média téléchargé localement, afin de permettre une nouvelle récupération si ce fichier disparaît ensuite.
+- **Progression corrigée :** le suivi regroupe les tentatives par rang et n'affiche que la plus récente. Une relance ne gonfle donc pas artificiellement le nombre de clips, les compteurs ou la progression du lot. Le nombre de tentatives reste visible.
+- **Compatibilité :** les lots existants sans relance conservent leur comportement. Les jobs indépendants ne sont pas affectés. La relance explicite d'un job annulé est désormais acceptée par l'API, en cohérence avec l'action déjà affichée dans la file des Shorts.
+- **Interface :** bouton d'action intégré à chaque ligne du suivi, état temporaire pendant la demande et rafraîchissement du lot et de la file après création du nouveau job.
+- **Tests ajoutés :** relance d'un clip Twitch en erreur depuis son lot, conservation des options et de la position, progression stable sur le nombre de clips logiques, compteur de tentatives, disponibilité de l'action dans l'interface et relance d'un job annulé.
+- **Branche :** `feat/retry-short-batch-items`. PR à ouvrir après validation locale ciblée ; CI Linux/Windows requise avant fusion.
+- **Limites :** aucune source Twitch réelle ni rendu sur la RX 9060 XT n'a été exécuté dans cet environnement. Le parcours reste à confirmer sur le PC Windows/AMD.
+- **Suite :** vérifier le comportement réel de la relance depuis le suivi de lot sur un clip Twitch, puis poursuivre la fiabilité du rendu Short. Daily Best Of persistant reste après le parcours Shorts. « Moments forts » demeure en pause.
