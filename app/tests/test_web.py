@@ -721,8 +721,14 @@ def test_twitch_download_reports_throttled_yt_dlp_progress(tmp_path: Path, monke
             assert url == "https://clips.twitch.tv/ExampleClip"
             assert download is True
             progress_hook = self.options["progress_hooks"][0]
-            progress_hook({"status": "downloading", "downloaded_bytes": 25, "total_bytes": 100})
-            progress_hook({"status": "downloading", "downloaded_bytes": 75, "total_bytes_estimate": 100})
+            progress_hook({
+                "status": "downloading", "downloaded_bytes": 25, "total_bytes": 100,
+                "speed": 1.5 * 1024 * 1024, "eta": 12.4,
+            })
+            progress_hook({
+                "status": "downloading", "downloaded_bytes": 75, "total_bytes_estimate": 100,
+                "speed": 512 * 1024, "eta": 5.2,
+            })
             self.downloaded_path = Path(self.options["outtmpl"].replace("%(ext)s", "mp4"))
             self.downloaded_path.parent.mkdir(parents=True, exist_ok=True)
             self.downloaded_path.write_bytes(b"test video")
@@ -751,8 +757,20 @@ def test_twitch_download_reports_throttled_yt_dlp_progress(tmp_path: Path, monke
     assert [fields["progress"] for _, fields in store.updates] == [12, 17, 19]
     messages = [fields["message"] for _, fields in store.updates]
     assert "25 %" in messages[0]
+    assert "1.5 MiB/s" in messages[0]
+    assert "reste 00:12" in messages[0]
     assert "75 %" in messages[1]
+    assert "512 KiB/s" in messages[1]
+    assert "reste 00:05" in messages[1]
     assert messages[-1] == "Téléchargement terminé · préparation du Short"
+
+
+def test_download_progress_metrics_ignore_missing_or_invalid_values():
+    from studio.web.worker import _download_metrics_suffix
+
+    assert _download_metrics_suffix({"speed": None, "eta": None}) == ""
+    assert _download_metrics_suffix({"speed": float("nan"), "eta": -1}) == ""
+    assert _download_metrics_suffix({"speed": 512, "eta": 3661}) == " · 512 B/s · reste 1:01:01"
     assert all(job_id == "test-job" for job_id, _ in store.updates)
 
 

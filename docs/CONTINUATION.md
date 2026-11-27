@@ -4,7 +4,7 @@
 
 - **Dernière mise à jour :** 27 novembre 2026
 - **Dernière version stable confirmée :** [v0.8.9](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.9), publiée le 27 novembre 2026. Correctif de redémarrage et de confirmation de version après mise à jour.
-- **État :** PR #38 à #49 fusionnées dans `main`. La v0.8.9 est la dernière Release stable publiée. Les PR #47 à #49 ajoutent les hooks cinétiques, le cadre éditorial du gameplay et le sound design local adapté à l'intention du hook.
+- **État :** PR #38 à #50 fusionnées dans `main`. La v0.8.9 est la dernière Release stable publiée. La PR #51 ajoute une validation FFmpeg de bout en bout du zoom audio-réactif. Les PR #47 à #49 ajoutent les hooks cinétiques, le cadre éditorial du gameplay et le sound design local adapté à l'intention du hook.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
 - **Source active :** `app/`. Modifier directement les fichiers Python, JavaScript, CSS, HTML, tests et installateur présents dans ce dossier.
@@ -324,3 +324,12 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Fichiers concernés :** `app/studio/web/transcribe.py` (détection multi-pics RMS), `app/studio/web/worker.py` (recalage des instants après coupe), `app/studio/web/short_renderer.py` (impulsions FFmpeg), tests de transcription et de rendu.
 - **Limite éditoriale :** un accent audio n'est pas une preuve d'événement visuel GTA. Le système pilote seulement le rythme du cadrage à partir de variations sonores ; il ne prétend pas détecter kills, crashs ou événements HUD.
 - **Validation en attente :** tests ciblés et CI Linux/Windows sur la PR ; l'intensité et le rendu final doivent être jugés sur un vrai clip Twitch sur le PC de l'utilisateur.
+
+
+## 21. Progression Twitch enrichie, 27 novembre 2026
+
+- **Constat :** la progression de téléchargement yt-dlp existait déjà dans le message du job et sa barre globale. Elle affichait le pourcentage, mais pas le débit réel ni le temps restant, ce qui rendait les attentes difficiles à estimer sur les clips Twitch volumineux.
+- **Amélioration :** le message de progression affiche maintenant les statistiques disponibles de yt-dlp, par exemple « 75 % · 1.5 MiB/s · reste 00:05 ». Les unités s'adaptent (B/s, KiB/s, MiB/s) et l'ETA s'affiche en mm:ss ou h:mm:ss. Les champs absents, invalides ou non finis sont ignorés.
+- **Fiabilité :** la limitation de fréquence des mises à jour et la progression monotone existantes sont conservées. Aucun changement SQLite, aucune dépendance supplémentaire, aucun réglage utilisateur ni fichier local modifié.
+- **Tests ajoutés :** le test de progression simule les débits et ETA yt-dlp ; un test couvre les valeurs manquantes, invalides et les ETA longues.
+- **Branche :** `feat/twitch-download-speed-eta`. CI Linux/Windows à venir. Le téléchargement Twitch reste prioritaire avant toute évolution du Daily Best Of ; « Moments forts » reste en pause.
