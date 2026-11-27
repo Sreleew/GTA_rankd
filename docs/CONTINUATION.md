@@ -259,3 +259,13 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Correctif en cours :** l'interface distingue désormais la coupure réseau attendue d'une vraie erreur, garde le polling pendant le redémarrage, interroge la version après le retour du serveur et recharge la page lorsque la version attendue est bien installée. Les erreurs de rafraîchissement en arrière-plan sont masquées uniquement pendant la mise à jour.
 - **Branche :** `fix/silent-update-restart-fetch`. Tests de régression ajoutés dans `app/tests/test_updates.py`. CI, fusion et publication de la version corrective à renseigner après validation.
 - **Priorité utilisateur inchangée :** création de Shorts depuis Twitch, puis rendu Daily Best Of. Moments forts reste en pause.
+
+
+## 14. Correctif v0.8.9, 27 novembre 2026
+
+- **PR #45 fusionnée** dans `main` : https://github.com/Sreleew/GTA_rankd/pull/45. Commit de merge : `055e257fd9449d7d4fbf83e846d47c3704c5f6cf`.
+- **CI PR #45 :** Linux run [46015871458](https://github.com/Sreleew/GTA_rankd/actions/runs/46015871458) et Windows run [46015871444](https://github.com/Sreleew/GTA_rankd/actions/runs/46015871444) réussies.
+- **Correctif :** pendant la mise à jour, la coupure du serveur local est maintenant traitée comme un redémarrage attendu. Le polling continue, confirme la version cible au retour du serveur, affiche le succès et recharge l'interface. Les erreurs transitoires du tableau de bord ne déclenchent plus de faux toast pendant cette phase.
+- **Préparation de release :** branche `release/v0.8.9-update-restart-fix`, version cible 0.8.9. La Release ne sera considérée comme publiée qu'après fusion de la préparation, réussite du workflow officiel et vérification des assets.
+- **Validation utilisateur encore nécessaire :** installer la v0.8.9 depuis Paramètres > Mises à jour et confirmer la version affichée après redémarrage. CI ne remplace pas ce test réel.
+- **Priorités produit inchangées :** fiabiliser la création de Shorts depuis Twitch, puis terminer le rendu Daily Best Of 16:9. Moments forts reste en pause.
