@@ -60,8 +60,8 @@
         <div class="create-layout">
           <section class="panel create-panel">
             <div class="panel-heading"><div><div class="eyebrow">NEW SHORT</div><h3>Source du clip</h3></div><span class="step-number">01</span></div>
-            <div class="source-tabs"><button class="source-tab active" data-source-tab="file">Importer un fichier</button><button class="source-tab" data-source-tab="url">Coller une URL</button></div>
-            <form id="upload-form">
+            <div class="source-tabs"><button class="source-tab" data-source-tab="file">Importer un fichier</button><button class="source-tab active" data-source-tab="url">Coller une URL Twitch</button></div>
+            <form id="upload-form" class="hidden">
               <div class="dropzone" id="dropzone"><input type="file" id="clip-file" name="file" accept=".mp4,.mov,.mkv,.webm,.m4v,video/mp4,video/quicktime,video/webm" hidden><div class="upload-icon">↑</div><strong>Dépose ton clip ici</strong><span>ou <button type="button" class="inline-link" id="browse-file">parcourir les fichiers</button></span><small>MP4, MOV, MKV ou WEBM · max. 2 Go</small><div class="selected-file" id="selected-file"></div></div>
               <div class="form-grid"><label>Streamer <span>OPTIONNEL</span><input type="text" name="streamer" placeholder="ex. Kai Cenat"></label><label>Note de contexte <span>OPTIONNEL</span><input type="text" name="note" placeholder="Pourquoi ce moment est intéressant ?"></label></div>
               <label class="rights-check"><input type="checkbox" name="rights_confirmed" required><span>Je confirme disposer des droits ou autorisations nécessaires pour utiliser cette vidéo et son audio.</span></label>
@@ -89,8 +89,8 @@
               </details>
               <button class="button button-primary submit-button" type="submit" id="upload-submit">Générer le rendu Short <span>→</span></button>
             </form>
-            <form id="url-form" class="hidden">
-              <label class="full-label">URL du clip ou de la VOD Twitch<input type="url" name="url" placeholder="https://clips.twitch.tv/..." required><small>Seules les URLs publiques Twitch de clips ou de VOD sont acceptées.</small></label>
+            <form id="url-form">
+              <label class="full-label">URL du clip Twitch<input type="url" name="url" placeholder="https://clips.twitch.tv/..." required autocomplete="url"><small>Seules les URLs publiques Twitch de clips ou de VOD sont acceptées.</small></label>
               <div class="form-grid"><label>Streamer <span>OPTIONNEL</span><input type="text" name="streamer" placeholder="ex. Kai Cenat"></label><label>Note de contexte <span>OPTIONNEL</span><input type="text" name="note" placeholder="Pourquoi ce moment est intéressant ?"></label></div>
               <label class="rights-check"><input type="checkbox" name="rights_confirmed" required><span>Je confirme disposer des droits ou autorisations nécessaires pour télécharger et utiliser cette source.</span></label>
 
@@ -106,7 +106,7 @@
                   <label><input type="checkbox" name="auto_trim_enabled" checked data-option-checkbox> Recadrer automatiquement les sources de plus de 2 min 45</label>
                   <label><input type="checkbox" name="dynamic_zoom" data-option-checkbox> Zoom dynamique</label>
                   <label><input type="checkbox" name="captions_enabled" checked data-option-checkbox> Sous-titres anglais (mot à mot si DTW disponible)</label>
-                  <label>Voix à sous-titrer <select name="caption_voice_mode"><option value="dominant" selected>Voix dominante uniquement (bêta)</option><option value="all">Toutes les voix</option></select><small>Si les voix sont difficiles à distinguer, toutes les paroles sont conservées.</small></label>
+                  <label>Voix à sous-titrer <select name="caption_voice_mode"><option value="dominant" selected>Voix dominante uniquement (bêta)</option><option value="all">Toutes les voix</option></select><small>Si le moteur ne distingue pas clairement une voix, les sous-titres sont omis pour éviter les dialogues du jeu. Le mode bêta ne garantit pas l’identité du streamer.</small></label>
                   <label><input type="checkbox" name="brand_enabled" checked data-option-checkbox> Signature GTA Ranked + handle</label>
                   <label><input type="checkbox" name="sfx_enabled" checked data-option-checkbox> Whoosh discret au moment fort</label>
                 </div>
