@@ -53,6 +53,15 @@ def test_unknown_hook_sound_style_falls_back_to_impact(tmp_path: Path) -> None:
     assert expected.read_bytes() == fallback.read_bytes()
 
 
+def test_each_hook_style_has_a_distinct_sound_signature(tmp_path: Path) -> None:
+    styles = ("impact", "question", "suspense", "reaction")
+    signatures = {
+        create_hook_sound_effect(tmp_path / f"{style}.wav", style).read_bytes()
+        for style in styles
+    }
+    assert len(signatures) == len(styles)
+
+
 def test_thumbnail_visual_score_rejects_blank_sky_frame(tmp_path: Path) -> None:
     from PIL import Image, ImageDraw
     from studio.web.short_renderer import _thumbnail_visual_score
@@ -120,6 +129,7 @@ def test_real_vertical_short_render(tmp_path: Path) -> None:
         brand_enabled=True,
     )
 
+    hook_sound = create_hook_sound_effect(tmp_path / "hook-sound.wav", "suspense")
     result = render_vertical_short(
         source,
         output,
@@ -140,8 +150,8 @@ def test_real_vertical_short_render(tmp_path: Path) -> None:
         zoom_percent=8,
         trim_start=0.25,
         trim_duration=1.5,
-        sound_effect_path=Path(__file__).resolve().parents[1] / "assets" / "sfx" / "soft_whoosh.wav",
-        sound_effect_offset=0.55,
+        sound_effect_path=hook_sound,
+        sound_effect_offset=0.12,
     )
 
     rendered = probe_media(output, ffprobe)
