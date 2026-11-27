@@ -60,7 +60,6 @@ shorts:
   default_crop_x: 80
   dynamic_zoom: true
   zoom_percent: 8
-  captions_enabled: true
   peak_trim_threshold_seconds: 165
   peak_lead_seconds: 1.5
   payoff_tail_seconds: 2.0
