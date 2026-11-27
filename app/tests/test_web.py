@@ -1361,8 +1361,17 @@ def test_short_caption_option_requires_local_whisper_and_is_persisted(tmp_path: 
     job = app.state.store.get_job(accepted.json()["id"])
     assert job["metadata"]["options"]["captions_enabled"] is True
 
+    upload = client.post(
+        "/api/shorts/upload",
+        files={"file": ("caption-upload.mp4", b"video", "video/mp4")},
+        data={"rights_confirmed": "true", "captions_enabled": "true"},
+    )
+    assert upload.status_code == 202, upload.text
+    uploaded_job = app.state.store.get_job(upload.json()["id"])
+    assert uploaded_job["metadata"]["options"]["captions_enabled"] is True
+
     batch_payload = {
-        "urls": "https://clips.twitch.tv/CaptionBatchOne\\nhttps://clips.twitch.tv/CaptionBatchTwo",
+        "urls": "https://clips.twitch.tv/CaptionBatchOne\nhttps://clips.twitch.tv/CaptionBatchTwo",
         "rights_confirmed": "true",
         "captions_enabled": "true",
     }
