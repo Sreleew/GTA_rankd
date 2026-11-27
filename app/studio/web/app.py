@@ -290,6 +290,12 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         if not rights_confirmed:
             raise HTTPException(status_code=400, detail="Confirme que tu disposes des droits ou autorisations nécessaires pour analyser cette source.")
         clean_url = _validate_twitch_source(url)
+        from urllib.parse import urlparse
+        if "/videos/" not in urlparse(clean_url).path:
+            raise HTTPException(
+                status_code=400,
+                detail="Le découpage en lot est réservé aux VOD Twitch, pas aux clips courts.",
+            )
         start = _parse_optional_seconds(window_start, "Début")
         end = _parse_optional_seconds(window_end, "Fin")
         if start is None or end is None:
@@ -343,6 +349,10 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
             })
             cursor = segment_end
 
+        # Start before inserting the new queued rows. On its first start,
+        # the scanner recovers queued rows from the database; doing this after
+        # the batch insert would enqueue each new scan twice.
+        highlight_scanner.start()
         store.create_highlight_scans(scans)
         for scan in scans:
             highlight_scanner.submit(scan["id"])
