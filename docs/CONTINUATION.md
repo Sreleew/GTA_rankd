@@ -4,7 +4,7 @@
 
 - **Dernière mise à jour :** 27 novembre 2026
 - **Dernière version stable confirmée :** [v0.8.9](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.9), publiée le 27 novembre 2026. Correctif de redémarrage et de confirmation de version après mise à jour.
-- **État :** PR #38 à #49 fusionnées dans `main`. La v0.8.9 est la dernière Release stable publiée. Les PR #47 à #49 ajoutent les hooks cinétiques, le cadre éditorial du gameplay et le sound design local adapté à l'intention du hook.
+- **État :** PR #38 à #50 fusionnées dans `main`. La v0.8.9 est la dernière Release stable publiée. Les PR #47 à #49 ajoutent les hooks cinétiques, le cadre éditorial du gameplay et le sound design local adapté à l'intention du hook. La PR #50 ajoute plusieurs impulsions de zoom pilotées par les accents audio.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
 - **Source active :** `app/`. Modifier directement les fichiers Python, JavaScript, CSS, HTML, tests et installateur présents dans ce dossier.
@@ -323,4 +323,4 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Lot en cours :** remplacer le zoom unique au pic audio par plusieurs impulsions de zoom discrètes, déclenchées sur quelques accents audio réellement marqués. Le détecteur ignore les niveaux faibles et le bruit de fond uniforme, limite le nombre d'impulsions à cinq et les espace d'au moins 4,5 secondes. Si aucun accent fiable n'est trouvé, le zoom principal existant reste utilisé.
 - **Fichiers concernés :** `app/studio/web/transcribe.py` (détection multi-pics RMS), `app/studio/web/worker.py` (recalage des instants après coupe), `app/studio/web/short_renderer.py` (impulsions FFmpeg), tests de transcription et de rendu.
 - **Limite éditoriale :** un accent audio n'est pas une preuve d'événement visuel GTA. Le système pilote seulement le rythme du cadrage à partir de variations sonores ; il ne prétend pas détecter kills, crashs ou événements HUD.
-- **Validation en attente :** tests ciblés et CI Linux/Windows sur la PR ; l'intensité et le rendu final doivent être jugés sur un vrai clip Twitch sur le PC de l'utilisateur.
+- **Validation visuelle encore nécessaire :** l'intensité et le rendu final doivent être jugés sur un vrai clip Twitch sur le PC AMD de l'utilisateur. Une vérification FFmpeg de rendu réel avec deux impulsions est ajoutée dans un lot de test séparé, car les tests précédents validaient surtout la construction du filtre.
