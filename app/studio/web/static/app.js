@@ -1,4 +1,4 @@
-const state = { page: 'dashboard', file: null, toastTimer: null, modelPoll: null, whisperGpuProbeRunning: false, ollamaVerifyRunning: false, ollamaVerificationResult: null, updatePoll: null, bestOfClips: [], bestOfSelectedIds: [], bestOfDate: '', bestOfPlan: null };
+const state = { page: 'dashboard', file: null, toastTimer: null, modelPoll: null, whisperGpuProbeRunning: false, ollamaVerifyRunning: false, ollamaVerificationResult: null, updatePoll: null, updateInProgress: false, updateTargetVersion: '', bestOfClips: [], bestOfSelectedIds: [], bestOfDate: '', bestOfPlan: null };
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 
@@ -99,7 +99,7 @@ async function loadDashboard() {
     $('#stat-validated').textContent = data.validated;
     $('#nav-review-count').textContent = data.to_review;
     $('#recent-jobs').innerHTML = data.recent_jobs.length ? data.recent_jobs.map(jobCard).join('') : '<div class="empty-state">Aucun clip pour le moment. Ajoute ton premier fichier pour commencer.</div>';
-  } catch (error) { toast(error.message, true); }
+  } catch (error) { if (!state.updateInProgress) toast(error.message, true); }
 }
 
 async function loadJobs() {
@@ -107,7 +107,7 @@ async function loadJobs() {
     const jobs = await api('/api/jobs?limit=100');
     $('#all-jobs').innerHTML = jobs.length ? jobs.map(jobCard).join('') : '<div class="empty-state">Tes clips apparaîtront ici après leur import.</div>';
     $('#nav-review-count').textContent = jobs.filter(job => job.status === 'ready').length;
-  } catch (error) { toast(error.message, true); }
+  } catch (error) { if (!state.updateInProgress) toast(error.message, true); }
 }
 
 async function loadLibrary() {
@@ -608,6 +608,7 @@ async function loadUpdates() {
   try {
     const data = await api('/api/updates/check');
     version.textContent = `v${data.current_version}`;
+    state.updateTargetVersion = data.update_available ? data.latest_version : '';
     if (data.update_available) {
       status.textContent = `Une nouvelle version est disponible : v${data.latest_version} (actuellement v${data.current_version}).`;
       const notes = $('#update-release-notes');
@@ -632,29 +633,60 @@ async function installUpdate() {
   const button = $('#install-update');
   button.disabled = true;
   button.textContent = 'Préparation...';
+  state.updateInProgress = true;
+  let restartObserved = false;
+  let offlinePolls = 0;
+  let pollCount = 0;
   try {
     const result = await api('/api/updates/install', { method: 'POST' });
     toast(result.message || 'La mise à jour va démarrer.');
     $('#update-check-status').textContent = 'Téléchargement et vérification du paquet. GTA Ranked Studio va se fermer puis redémarrer automatiquement.';
     clearInterval(state.updatePoll);
     state.updatePoll = setInterval(async () => {
+      pollCount += 1;
+      if (pollCount > 120) {
+        clearInterval(state.updatePoll);
+        state.updateInProgress = false;
+        button.disabled = false;
+        button.textContent = 'Réessayer';
+        $('#update-check-status').textContent = 'Le redémarrage prend plus de temps que prévu. Vérifie la version après avoir relancé l’application.';
+        return;
+      }
       try {
         const progress = await api('/api/updates/status');
+        if (offlinePolls > 0) restartObserved = true;
         $('#update-check-status').textContent = progress.message || 'Mise à jour en cours...';
         if (progress.status === 'error') {
           clearInterval(state.updatePoll);
+          state.updateInProgress = false;
           button.disabled = false;
           button.textContent = 'Réessayer';
           toast(progress.message, true);
-        } else if (progress.status === 'restarting') {
-          clearInterval(state.updatePoll);
+        } else if (restartObserved && progress.status === 'idle') {
+          const check = await api('/api/updates/check');
+          if (state.updateTargetVersion && check.current_version === state.updateTargetVersion) {
+            clearInterval(state.updatePoll);
+            state.updateInProgress = false;
+            $('#update-check-status').textContent = `Mise à jour installée avec succès : v${check.current_version}.`;
+            toast(`GTA Ranked Studio v${check.current_version} est installé.`);
+            window.location.reload();
+          } else if (state.updateTargetVersion) {
+            clearInterval(state.updatePoll);
+            state.updateInProgress = false;
+            button.disabled = false;
+            button.textContent = 'Réessayer';
+            $('#update-check-status').textContent = `Le serveur a redémarré, mais la version détectée est v${check.current_version} au lieu de v${state.updateTargetVersion}.`;
+            toast('La mise à jour n’a pas pu être confirmée.', true);
+          }
         }
       } catch {
-        // Le serveur est en cours de fermeture avant son redémarrage.
-        clearInterval(state.updatePoll);
+        // La coupure réseau est normale pendant l'arrêt puis le redémarrage du serveur.
+        offlinePolls += 1;
+        $('#update-check-status').textContent = 'Redémarrage de GTA Ranked Studio en cours...';
       }
     }, 1500);
   } catch (error) {
+    state.updateInProgress = false;
     toast(error.message, true);
     button.disabled = false;
     button.textContent = 'Réessayer';

@@ -148,3 +148,13 @@ def test_powershell_update_script_logs_before_waiting_and_avoids_generic_lists()
     assert "En attente de la fermeture" in script
     assert "New-Object 'System.Collections.Generic.List[string]'" not in script
     assert "Tentative de restauration" in script
+
+
+
+def test_update_ui_treats_server_restart_as_expected_and_confirms_installed_version() -> None:
+    script = (Path(__file__).resolve().parents[1] / "studio" / "web" / "static" / "app.js").read_text(encoding="utf-8")
+    assert "updateInProgress: false" in script
+    assert "if (!state.updateInProgress) toast(error.message, true)" in script
+    assert "Redémarrage de GTA Ranked Studio en cours..." in script
+    assert "check.current_version === state.updateTargetVersion" in script
+    assert "window.location.reload()" in script
