@@ -741,6 +741,8 @@ async function loadHealth() {
     const data = await api('/api/health');
     $('#gpu-name').textContent = data.gpu;
     $('#settings-gpu').textContent = data.gpu;
+    const appVersion = $('#app-version');
+    if (appVersion && data.app_version) appVersion.textContent = `v${data.app_version}`;
     const checks = [
       ['Serveur local', true, '127.0.0.1'],
       ['FFmpeg / FFprobe', data.ffmpeg && data.ffprobe, data.ffmpeg && data.ffprobe ? 'Détectés' : 'À vérifier'],
