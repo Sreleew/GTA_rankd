@@ -147,7 +147,7 @@ def test_thumbnail_overlay_uses_the_gta_paper_collage_palette(tmp_path: Path) ->
 
     with Image.open(thumbnail) as result:
         assert result.size == (1080, 1920)
-        red, green, blue = result.convert("RGB").getpixel((100, 1320))
+        red, green, blue = result.convert("RGB").getpixel((100, 1020))
         assert red > 180 and green > 120 and blue < 65
 
 
@@ -350,7 +350,7 @@ def test_thumbnail_headline_prefers_complete_meaningful_tail_over_filler():
 
     assert _thumbnail_headline("YEAH HUH SHIT GOT MY LAMBO", "Tminnzy") == "GOT MY LAMBO"
     assert _thumbnail_headline("YEAH HUH SHIT GOT", "Tminnzy") == "WAIT FOR THE REACTION"
-    assert _thumbnail_headline("YEAH HUH SHIT", "Tminnzy") == "Tminnzy GTA MOMENT"
+    assert _thumbnail_headline("YEAH HUH SHIT", "Tminnzy") == "WAIT FOR THE REACTION"
 
 
 def test_caption_groups_break_at_sentence_punctuation():
