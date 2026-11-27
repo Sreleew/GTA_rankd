@@ -273,3 +273,21 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **CI initiale de la PR #46 :** Linux run [46016845255](https://github.com/Sreleew/GTA_rankd/actions/runs/46016845255) et Windows run [46016845297](https://github.com/Sreleew/GTA_rankd/actions/runs/46016845297) ont échoué au contrôle de structure avant les suites de tests. Le diagnostic des logs est identique sur les deux runners : l'ancienne copie `app/NOTES-v0.8.8.txt` est encore présente alors que la cible est v0.8.9.
 - **Correction de préparation :** retirer uniquement `app/NOTES-v0.8.8.txt`, qui est une copie applicative obsolète. Conserver les notes historiques racine et les notes applicatives v0.8.9. Relancer ensuite les contrôles Linux et Windows avant toute fusion.
 - **Méthode de suivi demandée :** l'utilisateur souhaite que les contrôles CI et la publication de cette release soient suivis automatiquement, sans devoir envoyer « continue ». Le suivi automatisé est actif jusqu'à confirmation vérifiée de la publication.
+
+
+## 15. Direction créative Shorts : identité et hook, 27 novembre 2026
+
+- **Décision utilisateur :** le montage doit sortir du format automatique basique. Il faut une direction artistique propre et reconnaissable, une finition premium et une narration pensée spécifiquement pour le format vertical. Le hook est déterminant : les 1 à 2 premières secondes doivent immédiatement créer curiosité, tension, surprise ou promesse. Pas d'intro/logo qui retarde l'action.
+- **Principes de DA :** identité éditoriale cohérente inspirée de l'énergie GTA sans copier les éléments officiels ; typographie cinétique, compositions verticales travaillées, webcam intégrée réellement, gameplay lisible, sous-titres sélectifs et synchronisés, sound design précis et transitions justifiées par l'action. Les effets doivent servir la compréhension ou la rétention, pas être décoratifs.
+- **Lot commencé sur la branche** `feat/short-hook-motion-identity` : refonte du hook ASS avec un kicker « RANKED DISPATCH // GTA » et une entrée cinétique du titre (overshoot, rotation légère, flou qui se résorbe). L'objectif est d'établir une signature immédiatement visible sans ajouter une intro longue.
+- **Fichiers concernés :** `app/studio/web/short_editor.py`, `app/tests/test_short_editor.py`. Validation CI à venir ; aucun rendu réel sur PC n'est revendiqué.
+- **Suite produit :** construire un vrai système de compositions vidéo modulaire, puis une webcam intégrée et des variations de hook adaptées au type de moment. Garder la priorité absolue à la rétention dès les premières secondes.
+
+
+## 16. Hooks cinétiques par intention, 27 novembre 2026
+
+- État du lot : PR #47 (feat/short-hook-motion-identity) en cours. La première version du hook RANKED DISPATCH a révélé un test de régression obsolète : il attendait encore l'ancienne animation statique fad(120,180). Le rendu attendu a changé, le test doit donc vérifier la nouvelle animation et non l'ancien effet.
+- Amélioration ajoutée au lot : détection locale et déterministe du type de hook (question, suspense, réaction ou impact), puis choix d'une animation ASS dédiée. Cela donne quatre entrées visuelles au lieu d'un seul effet répété, sans appel réseau ni délai IA supplémentaire.
+- Finition des captions : le mot prononcé reçoit une emphase légère par couleur, échelle et contour, puis revient au style normal pour garder une lecture mobile dynamique sans surcharger chaque mot.
+- Intégration : sélection automatique dans create_ass_file, sans changer le parcours utilisateur ni les options existantes. Un style explicitement reconnu peut aussi être passé par le code appelant.
+- Tests ajoutés/ajustés : détection des quatre intentions, priorité du hook sur le texte de contexte, fallback contextuel si aucun hook n'est fourni, présence des animations associées et emphase du mot actif. Les validations Linux/Windows de la première version doivent être relancées après cette correction ; aucun rendu réel sur le PC n'est revendiqué.

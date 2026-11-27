@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from studio.web.short_editor import (
-    WordTiming, apply_thumbnail_overlay, create_ass_file, parse_srt,
+    WordTiming, apply_thumbnail_overlay, create_ass_file, infer_hook_style, parse_srt,
     rebase_word_timings, select_excerpt_range, write_srt_file,
 )
 
@@ -34,11 +34,65 @@ def test_ass_contains_hook_branding_and_active_word_highlight(tmp_path: Path):
     assert "@GTARankedStudio" in content
     assert "GTA VI" in content
     assert "GR  //  GTA VI" in content
-    assert r"\fad(120,180)" in content
+    assert r"\fad(180,120)" in content
     assert "0:00:02.60,Hook" in content
     assert "Style: Kicker" in content
     assert "HAPPENED?" in content
     assert r"\c&H0000C8F5&" in content
+
+
+def test_hook_style_inference_selects_distinct_animations_for_short_hooks(tmp_path: Path):
+    examples = [
+        ("WHAT JUST HAPPENED?", "question", r"\frz-2"),
+        ("WAIT FOR IT", "suspense", r"\blur7"),
+        ("NO WAY!", "reaction", r"\fscy122"),
+        ("THE CLEANEST GETAWAY", "impact", r"\fscx142"),
+    ]
+    for index, (hook, expected_style, animation_marker) in enumerate(examples):
+        assert infer_hook_style(hook) == expected_style
+        path = create_ass_file(
+            tmp_path / f"hook-{index}.ass",
+            hook_text=hook,
+            captions_enabled=False,
+            brand_enabled=False,
+        )
+        content = path.read_text(encoding="utf-8-sig")
+        assert animation_marker in content
+
+    # A generic summary must not override the actual hook's intended treatment.
+    assert infer_hook_style("THE CLEANEST GETAWAY", "What happened during the chase?") == "impact"
+    assert infer_hook_style("", "Wait for the police") == "suspense"
+
+
+def test_caption_active_word_gets_a_subtle_kinetic_pop(tmp_path: Path):
+    path = create_ass_file(
+        tmp_path / "active-word.ass",
+        words=[WordTiming(0.1, 0.4, "WAIT"), WordTiming(0.4, 0.8, "WHAT?")],
+        hook_text="",
+        brand_enabled=False,
+    )
+    content = path.read_text(encoding="utf-8-sig")
+    assert r"{\c&H0000C8F5&\fscx106\fscy106\bord7}WAIT" in content
+    assert r"{\c&H00FFFFFF&\fscx100\fscy100\bord6}" in content
+
+
+def test_hook_uses_animated_ranked_dispatch_identity(tmp_path: Path):
+    path = create_ass_file(
+        tmp_path / "cinematic-hook.ass",
+        words=[],
+        hook_text="HE THOUGHT HE WAS SAFE",
+        badge_text="GTA",
+        captions_enabled=False,
+        brand_enabled=False,
+    )
+    content = path.read_text(encoding="utf-8-sig")
+    assert "Style: HookKicker" in content
+    assert "RANKED DISPATCH  //  GTA" in content
+    assert "HE THOUGHT HE WAS SAFE" in content
+    assert infer_hook_style("HE THOUGHT HE WAS SAFE") == "suspense"
+    assert r"\blur7" in content
+    assert r"\t(0,320,\fscx100\fscy100\blur0)" in content
+    assert "0:00:02.60,Hook" in content
 
 
 def test_smart_layout_moves_captions_below_the_gameplay_panel(tmp_path: Path):
