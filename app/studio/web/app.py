@@ -689,6 +689,68 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         runner.submit(job_id)
         return {"id": job_id, "status": "queued", "message": "URL ajoutée à la file de traitement."}
 
+
+    @app.post("/api/shorts/url/batch", status_code=202)
+    def create_shorts_from_urls(
+        urls: Annotated[str, Form()],
+        streamer: Annotated[str, Form()] = "",
+        note: Annotated[str, Form()] = "",
+        rights_confirmed: Annotated[bool, Form()] = False,
+        layout: Annotated[str, Form()] = "smart",
+        crop_x: Annotated[int, Form()] = 80,
+        crop_y: Annotated[int, Form()] = 50,
+        dynamic_zoom: Annotated[bool, Form()] = True,
+        zoom_percent: Annotated[int, Form()] = 8,
+        captions_enabled: Annotated[bool, Form()] = True,
+        caption_voice_mode: Annotated[str, Form()] = "dominant",
+        brand_enabled: Annotated[bool, Form()] = True,
+        auto_trim_enabled: Annotated[bool, Form()] = True,
+        sfx_enabled: Annotated[bool, Form()] = True,
+        hook_text: Annotated[str, Form()] = "",
+        context_text: Annotated[str, Form()] = "",
+    ) -> dict:
+        """Queue up to ten Twitch URLs with the same Short editing settings."""
+        if not rights_confirmed:
+            raise HTTPException(status_code=400, detail="Confirme que tu disposes des droits ou autorisations nécessaires pour utiliser ces sources.")
+        raw_urls = [line.strip() for line in str(urls or "").splitlines() if line.strip()]
+        unique_urls = list(dict.fromkeys(raw_urls))
+        if not unique_urls:
+            raise HTTPException(status_code=400, detail="Colle au moins une URL Twitch.")
+        if len(unique_urls) > 10:
+            raise HTTPException(status_code=400, detail="Maximum 10 URLs par lot. Divise ta liste en plusieurs lots.")
+        options = _validate_edit_options(layout, crop_x, crop_y, dynamic_zoom, zoom_percent, captions_enabled, brand_enabled, hook_text, context_text, auto_trim_enabled, sfx_enabled, caption_voice_mode)
+        created: list[dict[str, str]] = []
+        rejected: list[dict[str, str]] = []
+        clean_seen: set[str] = set()
+        for raw_url in unique_urls:
+            try:
+                clean_url = _validate_twitch_source(raw_url)
+                if clean_url in clean_seen:
+                    continue
+                clean_seen.add(clean_url)
+            except HTTPException as exc:
+                rejected.append({"url": raw_url[:200], "reason": str(exc.detail)})
+                continue
+            job_id = uuid.uuid4().hex
+            store.create_job({
+                "id": job_id, "source_kind": "url", "source_url": clean_url,
+                "streamer": streamer.strip()[:120], "note": note.strip()[:1000],
+                "rights_confirmed": rights_confirmed, "message": "URL ajoutée au lot de traitement",
+                "metadata": {"options": options, "batch_import": True},
+            })
+            runner.submit(job_id)
+            created.append({"id": job_id, "url": clean_url, "status": "queued"})
+        if not created:
+            reasons = "; ".join(item["reason"] for item in rejected[:3])
+            raise HTTPException(status_code=400, detail=f"Aucune URL Twitch valide. {reasons}")
+        return {
+            "created_count": len(created),
+            "rejected_count": len(rejected),
+            "jobs": created,
+            "rejected": rejected,
+            "message": f"{len(created)} Short(s) ajouté(s) à la file." + (f" {len(rejected)} URL(s) ignorée(s)." if rejected else ""),
+        }
+
     def _whisper_gpu_fingerprint() -> dict | None:
         binary = config.path_for("executables", "whisper_cli")
         model = config.path_for("transcription", "model_path")
