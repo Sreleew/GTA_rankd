@@ -854,6 +854,11 @@ def test_best_of_plan_api_requires_validated_local_clips_and_preserves_order(tmp
         output.write_bytes(b"rendered")
         with app.state.store._connect() as connection:
             connection.execute(
+                """INSERT INTO jobs (id, status, source_kind, created_at, updated_at)
+                   VALUES (?, 'validated', 'upload', ?, ?)""",
+                (clip_id, "2026-11-27T12:00:00", "2026-11-27T12:00:00"),
+            )
+            connection.execute(
                 """INSERT INTO clips (id, job_id, date_key, duration, output_path, status, created_at)
                    VALUES (?, ?, ?, ?, ?, 'validated', ?)""",
                 (clip_id, clip_id, "2026-11-27", 140, str(output), "2026-11-27T12:00:00"),
