@@ -159,23 +159,26 @@ def test_long_clip_excerpt_can_start_after_a_natural_pause_without_punctuation()
 
 def test_long_clip_excerpt_keeps_delayed_streamer_reaction_after_audio_peak() -> None:
     words = [
-        WordTiming(20.0, 20.3, "Wait"),
-        WordTiming(20.3, 20.6, "what"),
-        WordTiming(20.6, 20.9, "happened?"),
-        WordTiming(24.0, 24.3, "BRO"),
-        WordTiming(24.3, 24.7, "NO"),
-        WordTiming(24.7, 25.2, "WAY!"),
-        WordTiming(27.0, 27.4, "That"),
-        WordTiming(27.4, 27.8, "was"),
-        WordTiming(27.8, 28.2, "crazy."),
+        WordTiming(60.0, 60.3, "We"),
+        WordTiming(60.3, 60.6, "were"),
+        WordTiming(60.6, 61.0, "driving."),
+        WordTiming(80.0, 80.3, "Wait"),
+        WordTiming(80.3, 80.6, "what"),
+        WordTiming(80.6, 80.9, "happened?"),
+        WordTiming(84.0, 84.3, "BRO"),
+        WordTiming(84.3, 84.7, "NO"),
+        WordTiming(84.7, 85.2, "WAY!"),
+        WordTiming(87.0, 87.4, "That"),
+        WordTiming(87.4, 87.8, "was"),
+        WordTiming(87.8, 88.2, "crazy."),
     ]
 
     start, end = select_excerpt_range(
-        180.0, 21.0, words, minimum_seconds=60.0, maximum_seconds=165.0,
+        180.0, 81.0, words, minimum_seconds=60.0, maximum_seconds=165.0,
     )
 
-    assert start <= 21.0
-    assert end >= 27.2  # reaction phrase + configured tail
+    assert start <= 81.0
+    assert end >= 87.2  # reaction phrase + configured tail
     assert 60.0 <= end - start <= 165.0
 
 
