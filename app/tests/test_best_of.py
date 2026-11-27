@@ -120,7 +120,7 @@ def test_best_of_renderer_reencodes_landscape_and_adds_silence_when_needed(tmp_p
 
 def test_best_of_plan_rejects_non_finite_clip_durations(tmp_path: Path):
     clip = _clip(tmp_path, "invalid-duration", float("nan"))
-    with pytest.raises(ValueError, match="Durée du Short"):
+    with pytest.raises(ValueError, match="durée du Short"):
         build_best_of_plan([clip], ["invalid-duration"])
 
 
