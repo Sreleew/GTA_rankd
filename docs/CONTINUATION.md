@@ -195,7 +195,8 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 ## 11. Prochaines étapes priorisées
 
 1. Mettre à jour une installation v0.8.5 via **Paramètres > Mises à jour**. La Release v0.8.6 publiée comprend le ZIP Windows et `SHA256SUMS.txt` ; aucune extraction manuelle n'est nécessaire.
-2. Générer un premier lot de 3 à 5 Shorts à partir de clips Twitch et de passages VOD, puis vérifier la diversité réelle des moments sélectionnés et les coupes de réaction.
+2. Pour une longue VOD, saisir directement les plages en `HH:MM:SS` ou en secondes ; garder chaque plage sous 3 heures et travailler par tranches de 30 à 90 minutes.
+3. Générer un premier lot de 3 à 5 Shorts à partir de clips Twitch et de passages VOD, puis vérifier la diversité réelle des moments sélectionnés et les coupes de réaction.
 3. Vérifier sur la RX 9060 XT l'encodage AMF, Whisper Vulkan et Ollama/Qwen pendant un cycle complet de téléchargement, analyse et rendu.
 4. Corriger uniquement les défauts récurrents constatés sur les vrais rendus : coupe incompréhensible, cadrage raté, sous-titres illisibles, audio défectueux ou métadonnées trompeuses.
 5. Démarrer la publication régulière et mesurer les résultats avant d'investir du temps dans les fonctions secondaires.
@@ -218,6 +219,7 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - Release v0.8.6 : publiée le 27 novembre 2026. Workflow [45986253187](https://github.com/Sreleew/GTA_rankd/actions/runs/45986253187) réussi. ZIP de 193 520 octets et `SHA256SUMS.txt` publiés.
 - SHA-256 du ZIP v0.8.6 : `bcbe46f063fc3918b3a6a9b33a25f56ed87e453fb9e2f769b763878c870cee0e`.
 - CI post-fusion sur le commit de release : Linux et Windows réussis. Les dernières mises à jour documentaires sont en cours de revalidation sur `main`.
+- PR #26 en préparation : les champs de plages horaires acceptent désormais le format lisible `HH:MM:SS` ou les secondes, afin de simplifier le découpage manuel d'une longue VOD en plages de 3 h maximum. Tests API ajoutés pour une plage commençant à 12 h 30 et pour les composants hors limites.
 - Validation matérielle : aucune validation réelle AMF/Vulkan sur la RX 9060 XT n'a été effectuée pendant ces lots.
 ## 12. Message de reprise prêt à copier
 
