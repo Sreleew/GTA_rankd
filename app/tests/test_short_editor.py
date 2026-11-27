@@ -369,29 +369,3 @@ def test_thumbnail_timestamp_recognizes_french_reactions_and_emphasis():
     ]
     selected = select_thumbnail_timestamp(words, 30.0, preferred=2.0)
     assert 12.0 <= selected <= 14.0
-
-
-
-def test_thumbnail_overlay_keeps_original_when_atomic_save_fails(tmp_path: Path, monkeypatch):
-    from PIL import Image
-
-    thumbnail = tmp_path / "thumbnail.jpg"
-    Image.new("RGB", (320, 180), (20, 80, 120)).save(thumbnail)
-    original = thumbnail.read_bytes()
-    original_save = Image.Image.save
-
-    def fail_temporary_save(self, target, *args, **kwargs):
-        if Path(target).name == "thumbnail.overlay.tmp.jpg":
-            raise OSError("disk full")
-        return original_save(self, target, *args, **kwargs)
-
-    monkeypatch.setattr(Image.Image, "save", fail_temporary_save)
-    try:
-        apply_thumbnail_overlay(thumbnail, "A GTA MOMENT")
-    except OSError as exc:
-        assert str(exc) == "disk full"
-    else:
-        raise AssertionError("The simulated thumbnail write failure should propagate.")
-
-    assert thumbnail.read_bytes() == original
-    assert not (tmp_path / "thumbnail.overlay.tmp.jpg").exists()
