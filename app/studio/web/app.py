@@ -77,6 +77,7 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
     outputs.mkdir(parents=True, exist_ok=True)
 
     store = Store(config.path_for("paths", "database"))
+    store.recover_interrupted_best_of_jobs()
     runner = JobRunner(config, store)
     runner.start()
     model_manager = ModelManager(config.path_for("transcription", "model_path"))
@@ -98,8 +99,30 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
     app.state.highlight_scanner = highlight_scanner
     app.state.project_root = root
     app.state.uvicorn_server = None
-    app.state.bestof_jobs = {}
-    app.state.bestof_jobs_lock = threading.Lock()
+    def _best_of_job_payload(job: dict) -> dict:
+        output_path_value = str(job.get("output_path") or "")
+        output_path = Path(output_path_value) if output_path_value else None
+        file_available = bool(output_path and output_path.is_file())
+        output_url = job.get("output_url") if file_available else None
+        message = str(job.get("message") or "")
+        if job.get("status") == "completed" and not file_available:
+            message = "Le rendu est terminé, mais le fichier exporté est introuvable sur ce PC."
+        return {
+            "id": job["id"],
+            "status": job["status"],
+            "progress": int(job.get("progress") or 0),
+            "message": message,
+            "date_key": job.get("date_key") or "",
+            "clip_count": int(job.get("clip_count") or 0),
+            "total_duration": float(job.get("total_duration") or 0),
+            "created_at": job.get("created_at"),
+            "updated_at": job.get("updated_at"),
+            "output_url": output_url,
+            "file_available": file_available,
+            "error": job.get("error"),
+            "result": job.get("result") or {},
+        }
+
 
     @app.get("/api/health")
     def health() -> dict:
@@ -1106,9 +1129,13 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
+    @app.get("/api/bestof/jobs")
+    def list_best_of_jobs(limit: int = 10) -> list[dict]:
+        return [_best_of_job_payload(job) for job in store.list_best_of_jobs(limit)]
+
     @app.post("/api/bestof/render", status_code=202)
     def render_best_of(payload: dict) -> dict:
-        """Queue a validated Daily Best Of render without blocking the browser."""
+        """Queue a validated Daily Best Of render and persist its lifecycle."""
         clip_ids = payload.get("clip_ids") if isinstance(payload, dict) else None
         date_key = payload.get("date_key") if isinstance(payload, dict) else None
         if date_key is not None:
@@ -1127,15 +1154,23 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
             date_folder = "episode"
         output_dir = outputs / "bestof" / date_folder
         output_path = output_dir / f"daily-best-of-{job_id[:8]}.mp4"
-        with app.state.bestof_jobs_lock:
-            app.state.bestof_jobs[job_id] = {
-                "id": job_id, "status": "queued", "progress": 0,
-                "message": "Épisode en attente de rendu", "output_url": None, "error": None,
-            }
+        store.create_best_of_job({
+            "id": job_id,
+            "status": "queued",
+            "progress": 0,
+            "message": "Épisode en attente de rendu",
+            "date_key": plan.get("date_key"),
+            "clip_count": plan.get("clip_count"),
+            "total_duration": plan.get("total_duration"),
+            "plan": plan,
+            "output_path": str(output_path),
+        })
 
         def _run_best_of() -> None:
-            with app.state.bestof_jobs_lock:
-                app.state.bestof_jobs[job_id].update(status="running", progress=10, message="Assemblage et encodage 16:9")
+            store.update_best_of_job(
+                job_id, status="running", progress=10,
+                message="Assemblage et encodage 16:9",
+            )
             try:
                 ffmpeg_bin = str(config.get("executables", "ffmpeg", default="ffmpeg"))
                 ffprobe_bin = str(config.get("executables", "ffprobe", default="ffprobe"))
@@ -1153,29 +1188,38 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
                     plan, output_path, ffmpeg=ffmpeg_bin, ffprobe=ffprobe_bin, encoder=encoder,
                 )
                 relative = output_path.relative_to(outputs).as_posix()
-                with app.state.bestof_jobs_lock:
-                    app.state.bestof_jobs[job_id].update(
-                        status="completed", progress=100, message="Daily Best Of prêt",
-                        output_url=f"/outputs/{relative}", result=result,
-                    )
+                store.update_best_of_job(
+                    job_id, status="completed", progress=100, message="Daily Best Of prêt",
+                    output_url=f"/outputs/{relative}", result_json=result, error=None,
+                )
             except Exception as exc:
                 logger.exception("Échec du Daily Best Of %s", job_id)
-                with app.state.bestof_jobs_lock:
-                    app.state.bestof_jobs[job_id].update(
-                        status="error", progress=100, message="Le rendu Daily Best Of a échoué",
-                        error=str(exc)[:500],
-                    )
+                error_message = str(exc)[:500]
+                store.update_best_of_job(
+                    job_id, status="error", progress=100,
+                    message="Le rendu Daily Best Of a échoué", error=error_message,
+                )
 
-        threading.Thread(target=_run_best_of, name=f"bestof-{job_id[:8]}", daemon=True).start()
+        thread = threading.Thread(
+            target=_run_best_of, name=f"bestof-{job_id[:8]}", daemon=True,
+        )
+        try:
+            thread.start()
+        except Exception as exc:
+            logger.exception("Démarrage du Daily Best Of %s impossible", job_id)
+            store.update_best_of_job(
+                job_id, status="error", progress=100,
+                message="Le rendu Daily Best Of n'a pas pu démarrer", error=str(exc)[:500],
+            )
+            raise HTTPException(status_code=500, detail="Le rendu Daily Best Of n'a pas pu démarrer.") from exc
         return {"id": job_id, "status": "queued", "message": "Rendu Daily Best Of lancé."}
 
     @app.get("/api/bestof/jobs/{job_id}")
     def get_best_of_job(job_id: str) -> dict:
-        with app.state.bestof_jobs_lock:
-            job = app.state.bestof_jobs.get(job_id)
-            if job is None:
-                raise HTTPException(status_code=404, detail="Rendu Daily Best Of introuvable.")
-            return dict(job)
+        job = store.get_best_of_job(job_id)
+        if job is None:
+            raise HTTPException(status_code=404, detail="Rendu Daily Best Of introuvable.")
+        return _best_of_job_payload(job)
 
     @app.post("/api/shutdown")
     def shutdown() -> dict:

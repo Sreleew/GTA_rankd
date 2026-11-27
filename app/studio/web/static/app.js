@@ -1,4 +1,4 @@
-const state = { page: 'dashboard', file: null, toastTimer: null, modelPoll: null, whisperGpuProbeRunning: false, ollamaVerifyRunning: false, ollamaVerificationResult: null, updatePoll: null, updateInProgress: false, updateTargetVersion: '', bestOfClips: [], bestOfSelectedIds: [], bestOfDate: '', bestOfPlan: null, bestOfRenderJob: null, shortBatchIds: [], shortBatchRetrying: new Set() };
+const state = { page: 'dashboard', file: null, toastTimer: null, modelPoll: null, whisperGpuProbeRunning: false, ollamaVerifyRunning: false, ollamaVerificationResult: null, updatePoll: null, updateInProgress: false, updateTargetVersion: '', bestOfClips: [], bestOfSelectedIds: [], bestOfDate: '', bestOfPlan: null, bestOfRenderJob: null, bestOfHistoryPoll: null, bestOfHistoryLoading: false, shortBatchIds: [], shortBatchRetrying: new Set() };
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 
@@ -13,6 +13,10 @@ function toast(message, error = false) {
 
 function setPage(name) {
   state.page = name;
+  if (name !== 'bestof' && state.bestOfHistoryPoll) {
+    clearInterval(state.bestOfHistoryPoll);
+    state.bestOfHistoryPoll = null;
+  }
   $$('.page').forEach(page => page.classList.toggle('active', page.id === `page-${name}`));
   $$('.nav-item').forEach(item => item.classList.toggle('active', item.dataset.page === name));
   const labels = { dashboard: 'Vue d\'ensemble', shorts: 'Créer un Short', highlights: 'Moments forts', library: 'Clip library', bestof: 'Daily Best Of', settings: 'Paramètres' };
@@ -305,7 +309,62 @@ function renderBestOf() {
   if (renderButton) renderButton.classList.add('hidden');
 }
 
+async function loadBestOfHistory(silent = false) {
+  const container = $('#bestof-history');
+  if (!container || state.bestOfHistoryLoading) return;
+  state.bestOfHistoryLoading = true;
+  try {
+    const jobs = await api('/api/bestof/jobs?limit=10');
+    const labels = {
+      queued: 'En attente',
+      running: 'En cours',
+      completed: 'Terminé',
+      error: 'Interrompu / erreur',
+    };
+    container.innerHTML = jobs.length ? jobs.map(job => {
+      const progress = Math.max(0, Math.min(100, Number(job.progress) || 0));
+      const dateLabel = job.date_key
+        ? new Date(`${job.date_key}T12:00:00`).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
+        : '';
+      const createdLabel = job.created_at
+        ? new Date(job.created_at).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+        : '';
+      const clipCount = Number(job.clip_count) || 0;
+      const duration = formatMediaTime(job.total_duration);
+      const details = [dateLabel, `${clipCount} Short${clipCount > 1 ? 's' : ''}`, duration].filter(Boolean).join(' · ');
+      const link = job.output_url && job.file_available
+        ? `<a class="mini-button bestof-download" href="${escapeHtml(job.output_url)}" download>Ouvrir / télécharger</a>`
+        : (job.status === 'completed'
+          ? '<small class="bestof-history-missing">Fichier exporté introuvable sur ce PC.</small>'
+          : '');
+      const detail = job.error || job.message || '';
+      return `<article class="bestof-history-item">
+        <div class="bestof-history-main">
+          <div class="bestof-history-heading"><strong>Daily Best Of</strong><span class="status-pill ${escapeHtml(job.status)}">${escapeHtml(labels[job.status] || job.status || '')}</span></div>
+          <small>${escapeHtml(details)}${createdLabel ? ` · créé le ${escapeHtml(createdLabel)}` : ''}</small>
+          <p>${escapeHtml(detail)}</p>
+          ${['queued', 'running'].includes(job.status) ? `<div class="bestof-history-progress"><span style="width:${progress}%"></span></div>` : ''}
+        </div>
+        <div class="bestof-history-action">${link}</div>
+      </article>`;
+    }).join('') : '<div class="empty-state compact-empty">Aucun épisode généré pour le moment.</div>';
+
+    const hasActiveJob = jobs.some(job => ['queued', 'running'].includes(job.status));
+    if (hasActiveJob && state.page === 'bestof' && !state.bestOfHistoryPoll) {
+      state.bestOfHistoryPoll = setInterval(() => loadBestOfHistory(true), 2500);
+    } else if (!hasActiveJob && state.bestOfHistoryPoll) {
+      clearInterval(state.bestOfHistoryPoll);
+      state.bestOfHistoryPoll = null;
+    }
+  } catch (error) {
+    if (!silent) toast(error.message, true);
+  } finally {
+    state.bestOfHistoryLoading = false;
+  }
+}
+
 async function loadBestOf() {
+  await loadBestOfHistory();
   try {
     state.bestOfClips = await api('/api/clips?limit=200');
     const dates = [...new Set(state.bestOfClips.map(clip => String(clip.date_key || '').slice(0, 10)).filter(Boolean))].sort().reverse();
@@ -375,6 +434,7 @@ async function renderBestOfEpisode() {
       body: JSON.stringify({ clip_ids: state.bestOfSelectedIds, date_key: state.bestOfDate }),
     });
     state.bestOfRenderJob = started.id;
+    await loadBestOfHistory();
     let finished = false;
     const deadline = Date.now() + 45 * 60 * 1000;
     while (!finished && Date.now() < deadline) {
@@ -403,6 +463,7 @@ async function renderBestOfEpisode() {
   } finally {
     button.disabled = false;
     button.textContent = 'Générer le Daily Best Of 16:9';
+    await loadBestOfHistory(true);
   }
 }
 

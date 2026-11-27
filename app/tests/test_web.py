@@ -140,7 +140,7 @@ def test_whisper_gpu_button_uses_fresh_script_and_visible_feedback():
     static = Path(__file__).resolve().parents[1] / "studio" / "web" / "static"
     html = (static / "index.html").read_text(encoding="utf-8")
     js = (static / "app.js").read_text(encoding="utf-8")
-    assert '<script src="/static/app.js?v=0.8.9-thumbnail-fallback"></script>' in html
+    assert '<script src="/static/app.js?v=0.8.9-bestof-history"></script>' in html
     assert '<button type="button" class="mini-button" id="verify-whisper-gpu"' in html
     assert "/api/models/whisper/verify" in js
     assert "if (verifyGpuButton) verifyGpuButton.addEventListener('click', verifyWhisperGpu);" in js
@@ -213,7 +213,7 @@ def test_ollama_verify_button_has_a_dedicated_visible_handler():
     static = Path(__file__).resolve().parents[1] / "studio" / "web" / "static"
     html = (static / "index.html").read_text(encoding="utf-8")
     js = (static / "app.js").read_text(encoding="utf-8")
-    assert '<script src="/static/app.js?v=0.8.9-thumbnail-fallback"></script>' in html
+    assert '<script src="/static/app.js?v=0.8.9-bestof-history"></script>' in html
     assert '<button type="button" class="mini-button" id="verify-ollama"' in html
     assert "#refresh-models-secondary" in js
     assert "/api/models/ollama/verify" in js
@@ -916,6 +916,131 @@ def test_daily_best_of_ui_exposes_selection_order_and_duration_validation():
     assert "data-bestof-up" in js
     assert "data-bestof-down" in js
     assert "total >= 540 && total <= 660" in js
+    assert 'id="bestof-history"' in html
+    assert "/api/bestof/jobs?limit=10" in js
+    assert "bestOfHistoryPoll" in js
+
+
+def test_best_of_store_recovers_interrupted_jobs_and_keeps_completed_history(tmp_path: Path):
+    store = Store(tmp_path / "bestof.sqlite")
+    store.create_best_of_job({
+        "id": "bestof-running",
+        "status": "running",
+        "progress": 35,
+        "message": "Assemblage en cours",
+        "date_key": "2026-11-27",
+        "clip_count": 4,
+        "total_duration": 560,
+        "plan": {"clips": [{"id": "clip-a"}]},
+        "output_path": str(tmp_path / "running.mp4"),
+    })
+    store.create_best_of_job({
+        "id": "bestof-completed",
+        "status": "completed",
+        "progress": 100,
+        "message": "Daily Best Of prêt",
+        "date_key": "2026-11-26",
+        "clip_count": 4,
+        "total_duration": 560,
+        "plan": {"clips": [{"id": "clip-b"}]},
+        "output_path": str(tmp_path / "completed.mp4"),
+        "output_url": "/outputs/bestof/completed.mp4",
+        "result": {"width": 1920, "height": 1080},
+    })
+
+    interrupted = store.get_best_of_job("bestof-running")
+    assert interrupted is not None
+    assert interrupted["plan"]["clips"][0]["id"] == "clip-a"
+    assert interrupted["progress"] == 35
+    assert store.get_best_of_job("bestof-completed")["result"]["width"] == 1920
+
+    assert store.recover_interrupted_best_of_jobs() == 1
+    recovered = store.get_best_of_job("bestof-running")
+    assert recovered["status"] == "error"
+    assert "interrompu" in recovered["message"]
+    assert recovered["plan"]["clips"][0]["id"] == "clip-a"
+    assert store.get_best_of_job("bestof-completed")["status"] == "completed"
+    assert {job["id"] for job in store.list_best_of_jobs(10)} == {"bestof-completed", "bestof-running"}
+
+
+def test_daily_best_of_render_history_survives_app_restart(tmp_path: Path, monkeypatch):
+    from types import SimpleNamespace
+
+    import studio.web.app as app_module
+
+    config = load_config(_make_isolated_app_config(tmp_path))
+    app = create_app(config)
+    client = TestClient(app)
+    clip_ids = ["episode-a", "episode-b", "episode-c", "episode-d"]
+    for clip_id in clip_ids:
+        output = tmp_path / f"{clip_id}.mp4"
+        output.write_bytes(b"rendered short")
+        with app.state.store._connect() as connection:
+            connection.execute(
+                """INSERT INTO jobs (id, status, source_kind, created_at, updated_at)
+                   VALUES (?, 'validated', 'upload', ?, ?)""",
+                (clip_id, "2026-11-27T12:00:00", "2026-11-27T12:00:00"),
+            )
+            connection.execute(
+                """INSERT INTO clips (id, job_id, date_key, duration, output_path, status, created_at)
+                   VALUES (?, ?, '2026-11-27', 140, ?, 'validated', ?)""",
+                (clip_id, clip_id, str(output), "2026-11-27T12:00:00"),
+            )
+
+    def fake_render(plan, output_path, **kwargs):
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_bytes(b"complete Daily Best Of")
+        return {"width": 1920, "height": 1080, "duration": 560, "clip_count": len(plan["clips"])}
+
+    class ImmediateThread:
+        def __init__(self, *, target, name, daemon):
+            self.target = target
+
+        def start(self):
+            self.target()
+
+    with monkeypatch.context() as patcher:
+        patcher.setattr(app_module, "render_best_of_episode", fake_render)
+        patcher.setattr(app_module, "run_quiet", lambda *args, **kwargs: SimpleNamespace(
+            returncode=1, stdout="", stderr="",
+        ))
+        patcher.setattr(app_module, "threading", SimpleNamespace(Thread=ImmediateThread))
+        response = client.post(
+            "/api/bestof/render",
+            json={"clip_ids": clip_ids, "date_key": "2026-11-27"},
+        )
+
+    assert response.status_code == 202, response.text
+    render_id = response.json()["id"]
+    completed = client.get(f"/api/bestof/jobs/{render_id}")
+    assert completed.status_code == 200
+    assert completed.json()["status"] == "completed"
+    assert completed.json()["file_available"] is True
+    assert completed.json()["output_url"].endswith(".mp4")
+    history = client.get("/api/bestof/jobs?limit=10")
+    assert history.status_code == 200
+    assert any(job["id"] == render_id and job["status"] == "completed" for job in history.json())
+
+    app.state.store.create_best_of_job({
+        "id": "bestof-interrupted-on-exit",
+        "status": "running",
+        "progress": 42,
+        "message": "Assemblage et encodage 16:9",
+        "date_key": "2026-11-27",
+        "clip_count": 4,
+        "total_duration": 560,
+        "plan": {"clips": [{"id": clip_ids[0]}]},
+        "output_path": str(tmp_path / "partial.mp4"),
+    })
+    restarted_app = create_app(config)
+    restarted_client = TestClient(restarted_app)
+    interrupted = restarted_client.get("/api/bestof/jobs/bestof-interrupted-on-exit")
+    assert interrupted.status_code == 200
+    assert interrupted.json()["status"] == "error"
+    assert "interrompu" in interrupted.json()["message"]
+    restored_completed = restarted_client.get(f"/api/bestof/jobs/{render_id}")
+    assert restored_completed.status_code == 200
+    assert restored_completed.json()["status"] == "completed"
 
 
 def test_retry_failed_twitch_url_creates_a_fresh_download_job(tmp_path: Path):
@@ -1174,7 +1299,7 @@ def test_batch_twitch_import_is_available_in_shorts_ui():
     assert 'id="short-batch-urls"' in html
     assert 'id="short-batch-submit"' in html
     assert 'id="short-batch-tracker"' in html
-    assert "v=0.8.9-thumbnail-fallback" in html
+    assert "v=0.8.9-bestof-history" in html
     assert "JUSQU'À 10 URLS" in html
     assert "/api/shorts/url/batch" in js
     assert "/api/shorts/batches/" in js
