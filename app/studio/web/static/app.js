@@ -68,22 +68,9 @@ function jobCard(job) {
   const quality = metadata.quality_report || null;
   const qualityLabels = { passed: 'QC OK', review: 'À vérifier', partial: 'Contrôle partiel', failed: 'Problème détecté' };
   const qualityHtml = quality ? `<details class="quality-report ${escapeHtml(quality.status || 'partial')}"><summary><span>Contrôle qualité</span><strong>${escapeHtml(qualityLabels[quality.status] || 'Contrôle')}</strong></summary><p>${escapeHtml(quality.summary || '')}</p>${(quality.warnings || []).length ? `<ul>${quality.warnings.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>` : ''}</details>` : '';
-  const speakerFilterStatus = metadata.speaker_filter?.status || '';
-  const voiceState = {
-    dominant_filtered: 'Voix principale isolée',
-    single_speaker: 'Une seule voix détectée',
-    all_voices: 'Toutes les voix sous-titrées',
-  }[speakerFilterStatus] || '';
-  const subtitleState = ['ambiguous_speakers', 'low_word_attribution', 'diarization_unavailable', 'no_speaker_segments'].includes(speakerFilterStatus)
-    ? 'Sous-titres omis : voix non isolée'
-    : metadata.transcription_status === 'completed'
-      ? 'Sous-titres mot à mot (DTW)'
-      : metadata.transcription_status === 'completed_segment_fallback'
-        ? 'Sous-titres par segment (DTW indisponible)'
-        : metadata.transcription_message || '';
   return `<article class="job-card">
     ${thumbUrl ? `<img class="job-thumb" src="${thumbUrl}" alt="Miniature du Short">` : `<div class="job-thumb job-thumb-placeholder">▶</div>`}
-    <div class="job-main"><strong title="${escapeHtml(title)}">${escapeHtml(title)}</strong>${socialCaption ? `<div class="job-caption">${escapeHtml(socialCaption)}</div>` : ''}<div class="job-meta">${escapeHtml(meta || (job.source_kind || 'clip').toUpperCase())}</div><div class="job-message">${escapeHtml(job.message || '')}${subtitleState ? ` · ${escapeHtml(subtitleState)}` : ''}${voiceState ? ` · ${escapeHtml(voiceState)}` : ''}${job.error ? ` · ${escapeHtml(job.error.slice(0, 200))}` : ''}</div>${qualityHtml}${['queued','running'].includes(job.status) ? `<div class="job-progress"><span style="width:${progress}%"></span></div>` : ''}${actions}</div>
+    <div class="job-main"><strong title="${escapeHtml(title)}">${escapeHtml(title)}</strong>${socialCaption ? `<div class="job-caption">${escapeHtml(socialCaption)}</div>` : ''}<div class="job-meta">${escapeHtml(meta || (job.source_kind || 'clip').toUpperCase())}</div><div class="job-message">${escapeHtml(job.message || '')}${job.error ? ` · ${escapeHtml(job.error.slice(0, 200))}` : ''}</div>${qualityHtml}${['queued','running'].includes(job.status) ? `<div class="job-progress"><span style="width:${progress}%"></span></div>` : ''}${actions}</div>
     <div class="job-side"><span class="status-pill ${escapeHtml(job.status)}">${statusLabel(job.status)}</span></div>
   </article>`;
 }
