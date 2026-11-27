@@ -10,26 +10,29 @@ from studio.web.short_editor import WordTiming, create_ass_file
 from studio.web.short_renderer import build_filter_complex, create_hook_sound_effect, probe_media, render_vertical_short
 
 
-def test_smart_layout_builds_large_gameplay_panel_and_respects_horizontal_focus() -> None:
+def test_smart_layout_fits_the_complete_source_inside_the_editorial_panel() -> None:
     graph = build_filter_complex(
         width=1080, height=1920, layout="smart", crop_x=80,
         source_width=1920, source_height=1080,
     )
-    assert "scale=-2:921" in graph
-    assert "crop=1080:921:(in_w-out_w)*0.800" in graph
+    assert "[0:v]split=3[bgsrc][panelbgsrc][fgsrc]" in graph
+    assert "scale=1080:921:force_original_aspect_ratio=decrease" in graph
+    assert "[panelbg][panelfg]overlay=(W-w)/2:(H-h)/2" in graph
+    assert "crop=1080:921:(in_w-out_w)*0.800" not in graph
     assert "overlay=(W-w)/2:576" in graph
-    assert "boxblur=28:10" in graph
+    assert graph.count("boxblur=28:10") == 2
     assert "drawbox=x=37:y=571:w=1006:h=932:color=white@0.30:t=2" in graph
     assert "drawbox=x=37:y=599:w=6:h=875:color=0xF6C445@0.96:t=fill" in graph
 
 
-def test_smart_layout_preserves_portrait_sources_without_aggressive_crop() -> None:
+def test_smart_layout_fits_portrait_sources_inside_the_same_editorial_panel() -> None:
     graph = build_filter_complex(
         width=1080, height=1920, layout="smart",
         source_width=1080, source_height=1920,
     )
-    assert "scale=-2:921,setsar=1[panel]" in graph
-    assert "crop=1080:921" not in graph
+    assert "scale=1080:921:force_original_aspect_ratio=decrease" in graph
+    assert "[panelbg][panelfg]overlay=(W-w)/2:(H-h)/2" in graph
+    assert "crop=1080:921:(in_w-out_w)*" not in graph
 
 
 def test_dynamic_zoom_uses_multiple_audio_moments_when_available() -> None:
@@ -239,3 +242,54 @@ def test_render_reuses_source_probe_and_returns_output_probe(tmp_path: Path, mon
     assert result["output_media_info"] == output_info
     assert set(result["performance_timings_ms"]) == {"encode_ms", "output_probe_ms", "thumbnail_ms", "total_ms"}
     assert all(value >= 0 for value in result["performance_timings_ms"].values())
+
+
+@pytest.mark.skipif(shutil.which("ffmpeg") is None or shutil.which("ffprobe") is None, reason="FFmpeg/FFprobe absent")
+def test_smart_layout_keeps_both_edges_of_a_twitch_frame_visible(tmp_path: Path) -> None:
+    ffmpeg = shutil.which("ffmpeg")
+    ffprobe = shutil.which("ffprobe")
+    assert ffmpeg and ffprobe
+    source = tmp_path / "source-with-webcam-at-edge.mp4"
+    output = tmp_path / "full-frame-short.mp4"
+    thumbnail = tmp_path / "full-frame-thumbnail.jpg"
+
+    subprocess.run(
+        [
+            ffmpeg, "-hide_banner", "-loglevel", "error", "-y",
+            "-f", "lavfi", "-i", "color=c=red:s=640x360:r=30:d=1",
+            "-vf",
+            "drawbox=x=0:y=0:w=80:h=360:color=green:t=fill,"
+            "drawbox=x=560:y=0:w=80:h=360:color=blue:t=fill",
+            "-an", "-c:v", "libx264", "-pix_fmt", "yuv420p", str(source),
+        ],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        check=True, timeout=60,
+    )
+
+    render_vertical_short(
+        source, output, thumbnail,
+        ffmpeg=ffmpeg, ffprobe=ffprobe,
+        preferred_encoder="libx264", fallback_encoder="libx264",
+        width=360, height=640, layout="smart", dynamic_zoom=False,
+    )
+
+    frame = subprocess.run(
+        [
+            ffmpeg, "-hide_banner", "-loglevel", "error", "-ss", "0.5",
+            "-i", str(output), "-frames:v", "1", "-f", "rawvideo",
+            "-pix_fmt", "rgb24", "-",
+        ],
+        capture_output=True, check=True, timeout=60,
+    ).stdout
+    assert len(frame) == 360 * 640 * 3
+
+    def pixel(x: int, y: int) -> tuple[int, int, int]:
+        offset = (y * 360 + x) * 3
+        return tuple(frame[offset:offset + 3])
+
+    # The full 16:9 source is fitted into the center panel, so edge content
+    # (where Twitch webcams are often placed) must survive the vertical render.
+    left_edge = pixel(20, 345)
+    right_edge = pixel(340, 345)
+    assert left_edge[1] > left_edge[0] * 1.4 and left_edge[1] > left_edge[2] * 1.4
+    assert right_edge[2] > right_edge[0] * 1.4 and right_edge[2] > right_edge[1] * 1.4
