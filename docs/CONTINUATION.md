@@ -210,7 +210,7 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - Suite Linux sur la candidate v0.8.5 : 160 tests réussis, 1 ignoré. Suite Windows : complète et réussie.
 - PR #23 (en cours) : diversité des candidats automatiques. Ajout d'une déduplication des transcriptions longues quasi identiques, même lorsque les passages sont éloignés dans la VOD. Les transcriptions courtes et les scans audio seuls restent hors de cette règle.
 - Tests ajoutés : répétition éloignée éliminée et événements avec transcriptions distinctes conservés.
-- CI PR #23 : Ruff, pip-audit et contrôle documentaire réussis. La première suite de régression a révélé un fixture trop pauvre dans le test des transcriptions courtes (score insuffisant pour produire des candidats). Fixture renforcé avec dialogue répété et réactions, sans changer les seuils produit. Nouvelle validation Linux/Windows en cours.
+- CI PR #23 : Ruff, pip-audit et contrôle documentaire réussis. Les suites Linux/Windows ont identifié un fixture de transcriptions courtes qui ne contenait pas de payoff assez proche du pic audio et ne franchissait donc pas le seuil de score. Le scénario est réaligné sur deux événements équivalents, avec réaction immédiate après le pic. Aucun seuil produit n'est abaissé ; les validations complètes sont relancées.
 
 ## 12. Message de reprise prêt à copier
 
