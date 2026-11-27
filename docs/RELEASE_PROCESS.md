@@ -48,3 +48,11 @@ La voie `workflow_dispatch` reste disponible pour préparer une Release brouillo
 ## Protection de main
 
 Les changements de code doivent passer par une PR et les contrôles Linux/Windows. Ne pas supposer que la protection GitHub de la branche est activée sans la vérifier dans les paramètres du dépôt.
+
+
+## Préparation de la v0.8.9, 27 novembre 2026
+
+- PR #45 fusionnée : correctif du faux « Failed to fetch » pendant le redémarrage du serveur lors d'une mise à jour.
+- CI Linux [46015871458](https://github.com/Sreleew/GTA_rankd/actions/runs/46015871458) et Windows [46015871444](https://github.com/Sreleew/GTA_rankd/actions/runs/46015871444) réussies.
+- La version cible 0.8.9 ajoute la confirmation automatique de la version après redémarrage et masque les erreurs réseau transitoires attendues pendant l'installation.
+- Le test de mise à jour depuis l'application sur un PC Windows réel reste à effectuer après publication.
