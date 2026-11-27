@@ -4,7 +4,7 @@ import array
 import wave
 from pathlib import Path
 
-from studio.web.highlights import read_audio_energy, score_highlight_candidates, write_wav_chunk
+from studio.web.highlights import _IntervalIndex, read_audio_energy, score_highlight_candidates, write_wav_chunk
 from studio.web.short_editor import WordTiming
 from studio.web.store import Store
 
@@ -19,6 +19,34 @@ def _write_test_wav(path: Path) -> None:
             amplitude = 26000 if 8 <= second < 12 else 2500
             frames = array.array("h", [amplitude] * rate)
             audio.writeframes(frames.tobytes())
+
+
+def test_interval_index_matches_linear_overlap_lookup_for_sorted_and_unsorted_data() -> None:
+    sorted_intervals = [
+        {"start": 0.0, "end": 9.0},
+        {"start": 2.0, "end": 3.0},
+        {"start": 7.0, "end": 12.0},
+        {"start": 15.0, "end": 16.0},
+    ]
+    unsorted_intervals = [
+        sorted_intervals[2],
+        sorted_intervals[0],
+        sorted_intervals[3],
+        sorted_intervals[1],
+    ]
+
+    for intervals in (sorted_intervals, unsorted_intervals):
+        index = _IntervalIndex(
+            intervals,
+            start_key=lambda item: item["start"],
+            end_key=lambda item: item["end"],
+        )
+        for start, end in ((0.0, 2.0), (3.0, 7.0), (5.0, 8.0), (10.0, 11.0), (12.0, 15.0)):
+            expected = [
+                item for item in intervals
+                if item["end"] > start and item["start"] < end
+            ]
+            assert index.overlapping(start, end) == expected
 
 
 def test_read_audio_energy_detects_loud_windows(tmp_path: Path) -> None:
