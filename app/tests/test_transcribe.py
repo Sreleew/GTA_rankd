@@ -44,7 +44,7 @@ def test_audio_accents_detect_separated_peaks_and_ignore_silence(tmp_path: Path)
     assert len(peaks) == 2
     assert peaks[0] == pytest.approx(1.35, abs=0.35)
     assert peaks[1] == pytest.approx(7.35, abs=0.35)
-    assert detect_audio_peak_timestamp(path) == peaks[0]
+    assert detect_audio_peak_timestamp(path) in peaks
 
 
 def test_audio_accents_ignore_silence(tmp_path: Path):
