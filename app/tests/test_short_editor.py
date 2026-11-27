@@ -62,6 +62,9 @@ def test_hook_style_inference_selects_distinct_animations_for_short_hooks(tmp_pa
     # A generic summary must not override the actual hook's intended treatment.
     assert infer_hook_style("THE CLEANEST GETAWAY", "What happened during the chase?") == "impact"
     assert infer_hook_style("", "Wait for the police") == "suspense"
+    assert infer_hook_style("POURQUOI IL A FAIT ÇA ?") == "question"
+    assert infer_hook_style("ATTENDS DE VOIR LA SUITE") == "suspense"
+    assert infer_hook_style("C'EST INCROYABLE !") == "reaction"
 
 
 def test_caption_active_word_gets_a_subtle_kinetic_pop(tmp_path: Path):
