@@ -49,7 +49,7 @@ def test_edit_options_are_validated_and_clamped_by_api():
     smart = _validate_edit_options("smart", 80, 50, False, 0, True, True, "", "")
     assert smart["layout"] == "smart"
     assert smart["crop_x"] == 80
-    assert smart["caption_language"] == "auto"
+    assert smart["caption_language"] == "config"
     try:
         _validate_edit_options("smart", 80, 50, False, 0, True, True, "", "", caption_language="xx")
     except Exception as exc:
@@ -1429,6 +1429,7 @@ def test_batch_twitch_import_is_available_in_shorts_ui():
     assert "gta-ranked-short-batches" in js
     assert html.count('name="captions_enabled"') == 2
     assert html.count('name="caption_language"') == 2
+    assert "Réglage du Studio" in html
     assert "Détection automatique" in html
     assert "Modèle multilingue local" in html
     assert "large-v3-turbo" in html
