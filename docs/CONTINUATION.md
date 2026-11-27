@@ -599,7 +599,7 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Mesure réelle :** le renderer peut activer le protocole FFmpeg `-progress pipe:1` et convertir les timestamps média encodés en progression basée sur la durée de l'extrait. Le mécanisme reste facultatif pour préserver les appels existants.
 - **Interface :** le worker mappe l'encodage de 60 à 85 %, affiche le pourcentage dans le message du job et ajoute une valeur numérique à côté de la barre de progression. Le contrôle qualité commence ensuite à 88 % comme auparavant.
 - **Encodeurs :** la même mesure s'applique à AMD AMF et à l'encodeur CPU de secours. Chaque tentative redémarre à zéro pour éviter un pourcentage trompeur après un fallback.
-- **Tests :** le test d'intégration simulé vérifie l'activation du protocole FFmpeg et la transmission des timestamps au callback. Le test FFmpeg réel existant conserve le chemin sans callback. Aucun rendu sur la RX 9060 XT n'est revendiqué.
+- **Tests :** le test simulé vérifie l'activation du protocole FFmpeg, la conversion des timestamps en pourcentage et la tolérance à une erreur du callback initial. Le test d'intégration FFmpeg réel vérifie également que la progression évolue de façon bornée et monotone jusqu'à la fin de l'encodage. Aucun rendu sur la RX 9060 XT n'est revendiqué.
 - **Branche :** `feat/short-render-live-progress`. Clé de cache des assets `0.8.9-short-live-progress`.
 - **Arbitrage ROI :** réutiliser le helper de progression FFmpeg du Daily Best Of, sans polling additionnel ni minuterie fictive.
 - **Suite :** tests ciblés Linux/Windows, puis validation de la PR. La vérification réelle sur Windows/AMD reste à faire sur le PC utilisateur.
