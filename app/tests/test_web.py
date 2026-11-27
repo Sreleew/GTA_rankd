@@ -919,6 +919,9 @@ def test_daily_best_of_ui_exposes_selection_order_and_duration_validation():
     assert 'id="bestof-history"' in html
     assert "/api/bestof/jobs?limit=10" in js
     assert "bestOfHistoryPoll" in js
+    assert "data-retry-bestof" in js
+    assert "/api/bestof/jobs/${encodeURIComponent(jobId)}/retry" in js
+    assert "retryBestOfJob" in js
 
 
 def test_best_of_store_recovers_interrupted_jobs_and_keeps_completed_history(tmp_path: Path):
@@ -1041,6 +1044,39 @@ def test_daily_best_of_render_history_survives_app_restart(tmp_path: Path, monke
     restored_completed = restarted_client.get(f"/api/bestof/jobs/{render_id}")
     assert restored_completed.status_code == 200
     assert restored_completed.json()["status"] == "completed"
+    blocked_completed = restarted_client.post(f"/api/bestof/jobs/{render_id}/retry")
+    assert blocked_completed.status_code == 409
+
+    retryable_id = "a" * 32
+    retry_plan = restarted_app.state.store.get_best_of_job(render_id)["plan"]
+    restarted_app.state.store.create_best_of_job({
+        "id": retryable_id,
+        "status": "error",
+        "progress": 100,
+        "message": "Rendu interrompu",
+        "date_key": "2026-11-27",
+        "clip_count": 4,
+        "total_duration": 560,
+        "plan": retry_plan,
+        "output_path": str(tmp_path / "failed.mp4"),
+        "error": "Simulated render interruption",
+    })
+    with monkeypatch.context() as patcher:
+        patcher.setattr(app_module, "render_best_of_episode", fake_render)
+        patcher.setattr(app_module, "run_quiet", lambda *args, **kwargs: SimpleNamespace(
+            returncode=1, stdout="", stderr="",
+        ))
+        patcher.setattr(app_module, "threading", SimpleNamespace(Thread=ImmediateThread))
+        retried = restarted_client.post(f"/api/bestof/jobs/{retryable_id}/retry")
+        assert retried.status_code == 202, retried.text
+        retry_id = retried.json()["id"]
+        assert retry_id != retryable_id
+        retried_job = restarted_client.get(f"/api/bestof/jobs/{retry_id}")
+        assert retried_job.status_code == 200
+        assert retried_job.json()["status"] == "completed"
+        assert retried_job.json()["file_available"] is True
+        duplicate_retry = restarted_client.post(f"/api/bestof/jobs/{retryable_id}/retry")
+        assert duplicate_retry.status_code == 409
 
 
 def test_retry_failed_twitch_url_creates_a_fresh_download_job(tmp_path: Path):
