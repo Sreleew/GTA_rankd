@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from functools import lru_cache
 import logging
 import math
 import shutil
@@ -185,6 +186,13 @@ def _filter_path(path: Path | str, project_root: Path | None) -> str:
     text = value.as_posix()
     text = text.replace("\\\\", "/").replace("'", r"\\'").replace(":", r"\\:").replace(",", r"\\,")
     return f"'{text}'"
+
+
+@lru_cache(maxsize=8)
+def _available_encoder_listing(ffmpeg_bin: str) -> str:
+    """Cache FFmpeg encoder capabilities for repeated Short renders in one session."""
+    result = run_command([ffmpeg_bin, "-hide_banner", "-encoders"], timeout=30)
+    return result.stdout + result.stderr
 
 
 def build_filter_complex(
@@ -432,8 +440,7 @@ def render_vertical_short(
         raise MediaError("Les bornes de coupe dépassent la durée de la vidéo source.")
     fps = 60 if info["fps"] >= 50 else 30
     ffmpeg_bin = resolve_executable(ffmpeg)
-    encoders_result = run_command([ffmpeg_bin, "-hide_banner", "-encoders"], timeout=30)
-    encoder_text = encoders_result.stdout + encoders_result.stderr
+    encoder_text = _available_encoder_listing(ffmpeg_bin)
     encoders = [preferred_encoder, fallback_encoder]
     if preferred_encoder not in encoder_text:
         encoders = [fallback_encoder]
