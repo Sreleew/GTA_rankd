@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import math
 from pathlib import Path
 from typing import Any, Callable
@@ -9,6 +10,8 @@ from typing import Any, Callable
 MIN_EPISODE_SECONDS = 9 * 60
 MAX_EPISODE_SECONDS = 11 * 60
 MAX_SELECTED_CLIPS = 50
+
+logger = logging.getLogger(__name__)
 
 
 def build_best_of_plan(
