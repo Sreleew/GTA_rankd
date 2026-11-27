@@ -83,10 +83,15 @@ def build_best_of_filter_graph(
     width: int = 1920,
     height: int = 1080,
     fps: int = 30,
+    clip_durations: list[float] | None = None,
 ) -> str:
     """Build a 16:9 landscape canvas for vertical Shorts and concatenate them."""
     if clip_count < 1 or len(audio_input_indices) != clip_count:
         raise ValueError("Le plan vidéo Daily Best Of est invalide.")
+    if clip_durations is not None and (
+        len(clip_durations) != clip_count or any(float(value) <= 0 for value in clip_durations)
+    ):
+        raise ValueError("Les durées du Daily Best Of sont invalides.")
     if width < 2 or height < 2 or fps < 1:
         raise ValueError("Les paramètres de sortie sont invalides.")
     parts: list[str] = []
@@ -99,9 +104,18 @@ def build_best_of_filter_graph(
             f"[fgsrc{index}]scale={width}:{height}:force_original_aspect_ratio=decrease,"
             f"setsar=1[fg{index}];"
             f"[bg{index}][fg{index}]overlay=(W-w)/2:(H-h)/2,"
-            f"fps={fps},format=yuv420p,setsar=1[v{index}];"
-            f"[{audio_index}:a:0]aresample=48000,"
-            f"aformat=sample_fmts=fltp:channel_layouts=stereo[a{index}]"
+            f"fps={fps},"
+            + (
+                f"trim=duration={float(clip_durations[index]):.3f},setpts=PTS-STARTPTS,"
+                if clip_durations is not None else ""
+            )
+            + f"format=yuv420p,setsar=1[v{index}];"
+            + f"[{audio_index}:a:0]aresample=48000,apad,"
+            + (
+                f"atrim=duration={float(clip_durations[index]):.3f},"
+                if clip_durations is not None else ""
+            )
+            + f"asetpts=PTS-STARTPTS,aformat=sample_fmts=fltp:channel_layouts=stereo[a{index}]"
         )
         concat_inputs.extend([f"[v{index}]", f"[a{index}]"])
     parts.append(
@@ -161,7 +175,10 @@ def render_best_of_episode(
         else:
             audio_input_indices[index] = index
 
-    graph = build_best_of_filter_graph(len(clips), audio_input_indices)
+    graph = build_best_of_filter_graph(
+        len(clips), audio_input_indices,
+        clip_durations=[float(clip.get("duration") or 0.0) for clip in clips],
+    )
     command.extend([
         "-filter_complex", graph,
         "-map", "[outv]", "-map", "[outa]",
