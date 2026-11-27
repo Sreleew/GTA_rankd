@@ -1,0 +1,14 @@
+GTA Ranked Studio v0.9.1
+
+Miniatures des Shorts :
+- Nouvelle direction artistique GTA appliquée automatiquement aux miniatures générées : vraie image du clip, accroche condensée, collage papier noir déchiré et accent jaune.
+- Suppression des logos et éléments de décor en trop ; nom du streamer et signature GTA_Rankd restent lisibles.
+- Composition exportée en 1080 × 1920, sans génération d'image ni de texte par IA.
+
+Compatibilité :
+- Le rendu vidéo, les sous-titres, les métadonnées et les réglages existants restent inchangés.
+- Les données et réglages utilisateur sont préservés.
+
+Validation :
+- PR #81 fusionnée avec CI Linux et Windows réussie.
+- Préparation de la release v0.9.1 via une PR dédiée avec contrôle des versions et du package Windows.
