@@ -400,6 +400,7 @@ def render_vertical_short(
     output_path: Path,
     thumbnail_path: Path,
     *,
+    source_media_info: dict[str, Any] | None = None,
     ffmpeg: str = "ffmpeg",
     ffprobe: str = "ffprobe",
     preferred_encoder: str = "h264_amf",
@@ -429,7 +430,9 @@ def render_vertical_short(
     input_path = input_path.resolve()
     output_path.parent.mkdir(parents=True, exist_ok=True)
     thumbnail_path.parent.mkdir(parents=True, exist_ok=True)
-    info = probe_media(input_path, ffprobe)
+    # The worker already probes the source before audio analysis and trimming.
+    # Reuse that metadata instead of launching FFprobe a second time.
+    info = dict(source_media_info) if source_media_info is not None else probe_media(input_path, ffprobe)
     trim_start = max(0.0, float(trim_start))
     output_duration = float(trim_duration) if trim_duration is not None else info["duration"]
     if output_duration > max_duration:
@@ -504,6 +507,7 @@ def render_vertical_short(
         "thumbnail_path": str(thumbnail_path.resolve()) if thumbnail_path.is_file() else None,
         "output_width": rendered_info["width"],
         "output_height": rendered_info["height"],
+        "output_media_info": rendered_info,
         "layout": layout,
         "fps_output": rendered_info["fps"],
         "peak_timestamp": float(peak_timestamp),
