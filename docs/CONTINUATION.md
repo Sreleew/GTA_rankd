@@ -357,12 +357,22 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 ## 23. Sous-titres découpés aux fins de phrase, 27 novembre 2026
 
 - **PR #54 fusionnée :** progression Twitch enrichie avec taille téléchargée/estimée, débit et ETA. Commit de merge : 776db351a2da5273b8b8160ac66c86d55175c237. CI PR et post-fusion Linux/Windows réussies.
-- **Amélioration en cours :** les groupes de sous-titres mot à mot se terminent désormais après une ponctuation de fin de phrase (. ! ?), en plus des règles existantes de longueur maximale et de pause vocale.
+- **PR #56 fusionnée :** les groupes de sous-titres mot à mot se terminent désormais après une ponctuation de fin de phrase (. ! ?), en plus des règles existantes de longueur maximale et de pause vocale. Commit : `9f08cc0967d30a7abe16a766741067f0ad58aff7`.
 - **Pourquoi :** éviter qu'une phrase et la réaction suivante restent affichées dans le même bloc. Les timings DTW et les timings individuels des mots restent inchangés.
 - **Robustesse :** le premier mot d'un groupe est traité sans accès à un élément précédent inexistant.
 - **Tests :** régression couvrant deux phrases successives et leur séparation.
-- **Validation :** la PR #55 initiale est devenue obsolète après fusion de la PR #54 ; ce correctif est repris sur une branche basée sur main à jour afin de relancer une CI propre Linux/Windows.
+- **Validation :** PR #55 fermée car basée sur un HEAD dépassé ; PR #56 reprise sur main à jour. CI Linux run `46039322749` et Windows run `46039322643` réussies avant fusion.
 
 
 - **Complément éditorial :** la sélection de miniature tient désormais compte de réactions francophones (par exemple « incroyable », « dingue », « putain ») et de la ponctuation expressive. Cela évite de favoriser uniquement les mots-clés anglais de l'ancien dictionnaire.
 - **Test ajouté :** vérifie qu'un groupe de réaction francophone emphatique est retenu face à une parole neutre.
+
+
+## 24. Sous-titres et miniatures francophones, 27 novembre 2026
+
+- **PR #56 fusionnée dans `main`** après réussite de la CI Linux et Windows. Commit squash : `9f08cc0967d30a7abe16a766741067f0ad58aff7`.
+- **Sous-titres :** chaque groupe mot à mot s'arrête désormais après . ! ? même si la pause est courte. Les limites existantes de quatre mots et de 0,55 s restent actives ; les timestamps originaux ne changent pas.
+- **Miniatures :** le choix du timestamp reconnaît davantage de réactions françaises, normalise les accents et donne un poids supplémentaire à la ponctuation expressive.
+- **Tests CI PR :** Linux run [46039322749](https://github.com/Sreleew/GTA_rankd/actions/runs/46039322749) et Windows run [46039322643](https://github.com/Sreleew/GTA_rankd/actions/runs/46039322643) réussis. Aucun rendu réel Twitch ni écoute sur le PC utilisateur n'a été effectué dans ce lot.
+- **État produit :** stable publiée v0.8.9 ; le lot #56 est intégré dans main mais pas encore publié dans une nouvelle Release.
+- **Prochaine action prioritaire :** reprendre le parcours réel Twitch Short et mesurer les défauts du rendu final, notamment l'identification du streamer, le cadrage webcam/gameplay et le rendu des sous-titres. Ne pas étendre « Moments forts ».
