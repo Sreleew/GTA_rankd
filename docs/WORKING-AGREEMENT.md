@@ -35,6 +35,8 @@ Livrer des changements concrets, propres et testés sans passer un temps disprop
 
 15. **Éviter les micro-lots et les tests redondants.** Regrouper les changements qui servent le même parcours en un livrable cohérent. Pendant le développement, exécuter uniquement les tests ciblés du domaine touché ; élargir le périmètre si un impact indirect est identifié. Ne pas relancer les mêmes tests après une modification qui ne touche ni le code ni la configuration testés. Garder une validation CI Linux/Windows avant fusion des lots de comportement, mais ne pas créer une PR séparée uniquement pour faire tourner des tests ou déplacer de la documentation. Utiliser les scripts locaux documentés dans docs/DEVELOPMENT.md et conserver l'environnement .venv entre les sessions.
 
+16. **Pilotage produit proactif et ROI.** L'utilisateur délègue les décisions techniques et ne doit pas avoir à choisir entre des solutions qu'il ne maîtrise pas. Prendre l'initiative sur l'architecture, les priorités et les améliorations ; expliquer simplement les arbitrages. Avant toute fonctionnalité, évaluer son utilité réelle, son coût de développement et de maintenance, son impact sur la vitesse, la fiabilité et l'expérience. Dire clairement lorsqu'une idée est trop complexe, lente, fragile ou peu rentable, et proposer une voie plus simple ou recommander de l'abandonner/de la reporter. Être ambitieux et proactif, sans sur-ingénierie ni ajout de fonctionnalités pour elles-mêmes. Ne solliciter l'utilisateur que pour les choix qui relèvent réellement de ses préférences ou de ses contraintes.
+
 ## Flux de développement
 
 1. Créer ou utiliser une branche de travail à partir de `main`.
