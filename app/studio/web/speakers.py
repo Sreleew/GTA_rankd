@@ -71,10 +71,12 @@ def filter_dominant_speaker(
     minimum_ratio: float = 1.45,
     minimum_speech_seconds: float = 2.0,
 ) -> tuple[list[WordTiming], dict[str, Any]]:
-    """Keep words assigned to a clearly dominant voice; otherwise keep everything.
+    """Keep only words assigned to a clearly dominant voice.
 
-    Speaker diarization does not know which voice is the streamer. This conservative
-    heuristic only selects a speaker when the duration gap is strong enough.
+    Diarization does not identify the streamer. This conservative heuristic only
+    selects a speaker when the duration gap is strong enough; ambiguous or
+    unavailable attribution intentionally suppresses captions rather than
+    accidentally displaying in-game dialogue.
     """
     valid: list[tuple[float, float, str]] = []
     durations: dict[str, float] = {}
@@ -92,7 +94,7 @@ def filter_dominant_speaker(
 
     base = {
         "mode": "dominant",
-        "status": "fallback_all_voices",
+        "status": "not_filtered",
         "speaker_count": len(durations),
         "selected_speaker": None,
         "dominant_share": 0.0,
