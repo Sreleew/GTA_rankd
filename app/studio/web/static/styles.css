@@ -140,3 +140,5 @@
 .bestof-feedback{margin:10px 0 0;color:#8e98a2;font-size:10px;line-height:1.6}
 @media(max-width:900px){.bestof-layout{grid-template-columns:1fr}}
 @media(max-width:560px){.bestof-toolbar{align-items:stretch;flex-direction:column}.bestof-toolbar select{max-width:none;width:100%}.bestof-clip{gap:7px;padding:7px}.bestof-thumb{width:43px;height:58px}.bestof-clip-info strong{font-size:10px}.bestof-clip-controls{gap:2px}.bestof-clip-controls .mini-button{min-width:24px;padding:4px}}
+
+.bestof-download{display:inline-flex;margin-top:9px;text-decoration:none;}
