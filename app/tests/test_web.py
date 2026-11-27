@@ -961,3 +961,21 @@ def test_download_size_suffix_handles_unknown_or_invalid_totals():
     assert _download_size_suffix({"downloaded_bytes": 2 * mib, "total_bytes": None}) == " · 2.0 MiB"
     assert _download_size_suffix({"downloaded_bytes": 0, "total_bytes": 10 * mib}) == ""
     assert _download_size_suffix({"downloaded_bytes": "invalid", "total_bytes": 10}) == ""
+
+
+def test_best_of_filter_graph_builds_landscape_blur_canvas_and_concat():
+    from studio.web.best_of import build_best_of_filter_graph
+
+    graph = build_best_of_filter_graph(2, [0, 1])
+    assert "[0:v:0]split=2" in graph
+    assert "scale=1920:1080" in graph
+    assert "boxblur=24:8" in graph
+    assert "concat=n=2:v=1:a=1[outv][outa]" in graph
+    assert "[1:a:0]aresample=48000" in graph
+
+
+def test_best_of_filter_graph_rejects_mismatched_audio_inputs():
+    from studio.web.best_of import build_best_of_filter_graph
+
+    with pytest.raises(ValueError, match="plan vidéo"):
+        build_best_of_filter_graph(2, [0])
