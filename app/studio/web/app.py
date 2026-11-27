@@ -554,11 +554,31 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         if original.get("status") not in {"validated", "ready", "error", "rejected"}:
             raise HTTPException(status_code=409, detail="Ce job est encore en cours de traitement.")
         source_value = original.get("source_path")
-        if not source_value:
-            raise HTTPException(status_code=409, detail="Le média local n'est pas disponible. Il faut réimporter la source.")
-        source_path = Path(source_value)
-        if not source_path.is_file():
+        source_path = Path(source_value) if source_value else None
+        source_url = str(original.get("source_url") or "").strip()
+        if source_path is not None and source_path.is_file():
+            # Réutiliser le média déjà téléchargé : aucun transfert inutile.
+            source_payload = {
+                "source_kind": "upload",
+                "source_path": str(source_path.resolve()),
+                "source_title": original.get("source_title") or source_path.stem,
+            }
+            message = "Nouveau rendu demandé à partir du média déjà importé"
+            success_message = "Nouveau traitement lancé à partir du média déjà importé."
+        elif original.get("source_kind") == "url" and source_url:
+            # Si le téléchargement Twitch a échoué avant de conserver le fichier,
+            # permettre une vraie nouvelle tentative depuis l'URL d'origine.
+            source_payload = {
+                "source_kind": "url",
+                "source_url": _validate_twitch_source(source_url),
+                "source_title": original.get("source_title") or "",
+            }
+            message = "Nouvelle tentative de téléchargement Twitch"
+            success_message = "Nouvelle tentative de téléchargement Twitch ajoutée à la file."
+        elif source_path is not None:
             raise HTTPException(status_code=409, detail="Le fichier source n'existe plus dans le dossier d'import.")
+        else:
+            raise HTTPException(status_code=409, detail="La source locale ou l'URL Twitch d'origine n'est plus disponible.")
         new_id = uuid.uuid4().hex
         metadata = dict(original.get("metadata") or {})
         # Les résultats du précédent rendu ne doivent pas être réutilisés comme
@@ -568,17 +588,15 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         store.create_job({
             "id": new_id,
             "kind": original.get("kind", "short"),
-            "source_kind": "upload",
-            "source_path": str(source_path.resolve()),
-            "source_title": original.get("source_title") or source_path.stem,
+            **source_payload,
             "streamer": original.get("streamer", ""),
             "note": original.get("note", ""),
             "rights_confirmed": True,
-            "message": "Nouveau rendu demandé à partir du média existant",
+            "message": message,
             "metadata": metadata,
         })
         runner.submit(new_id)
-        return {"id": new_id, "status": "queued", "message": "Nouveau traitement lancé à partir du média déjà importé."}
+        return {"id": new_id, "status": "queued", "message": success_message}
 
     @app.post("/api/shorts/upload", status_code=202)
     async def upload_short(

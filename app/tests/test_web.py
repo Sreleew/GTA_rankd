@@ -893,3 +893,42 @@ def test_daily_best_of_ui_exposes_selection_order_and_duration_validation():
     assert "data-bestof-up" in js
     assert "data-bestof-down" in js
     assert "total >= 540 && total <= 660" in js
+
+
+def test_retry_failed_twitch_url_creates_a_fresh_download_job(tmp_path: Path):
+    config = load_config(_make_isolated_app_config(tmp_path))
+    app = create_app(config)
+    submitted: list[str] = []
+    app.state.runner.submit = lambda job_id: submitted.append(job_id)
+    client = TestClient(app)
+
+    created = client.post(
+        "/api/shorts/url",
+        data={
+            "url": "https://clips.twitch.tv/ExampleClipSlug",
+            "rights_confirmed": "true",
+            "streamer": "ExampleStreamer",
+            "note": "Retry this clip",
+            "layout": "smart",
+            "captions_enabled": "false",
+        },
+    )
+    assert created.status_code == 202, created.text
+    original_id = created.json()["id"]
+    app.state.store.update_job(original_id, status="error", message="Download failed", error="Temporary Twitch error")
+    submitted.clear()
+
+    retried = client.post(f"/api/jobs/{original_id}/reprocess")
+    assert retried.status_code == 202, retried.text
+    new_id = retried.json()["id"]
+    assert new_id != original_id
+    assert submitted == [new_id]
+
+    new_job = app.state.store.get_job(new_id)
+    assert new_job is not None
+    assert new_job["status"] == "queued"
+    assert new_job["source_kind"] == "url"
+    assert new_job["source_url"] == "https://clips.twitch.tv/ExampleClipSlug"
+    assert new_job["streamer"] == "ExampleStreamer"
+    assert new_job["note"] == "Retry this clip"
+    assert new_job["metadata"]["options"]["captions_enabled"] is False
