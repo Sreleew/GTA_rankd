@@ -8,6 +8,7 @@ import logging
 import math
 import shutil
 import struct
+import time
 import wave
 import subprocess
 import tempfile
@@ -427,6 +428,8 @@ def render_vertical_short(
     sound_effect_offset: float = 0.0,
     sound_effect_volume: float = 0.14,
 ) -> dict[str, Any]:
+    renderer_started = time.perf_counter()
+    performance_timings: dict[str, int] = {}
     input_path = input_path.resolve()
     output_path.parent.mkdir(parents=True, exist_ok=True)
     thumbnail_path.parent.mkdir(parents=True, exist_ok=True)
@@ -448,6 +451,7 @@ def render_vertical_short(
     if preferred_encoder not in encoder_text:
         encoders = [fallback_encoder]
     last_error: Exception | None = None
+    encode_started = time.perf_counter()
     for encoder in encoders:
         if output_path.exists():
             output_path.unlink()
@@ -474,12 +478,16 @@ def render_vertical_short(
     else:
         raise MediaError(f"Échec de l'encodage avec les encodeurs disponibles : {last_error}")
 
+    performance_timings["encode_ms"] = max(0, int(round((time.perf_counter() - encode_started) * 1000)))
+    probe_started = time.perf_counter()
     rendered_info = probe_media(output_path, ffprobe)
+    performance_timings["output_probe_ms"] = max(0, int(round((time.perf_counter() - probe_started) * 1000)))
     if rendered_info["width"] != width or rendered_info["height"] != height:
         raise MediaError(
             f"Le rendu n'est pas au format Short attendu : {rendered_info['width']}x{rendered_info['height']} au lieu de {width}x{height}."
         )
     # Sample the selected excerpt and avoid blank sky/transition frames for the cover.
+    thumbnail_started = time.perf_counter()
     preferred_thumbnail_time = peak_timestamp if thumbnail_timestamp is None else thumbnail_timestamp
     selected_thumbnail_time: float | None = None
     try:
@@ -498,7 +506,10 @@ def render_vertical_short(
             selected_thumbnail_time = max(0.0, seek - trim_start)
         except MediaError:
             logger.exception("La miniature n'a pas pu être générée. Le rendu vidéo reste disponible.")
+    performance_timings["thumbnail_ms"] = max(0, int(round((time.perf_counter() - thumbnail_started) * 1000)))
+    performance_timings["total_ms"] = max(0, int(round((time.perf_counter() - renderer_started) * 1000)))
     info.update({
+        "performance_timings_ms": performance_timings,
         "source_duration": info["duration"],
         "duration": output_duration,
         "trim_start": trim_start,
