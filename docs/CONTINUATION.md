@@ -282,3 +282,12 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Lot commencé sur la branche** `feat/short-hook-motion-identity` : refonte du hook ASS avec un kicker « RANKED DISPATCH // GTA » et une entrée cinétique du titre (overshoot, rotation légère, flou qui se résorbe). L'objectif est d'établir une signature immédiatement visible sans ajouter une intro longue.
 - **Fichiers concernés :** `app/studio/web/short_editor.py`, `app/tests/test_short_editor.py`. Validation CI à venir ; aucun rendu réel sur PC n'est revendiqué.
 - **Suite produit :** construire un vrai système de compositions vidéo modulaire, puis une webcam intégrée et des variations de hook adaptées au type de moment. Garder la priorité absolue à la rétention dès les premières secondes.
+
+
+## 16. Hooks cinétiques par intention, 27 novembre 2026
+
+- État du lot : PR #47 (feat/short-hook-motion-identity) en cours. La première version du hook RANKED DISPATCH a révélé un test de régression obsolète : il attendait encore l'ancienne animation statique fad(120,180). Le rendu attendu a changé, le test doit donc vérifier la nouvelle animation et non l'ancien effet.
+- Amélioration ajoutée au lot : détection locale et déterministe du type de hook (question, suspense, réaction ou impact), puis choix d'une animation ASS dédiée. Cela donne quatre entrées visuelles au lieu d'un seul effet répété, sans appel réseau ni délai IA supplémentaire.
+- Finition des captions : le mot prononcé reçoit une emphase légère par couleur, échelle et contour, puis revient au style normal pour garder une lecture mobile dynamique sans surcharger chaque mot.
+- Intégration : sélection automatique dans create_ass_file, sans changer le parcours utilisateur ni les options existantes. Un style explicitement reconnu peut aussi être passé par le code appelant.
+- Tests ajoutés/ajustés : détection des quatre intentions, présence des animations associées et emphase du mot actif. Les validations Linux/Windows de la première version doivent être relancées après cette correction ; aucun rendu réel sur le PC n'est revendiqué.
