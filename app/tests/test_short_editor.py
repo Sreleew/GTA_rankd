@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from studio.web.short_editor import (
-    WordTiming, apply_thumbnail_overlay, create_ass_file, infer_hook_style, parse_srt,
+    WordTiming, create_ass_file, infer_hook_style, parse_srt,
     rebase_word_timings, select_excerpt_range, write_srt_file,
 )
 
@@ -26,14 +26,14 @@ def test_ass_contains_hook_branding_and_active_word_highlight(tmp_path: Path):
         words=[WordTiming(0.1, 0.3, "Bro"), WordTiming(0.3, 0.6, "WHAT"), WordTiming(0.6, 0.9, "HAPPENED?")],
         hook_text="BRO THOUGHT HE WAS SAFE",
         context_text="A GTA VI police chase goes wrong",
-        handle="@GTARankedStudio",
+        handle="GTA_rankd",
         brand_enabled=True,
     )
     content = path.read_text(encoding="utf-8-sig")
     assert "BRO THOUGHT HE WAS SAFE" in content
-    assert "@GTARankedStudio" in content
+    assert "GTA_rankd" in content
     assert "GTA VI" in content
-    assert "GR  //  GTA VI" in content
+    assert "GR  //" not in content
     assert r"\fad(180,120)" in content
     assert "0:00:02.60,Hook" in content
     assert "Style: Kicker" in content
@@ -120,35 +120,6 @@ def test_ass_can_disable_captions_and_brand(tmp_path: Path):
     content = path.read_text(encoding="utf-8-sig")
     assert "HELLO" not in content
     assert "@GTARankedStudio" not in content
-
-
-def test_thumbnail_overlay_adds_editorial_text(tmp_path: Path) -> None:
-    from PIL import Image, ImageChops
-
-    thumbnail = tmp_path / "thumbnail.jpg"
-    Image.new("RGB", (360, 640), (30, 40, 55)).save(thumbnail, quality=90)
-    with Image.open(thumbnail) as original:
-        baseline = original.convert("RGB").copy()
-    apply_thumbnail_overlay(thumbnail, "GTA VI CRAZY MOMENT")
-    with Image.open(thumbnail) as result:
-        assert result.size == (1080, 1920)
-        assert result.format == "JPEG"
-        assert ImageChops.difference(baseline.resize(result.size), result.convert("RGB")).getbbox() is not None
-        assert thumbnail.stat().st_size > 10_000
-
-
-def test_thumbnail_overlay_uses_the_gta_paper_collage_palette(tmp_path: Path) -> None:
-    from PIL import Image
-
-    thumbnail = tmp_path / "gta-thumbnail.jpg"
-    Image.new("RGB", (640, 360), (42, 61, 75)).save(thumbnail, quality=92)
-
-    apply_thumbnail_overlay(thumbnail, "DID HE REALLY SAY THAT?", streamer="CASEOH")
-
-    with Image.open(thumbnail) as result:
-        assert result.size == (1080, 1920)
-        red, green, blue = result.convert("RGB").getpixel((100, 1020))
-        assert red > 180 and green > 120 and blue < 65
 
 
 def test_thumbnail_timestamp_prefers_descriptive_transcript_moment() -> None:
@@ -305,54 +276,6 @@ def test_long_caption_segment_is_split_and_wrapped_for_vertical_safe_area(tmp_pa
     assert content.count("Dialogue: 0,") > 1
 
 
-def test_thumbnail_overlay_builds_vertical_gta_poster_from_full_landscape_gameplay(tmp_path: Path) -> None:
-    from PIL import Image, ImageChops
-
-    thumbnail = tmp_path / "thumbnail.jpg"
-    # Simulates a 16:9 Twitch gameplay frame rather than a pre-rendered blurred Short.
-    Image.new("RGB", (1920, 1080), (30, 120, 55)).save(thumbnail, quality=90)
-    with Image.open(thumbnail) as original:
-        baseline = original.convert("RGB").copy()
-    apply_thumbnail_overlay(thumbnail, "LETTING EVERYBODY LOOK GOOD", streamer="IShowSpeed", game_label="GTA RP")
-    with Image.open(thumbnail) as result:
-        assert result.size == (1080, 1920)
-        assert result.format == "JPEG"
-        assert ImageChops.difference(baseline.resize(result.size), result.convert("RGB")).getbbox() is not None
-        panel_pixel = result.convert("RGB").getpixel((540, 400))
-        assert panel_pixel[1] > panel_pixel[0] * 2, "La capture de gameplay doit rester visible dans le cadre principal."
-        assert thumbnail.stat().st_size > 10_000
-
-
-
-def test_thumbnail_overlay_uses_a_compact_editorial_cover_and_sanitizes_fragment(tmp_path: Path):
-    from PIL import Image
-
-    thumbnail = tmp_path / "editorial-thumbnail.jpg"
-    Image.new("RGB", (1920, 1080), (42, 70, 90)).save(thumbnail, quality=90)
-
-    apply_thumbnail_overlay(
-        thumbnail,
-        "YEAH HUH SHIT GOT",
-        streamer="Tminnzy",
-        game_label="GTA 5",
-    )
-
-    with Image.open(thumbnail) as result:
-        assert result.size == (1080, 1920)
-        assert result.format == "JPEG"
-        assert result.width == 1080 and result.height == 1920
-        assert thumbnail.stat().st_size > 15_000
-
-
-
-def test_thumbnail_headline_prefers_complete_meaningful_tail_over_filler():
-    from studio.web.short_editor import _thumbnail_headline
-
-    assert _thumbnail_headline("YEAH HUH SHIT GOT MY LAMBO", "Tminnzy") == "GOT MY LAMBO"
-    assert _thumbnail_headline("YEAH HUH SHIT GOT", "Tminnzy") == "WAIT FOR THE REACTION"
-    assert _thumbnail_headline("YEAH HUH SHIT", "Tminnzy") == "WAIT FOR THE REACTION"
-
-
 def test_caption_groups_break_at_sentence_punctuation():
     from studio.web.short_editor import _caption_events
 
@@ -383,29 +306,3 @@ def test_thumbnail_timestamp_recognizes_french_reactions_and_emphasis():
     ]
     selected = select_thumbnail_timestamp(words, 30.0, preferred=2.0)
     assert 12.0 <= selected <= 14.0
-
-
-
-def test_thumbnail_overlay_keeps_original_when_atomic_save_fails(tmp_path: Path, monkeypatch):
-    from PIL import Image
-
-    thumbnail = tmp_path / "thumbnail.jpg"
-    Image.new("RGB", (320, 180), (20, 80, 120)).save(thumbnail)
-    original = thumbnail.read_bytes()
-    original_save = Image.Image.save
-
-    def fail_temporary_save(self, target, *args, **kwargs):
-        if Path(target).name == "thumbnail.overlay.tmp.jpg":
-            raise OSError("disk full")
-        return original_save(self, target, *args, **kwargs)
-
-    monkeypatch.setattr(Image.Image, "save", fail_temporary_save)
-    try:
-        apply_thumbnail_overlay(thumbnail, "A GTA MOMENT")
-    except OSError as exc:
-        assert str(exc) == "disk full"
-    else:
-        raise AssertionError("The simulated thumbnail write failure should propagate.")
-
-    assert thumbnail.read_bytes() == original
-    assert not (tmp_path / "thumbnail.overlay.tmp.jpg").exists()
