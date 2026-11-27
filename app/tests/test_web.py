@@ -140,7 +140,7 @@ def test_whisper_gpu_button_uses_fresh_script_and_visible_feedback():
     static = Path(__file__).resolve().parents[1] / "studio" / "web" / "static"
     html = (static / "index.html").read_text(encoding="utf-8")
     js = (static / "app.js").read_text(encoding="utf-8")
-    assert '<script src="/static/app.js?v=0.8.9-bestof-history"></script>' in html
+    assert '<script src="/static/app.js?v=0.8.9-bestof-recovery"></script>' in html
     assert '<button type="button" class="mini-button" id="verify-whisper-gpu"' in html
     assert "/api/models/whisper/verify" in js
     assert "if (verifyGpuButton) verifyGpuButton.addEventListener('click', verifyWhisperGpu);" in js
@@ -213,7 +213,7 @@ def test_ollama_verify_button_has_a_dedicated_visible_handler():
     static = Path(__file__).resolve().parents[1] / "studio" / "web" / "static"
     html = (static / "index.html").read_text(encoding="utf-8")
     js = (static / "app.js").read_text(encoding="utf-8")
-    assert '<script src="/static/app.js?v=0.8.9-bestof-history"></script>' in html
+    assert '<script src="/static/app.js?v=0.8.9-bestof-recovery"></script>' in html
     assert '<button type="button" class="mini-button" id="verify-ollama"' in html
     assert "#refresh-models-secondary" in js
     assert "/api/models/ollama/verify" in js
@@ -919,6 +919,9 @@ def test_daily_best_of_ui_exposes_selection_order_and_duration_validation():
     assert 'id="bestof-history"' in html
     assert "/api/bestof/jobs?limit=10" in js
     assert "bestOfHistoryPoll" in js
+    assert "data-bestof-restore" in js
+    assert "Recharger la sélection" in js
+    assert "is-indeterminate" in js
 
 
 def test_best_of_store_recovers_interrupted_jobs_and_keeps_completed_history(tmp_path: Path):
@@ -1015,6 +1018,7 @@ def test_daily_best_of_render_history_survives_app_restart(tmp_path: Path, monke
     completed = client.get(f"/api/bestof/jobs/{render_id}")
     assert completed.status_code == 200
     assert completed.json()["status"] == "completed"
+    assert completed.json()["clip_ids"] == clip_ids
     assert completed.json()["file_available"] is True
     assert completed.json()["output_url"].endswith(".mp4")
     history = client.get("/api/bestof/jobs?limit=10")
@@ -1037,6 +1041,7 @@ def test_daily_best_of_render_history_survives_app_restart(tmp_path: Path, monke
     interrupted = restarted_client.get("/api/bestof/jobs/bestof-interrupted-on-exit")
     assert interrupted.status_code == 200
     assert interrupted.json()["status"] == "error"
+    assert interrupted.json()["clip_ids"] == [clip_ids[0]]
     assert "interrompu" in interrupted.json()["message"]
     restored_completed = restarted_client.get(f"/api/bestof/jobs/{render_id}")
     assert restored_completed.status_code == 200
@@ -1299,7 +1304,7 @@ def test_batch_twitch_import_is_available_in_shorts_ui():
     assert 'id="short-batch-urls"' in html
     assert 'id="short-batch-submit"' in html
     assert 'id="short-batch-tracker"' in html
-    assert "v=0.8.9-bestof-history" in html
+    assert "v=0.8.9-bestof-recovery" in html
     assert "JUSQU'À 10 URLS" in html
     assert "/api/shorts/url/batch" in js
     assert "/api/shorts/batches/" in js
