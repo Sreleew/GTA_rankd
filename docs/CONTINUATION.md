@@ -352,3 +352,17 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Impact :** aucun changement au comportement de téléchargement, aux reprises, aux fragments ou aux dépendances. La fréquence des mises à jour reste inchangée.
 - **Tests :** assertions de progression avec taille totale connue et cas sans total / valeur invalide.
 - **PR :** en attente de CI Linux et Windows.
+
+
+## 23. Sous-titres découpés aux fins de phrase, 27 novembre 2026
+
+- **PR #54 fusionnée :** progression Twitch enrichie avec taille téléchargée/estimée, débit et ETA. Commit de merge : 776db351a2da5273b8b8160ac66c86d55175c237. CI PR et post-fusion Linux/Windows réussies.
+- **Amélioration en cours :** les groupes de sous-titres mot à mot se terminent désormais après une ponctuation de fin de phrase (. ! ?), en plus des règles existantes de longueur maximale et de pause vocale.
+- **Pourquoi :** éviter qu'une phrase et la réaction suivante restent affichées dans le même bloc. Les timings DTW et les timings individuels des mots restent inchangés.
+- **Robustesse :** le premier mot d'un groupe est traité sans accès à un élément précédent inexistant.
+- **Tests :** régression couvrant deux phrases successives et leur séparation.
+- **Validation :** la PR #55 initiale est devenue obsolète après fusion de la PR #54 ; ce correctif est repris sur une branche basée sur main à jour afin de relancer une CI propre Linux/Windows.
+
+
+- **Complément éditorial :** la sélection de miniature tient désormais compte de réactions francophones (par exemple « incroyable », « dingue », « putain ») et de la ponctuation expressive. Cela évite de favoriser uniquement les mots-clés anglais de l'ancien dictionnaire.
+- **Test ajouté :** vérifie qu'un groupe de réaction francophone emphatique est retenu face à une parole neutre.

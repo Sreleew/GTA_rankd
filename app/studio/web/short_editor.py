@@ -64,11 +64,26 @@ def select_thumbnail_timestamp(
         "money": 3.0, "girl": 3.0, "ladies": 3.0, "npc": 3.0, "race": 4.0,
         "win": 3.0, "lost": 3.0, "wtf": 3.0, "omg": 3.0, "help": 2.0,
         "stop": 2.0, "wait": 1.0, "crazy": 2.0, "insane": 2.0,
+        # French reactions are common in GTA RP clips and should influence the cover too.
+        "putain": 5.0, "merde": 4.0, "incroyable": 5.0, "dingue": 4.0,
+        "fou": 3.0, "folle": 3.0, "impossible": 4.0, "serieux": 3.0,
+        "non": 2.0, "quoi": 2.0, "attends": 2.0, "abuse": 3.0,
+        "seriously": 2.0, "unreal": 4.0, "holy": 3.0, "no": 2.0,
+        "way": 2.0, "bro": 1.0,
     }
     anchors: list[tuple[float, float]] = []
     for word in words or []:
-        tokens = re.findall(r"[A-Za-z0-9']+", str(word.text or "").lower())
+        raw_text = str(word.text or "").lower()
+        normalized_text = "".join(
+            char for char in unicodedata.normalize("NFKD", raw_text)
+            if not unicodedata.combining(char)
+        )
+        tokens = re.findall(r"[A-Za-z0-9']+", normalized_text)
         weight = sum(weights.get(token, 0.0) for token in tokens)
+        if weight and "!" in raw_text:
+            weight += 1.5
+        elif weight and "?" in raw_text:
+            weight += 0.75
         if weight > 0:
             midpoint = (float(word.start) + float(word.end)) / 2
             anchors.append((max(0.0, min(midpoint, limit)), weight))
@@ -210,7 +225,9 @@ def _caption_events(words: list[WordTiming], width: int, height: int) -> list[st
     current: list[WordTiming] = []
     for word in words:
         pause = word.start - current[-1].end if current else 0.0
-        if current and (len(current) >= 4 or pause > 0.55):
+        previous_text = current[-1].text.rstrip('"”’)]}') if current else ""
+        sentence_finished = bool(previous_text) and previous_text[-1] in ".!?"
+        if current and (len(current) >= 4 or pause > 0.55 or sentence_finished):
             groups.append(current)
             current = []
         current.append(word)
