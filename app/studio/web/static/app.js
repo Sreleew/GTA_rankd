@@ -347,7 +347,7 @@ async function loadBestOfHistory(silent = false) {
     }).join('') : '<div class="empty-state compact-empty">Aucun épisode généré pour le moment.</div>';
 
     const hasActiveJob = jobs.some(job => ['queued', 'running'].includes(job.status));
-    if (hasActiveJob && !state.bestOfHistoryPoll) {
+    if (hasActiveJob && state.page === 'bestof' && !state.bestOfHistoryPoll) {
       state.bestOfHistoryPoll = setInterval(() => loadBestOfHistory(true), 2500);
     } else if (!hasActiveJob && state.bestOfHistoryPoll) {
       clearInterval(state.bestOfHistoryPoll);
