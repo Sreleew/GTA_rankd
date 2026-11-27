@@ -109,6 +109,40 @@ def _wrap_words(value: str, max_words: int = 5) -> str:
     return " ".join(words[:midpoint]) + r"\N" + " ".join(words[midpoint:])
 
 
+def infer_hook_style(hook_text: str, context_text: str = "") -> str:
+    """Choisit une animation de hook selon la promesse éditoriale du texte."""
+    hook = _clean_ass_text(hook_text).casefold()
+    combined = f"{hook} {_clean_ass_text(context_text).casefold()}"
+    tokens = set(re.findall(r"[a-z0-9']+", combined))
+
+    question_words = {"why", "how", "what", "who", "where", "when", "which", "did", "does", "could", "would", "can", "will"}
+    suspense_words = {"wait", "watch", "until", "before", "thought", "safe", "almost", "then", "just", "secret", "never"}
+    reaction_words = {"no", "way", "wtf", "omg", "holy", "damn", "crazy", "insane", "unreal", "nah", "bro", "wow", "sheesh"}
+
+    scores = {
+        "question": (3 if "?" in hook else 0) + len(tokens & question_words),
+        "suspense": len(tokens & suspense_words) * 2,
+        "reaction": len(tokens & reaction_words) * 2 + (2 if "!" in hook else 0),
+    }
+    if re.search(r"\bno way\b|\bwhat the\b|\bholy\b", hook):
+        scores["reaction"] += 2
+
+    selected = max(scores, key=scores.get)
+    return selected if scores[selected] > 0 else "impact"
+
+
+_HOOK_ANIMATIONS = {
+    # Fast scale-in with a controlled overshoot for a direct, high-energy payoff.
+    "impact": r"\fad(25,150)\fscx142\fscy142\frz-4\blur4\t(0,140,\fscx106\fscy106\frz0\blur0)\t(140,230,\fscx100\fscy100)",
+    # A smaller, calmer arrival leaves visual room for the question.
+    "question": r"\fad(65,140)\fscx88\fscy88\frz-2\blur1\t(0,220,\fscx100\fscy100\frz0\blur0)",
+    # Longer reveal builds anticipation without adding a separate intro.
+    "suspense": r"\fad(180,120)\fscx96\fscy96\blur7\t(0,320,\fscx100\fscy100\blur0)",
+    # A brief squash-and-stretch sells a genuine reaction.
+    "reaction": r"\fad(20,130)\fscx78\fscy122\frz4\blur3\t(0,110,\fscx108\fscy96\frz-1\blur0)\t(110,210,\fscx100\fscy100\frz0)",
+}
+
+
 def _merge_punctuation(words: Iterable[WordTiming]) -> list[WordTiming]:
     output: list[WordTiming] = []
     punctuation = re.compile(r"^[,.;:!?)]")
@@ -174,7 +208,8 @@ def _caption_events(words: list[WordTiming], width: int, height: int) -> list[st
             for word_index, word in enumerate(group):
                 text = _clean_ass_text(word.text).upper()
                 highlighted = (
-                    r"{\c&H0000C8F5&}" + text + r"{\c&H00FFFFFF&}"
+                    r"{\c&H0000C8F5&\fscx106\fscy106\bord7}" + text
+                    + r"{\c&H00FFFFFF&\fscx100\fscy100\bord6}"
                     if word_index == index else text
                 )
                 plain_length = len(text)
@@ -207,8 +242,9 @@ def create_ass_file(
     captions_enabled: bool = True,
     brand_enabled: bool = True,
     layout: str = "blur",
+    hook_style: str = "auto",
 ) -> Path:
-    """Crée une piste ASS avec hook, contexte, branding et captions mot à mot."""
+    """Crée une piste ASS avec hook animé, contexte, branding et captions mot à mot."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
     font = _clean_ass_text(font_name) or "Arial"
     header = f"""[Script Info]
@@ -249,10 +285,13 @@ Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
             f"Dialogue: 2,0:00:00.00,0:00:02.60,HookKicker,,0,0,0,,"
             f"{{\\an8\\pos({width // 2},{int(height * 0.155)})\\fad(65,120)\\fscx78\\fscy78\\t(0,180,\\fscx100\\fscy100)}}{kicker}"
         )
+        selected_hook_style = str(hook_style or "auto").strip().lower()
+        if selected_hook_style == "auto" or selected_hook_style not in _HOOK_ANIMATIONS:
+            selected_hook_style = infer_hook_style(clean_hook, context_text)
+        motion = _HOOK_ANIMATIONS[selected_hook_style]
         events.append(
             f"Dialogue: 2,0:00:00.00,0:00:02.60,Hook,,0,0,0,,"
-            f"{{\\an8\\pos({width // 2},{int(height * 0.20)})\\fad(55,150)\\fscx82\\fscy82\\frz2\\blur2"
-            f"\\t(0,190,\\fscx108\\fscy108\\frz0\\blur0)\\t(190,270,\\fscx100\\fscy100)}}{_wrap_words(clean_hook, 5)}"
+            f"{{\\an8\\pos({width // 2},{int(height * 0.20)}){motion}}}{_wrap_words(clean_hook, 5)}"
         )
     clean_context = _clean_ass_text(context_text)
     if clean_context:
