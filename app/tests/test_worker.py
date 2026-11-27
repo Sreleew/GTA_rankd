@@ -116,3 +116,15 @@ def test_short_transcription_extracts_only_selected_excerpt_when_audio_differs(t
     assert calls[0][1] == tmp_path / "temp" / "short-captions-16k.wav"
     assert calls[0][2]["start_seconds"] == 35.0
     assert calls[0][2]["duration_seconds"] == 60.0
+
+
+def test_short_excerpt_duration_is_rejected_before_expensive_transcription():
+    import pytest
+
+    with pytest.raises(worker.MediaError, match="Active le recadrage automatique"):
+        worker._validate_short_excerpt_duration(900.0, 165.0)
+
+    assert worker._validate_short_excerpt_duration(165.0, 165.0) == 165.0
+
+    with pytest.raises(worker.MediaError, match="supérieure à zéro"):
+        worker._validate_short_excerpt_duration(0.0, 165.0)
