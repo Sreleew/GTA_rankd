@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 from typing import Any
 
@@ -89,7 +90,9 @@ def build_best_of_filter_graph(
     if clip_count < 1 or len(audio_input_indices) != clip_count:
         raise ValueError("Le plan vidéo Daily Best Of est invalide.")
     if clip_durations is not None and (
-        len(clip_durations) != clip_count or any(float(value) <= 0 for value in clip_durations)
+        len(clip_durations) != clip_count or any(
+            float(value) <= 0 or not math.isfinite(float(value)) for value in clip_durations
+        )
     ):
         raise ValueError("Les durées du Daily Best Of sont invalides.")
     if width < 2 or height < 2 or fps < 1:
