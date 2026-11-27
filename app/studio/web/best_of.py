@@ -217,10 +217,10 @@ def render_best_of_episode(
         report_progress(10 + int(round(ratio * 83)), f"Encodage 16:9 · {10 + int(round(ratio * 83))}%")
 
     try:
-        run_command(
-            command, timeout=3600,
-            progress_callback=encoding_progress if progress_callback is not None else None,
-        )
+        if progress_callback is None:
+            run_command(command, timeout=3600)
+        else:
+            run_command(command, timeout=3600, progress_callback=encoding_progress)
     except MediaError as exc:
         detail = str(exc).casefold()
         if encoder != "h264_amf" or not any(
@@ -234,10 +234,10 @@ def render_best_of_episode(
         command[command.index("-c:v") + 1] = "libx264"
         bitrate_index = command.index("-b:v")
         command[bitrate_index:bitrate_index + 2] = ["-preset", "veryfast", "-crf", "20"]
-        run_command(
-            command, timeout=3600,
-            progress_callback=encoding_progress if progress_callback is not None else None,
-        )
+        if progress_callback is None:
+            run_command(command, timeout=3600)
+        else:
+            run_command(command, timeout=3600, progress_callback=encoding_progress)
     report_progress(95, "Vérification du fichier exporté")
     result = probe_media(output_path, ffprobe, timeout=90)
     if int(result.get("width") or 0) != 1920 or int(result.get("height") or 0) != 1080:
