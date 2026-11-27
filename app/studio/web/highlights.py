@@ -344,7 +344,6 @@ def score_highlight_candidates(
                 "transcript": transcript[:700],
             })
 
-    ranked.sort(key=lambda item: item["score"], reverse=True)
     return select_distinct_highlight_candidates(ranked, max_candidates=max_candidates)
 
 
