@@ -54,8 +54,8 @@ def test_hook_uses_animated_ranked_dispatch_identity(tmp_path: Path):
     assert "Style: HookKicker" in content
     assert "RANKED DISPATCH  //  GTA" in content
     assert "HE THOUGHT HE WAS SAFE" in content
-    assert r"\\frz2\\blur2" in content
-    assert r"\\t(0,190,\\fscx108\\fscy108\\frz0\\blur0)" in content
+    assert r"\frz2\blur2" in content
+    assert r"\t(0,190,\fscx108\fscy108\frz0\blur0)" in content
     assert "0:00:02.60,Hook" in content
 
 
