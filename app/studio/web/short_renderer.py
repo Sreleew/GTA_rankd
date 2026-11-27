@@ -224,30 +224,23 @@ def build_filter_complex(
     crop_x = max(0, min(100, int(crop_x))) / 100
     crop_y = max(0, min(100, int(crop_y))) / 100
     if layout == "smart":
-        # Editorial 9:16 composition: a large gameplay panel sits between
-        # the hook and captions. Landscape sources are cropped to the panel
-        # ratio; portrait sources stay intact and are centered over the blur.
+        # Keep the complete Twitch composition, including any webcam already
+        # embedded in the source. The clear frame is fitted inside an editorial
+        # panel; a blurred duplicate fills the remaining panel space.
         panel_height = max(1, int(height * 0.48))
         panel_y = int(height * 0.30)
-        panel_ratio = width / panel_height
-        source_ratio = max(0.01, float(source_width) / max(1, int(source_height)))
         base = (
-            f"[0:v]split=2[bgsrc][fgsrc];"
+            f"[0:v]split=3[bgsrc][panelbgsrc][fgsrc];"
             f"[bgsrc]scale={width}:{height}:force_original_aspect_ratio=increase,"
             f"crop={width}:{height},boxblur={blur}:10,setsar=1[bg];"
+            f"[panelbgsrc]scale={width}:{panel_height}:force_original_aspect_ratio=increase,"
+            f"crop={width}:{panel_height},boxblur={blur}:10,setsar=1[panelbg];"
+            f"[fgsrc]scale={width}:{panel_height}:force_original_aspect_ratio=decrease,"
+            f"setsar=1[panelfg];"
+            "[panelbg][panelfg]overlay=(W-w)/2:(H-h)/2,setsar=1[panel];"
         )
-        if source_ratio >= panel_ratio:
-            base += (
-                f"[fgsrc]scale=-2:{panel_height},"
-                f"crop={width}:{panel_height}:(in_w-out_w)*{crop_x:.3f}:"
-                f"(in_h-out_h)*{crop_y:.3f},setsar=1[panel];"
-            )
-        else:
-            base += (
-                f"[fgsrc]scale=-2:{panel_height},setsar=1[panel];"
-            )
         # Editorial frame: a restrained hairline and amber edge marker make
-        # the gameplay panel feel intentionally art-directed, not generic.
+        # the full source composition feel intentionally art-directed.
         frame_x = max(8, int(width * 0.035))
         frame_y = max(0, panel_y - max(2, int(height * 0.003)))
         frame_width = max(1, width - frame_x * 2)
