@@ -155,13 +155,18 @@ function highlightScanCard(scan) {
   const cancelAction = ['queued','running'].includes(scan.status) ? `<div class="highlight-actions"><button class="mini-button danger" data-highlight-cancel data-scan-id="${scan.id}">Annuler l'analyse</button></div>` : '';
   const error = scan.error ? `<p class="highlight-error">${escapeHtml(scan.error)}</p>` : '';
   const duration = scan.source_duration ? ` · ${formatMediaTime(scan.source_duration)}` : '';
+  const batchLabel = scan.metadata && Number(scan.metadata.batch_count) > 1
+    ? ` · LOT ${Number(scan.metadata.batch_index)}/${Number(scan.metadata.batch_count)} · ${formatMediaTime(scan.window_start)} → ${formatMediaTime(scan.window_end)}`
+    : (scan.window_start != null && scan.window_end != null
+      ? ` · ${formatMediaTime(scan.window_start)} → ${formatMediaTime(scan.window_end)}`
+      : '');
   const transcriptionNote = scan.status === 'completed' && scan.metadata
     ? `<small class="highlight-method-note">${scan.metadata.transcription_available
         ? `Whisper local · ${Number(scan.metadata.transcribed_words || 0)} mots analysés`
         : 'Whisper non détecté · classement audio uniquement'}</small>`
     : '';
   return `<article class="highlight-scan-card">
-    <div class="highlight-scan-header"><div><div class="eyebrow">${scan.source_kind === 'url' ? 'TWITCH SOURCE' : 'LOCAL VIDEO'}${duration}</div><h4>${escapeHtml(sourceName)}</h4><small>${escapeHtml(scan.streamer || 'Streamer non renseigné')} · ${new Date(scan.created_at).toLocaleString('fr-FR')}</small></div><span class="status-pill ${scan.status === 'completed' ? 'validated' : scan.status === 'error' ? 'error' : 'running'}">${statusNames[scan.status] || scan.status}</span></div>
+    <div class="highlight-scan-header"><div><div class="eyebrow">${scan.source_kind === 'url' ? 'TWITCH SOURCE' : 'LOCAL VIDEO'}${duration}${batchLabel}</div><h4>${escapeHtml(sourceName)}</h4><small>${escapeHtml(scan.streamer || 'Streamer non renseigné')} · ${new Date(scan.created_at).toLocaleString('fr-FR')}</small></div><span class="status-pill ${scan.status === 'completed' ? 'validated' : scan.status === 'error' ? 'error' : 'running'}">${statusNames[scan.status] || scan.status}</span></div>
     ${['queued','running'].includes(scan.status) ? progress : `<p class="highlight-complete">${escapeHtml(scan.message || (scan.status === 'cancelled' ? 'Analyse annulée' : 'Analyse terminée'))}</p>`}
     ${cancelAction}${error}${transcriptionNote}${candidateList}
   </article>`;
@@ -184,7 +189,7 @@ async function cancelHighlightScan(button) {
 
 async function loadHighlights() {
   try {
-    const scans = await api('/api/highlights?limit=30');
+    const scans = await api('/api/highlights?limit=100');
     $('#highlight-scans').innerHTML = scans.length
       ? scans.map(highlightScanCard).join('')
       : '<div class="empty-state">Aucune analyse pour le moment. Ajoute une VOD ou un clip Twitch pour commencer.</div>';
@@ -214,6 +219,35 @@ async function submitHighlightForm(form, endpoint) {
   } finally {
     button.disabled = false;
     button.innerHTML = oldText;
+  }
+}
+
+async function submitHighlightBatch(form) {
+  if (!form.reportValidity()) return;
+  const batchButton = $('#highlight-batch-submit');
+  const submitButton = $('button[type="submit"]', form);
+  const oldBatchText = batchButton.textContent;
+  const oldSubmitText = submitButton.textContent;
+  batchButton.disabled = true;
+  submitButton.disabled = true;
+  batchButton.textContent = 'Création du lot…';
+  try {
+    const response = await fetch('/api/highlights/scan/url/batch', {
+      method: 'POST',
+      body: new FormData(form),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.detail || `Erreur HTTP ${response.status}`);
+    toast(data.message || `${data.count || 0} tranches ajoutées à la file.`);
+    form.reset();
+    await loadHighlights();
+  } catch (error) {
+    toast(error.message, true);
+  } finally {
+    batchButton.disabled = false;
+    submitButton.disabled = false;
+    batchButton.textContent = oldBatchText;
+    submitButton.textContent = oldSubmitText;
   }
 }
 
@@ -587,6 +621,7 @@ function setupEvents() {
   $$('.highlight-source-tab').forEach(tab => tab.addEventListener('click', () => showHighlightSourceTab(tab.dataset.highlightSourceTab)));
   $('#highlight-upload-form').addEventListener('submit', event => { event.preventDefault(); if (!$('#highlight-file').files[0]) { toast('Sélectionne un fichier vidéo.', true); return; } submitHighlightForm(event.currentTarget, '/api/highlights/scan/upload'); });
   $('#highlight-url-form').addEventListener('submit', event => { event.preventDefault(); submitHighlightForm(event.currentTarget, '/api/highlights/scan/url'); });
+  $('#highlight-batch-submit').addEventListener('click', () => submitHighlightBatch($('#highlight-url-form')));
   $('#refresh-highlights').addEventListener('click', loadHighlights);
   $('#highlight-scans').addEventListener('click', event => {
     const createButton = event.target.closest('[data-highlight-create]');
