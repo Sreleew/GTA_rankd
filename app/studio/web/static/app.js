@@ -1,4 +1,4 @@
-const state = { page: 'dashboard', file: null, toastTimer: null, modelPoll: null, whisperGpuProbeRunning: false, ollamaVerifyRunning: false, ollamaVerificationResult: null, updatePoll: null, updateInProgress: false, updateTargetVersion: '', bestOfClips: [], bestOfSelectedIds: [], bestOfDate: '', bestOfPlan: null, bestOfRenderJob: null, bestOfHistoryPoll: null, bestOfHistoryLoading: false, shortBatchIds: [], shortBatchRetrying: new Set() };
+const state = { page: 'dashboard', file: null, toastTimer: null, modelPoll: null, whisperGpuProbeRunning: false, ollamaVerifyRunning: false, ollamaVerificationResult: null, updatePoll: null, updateInProgress: false, updateTargetVersion: '', bestOfClips: [], bestOfSelectedIds: [], bestOfDate: '', bestOfPlan: null, bestOfRenderJob: null, bestOfHistoryPoll: null, bestOfHistoryLoading: false, bestOfHistoryRetrying: new Set(), shortBatchIds: [], shortBatchRetrying: new Set() };
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 
@@ -337,6 +337,9 @@ async function loadBestOfHistory(silent = false) {
         : (job.status === 'completed'
           ? '<small class="bestof-history-missing">Fichier exporté introuvable sur ce PC.</small>'
           : '');
+      const retryButton = job.status === 'error'
+        ? `<button type="button" class="mini-button" data-retry-bestof="${escapeHtml(job.id)}" ${state.bestOfHistoryRetrying.has(job.id) ? 'disabled' : ''}>Relancer le rendu</button>`
+        : '';
       const detail = job.error || job.message || '';
       return `<article class="bestof-history-item">
         <div class="bestof-history-main">
@@ -345,7 +348,7 @@ async function loadBestOfHistory(silent = false) {
           <p>${escapeHtml(detail)}</p>
           ${['queued', 'running'].includes(job.status) ? `<div class="bestof-history-progress"><span style="width:${progress}%"></span></div>` : ''}
         </div>
-        <div class="bestof-history-action">${link}</div>
+        <div class="bestof-history-action">${link}${retryButton}</div>
       </article>`;
     }).join('') : '<div class="empty-state compact-empty">Aucun épisode généré pour le moment.</div>';
 
@@ -360,6 +363,29 @@ async function loadBestOfHistory(silent = false) {
     if (!silent) toast(error.message, true);
   } finally {
     state.bestOfHistoryLoading = false;
+  }
+}
+
+async function retryBestOfJob(button) {
+  const jobId = String(button.dataset.retryBestof || '');
+  if (!jobId || state.bestOfHistoryRetrying.has(jobId)) return;
+  state.bestOfHistoryRetrying.add(jobId);
+  const oldText = button.textContent;
+  button.disabled = true;
+  button.textContent = 'Relance…';
+  try {
+    const result = await api(`/api/bestof/jobs/${encodeURIComponent(jobId)}/retry`, { method: 'POST' });
+    toast(result.message || 'Relance du Daily Best Of ajoutée à la file.');
+    await loadBestOfHistory();
+  } catch (error) {
+    toast(error.message, true);
+    await loadBestOfHistory(true);
+  } finally {
+    state.bestOfHistoryRetrying.delete(jobId);
+    if (button.isConnected) {
+      button.disabled = false;
+      button.textContent = oldText;
+    }
   }
 }
 
@@ -1193,6 +1219,13 @@ function setupEvents() {
     input.addEventListener('input', () => updateRangeOutput(input));
   });
   document.addEventListener('click', event => { const button = event.target.closest('[data-action]'); if (button) handleJobAction(button); });
+
+document.addEventListener('click', event => {
+  const button = event.target.closest('[data-retry-bestof]');
+  if (!button) return;
+  event.preventDefault();
+  retryBestOfJob(button);
+});
 }
 
 document.addEventListener('click', event => {
