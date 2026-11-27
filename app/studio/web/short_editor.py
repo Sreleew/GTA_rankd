@@ -112,12 +112,23 @@ def _wrap_words(value: str, max_words: int = 5) -> str:
 def infer_hook_style(hook_text: str, context_text: str = "") -> str:
     """Choisit une animation de hook selon la promesse éditoriale du texte."""
     hook = _clean_ass_text(hook_text).casefold()
-    combined = f"{hook} {_clean_ass_text(context_text).casefold()}"
-    tokens = set(re.findall(r"[a-z0-9']+", combined))
+    # The actual hook drives the treatment. Context is only a fallback when no
+    # headline was produced, so a summary cannot override the editorial promise.
+    source_text = hook or _clean_ass_text(context_text).casefold()
+    tokens = set(re.findall(r"[a-z0-9']+", source_text))
 
-    question_words = {"why", "how", "what", "who", "where", "when", "which", "did", "does", "could", "would", "can", "will"}
-    suspense_words = {"wait", "watch", "until", "before", "thought", "safe", "almost", "then", "just", "secret", "never"}
-    reaction_words = {"no", "way", "wtf", "omg", "holy", "damn", "crazy", "insane", "unreal", "nah", "bro", "wow", "sheesh"}
+    question_words = {
+        "why", "how", "what", "who", "where", "when", "which",
+        "did", "does", "could", "would", "can", "will",
+    }
+    suspense_words = {
+        "wait", "watch", "until", "before", "thought", "safe",
+        "almost", "then", "just", "secret", "never",
+    }
+    reaction_words = {
+        "no", "way", "wtf", "omg", "holy", "damn", "crazy",
+        "insane", "unreal", "nah", "bro", "wow", "sheesh",
+    }
 
     scores = {
         "question": (3 if "?" in hook else 0) + len(tokens & question_words),
