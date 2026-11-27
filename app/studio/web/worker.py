@@ -1,4 +1,4 @@
-"""File de traitement locale : téléchargement, transcription et montage des Shorts."""
+"""File de traitement locale : téléchargement et montage des Shorts."""
 
 from __future__ import annotations
 
