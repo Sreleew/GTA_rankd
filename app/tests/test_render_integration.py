@@ -152,6 +152,7 @@ def test_real_vertical_short_render(tmp_path: Path) -> None:
     )
 
     hook_sound = create_hook_sound_effect(tmp_path / "hook-sound.wav", "suspense")
+    progress_updates: list[float] = []
     result = render_vertical_short(
         source,
         output,
@@ -175,6 +176,7 @@ def test_real_vertical_short_render(tmp_path: Path) -> None:
         trim_duration=1.5,
         sound_effect_path=hook_sound,
         sound_effect_offset=0.12,
+        progress_callback=progress_updates.append,
     )
 
     rendered = probe_media(output, ffprobe)
@@ -187,6 +189,10 @@ def test_real_vertical_short_render(tmp_path: Path) -> None:
     assert rendered["width"] == 360
     assert rendered["height"] == 640
     assert rendered["has_audio"] is True
+    assert progress_updates
+    assert all(0.0 <= value <= 100.0 for value in progress_updates)
+    assert progress_updates == sorted(progress_updates)
+    assert max(progress_updates) >= 95.0
     assert output.is_file() and output.stat().st_size > 10_000
     assert thumbnail.is_file() and thumbnail.stat().st_size > 1_000
 
@@ -214,6 +220,11 @@ def test_render_reuses_source_probe_and_returns_output_probe(tmp_path: Path, mon
 
     reported_progress = []
 
+    def report_progress(value: float) -> None:
+        if value == 0.0:
+            raise RuntimeError("UI callback unavailable")
+        reported_progress.append(value)
+
     def fake_run(command, timeout=None, cwd=None, progress_callback=None):
         output.write_bytes(b"rendered mp4")
         if progress_callback is not None:
@@ -240,7 +251,7 @@ def test_render_reuses_source_probe_and_returns_output_probe(tmp_path: Path, mon
         height=640,
         trim_start=1.0,
         trim_duration=8.0,
-        progress_callback=reported_progress.append,
+        progress_callback=report_progress,
     )
 
     assert reported_progress == [50.0]
