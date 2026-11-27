@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#101113">
   <title>GTA Ranked Studio</title>
-  <link rel="stylesheet" href="/static/styles.css?v=0.8.9-short-live-progress">
+  <link rel="stylesheet" href="/static/styles.css?v=0.8.9-short-live-progress-captions">
 </head>
 <body>
   <div class="app-shell">
@@ -79,7 +79,9 @@
                   <label><input type="checkbox" name="dynamic_zoom" data-option-checkbox> Zoom dynamique</label>
                   <label><input type="checkbox" name="brand_enabled" checked data-option-checkbox> Signature GTA Ranked + handle</label>
                   <label><input type="checkbox" name="sfx_enabled" checked data-option-checkbox> Whoosh discret au moment fort</label>
+                  <label><input type="checkbox" name="captions_enabled" data-option-checkbox> Sous-titres automatiques (Whisper local)</label>
                 </div>
+                <small class="form-note">Option facultative, désactivée par défaut pour garder le rendu rapide. Nécessite whisper.cpp et le modèle local large-v3-turbo (~1,6 Go), à installer dans Paramètres.</small>
                 <div class="form-grid edit-text-grid">
                   <label>Hook personnalisé <span>OPTIONNEL · 8 MOTS MAX</span><input type="text" name="hook_text" maxlength="100" placeholder="ex. BRO THOUGHT HE WAS SAFE..."></label>
                   <label>Contexte à afficher <span>OPTIONNEL · 10 MOTS MAX</span><input type="text" name="context_text" maxlength="150" placeholder="ex. One wrong move during the police chase"></label>
@@ -113,7 +115,9 @@
                   <label><input type="checkbox" name="dynamic_zoom" data-option-checkbox> Zoom dynamique</label>
                   <label><input type="checkbox" name="brand_enabled" checked data-option-checkbox> Signature GTA Ranked + handle</label>
                   <label><input type="checkbox" name="sfx_enabled" checked data-option-checkbox> Whoosh discret au moment fort</label>
+                  <label><input type="checkbox" name="captions_enabled" data-option-checkbox> Sous-titres automatiques (Whisper local)</label>
                 </div>
+                <small class="form-note">Option facultative, désactivée par défaut pour garder le rendu rapide. Nécessite whisper.cpp et le modèle local large-v3-turbo (~1,6 Go), à installer dans Paramètres.</small>
                 <div class="form-grid edit-text-grid">
                   <label>Hook personnalisé <span>OPTIONNEL · 8 MOTS MAX</span><input type="text" name="hook_text" maxlength="100" placeholder="ex. BRO THOUGHT HE WAS SAFE..."></label>
                   <label>Contexte à afficher <span>OPTIONNEL · 10 MOTS MAX</span><input type="text" name="context_text" maxlength="150" placeholder="ex. One wrong move during the police chase"></label>
@@ -241,6 +245,6 @@
     </main>
   </div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="/static/app.js?v=0.8.9-short-live-progress"></script>
+  <script src="/static/app.js?v=0.8.9-short-live-progress-captions"></script>
 </body>
 </html>
