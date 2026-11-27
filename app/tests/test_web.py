@@ -140,7 +140,7 @@ def test_whisper_gpu_button_uses_fresh_script_and_visible_feedback():
     static = Path(__file__).resolve().parents[1] / "studio" / "web" / "static"
     html = (static / "index.html").read_text(encoding="utf-8")
     js = (static / "app.js").read_text(encoding="utf-8")
-    assert '<script src="/static/app.js?v=0.8.9-bestof-live-progress"></script>' in html
+    assert '<script src="/static/app.js?v=0.8.9-short-live-progress-captions"></script>' in html
     assert '<button type="button" class="mini-button" id="verify-whisper-gpu"' in html
     assert "/api/models/whisper/verify" in js
     assert "if (verifyGpuButton) verifyGpuButton.addEventListener('click', verifyWhisperGpu);" in js
@@ -213,7 +213,7 @@ def test_ollama_verify_button_has_a_dedicated_visible_handler():
     static = Path(__file__).resolve().parents[1] / "studio" / "web" / "static"
     html = (static / "index.html").read_text(encoding="utf-8")
     js = (static / "app.js").read_text(encoding="utf-8")
-    assert '<script src="/static/app.js?v=0.8.9-bestof-live-progress"></script>' in html
+    assert '<script src="/static/app.js?v=0.8.9-short-live-progress-captions"></script>' in html
     assert '<button type="button" class="mini-button" id="verify-ollama"' in html
     assert "#refresh-models-secondary" in js
     assert "/api/models/ollama/verify" in js
@@ -1241,6 +1241,7 @@ def test_batch_twitch_short_import_queues_valid_urls_and_reports_invalid_ones(tm
     assert all(job["metadata"]["batch_count"] == 3 for job in jobs)
     assert sorted(job["metadata"]["batch_index"] for job in jobs) == [1, 2, 3]
     assert all(job["metadata"]["options"]["layout"] == "blur" for job in jobs)
+    assert all(job["metadata"]["options"]["captions_enabled"] is False for job in jobs)
 
     queued_batch = client.get(f"/api/shorts/batches/{payload['batch_id']}")
     assert queued_batch.status_code == 200
@@ -1335,6 +1336,56 @@ def test_batch_twitch_short_import_requires_rights_and_limits_urls(tmp_path: Pat
     assert "Maximum 10" in too_many.json()["detail"]
 
 
+def test_short_caption_option_requires_local_whisper_and_is_persisted(tmp_path: Path):
+    config = load_config(_make_isolated_app_config(tmp_path))
+    app = create_app(config)
+    app.state.runner.submit = lambda job_id: None
+    client = TestClient(app)
+
+    payload = {
+        "url": "https://clips.twitch.tv/CaptionTestClip",
+        "rights_confirmed": "true",
+        "captions_enabled": "true",
+    }
+    unavailable = client.post("/api/shorts/url", data=payload)
+    assert unavailable.status_code == 409
+    assert "whisper.cpp" in unavailable.json()["detail"]
+    assert app.state.store.list_jobs(limit=10) == []
+
+    whisper_cli = config.path_for("executables", "whisper_cli")
+    whisper_cli.parent.mkdir(parents=True, exist_ok=True)
+    whisper_cli.write_bytes(b"fake whisper binary")
+    missing_model = client.post("/api/shorts/url", data=payload)
+    assert missing_model.status_code == 409
+    assert "large-v3-turbo" in missing_model.json()["detail"]
+    app.state.model_manager._model_is_valid = lambda: True
+
+    accepted = client.post("/api/shorts/url", data=payload)
+    assert accepted.status_code == 202, accepted.text
+    job = app.state.store.get_job(accepted.json()["id"])
+    assert job["metadata"]["options"]["captions_enabled"] is True
+
+    upload = client.post(
+        "/api/shorts/upload",
+        files={"file": ("caption-upload.mp4", b"video", "video/mp4")},
+        data={"rights_confirmed": "true", "captions_enabled": "true"},
+    )
+    assert upload.status_code == 202, upload.text
+    uploaded_job = app.state.store.get_job(upload.json()["id"])
+    assert uploaded_job["metadata"]["options"]["captions_enabled"] is True
+
+    batch_payload = {
+        "urls": "https://clips.twitch.tv/CaptionBatchOne\nhttps://clips.twitch.tv/CaptionBatchTwo",
+        "rights_confirmed": "true",
+        "captions_enabled": "true",
+    }
+    batch = client.post("/api/shorts/url/batch", data=batch_payload)
+    assert batch.status_code == 202, batch.text
+    batch_jobs = [app.state.store.get_job(item["id"]) for item in batch.json()["jobs"]]
+    assert len(batch_jobs) == 2
+    assert all(item["metadata"]["options"]["captions_enabled"] is True for item in batch_jobs)
+
+
 def test_batch_twitch_import_is_available_in_shorts_ui():
     static = Path(__file__).resolve().parents[1] / "studio" / "web" / "static"
     html = (static / "index.html").read_text(encoding="utf-8")
@@ -1343,7 +1394,7 @@ def test_batch_twitch_import_is_available_in_shorts_ui():
     assert 'id="short-batch-urls"' in html
     assert 'id="short-batch-submit"' in html
     assert 'id="short-batch-tracker"' in html
-    assert "v=0.8.9-bestof-live-progress" in html
+    assert "v=0.8.9-short-live-progress-captions" in html
     assert "JUSQU'À 10 URLS" in html
     assert "/api/shorts/url/batch" in js
     assert "/api/shorts/batches/" in js
@@ -1352,7 +1403,11 @@ def test_batch_twitch_import_is_available_in_shorts_ui():
     assert "image source conservée" in js
     assert "/api/jobs/${encodeURIComponent(jobId)}/reprocess" in js
     assert "gta-ranked-short-batches" in js
-    assert "$$('[data-option-checkbox]', form).forEach" in js
+    assert html.count('name="captions_enabled"') == 2
+    assert "large-v3-turbo" in html
+    assert "metadata.transcription_warning" in js
+    assert "Transcription Whisper" in js
+    assert "$('[data-option-checkbox]', form).forEach" in js
     assert "submitShortBatch($('#url-form'))" in js
 
 

@@ -430,6 +430,7 @@ def render_vertical_short(
     sound_effect_path: Path | None = None,
     sound_effect_offset: float = 0.0,
     sound_effect_volume: float = 0.14,
+    progress_callback: Callable[[float], None] | None = None,
 ) -> dict[str, Any]:
     renderer_started = time.perf_counter()
     performance_timings: dict[str, int] = {}
@@ -472,7 +473,23 @@ def render_vertical_short(
             sound_effect_volume=sound_effect_volume,
         )
         try:
-            run_command(command, timeout=max(300, int(info["duration"] * 30)), cwd=project_root)
+            if progress_callback is not None:
+                # FFmpeg reports encoded media time, not elapsed wall-clock time.
+                command[-1:-1] = ["-progress", "pipe:1", "-stats_period", "1", "-nostats"]
+                def notify_progress(percent: float) -> None:
+                    try:
+                        progress_callback(percent)
+                    except Exception:
+                        logger.exception("Le callback de progression du Short a échoué.")
+
+                def report_encoding_progress(elapsed_seconds: float) -> None:
+                    ratio = max(0.0, min(1.0, float(elapsed_seconds) / output_duration))
+                    notify_progress(ratio * 100.0)
+
+                notify_progress(0.0)
+                run_command(command, timeout=max(300, int(info["duration"] * 30)), cwd=project_root, progress_callback=report_encoding_progress)
+            else:
+                run_command(command, timeout=max(300, int(info["duration"] * 30)), cwd=project_root)
             info["encoder_used"] = encoder
             break
         except MediaError as exc:

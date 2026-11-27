@@ -591,3 +591,30 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Arbitrage ROI :** réutiliser les rapports de progression natifs FFmpeg plutôt qu'ajouter un mécanisme de polling ou d'estimation séparé. Le coût supplémentaire est limité à la lecture des lignes de progression pendant le rendu.
 - **Progression v0.9.0 :** environ 85 % du regroupement technique estimé. Il reste principalement une validation guidée sur la machine Windows/AMD du flux Twitch vers Short et d'un rendu Daily Best Of réel, puis les éventuels ajustements réellement nécessaires avant une Release candidate. Ne pas annoncer de performance matérielle sans mesure locale.
 - **Suite prioritaire :** validation sur le PC Windows/AMD dès qu'une version regroupée est disponible. Exploiter ensuite les temps mesurés pour ne modifier que le goulot réellement observé.
+
+
+## 42. Progression réelle du rendu Short Twitch, 27 novembre 2026
+
+- **Problème ciblé :** pendant l'encodage vertical, le job restait sur un pourcentage fixe malgré un rendu parfois long. Le message ne permettait pas de distinguer un encodage lent d'un traitement bloqué.
+- **Mesure réelle :** le renderer peut activer le protocole FFmpeg `-progress pipe:1` et convertir les timestamps média encodés en progression basée sur la durée de l'extrait. Le mécanisme reste facultatif pour préserver les appels existants.
+- **Interface :** le worker mappe l'encodage de 60 à 85 %, affiche le pourcentage dans le message du job et ajoute une valeur numérique à côté de la barre de progression. Le contrôle qualité commence ensuite à 88 % comme auparavant.
+- **Encodeurs :** la même mesure s'applique à AMD AMF et à l'encodeur CPU de secours. Chaque tentative redémarre à zéro pour éviter un pourcentage trompeur après un fallback.
+- **Tests :** le test simulé vérifie l'activation du protocole FFmpeg, la conversion des timestamps en pourcentage et la tolérance à une erreur du callback initial. Un test de fallback vérifie que la progression repart de zéro si AMF échoue et que libx264 prend le relais. Le test d'intégration FFmpeg réel vérifie une progression bornée et monotone jusqu'à la fin de l'encodage. Aucun rendu sur la RX 9060 XT n'est revendiqué.
+- **Branche :** `feat/short-render-live-progress`. Clé de cache des assets `0.8.9-short-live-progress`.
+- **Arbitrage ROI :** réutiliser le helper de progression FFmpeg du Daily Best Of, sans polling additionnel ni minuterie fictive.
+- **Suite :** tests ciblés Linux/Windows, puis validation de la PR. La vérification réelle sur Windows/AMD reste à faire sur le PC utilisateur.
+
+
+## 43. Sous-titres Whisper locaux facultatifs pour les Shorts, 27 novembre 2026
+
+- **Problème ciblé :** le pipeline Short n'utilisait plus la transcription, donc les rendus standards ne contenaient pas de sous-titres et les hooks/titres ne pouvaient pas exploiter les paroles.
+- **Choix ROI :** transcription strictement facultative, désactivée par défaut. Aucun modèle n'est téléchargé automatiquement et aucun coût Whisper n'est ajouté au rendu standard. L'activation nécessite le moteur whisper.cpp et le modèle local large-v3-turbo valide (~1,6 Go), vérifiés avant de mettre un upload ou une URL Twitch en file.
+- **Périmètre :** l'audio du seul extrait final sélectionné est transcrit. Le WAV déjà extrait pour l'analyse audio est réutilisé s'il correspond exactement à la plage ; sinon, FFmpeg extrait uniquement la plage Short. La transcription reste locale. La durée finale est validée avant Whisper : une source trop longue sans recadrage automatique échoue immédiatement au lieu de lancer une transcription coûteuse vouée à être refusée au rendu.
+- **Rendu :** les mots horodatés DTW sont privilégiés ; le SRT par segments reste le fallback du moteur. Les mots alimentent les captions ASS et le transcript fourni à la génération des métadonnées. Le SRT est conservé à côté du MP4 lorsqu'il existe. Le contrôle qualité vérifie les captions lorsqu'elles ont réellement été générées.
+- **Tolérance aux pannes :** si la source n'a pas d'audio ou si Whisper échoue après démarrage, le MP4 reste généré sans captions et l'interface affiche explicitement l'avertissement. Si le moteur ou le modèle manque dès la demande, l'API refuse la mise en file avec une explication avant de télécharger la source. L'échec de copie du SRT annexe ne bloque pas le MP4 lorsque les captions sont déjà intégrées.
+- **Compatibilité :** aucun changement de dépendance ni d'encodeur. Le chemin AMD AMF et le fallback libx264 sont inchangés. Le choix de captions est conservé dans les options du job et donc dans une relance.
+- **Mesure du coût :** la durée Whisper est enregistrée dans les timings du job et affichée dans le rapport « Temps de traitement » pour comparer le coût réel de la transcription avec et sans l'option.
+- **Tests ajoutés :** validation API du prérequis Whisper, persistance de l'option sur upload, URL et lot Twitch, réutilisation du WAV correspondant, extraction exacte de la plage lorsque le WAV existant couvre une autre durée, et vérification de l'affichage du résultat et du timing.
+- **Cache UI :** `0.8.9-short-live-progress-captions`.
+- **Limites :** les tests ne mesurent pas encore la vitesse réelle de Whisper sur la RX 9060 XT. Le modèle large-v3-turbo reste volontairement optionnel ; une transcription longue peut prolonger le traitement lorsque l'option est activée.
+- **Suite :** validation CI Linux/Windows de la PR groupée, puis validation manuelle sur un clip Twitch réel avec le modèle présent, en comparant durée de transcription, synchronisation et lisibilité mobile.

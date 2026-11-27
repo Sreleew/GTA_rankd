@@ -7,7 +7,7 @@ import subprocess
 import pytest
 
 from studio.web.short_editor import WordTiming, create_ass_file
-from studio.web.short_renderer import build_filter_complex, create_hook_sound_effect, probe_media, render_vertical_short
+from studio.web.short_renderer import MediaError, build_filter_complex, create_hook_sound_effect, probe_media, render_vertical_short
 
 
 def test_smart_layout_fits_the_complete_source_inside_the_editorial_panel() -> None:
@@ -152,6 +152,7 @@ def test_real_vertical_short_render(tmp_path: Path) -> None:
     )
 
     hook_sound = create_hook_sound_effect(tmp_path / "hook-sound.wav", "suspense")
+    progress_updates: list[float] = []
     result = render_vertical_short(
         source,
         output,
@@ -175,6 +176,7 @@ def test_real_vertical_short_render(tmp_path: Path) -> None:
         trim_duration=1.5,
         sound_effect_path=hook_sound,
         sound_effect_offset=0.12,
+        progress_callback=progress_updates.append,
     )
 
     rendered = probe_media(output, ffprobe)
@@ -187,8 +189,65 @@ def test_real_vertical_short_render(tmp_path: Path) -> None:
     assert rendered["width"] == 360
     assert rendered["height"] == 640
     assert rendered["has_audio"] is True
+    assert progress_updates
+    assert all(0.0 <= value <= 100.0 for value in progress_updates)
+    assert progress_updates == sorted(progress_updates)
+    assert max(progress_updates) >= 95.0
     assert output.is_file() and output.stat().st_size > 10_000
     assert thumbnail.is_file() and thumbnail.stat().st_size > 1_000
+
+
+def test_short_render_fallback_restarts_progress_for_cpu_encoder(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from studio.web import short_renderer
+
+    source = tmp_path / "source.mp4"
+    output = tmp_path / "short.mp4"
+    thumbnail = tmp_path / "thumbnail.jpg"
+    source.write_bytes(b"source")
+    source_info = {
+        "duration": 12.0, "width": 1920, "height": 1080, "has_audio": True,
+        "fps": 30.0, "video_codec": "h264", "audio_codec": "aac",
+    }
+    output_info = {
+        "duration": 8.0, "width": 360, "height": 640, "has_audio": True,
+        "fps": 30.0, "video_codec": "h264", "audio_codec": "aac",
+    }
+    progress: list[float] = []
+    attempts = []
+
+    monkeypatch.setattr(short_renderer, "probe_media", lambda *args, **kwargs: output_info)
+    monkeypatch.setattr(short_renderer, "_available_encoder_listing", lambda _: "h264_amf libx264")
+    monkeypatch.setattr(short_renderer, "build_render_command", lambda *args, **kwargs: ["ffmpeg", str(output)])
+
+    def fake_run(command, timeout=None, cwd=None, progress_callback=None):
+        attempts.append(command)
+        if progress_callback is not None:
+            progress_callback(4.0 if len(attempts) == 1 else 2.0)
+        if len(attempts) == 1:
+            raise MediaError("Simulated AMF failure")
+        output.write_bytes(b"rendered mp4")
+        return subprocess.CompletedProcess(command, 0, "", "")
+
+    monkeypatch.setattr(short_renderer, "run_command", fake_run)
+
+    def fake_thumbnail(*args, **kwargs):
+        thumbnail.write_bytes(b"jpeg")
+        return 2.0
+
+    monkeypatch.setattr(short_renderer, "_extract_best_thumbnail", fake_thumbnail)
+    result = render_vertical_short(
+        source, output, thumbnail,
+        source_media_info=source_info,
+        preferred_encoder="h264_amf",
+        fallback_encoder="libx264",
+        width=360, height=640,
+        trim_start=1.0, trim_duration=8.0,
+        progress_callback=progress.append,
+    )
+
+    assert result["encoder_used"] == "libx264"
+    assert len(attempts) == 2
+    assert progress == [0.0, 50.0, 0.0, 25.0]
 
 
 def test_render_reuses_source_probe_and_returns_output_probe(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -212,8 +271,18 @@ def test_render_reuses_source_probe_and_returns_output_probe(tmp_path: Path, mon
         probed.append(Path(path))
         return output_info
 
-    def fake_run(command, timeout=None, cwd=None):
+    reported_progress = []
+
+    def report_progress(value: float) -> None:
+        if value == 0.0:
+            raise RuntimeError("UI callback unavailable")
+        reported_progress.append(value)
+
+    def fake_run(command, timeout=None, cwd=None, progress_callback=None):
         output.write_bytes(b"rendered mp4")
+        if progress_callback is not None:
+            assert command[command.index("-progress") + 1] == "pipe:1"
+            progress_callback(4.0)
         return subprocess.CompletedProcess(command, 0, "", "")
 
     monkeypatch.setattr(short_renderer, "probe_media", fake_probe)
@@ -235,8 +304,10 @@ def test_render_reuses_source_probe_and_returns_output_probe(tmp_path: Path, mon
         height=640,
         trim_start=1.0,
         trim_duration=8.0,
+        progress_callback=report_progress,
     )
 
+    assert reported_progress == [50.0]
     assert probed == [output]
     assert result["source_duration"] == 12.0
     assert result["output_media_info"] == output_info
