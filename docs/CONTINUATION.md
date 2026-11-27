@@ -362,3 +362,7 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Robustesse :** le premier mot d'un groupe est traité sans accès à un élément précédent inexistant.
 - **Tests :** régression couvrant deux phrases successives et leur séparation.
 - **Validation :** la PR #55 initiale est devenue obsolète après fusion de la PR #54 ; ce correctif est repris sur une branche basée sur main à jour afin de relancer une CI propre Linux/Windows.
+
+
+- **Complément éditorial :** la sélection de miniature tient désormais compte de réactions francophones (par exemple « incroyable », « dingue », « putain ») et de la ponctuation expressive. Cela évite de favoriser uniquement les mots-clés anglais de l'ancien dictionnaire.
+- **Test ajouté :** vérifie qu'un groupe de réaction francophone emphatique est retenu face à une parole neutre.
