@@ -460,7 +460,7 @@ def apply_thumbnail_overlay(
     draw.text((width - margin - game_width + 19, 99 - game_box[1]), game_text,
               font=game_font, fill=white)
 
-    # Larger source frame: keep the streamer webcam and gameplay readable at phone size.
+    # Larger source frame: keep the full source image readable at phone size.
     panel_x, panel_y, panel_w, panel_h = 30, 300, 1020, 720
     shadow = Image.new("RGBA", (width, height), (0, 0, 0, 0))
     shadow_draw = ImageDraw.Draw(shadow, "RGBA")
