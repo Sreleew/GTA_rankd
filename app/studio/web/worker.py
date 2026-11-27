@@ -27,8 +27,7 @@ from studio.web.export_quality import analyze_export_quality
 from studio.web.store import Store
 from studio.web.transcribe import (
     TranscriptionError,
-    detect_audio_peak_timestamp,
-    detect_audio_peak_timestamps,
+    analyze_audio_peaks,
     extract_audio_wav,
 )
 
@@ -254,8 +253,7 @@ class JobRunner:
                         start_seconds=trim_start if source_range else None,
                         duration_seconds=(trim_end - trim_start) if source_range else None,
                     )
-                    local_peak = detect_audio_peak_timestamp(audio_path)
-                    audio_peak_timestamps = detect_audio_peak_timestamps(audio_path)
+                    local_peak, audio_peak_timestamps = analyze_audio_peaks(audio_path)
                     peak_timestamp = (trim_start + local_peak) if source_range and local_peak else (local_peak or peak_timestamp)
                     if source_range:
                         audio_peak_timestamps = [trim_start + item for item in audio_peak_timestamps]
