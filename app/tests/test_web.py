@@ -36,14 +36,26 @@ def test_blur_layout_keeps_the_full_landscape_source_visible():
 
 
 def test_edit_options_are_validated_and_clamped_by_api():
-    options = _validate_edit_options("fill", 50, 40, True, 8, True, True, "Wait for it", "A chase", True)
+    options = _validate_edit_options(
+        "fill", 50, 40, True, 8, True, True, "Wait for it", "A chase", True,
+        captions_enabled=True, caption_language="fr",
+    )
     assert options["layout"] == "fill"
     assert options["crop_x"] == 50
     assert options["dynamic_zoom"] is True
     assert options["auto_trim_enabled"] is True
+    assert options["captions_enabled"] is True
+    assert options["caption_language"] == "fr"
     smart = _validate_edit_options("smart", 80, 50, False, 0, True, True, "", "")
     assert smart["layout"] == "smart"
     assert smart["crop_x"] == 80
+    assert smart["caption_language"] == "auto"
+    try:
+        _validate_edit_options("smart", 80, 50, False, 0, True, True, "", "", caption_language="xx")
+    except Exception as exc:
+        assert "langue" in str(exc).lower()
+    else:
+        raise AssertionError("Unsupported caption language should be rejected")
     try:
         _validate_edit_options("invalid", 50, 50, True, 8, True, True, "", "")
     except Exception as exc:
@@ -1346,6 +1358,7 @@ def test_short_caption_option_requires_local_whisper_and_is_persisted(tmp_path: 
         "url": "https://clips.twitch.tv/CaptionTestClip",
         "rights_confirmed": "true",
         "captions_enabled": "true",
+        "caption_language": "fr",
     }
     unavailable = client.post("/api/shorts/url", data=payload)
     assert unavailable.status_code == 409
@@ -1364,26 +1377,37 @@ def test_short_caption_option_requires_local_whisper_and_is_persisted(tmp_path: 
     assert accepted.status_code == 202, accepted.text
     job = app.state.store.get_job(accepted.json()["id"])
     assert job["metadata"]["options"]["captions_enabled"] is True
+    assert job["metadata"]["options"]["caption_language"] == "fr"
+
+    invalid_language = client.post(
+        "/api/shorts/url",
+        data={**payload, "captions_enabled": "false", "caption_language": "xx"},
+    )
+    assert invalid_language.status_code == 400
+    assert "langue" in invalid_language.json()["detail"].lower()
 
     upload = client.post(
         "/api/shorts/upload",
         files={"file": ("caption-upload.mp4", b"video", "video/mp4")},
-        data={"rights_confirmed": "true", "captions_enabled": "true"},
+        data={"rights_confirmed": "true", "captions_enabled": "true", "caption_language": "es"},
     )
     assert upload.status_code == 202, upload.text
     uploaded_job = app.state.store.get_job(upload.json()["id"])
     assert uploaded_job["metadata"]["options"]["captions_enabled"] is True
+    assert uploaded_job["metadata"]["options"]["caption_language"] == "es"
 
     batch_payload = {
         "urls": "https://clips.twitch.tv/CaptionBatchOne\nhttps://clips.twitch.tv/CaptionBatchTwo",
         "rights_confirmed": "true",
         "captions_enabled": "true",
+        "caption_language": "auto",
     }
     batch = client.post("/api/shorts/url/batch", data=batch_payload)
     assert batch.status_code == 202, batch.text
     batch_jobs = [app.state.store.get_job(item["id"]) for item in batch.json()["jobs"]]
     assert len(batch_jobs) == 2
     assert all(item["metadata"]["options"]["captions_enabled"] is True for item in batch_jobs)
+    assert all(item["metadata"]["options"]["caption_language"] == "auto" for item in batch_jobs)
 
 
 def test_batch_twitch_import_is_available_in_shorts_ui():
@@ -1394,7 +1418,7 @@ def test_batch_twitch_import_is_available_in_shorts_ui():
     assert 'id="short-batch-urls"' in html
     assert 'id="short-batch-submit"' in html
     assert 'id="short-batch-tracker"' in html
-    assert "v=0.8.9-short-live-progress-captions" in html
+    assert "v=0.9.0-short-caption-language" in html
     assert "JUSQU'À 10 URLS" in html
     assert "/api/shorts/url/batch" in js
     assert "/api/shorts/batches/" in js
@@ -1404,6 +1428,9 @@ def test_batch_twitch_import_is_available_in_shorts_ui():
     assert "/api/jobs/${encodeURIComponent(jobId)}/reprocess" in js
     assert "gta-ranked-short-batches" in js
     assert html.count('name="captions_enabled"') == 2
+    assert html.count('name="caption_language"') == 2
+    assert "Détection automatique" in html
+    assert "Modèle multilingue local" in html
     assert "large-v3-turbo" in html
     assert "metadata.transcription_warning" in js
     assert "Transcription Whisper" in js
