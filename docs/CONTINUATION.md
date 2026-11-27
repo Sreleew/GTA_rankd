@@ -630,3 +630,17 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Publication :** PR #77 fusionnée, commit squash `2e5510ca4084d3876a33dc5a26be259d49d642f6`. Le workflow officiel [46069811823](https://github.com/Sreleew/GTA_rankd/actions/runs/46069811823) a réussi et publié la Release v0.9.0, son ZIP Windows et `SHA256SUMS.txt`.
 - **Contrôles post-fusion :** Linux [46069811810](https://github.com/Sreleew/GTA_rankd/actions/runs/46069811810) et Windows [46069811807](https://github.com/Sreleew/GTA_rankd/actions/runs/46069811807) réussis.
 - **Suite :** installer v0.9.0 sur le PC Windows/AMD de test, puis mesurer AMF, Vulkan et Whisper sur de vrais médias avant le prochain lot.
+
+
+## 45. Langue des sous-titres Whisper configurable par Short, 27 novembre 2026
+
+- **Problème ciblé :** les nouveaux rendus utilisaient toujours la langue globale configurée (anglais par défaut), ce qui rendait les sous-titres moins fiables pour les clips français ou multilingues malgré le modèle Whisper large-v3-turbo multilingue.
+- **Amélioration :** ajout d'un sélecteur de langue dans les deux parcours de création Short (upload et URL/lot Twitch) : réglage du Studio, détection automatique, anglais, français, espagnol, portugais et allemand.
+- **Compatibilité des réglages :** le choix par défaut « Réglage du Studio » conserve la valeur transcription.language existante. L'utilisateur peut choisir explicitement auto ou une langue sans modifier sa configuration globale. Les anciens jobs sans caption_language continuent d'utiliser la configuration existante.
+- **Pipeline :** la langue choisie est validée côté API, persistée dans les options du job, transmise à whisper.cpp via le paramètre -l, conservée lors d'une relance et enregistrée dans les métadonnées du rendu (langue demandée et langue effectivement passée au moteur).
+- **Modèle :** clarification de l'interface : ggml-large-v3-turbo est présenté comme modèle multilingue, pas comme modèle anglais uniquement.
+- **Tests :** validation de l'allowlist API, persistance des langues distinctes sur upload, URL et import groupé, rejet d'une langue invalide, et vérification des arguments -l fr et -l auto dans les tests du moteur Whisper DTW/SRT.
+- **Cache UI :** 0.9.0-short-caption-language.
+- **Version :** aucun numéro de version ni fichier d'approbation de release modifié. La Release publique reste v0.9.0 ; cette évolution est destinée à une prochaine release.
+- **Validation :** CI Linux/Windows de la PR à vérifier avant fusion. Aucun rendu Whisper réel ni mesure sur la RX 9060 XT n'est revendiqué.
+- **Suite :** valider les deux plateformes, puis tester sur un clip français et un clip anglais en mode auto et en langue forcée ; comparer la qualité des mots, la synchronisation et le temps de transcription.
