@@ -125,7 +125,7 @@ def test_srt_fallback_keeps_real_segment_timing_without_fake_word_highlights(tmp
     assert len(caption_lines) == 1
     assert "0:00:01.20,0:00:03.40" in caption_lines[0]
     assert "WE GOT AWAY FROM THE POLICE!" in caption_lines[0].replace(r"\N", " ")
-    assert r"\\c&H0000C8F5&" not in caption_lines[0]
+    assert r"\c&H0000C8F5&" not in caption_lines[0]
 
 
 def test_srt_fallback_scales_a_long_unbreakable_word_instead_of_overflowing(tmp_path: Path):
@@ -137,7 +137,7 @@ def test_srt_fallback_scales_a_long_unbreakable_word_instead_of_overflowing(tmp_
         brand_enabled=False,
     )
     content = path.read_text(encoding="utf-8-sig")
-    assert r"\\fscx" in content
+    assert r"\fscx" in content
     assert "SUPERCALIFRAGILISTICEXPIALIDOCIOUS" in content
 
 

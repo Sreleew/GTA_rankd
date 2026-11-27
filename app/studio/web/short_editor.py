@@ -319,7 +319,7 @@ def create_ass_file(
     layout: str = "blur",
     hook_style: str = "auto",
 ) -> Path:
-    """Crée une piste ASS avec hook animé, contexte, branding et captions mot à mot."""
+    """Crée une piste ASS avec hook animé, contexte, branding et captions adaptées aux timestamps disponibles."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
     font = _clean_ass_text(font_name) or "Arial"
     header = f"""[Script Info]
