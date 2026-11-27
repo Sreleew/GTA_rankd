@@ -780,7 +780,7 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
             raise HTTPException(status_code=404, detail="Lot Twitch introuvable.")
         active_statuses = {"queued", "running", "cancelling"}
         terminal_statuses = {"ready", "validated", "rejected", "error", "cancelled"}
-        failed_statuses = {"error", "cancelled"}
+        failed_statuses = {"error"}
         total = len(jobs)
         active_count = sum(job["status"] in active_statuses for job in jobs)
         completed_count = sum(job["status"] in terminal_statuses for job in jobs)
@@ -805,6 +805,8 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
             message = f"Lot terminé · {ready_count} prêt(s) à valider · {failed_count} échec(s)"
         else:
             message = f"Lot terminé · {ready_count} prêt(s) à valider · {validated_count} validé(s)"
+        if cancelled_count:
+            message += f" · {cancelled_count} annulation(s)"
         return {
             "batch_id": batch_id,
             "status": status,
