@@ -343,3 +343,12 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Précision technique :** la diarisation distingue des locuteurs, mais ne sait pas lequel est le streamer. Le filtrage dominant reste une heuristique prudente, pas une identification garantie du streamer. La documentation de la fonction reflète désormais ce comportement réel.
 - **Tests :** vérification du rendu des libellés de statut et conservation des tests de filtrage existants. La validation complète Linux/Windows sera faite sur la PR.
 - **Limite :** aucun algorithme ne peut garantir que le locuteur dominant est le streamer sur tous les clips. Une sélection explicite du locuteur nécessitera un vrai parcours d'écoute/choix utilisateur, qui reste à concevoir.
+
+
+## 23. Sous-titres découpés selon la ponctuation, 27 novembre 2026
+
+- **Amélioration :** les groupes de sous-titres mot à mot se terminent désormais après une ponctuation de fin de phrase (. ! ?), en plus des règles existantes de longueur maximale et de pause vocale.
+- **Pourquoi :** éviter qu'une phrase et la réaction suivante restent affichées dans le même bloc. Cela rend le rythme de lecture plus naturel et aide à suivre les réactions courtes.
+- **Compatibilité :** les timings DTW restent inchangés ; les mots restent synchronisés individuellement. Les segments SRT de secours continuent d'être découpés en mots comme auparavant.
+- **Tests :** ajout d'un cas couvrant deux phrases successives, sans modification du rendu ni des options existantes.
+- **Validation :** CI Linux/Windows à effectuer sur la PR.
