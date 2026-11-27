@@ -159,21 +159,16 @@ function renderShortBatchTracker(batches) {
 
 async function refreshShortBatchTracker() {
   if (!state.shortBatchIds.length) return;
-  const retained = [];
-  const batches = [];
-  await Promise.all(state.shortBatchIds.map(async batchId => {
+  const results = await Promise.all(state.shortBatchIds.map(async batchId => {
     try {
-      const batch = await api(`/api/shorts/batches/${encodeURIComponent(batchId)}`);
-      retained.push(batchId);
-      batches.push(batch);
+      return { batchId, batch: await api(`/api/shorts/batches/${encodeURIComponent(batchId)}`), missing: false };
     } catch (error) {
-      if (error.status !== 404) retained.push(batchId);
+      return { batchId, batch: null, missing: error.status === 404 };
     }
   }));
-  state.shortBatchIds = retained.slice(0, 4);
+  state.shortBatchIds = results.filter(item => !item.missing).map(item => item.batchId).slice(0, 4);
   persistShortBatchIds();
-  batches.sort((a, b) => state.shortBatchIds.indexOf(a.batch_id) - state.shortBatchIds.indexOf(b.batch_id));
-  renderShortBatchTracker(batches);
+  renderShortBatchTracker(results.filter(item => item.batch).map(item => item.batch));
 }
 
 async function loadJobs() {
