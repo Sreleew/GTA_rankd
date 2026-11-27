@@ -391,7 +391,7 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 
 - **Changement produit :** le Daily Best Of ne s'arrête plus au constructeur de sélection. Une sélection de Shorts validés entre 9 et 11 minutes peut maintenant lancer un rendu asynchrone depuis l'interface.
 - **Composition :** chaque Short vertical est placé au centre d'une toile 1920 × 1080, avec un arrière-plan agrandi et flouté issu de la même vidéo. Les séquences sont concaténées dans l'ordre choisi. L'audio est normalisé en 48 kHz stéréo ; une piste silencieuse est prévue pour un Short sans audio.
-- **Sortie :** MP4 H.264, AAC, 30 FPS, pixel format yuv420p et faststart. Les Shorts sources ne sont jamais modifiés. Les exports sont rangés dans le dossier local output/bestof/<date>.
+- **Sortie :** MP4 H.264, AAC, 30 FPS, pixel format yuv420p et faststart. AMF est privilégié sur AMD ; si le driver ne s'initialise pas, le rendu réessaie une fois en libx264 CPU. Les Shorts sources ne sont jamais modifiés. Les exports sont rangés dans le dossier local output/bestof/<date>.
 - **Interface :** bouton de génération après vérification, tâche asynchrone, interrogation du statut et lien de récupération à la fin.
 - **Limites connues à valider :** le statut est conservé en mémoire du serveur et disparaît si l'application redémarre pendant le rendu ; la progression est actuellement par phase, pas un pourcentage FFmpeg détaillé. La qualité visuelle, la synchronisation audio et le temps de rendu doivent être vérifiés sur un épisode réel sous Windows/AMD avant publication stable.
 - **Validation automatisée :** tests du graphe FFmpeg et CI Linux/Windows à exécuter sur la PR. Aucune vidéo réelle n'a été rendue dans l'environnement de développement.
