@@ -978,6 +978,7 @@ def test_best_of_filter_graph_builds_landscape_blur_canvas_and_concat():
 
 
 def test_best_of_filter_graph_rejects_mismatched_audio_inputs():
+    import pytest
     from studio.web.best_of import build_best_of_filter_graph
 
     with pytest.raises(ValueError, match="plan vidéo"):
