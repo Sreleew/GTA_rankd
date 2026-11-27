@@ -216,7 +216,11 @@ async function validateBestOfSelection() {
     $('#bestof-feedback').textContent = error.message;
     toast(error.message, true);
   } finally {
-    button.disabled = false;
+    const currentClips = state.bestOfSelectedIds
+      .map(id => state.bestOfClips.find(clip => clip.id === id))
+      .filter(Boolean);
+    const currentDuration = currentClips.reduce((sum, clip) => sum + Math.max(0, Number(clip.duration) || 0), 0);
+    button.disabled = !(currentClips.length && currentDuration >= 540 && currentDuration <= 660);
     button.textContent = 'Vérifier la sélection';
   }
 }
