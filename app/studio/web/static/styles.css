@@ -171,3 +171,7 @@
 .short-batch-job-title{min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:9px;color:#d2d5d9}
 .short-batch-job-title small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#818994;margin-top:2px}
 @media(max-width:650px){.short-batch-card li{align-items:flex-start}.short-batch-card .status-pill{font-size:8px;padding:4px 6px}}
+
+.short-batch-job-actions{display:flex;align-items:center;gap:6px;flex:none}
+.short-batch-job-actions .mini-button{padding:5px 7px;font-size:9px}
+@media(max-width:650px){.short-batch-job-actions{align-items:flex-end;flex-direction:column;gap:4px}}
