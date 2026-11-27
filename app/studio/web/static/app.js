@@ -1,4 +1,4 @@
-const state = { page: 'dashboard', file: null, toastTimer: null, modelPoll: null, whisperGpuProbeRunning: false, ollamaVerifyRunning: false, ollamaVerificationResult: null, updatePoll: null };
+const state = { page: 'dashboard', file: null, toastTimer: null, modelPoll: null, whisperGpuProbeRunning: false, ollamaVerifyRunning: false, ollamaVerificationResult: null, updatePoll: null, bestOfClips: [], bestOfSelectedIds: [], bestOfDate: '', bestOfPlan: null };
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 
@@ -20,6 +20,7 @@ function setPage(name) {
   if (name === 'shorts') loadJobs();
   if (name === 'highlights') loadHighlights();
   if (name === 'library') loadLibrary();
+  if (name === 'bestof') loadBestOf();
   if (name === 'settings') { loadModels(); loadUpdates(); }
 }
 
@@ -118,6 +119,110 @@ async function loadLibrary() {
       output_path: clip.output_path, thumbnail_path: clip.thumbnail_path, message: 'Enregistré dans le clip bank', created_at: clip.created_at,
     })).join('') : '<div class="empty-state">Aucun clip enregistré.</div>';
   } catch (error) { toast(error.message, true); }
+}
+
+function bestOfClipTitle(clip) {
+  return clip.source_title || clip.streamer || 'GTA moment';
+}
+
+function bestOfClipCard(clip, selectedIndex = -1) {
+  const thumbnail = outputUrlFromPath(clip.thumbnail_path);
+  const title = escapeHtml(bestOfClipTitle(clip));
+  const streamer = escapeHtml(clip.streamer || 'Streamer non renseigné');
+  const duration = formatMediaTime(clip.duration);
+  const image = thumbnail
+    ? `<img class="bestof-thumb" src="${thumbnail}" alt="">`
+    : '<div class="bestof-thumb bestof-thumb-empty">▶</div>';
+  if (selectedIndex < 0) {
+    return `<article class="bestof-clip">${image}<div class="bestof-clip-info"><strong>${title}</strong><small>${streamer} · ${duration}</small></div><button type="button" class="mini-button good" data-bestof-add="${escapeHtml(clip.id)}">Ajouter +</button></article>`;
+  }
+  return `<article class="bestof-clip bestof-clip-selected"><span class="bestof-order">${selectedIndex + 1}</span>${image}<div class="bestof-clip-info"><strong>${title}</strong><small>${streamer} · ${duration}</small></div><div class="bestof-clip-controls"><button type="button" class="mini-button" data-bestof-up="${selectedIndex}" ${selectedIndex === 0 ? 'disabled' : ''} aria-label="Monter">↑</button><button type="button" class="mini-button" data-bestof-down="${selectedIndex}" ${selectedIndex === state.bestOfSelectedIds.length - 1 ? 'disabled' : ''} aria-label="Descendre">↓</button><button type="button" class="mini-button danger" data-bestof-remove="${escapeHtml(clip.id)}" aria-label="Retirer">×</button></div></article>`;
+}
+
+function renderBestOf() {
+  const dateClips = state.bestOfClips.filter(clip => String(clip.date_key || '').slice(0, 10) === state.bestOfDate);
+  const selected = state.bestOfSelectedIds.map(id => dateClips.find(clip => clip.id === id)).filter(Boolean);
+  const available = dateClips.filter(clip => !state.bestOfSelectedIds.includes(clip.id));
+  $('#bestof-available-count').textContent = `${available.length} disponible${available.length > 1 ? 's' : ''}`;
+  $('#bestof-selected-count').textContent = `${selected.length} sélection${selected.length > 1 ? 's' : ''}`;
+  $('#bestof-available').innerHTML = available.length
+    ? available.map(clip => bestOfClipCard(clip)).join('')
+    : '<div class="empty-state">Tous les Shorts de cette journée sont dans la sélection.</div>';
+  $('#bestof-selected').innerHTML = selected.length
+    ? selected.map((clip, index) => bestOfClipCard(clip, index)).join('')
+    : '<div class="empty-state">Ajoute des Shorts depuis la bibliothèque.</div>';
+  const total = selected.reduce((sum, clip) => sum + Math.max(0, Number(clip.duration) || 0), 0);
+  $('#bestof-total-time').textContent = formatMediaTime(total);
+  $('#bestof-progress-fill').style.width = `${Math.min(100, total / 660 * 100)}%`;
+  const valid = total >= 540 && total <= 660 && selected.length > 0;
+  let target = 'Sélectionne des clips';
+  let feedback = 'Le rendu vidéo sera activé après validation de ce module de sélection.';
+  if (selected.length && total < 540) {
+    target = `Encore ${formatMediaTime(540 - total)}`;
+    feedback = 'Ajoute des Shorts pour atteindre au moins 9 minutes.';
+  } else if (total > 660) {
+    target = `Retire ${formatMediaTime(total - 660)}`;
+    feedback = 'La sélection dépasse 11 minutes. Retire ou réordonne les séquences.';
+  } else if (valid) {
+    target = 'Durée cible atteinte';
+    feedback = 'La sélection peut être vérifiée. Les fichiers sources restent inchangés.';
+  }
+  $('#bestof-target-state').textContent = target;
+  $('#bestof-feedback').textContent = feedback;
+  $('#bestof-validate').disabled = !valid;
+  state.bestOfPlan = null;
+}
+
+async function loadBestOf() {
+  try {
+    state.bestOfClips = await api('/api/clips?limit=200');
+    const dates = [...new Set(state.bestOfClips.map(clip => String(clip.date_key || '').slice(0, 10)).filter(Boolean))].sort().reverse();
+    const dateSelect = $('#bestof-date');
+    if (!dates.length) {
+      state.bestOfDate = '';
+      dateSelect.innerHTML = '<option value="">Aucune journée disponible</option>';
+      state.bestOfSelectedIds = [];
+      renderBestOf();
+      $('#bestof-available').innerHTML = '<div class="empty-state">Aucun Short validé dans la bibliothèque. Termine un Short puis clique sur « Valider » pour l’ajouter ici.</div>';
+      return;
+    }
+    if (!dates.includes(state.bestOfDate)) {
+      state.bestOfDate = dates[0];
+      state.bestOfSelectedIds = [];
+    }
+    dateSelect.innerHTML = dates.map(date => `<option value="${escapeHtml(date)}" ${date === state.bestOfDate ? 'selected' : ''}>${new Date(`${date}T12:00:00`).toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}</option>`).join('');
+    state.bestOfSelectedIds = state.bestOfSelectedIds.filter(id => state.bestOfClips.some(clip => clip.id === id && clip.date_key === state.bestOfDate));
+    renderBestOf();
+  } catch (error) {
+    toast(error.message, true);
+    $('#bestof-available').innerHTML = '<div class="empty-state">Impossible de charger la bibliothèque locale.</div>';
+  }
+}
+
+async function validateBestOfSelection() {
+  const button = $('#bestof-validate');
+  button.disabled = true;
+  button.textContent = 'Vérification…';
+  try {
+    const plan = await api('/api/bestof/plan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clip_ids: state.bestOfSelectedIds, date_key: state.bestOfDate }),
+    });
+    state.bestOfPlan = plan;
+    $('#bestof-feedback').textContent = `Sélection vérifiée : ${plan.clip_count} Shorts, ${plan.formatted_duration}. Tous les rendus sont présents et la durée cible est respectée. L'assemblage 16:9 sera branché dans la prochaine étape.`;
+    toast('Sélection Daily Best Of vérifiée.');
+  } catch (error) {
+    $('#bestof-feedback').textContent = error.message;
+    toast(error.message, true);
+  } finally {
+    const currentClips = state.bestOfSelectedIds
+      .map(id => state.bestOfClips.find(clip => clip.id === id))
+      .filter(Boolean);
+    const currentDuration = currentClips.reduce((sum, clip) => sum + Math.max(0, Number(clip.duration) || 0), 0);
+    button.disabled = !(currentClips.length && currentDuration >= 540 && currentDuration <= 660);
+    button.textContent = 'Vérifier la sélection';
+  }
 }
 
 function formatMediaTime(value) {
@@ -720,6 +825,35 @@ function setupEvents() {
     if (batchCancelButton) cancelHighlightBatch(batchCancelButton);
     const cancelButton = event.target.closest('[data-highlight-cancel]');
     if (cancelButton) cancelHighlightScan(cancelButton);
+  });
+  $('#bestof-date').addEventListener('change', event => {
+    state.bestOfDate = event.target.value;
+    state.bestOfSelectedIds = [];
+    renderBestOf();
+  });
+  $('#refresh-bestof').addEventListener('click', loadBestOf);
+  $('#bestof-validate').addEventListener('click', validateBestOfSelection);
+  $('#bestof-available').addEventListener('click', event => {
+    const button = event.target.closest('[data-bestof-add]');
+    if (!button) return;
+    const id = button.dataset.bestofAdd;
+    if (!state.bestOfSelectedIds.includes(id)) state.bestOfSelectedIds.push(id);
+    renderBestOf();
+  });
+  $('#bestof-selected').addEventListener('click', event => {
+    const remove = event.target.closest('[data-bestof-remove]');
+    if (remove) state.bestOfSelectedIds = state.bestOfSelectedIds.filter(id => id !== remove.dataset.bestofRemove);
+    const up = event.target.closest('[data-bestof-up]');
+    if (up) {
+      const index = Number(up.dataset.bestofUp);
+      if (index > 0) [state.bestOfSelectedIds[index - 1], state.bestOfSelectedIds[index]] = [state.bestOfSelectedIds[index], state.bestOfSelectedIds[index - 1]];
+    }
+    const down = event.target.closest('[data-bestof-down]');
+    if (down) {
+      const index = Number(down.dataset.bestofDown);
+      if (index < state.bestOfSelectedIds.length - 1) [state.bestOfSelectedIds[index + 1], state.bestOfSelectedIds[index]] = [state.bestOfSelectedIds[index], state.bestOfSelectedIds[index + 1]];
+    }
+    renderBestOf();
   });
   $('#refresh-jobs').addEventListener('click', () => loadJobs());
   $('#refresh-models').addEventListener('click', () => loadModels(true));

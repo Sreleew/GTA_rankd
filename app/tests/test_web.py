@@ -140,7 +140,7 @@ def test_whisper_gpu_button_uses_fresh_script_and_visible_feedback():
     static = Path(__file__).resolve().parents[1] / "studio" / "web" / "static"
     html = (static / "index.html").read_text(encoding="utf-8")
     js = (static / "app.js").read_text(encoding="utf-8")
-    assert '<script src="/static/app.js?v=0.8.8"></script>' in html
+    assert '<script src="/static/app.js?v=0.8.9"></script>' in html
     assert '<button type="button" class="mini-button" id="verify-whisper-gpu"' in html
     assert "/api/models/whisper/verify" in js
     assert "if (verifyGpuButton) verifyGpuButton.addEventListener('click', verifyWhisperGpu);" in js
@@ -213,7 +213,7 @@ def test_ollama_verify_button_has_a_dedicated_visible_handler():
     static = Path(__file__).resolve().parents[1] / "studio" / "web" / "static"
     html = (static / "index.html").read_text(encoding="utf-8")
     js = (static / "app.js").read_text(encoding="utf-8")
-    assert '<script src="/static/app.js?v=0.8.8"></script>' in html
+    assert '<script src="/static/app.js?v=0.8.9"></script>' in html
     assert '<button type="button" class="mini-button" id="verify-ollama"' in html
     assert "#refresh-models-secondary" in js
     assert "/api/models/ollama/verify" in js
@@ -843,3 +843,53 @@ def test_probe_media_respects_explicit_timeout(monkeypatch, tmp_path):
     monkeypatch.setattr(short_renderer, "run_command", fake_run_command)
     short_renderer.probe_media(source, timeout=42)
     assert calls["timeout"] == 42
+
+
+def test_best_of_plan_api_requires_validated_local_clips_and_preserves_order(tmp_path: Path):
+    app = create_app(load_config(_make_isolated_app_config(tmp_path)))
+    client = TestClient(app)
+    clip_ids = ["clip-a", "clip-b", "clip-c", "clip-d"]
+    for clip_id in clip_ids:
+        output = tmp_path / f"{clip_id}.mp4"
+        output.write_bytes(b"rendered")
+        with app.state.store._connect() as connection:
+            connection.execute(
+                """INSERT INTO jobs (id, status, source_kind, created_at, updated_at)
+                   VALUES (?, 'validated', 'upload', ?, ?)""",
+                (clip_id, "2026-11-27T12:00:00", "2026-11-27T12:00:00"),
+            )
+            connection.execute(
+                """INSERT INTO clips (id, job_id, date_key, duration, output_path, status, created_at)
+                   VALUES (?, ?, ?, ?, ?, 'validated', ?)""",
+                (clip_id, clip_id, "2026-11-27", 140, str(output), "2026-11-27T12:00:00"),
+            )
+
+    response = client.post(
+        "/api/bestof/plan",
+        json={"clip_ids": ["clip-c", "clip-a", "clip-d", "clip-b"], "date_key": "2026-11-27"},
+    )
+    assert response.status_code == 200, response.text
+    plan = response.json()
+    assert [clip["id"] for clip in plan["clips"]] == ["clip-c", "clip-a", "clip-d", "clip-b"]
+    assert plan["formatted_duration"] == "09:20"
+    assert plan["ready_for_render"] is True
+
+    wrong_day = client.post(
+        "/api/bestof/plan",
+        json={"clip_ids": ["clip-a"], "date_key": "2026-11-26"},
+    )
+    assert wrong_day.status_code == 400
+    assert "date sélectionnée" in wrong_day.json()["detail"]
+
+
+def test_daily_best_of_ui_exposes_selection_order_and_duration_validation():
+    static = Path(__file__).resolve().parents[1] / "studio" / "web" / "static"
+    html = (static / "index.html").read_text(encoding="utf-8")
+    js = (static / "app.js").read_text(encoding="utf-8")
+    assert 'id="bestof-available"' in html
+    assert 'id="bestof-selected"' in html
+    assert 'id="bestof-validate"' in html
+    assert "/api/bestof/plan" in js
+    assert "data-bestof-up" in js
+    assert "data-bestof-down" in js
+    assert "total >= 540 && total <= 660" in js

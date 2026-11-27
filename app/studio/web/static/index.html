@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#101113">
   <title>GTA Ranked Studio</title>
-  <link rel="stylesheet" href="/static/styles.css?v=0.8.8">
+  <link rel="stylesheet" href="/static/styles.css?v=0.8.9">
 </head>
 <body>
   <div class="app-shell">
@@ -20,7 +20,7 @@
         <button class="nav-item" data-page="shorts"><span class="nav-icon">▣</span> Créer un Short <span class="nav-count" id="nav-review-count">0</span></button>
         <button class="nav-item" data-page="highlights"><span class="nav-icon">✦</span> Moments forts</button>
         <button class="nav-item" data-page="library"><span class="nav-icon">▤</span> Clip library</button>
-        <button class="nav-item" data-page="bestof"><span class="nav-icon">▥</span> Daily Best Of <span class="soon">Bientôt</span></button>
+        <button class="nav-item" data-page="bestof"><span class="nav-icon">▥</span> Daily Best Of</button>
       </nav>
       <div class="side-label settings-label">SYSTEM</div>
       <nav class="nav-list">
@@ -180,8 +180,29 @@
       </section>
 
       <section class="page" id="page-bestof">
-        <div class="section-intro"><div><div class="eyebrow">DAILY COMPILATION / NEXT MILESTONE</div><h2>Daily Best Of</h2><p>Le moteur de scoring, la sélection et l'assemblage horizontal seront ajoutés après la validation du pipeline Shorts.</p></div><div class="format-pill">16:9 · 1920 × 1080</div></div>
-        <section class="panel coming-panel"><div class="coming-icon">✦</div><h3>Ton épisode du jour, automatiquement classé.</h3><p>Les clips validés seront analysés, notés et assemblés dans une vidéo de 9 à 11 minutes. Tu pourras inclure, exclure et réordonner les séquences avant le rendu final.</p><span class="coming-badge">EN DÉVELOPPEMENT</span></section>
+        <div class="section-intro"><div><div class="eyebrow">DAILY COMPILATION / EPISODE BUILDER</div><h2>Daily Best Of</h2><p>Compose ton épisode à partir des Shorts validés. Choisis les séquences, ajuste leur ordre et vise une durée finale de 9 à 11 minutes.</p></div><div class="format-pill">16:9 · 1920 × 1080</div></div>
+        <section class="panel bestof-toolbar">
+          <label for="bestof-date">Journée à compiler</label>
+          <select id="bestof-date"><option value="">Chargement des journées…</option></select>
+          <button type="button" class="mini-button" id="refresh-bestof">Actualiser la bibliothèque</button>
+        </section>
+        <div class="bestof-layout">
+          <section class="panel bestof-column">
+            <div class="panel-heading"><div><h3>Shorts disponibles</h3><small class="muted">Uniquement les rendus validés et présents sur ce PC</small></div><span class="status-pill" id="bestof-available-count">0 clip</span></div>
+            <div id="bestof-available" class="bestof-clip-list"><div class="empty-state">Chargement des Shorts validés…</div></div>
+          </section>
+          <section class="panel bestof-column">
+            <div class="panel-heading"><div><h3>Ordre de l'épisode</h3><small class="muted">Déplace les clips pour définir le déroulé</small></div><span class="status-pill" id="bestof-selected-count">0 sélection</span></div>
+            <div id="bestof-selected" class="bestof-clip-list"><div class="empty-state">Ajoute des Shorts depuis la bibliothèque.</div></div>
+            <div class="bestof-summary">
+              <div class="bestof-total"><span>Durée estimée</span><strong id="bestof-total-time">00:00</strong></div>
+              <div class="bestof-progress"><span id="bestof-progress-fill"></span></div>
+              <div class="bestof-target"><span>Objectif : 09:00 à 11:00</span><span id="bestof-target-state">Sélectionne des clips</span></div>
+              <button type="button" class="button button-primary" id="bestof-validate" disabled>Vérifier la sélection</button>
+              <p id="bestof-feedback" class="bestof-feedback">Le rendu vidéo sera activé après validation de ce module de sélection.</p>
+            </div>
+          </section>
+        </div>
       </section>
 
       <section class="page" id="page-settings">
@@ -211,6 +232,6 @@
     </main>
   </div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="/static/app.js?v=0.8.8"></script>
+  <script src="/static/app.js?v=0.8.9"></script>
 </body>
 </html>

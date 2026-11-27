@@ -30,6 +30,7 @@ from studio.web.transcribe import inspect_whisper_cli, probe_whisper_vulkan
 from studio.web.model_manager import ModelManager
 from studio.web.updater import UpdateService
 from studio.web.highlights import HighlightScanner, select_distinct_highlight_candidates
+from studio.web.best_of import build_best_of_plan
 
 logger = logging.getLogger(__name__)
 ALLOWED_EXTENSIONS = {".mp4", ".mov", ".mkv", ".webm", ".m4v"}
@@ -887,6 +888,24 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
     @app.get("/api/clips")
     def clips(limit: int = 100) -> list[dict]:
         return store.list_clips(max(1, min(limit, 200)))
+
+    @app.post("/api/bestof/plan")
+    def create_best_of_plan(payload: dict) -> dict:
+        """Validate an ordered episode selection without modifying source clips."""
+        clip_ids = payload.get("clip_ids") if isinstance(payload, dict) else None
+        date_key = payload.get("date_key") if isinstance(payload, dict) else None
+        if date_key is not None:
+            date_key = str(date_key).strip()
+            if len(date_key) != 10:
+                raise HTTPException(status_code=400, detail="La date de l'épisode est invalide.")
+        try:
+            return build_best_of_plan(
+                store.list_clips(200),
+                clip_ids,
+                date_key=date_key or None,
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @app.post("/api/shutdown")
     def shutdown() -> dict:
