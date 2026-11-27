@@ -919,6 +919,8 @@ def test_daily_best_of_ui_exposes_selection_order_and_duration_validation():
     assert 'id="bestof-history"' in html
     assert "/api/bestof/jobs?limit=10" in js
     assert "bestOfHistoryPoll" in js
+    assert "data-bestof-restore" in js
+    assert "Recharger la sélection" in js
 
 
 def test_best_of_store_recovers_interrupted_jobs_and_keeps_completed_history(tmp_path: Path):
@@ -1015,6 +1017,7 @@ def test_daily_best_of_render_history_survives_app_restart(tmp_path: Path, monke
     completed = client.get(f"/api/bestof/jobs/{render_id}")
     assert completed.status_code == 200
     assert completed.json()["status"] == "completed"
+    assert completed.json()["clip_ids"] == clip_ids
     assert completed.json()["file_available"] is True
     assert completed.json()["output_url"].endswith(".mp4")
     history = client.get("/api/bestof/jobs?limit=10")
@@ -1037,6 +1040,7 @@ def test_daily_best_of_render_history_survives_app_restart(tmp_path: Path, monke
     interrupted = restarted_client.get("/api/bestof/jobs/bestof-interrupted-on-exit")
     assert interrupted.status_code == 200
     assert interrupted.json()["status"] == "error"
+    assert interrupted.json()["clip_ids"] == [clip_ids[0]]
     assert "interrompu" in interrupted.json()["message"]
     restored_completed = restarted_client.get(f"/api/bestof/jobs/{render_id}")
     assert restored_completed.status_code == 200
