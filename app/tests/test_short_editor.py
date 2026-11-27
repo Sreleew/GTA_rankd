@@ -35,7 +35,7 @@ def test_ass_contains_hook_branding_and_active_word_highlight(tmp_path: Path):
     assert "GTA VI" in content
     assert "GR  //  GTA VI" in content
     assert r"\fad(180,120)" in content
-    assert "0:00:02.60,Hook" in content
+    assert "0:00:02.00,Hook" in content
     assert "Style: Kicker" in content
     assert "HAPPENED?" in content
     assert r"\c&H0000C8F5&" in content
@@ -79,6 +79,20 @@ def test_caption_active_word_gets_a_subtle_kinetic_pop(tmp_path: Path):
     assert r"{\c&H00FFFFFF&\fscx100\fscy100\bord6}" in content
 
 
+def test_editorial_hook_and_context_finish_early_without_delaying_the_clip(tmp_path: Path):
+    path = create_ass_file(
+        tmp_path / "fast-hook.ass",
+        hook_text="WAIT, WHAT JUST HAPPENED?",
+        context_text="The getaway goes wrong",
+        captions_enabled=False,
+        brand_enabled=False,
+    )
+    content = path.read_text(encoding="utf-8-sig")
+    assert "0:00:01.80,HookKicker" in content
+    assert "0:00:02.00,Hook," in content
+    assert "0:00:02.60,Context" in content
+
+
 def test_hook_uses_animated_ranked_dispatch_identity(tmp_path: Path):
     path = create_ass_file(
         tmp_path / "cinematic-hook.ass",
@@ -95,7 +109,7 @@ def test_hook_uses_animated_ranked_dispatch_identity(tmp_path: Path):
     assert infer_hook_style("HE THOUGHT HE WAS SAFE") == "suspense"
     assert r"\blur7" in content
     assert r"\t(0,320,\fscx100\fscy100\blur0)" in content
-    assert "0:00:02.60,Hook" in content
+    assert "0:00:02.00,Hook" in content
 
 
 def test_smart_layout_moves_captions_below_the_gameplay_panel(tmp_path: Path):

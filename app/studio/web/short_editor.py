@@ -357,7 +357,7 @@ Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
         # like a broadcast title card rather than a static subtitle.
         kicker = f"RANKED DISPATCH  //  {_clean_ass_text(badge_text).upper()}"
         events.append(
-            f"Dialogue: 2,0:00:00.00,0:00:02.60,HookKicker,,0,0,0,,"
+            f"Dialogue: 2,0:00:00.00,0:00:01.80,HookKicker,,0,0,0,,"
             f"{{\\an8\\pos({width // 2},{int(height * 0.155)})\\fad(65,120)\\fscx78\\fscy78\\t(0,180,\\fscx100\\fscy100)}}{kicker}"
         )
         selected_hook_style = str(hook_style or "auto").strip().lower()
@@ -365,13 +365,13 @@ Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
             selected_hook_style = infer_hook_style(clean_hook, context_text)
         motion = _HOOK_ANIMATIONS[selected_hook_style]
         events.append(
-            f"Dialogue: 2,0:00:00.00,0:00:02.60,Hook,,0,0,0,,"
+            f"Dialogue: 2,0:00:00.00,0:00:02.00,Hook,,0,0,0,,"
             f"{{\\an8\\pos({width // 2},{int(height * 0.20)}){motion}}}{_wrap_words(clean_hook, 5)}"
         )
     clean_context = _clean_ass_text(context_text)
     if clean_context:
         events.append(
-            f"Dialogue: 2,0:00:00.35,0:00:03.50,Context,,0,0,0,,{{\\an8\\pos({width // 2},{int(height * 0.29)})}}{_wrap_words(clean_context, 7)}"
+            f"Dialogue: 2,0:00:00.35,0:00:02.60,Context,,0,0,0,,{{\\an8\\pos({width // 2},{int(height * 0.29)})}}{_wrap_words(clean_context, 7)}"
         )
     if captions_enabled and words:
         caption_events = _caption_events(

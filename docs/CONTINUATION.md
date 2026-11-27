@@ -678,6 +678,7 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Amélioration :** le worker transmet maintenant le mode de timing réel au générateur ASS. En mode `word_dtw`, le traitement cinétique mot à mot est conservé. En mode `segment_srt`, chaque phrase reste affichée sur son intervalle SRT réel, sans inventer de transitions entre mots.
 - **Lisibilité :** les segments SRT sont automatiquement répartis sur plusieurs lignes et les mots exceptionnellement longs sont réduits horizontalement de façon bornée afin de limiter les débordements sur le format vertical.
 - **Miniature :** le worker transmet désormais les mots réellement transcrits à la sélection de la frame de couverture. Les mots saillants (réaction, crash, police, etc.) peuvent donc choisir un instant plus descriptif au lieu de toujours retomber sur le pic audio, sans analyse ni coût supplémentaire.
+- **Rythme du hook :** le label éditorial disparaît après 1,8 s, le hook principal après 2,0 s et le contexte après 2,6 s. Le gameplay reste visible dès la première image ; aucun écran d'introduction ni attente avant l'action n'est ajouté.
 - **Tests ajoutés :** vérification de la conservation exacte des bornes temporelles d'un segment SRT, de l'absence de faux surlignage mot à mot et du traitement d'un mot très long.
 - **Périmètre :** aucune dépendance, aucun modèle, aucun réglage utilisateur, aucun changement AMD/CPU ou version de release. Le mode DTW existant reste inchangé.
 - **Branche :** `feat/accurate-segment-captions`. CI Linux/Windows à vérifier avant fusion.
