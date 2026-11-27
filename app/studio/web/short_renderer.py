@@ -202,6 +202,7 @@ def build_filter_complex(
     project_root: Path | None = None,
     dynamic_zoom: bool = False,
     peak_timestamp: float = 0.0,
+    zoom_timestamps: Sequence[float] | None = None,
     fps: int = 30,
     zoom_percent: int = 0,
     webcam_zone: str = "none",
@@ -274,12 +275,20 @@ def build_filter_complex(
 
     graph = base + ";"
     if dynamic_zoom and zoom_percent > 0:
-        start = max(0.0, float(peak_timestamp) - 0.45)
-        end = max(start + 0.25, float(peak_timestamp) + 0.85)
+        moments = list(zoom_timestamps or [peak_timestamp])[:5]
         zoom = 1.0 + max(0, min(20, int(zoom_percent))) / 100
+        expression = "1.0"
+        for moment in reversed(moments):
+            center = max(0.0, float(moment))
+            start = max(0.0, center - 0.45)
+            end = max(start + 0.25, center + 0.85)
+            pulse = (
+                f"1+({zoom - 1.0:.3f})*sin(PI*(in_time-{start:.3f})/"
+                f"{max(0.25, end - start):.3f})"
+            )
+            expression = f"if(between(in_time,{start:.3f},{end:.3f}),{pulse},{expression})"
         graph += (
-            f"[base]zoompan=z='if(between(in_time,{start:.3f},{end:.3f}),"
-            f"1+({zoom - 1.0:.3f})*sin(PI*(in_time-{start:.3f})/{max(0.25, end - start):.3f}),1.0)':"
+            f"[base]zoompan=z='{expression}':"
             f"x='iw/2-iw/zoom/2':y='ih/2-ih/zoom/2':d=1:s={width}x{height}:fps={fps},setsar=1[zoomed];"
         )
         current = "zoomed"
@@ -317,6 +326,7 @@ def build_render_command(
     project_root: Path | None = None,
     dynamic_zoom: bool = False,
     peak_timestamp: float = 0.0,
+    zoom_timestamps: Sequence[float] | None = None,
     zoom_percent: int = 0,
     webcam_zone: str = "none",
     duration: float | None = None,
@@ -330,8 +340,8 @@ def build_render_command(
         width, height, layout=layout, crop_x=crop_x, crop_y=crop_y,
         source_width=source_width, source_height=source_height,
         ass_file=ass_file, fonts_dir=fonts_dir, project_root=project_root,
-        dynamic_zoom=dynamic_zoom, peak_timestamp=peak_timestamp, fps=fps,
-        zoom_percent=zoom_percent,
+        dynamic_zoom=dynamic_zoom, peak_timestamp=peak_timestamp,
+        zoom_timestamps=zoom_timestamps, fps=fps, zoom_percent=zoom_percent,
     )
     command = [resolve_executable(ffmpeg), "-hide_banner", "-y"]
     if trim_start > 0:
@@ -406,6 +416,7 @@ def render_vertical_short(
     project_root: Path | None = None,
     dynamic_zoom: bool = False,
     peak_timestamp: float = 0.0,
+    zoom_timestamps: Sequence[float] | None = None,
     thumbnail_timestamp: float | None = None,
     zoom_percent: int = 0,
     trim_start: float = 0.0,
@@ -445,7 +456,7 @@ def render_vertical_short(
             source_width=info["width"], source_height=info["height"], ass_file=ass_file,
             fonts_dir=fonts_dir, project_root=project_root,
             dynamic_zoom=dynamic_zoom, peak_timestamp=peak_timestamp,
-            zoom_percent=zoom_percent, duration=output_duration,
+            zoom_timestamps=zoom_timestamps, zoom_percent=zoom_percent, duration=output_duration,
             trim_start=trim_start, trim_duration=output_duration if trim_start > 0 or output_duration < info["duration"] else None,
             sound_effect_path=sound_effect_path, sound_effect_offset=sound_effect_offset,
             sound_effect_volume=sound_effect_volume,
