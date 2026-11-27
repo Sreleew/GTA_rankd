@@ -74,7 +74,11 @@ def select_thumbnail_timestamp(
     anchors: list[tuple[float, float]] = []
     for word in words or []:
         raw_text = str(word.text or "").lower()
-        tokens = re.findall(r"[A-Za-z0-9']+", raw_text)
+        normalized_text = "".join(
+            char for char in unicodedata.normalize("NFKD", raw_text)
+            if not unicodedata.combining(char)
+        )
+        tokens = re.findall(r"[A-Za-z0-9']+", normalized_text)
         weight = sum(weights.get(token, 0.0) for token in tokens)
         if weight and "!" in raw_text:
             weight += 1.5
