@@ -3,12 +3,12 @@
 > Lire ce document en premier dans chaque nouvelle conversation sur le projet. Il décrit l'état réellement livré et la structure source actuelle.
 
 - **Dernière mise à jour :** 27 novembre 2026
-- **Dernière version stable confirmée :** [v0.8.7](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.7), publiée le 27 novembre 2026 avec le ZIP Windows et `SHA256SUMS.txt` (SHA-256 : `8239f0788fa788f793ae19228d589443e76ea32477cd04020e1f0267df1307f3`).
-- **État :** PR #38 à #42 fusionnées dans `main`. PR #41 ajoute le constructeur de sélection Daily Best Of ; PR #42 fiabilise la relance des téléchargements Twitch depuis l'URL d'origine. La v0.8.7 reste la dernière release stable publiée ; la v0.8.8 est en préparation.
+- **Dernière version stable confirmée :** [v0.8.8](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.8), publiée le 27 novembre 2026 avec le ZIP Windows (207 327 octets) et `SHA256SUMS.txt` (SHA-256 : `c6155b1ce323edf6fb6088ceb386ae38223aaa4c0c875b95f245a7bbb76e8d1b`).
+- **État :** PR #38 à #43 fusionnées dans `main`. La v0.8.8 est la dernière Release stable publiée. Elle intègre le constructeur de sélection Daily Best Of et la relance des téléchargements Twitch depuis l'URL d'origine.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
 - **Source active :** `app/`. Modifier directement les fichiers Python, JavaScript, CSS, HTML, tests et installateur présents dans ce dossier.
-- **Mise à jour intégrée :** l'application consulte les Releases GitHub. La Release v0.8.7 contient le ZIP Windows et `SHA256SUMS.txt`; la v0.8.8 est préparée pour intégrer les PR #41 et #42.
+- **Mise à jour intégrée :** l'application consulte les Releases GitHub. La Release v0.8.8 contient le ZIP Windows et `SHA256SUMS.txt`; les installations v0.8.7 peuvent passer à v0.8.8 via Paramètres > Mises à jour.
 - **CI PR #14 :** Linux et Windows terminés avec succès, y compris suites de régression, analyse statique, audit de dépendances et packaging. Les décomptes détaillés ne sont pas consignés ici.
 - **Sécurité et packaging :** Ruff et pip-audit réussis sur Linux et Windows, aucune vulnérabilité connue ; ZIP Windows et SHA-256 vérifiés.
 - **PR de maintenance :** [#10](https://github.com/Sreleew/GTA_rankd/pull/10), fusionnée dans `main`.
@@ -247,5 +247,5 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **CI PR #42 :** Linux [46012357301](https://github.com/Sreleew/GTA_rankd/actions/runs/46012357301) et Windows [46012357283](https://github.com/Sreleew/GTA_rankd/actions/runs/46012357283) réussies.
 - **CI post-fusion sur main :** Linux [46012922370](https://github.com/Sreleew/GTA_rankd/actions/runs/46012922370) et Windows [46012922379](https://github.com/Sreleew/GTA_rankd/actions/runs/46012922379) réussies.
 - **CI de préparation v0.8.8 (PR #43) :** Linux [46013472471](https://github.com/Sreleew/GTA_rankd/actions/runs/46013472471) et Windows [46013472448](https://github.com/Sreleew/GTA_rankd/actions/runs/46013472448) réussies après retrait de l'ancienne copie `app/NOTES-v0.8.7.txt`.
-- **Préparation de release :** v0.8.8, avec notes racine/app synchronisées et approbation de publication 0.8.8. La publication stable n'est pas considérée comme faite tant que le workflow officiel n'a pas terminé avec succès.
+- **Release stable v0.8.8 publiée :** workflow officiel [46014440309](https://github.com/Sreleew/GTA_rankd/actions/runs/46014440309) réussi. ZIP Windows : 207 327 octets ; SHA-256 `c6155b1ce323edf6fb6088ceb386ae38223aaa4c0c875b95f245a7bbb76e8d1b`.
 - **Priorité utilisateur inchangée :** finaliser et tester la création de Shorts depuis une URL Twitch, puis terminer le rendu Daily Best Of. « Moments forts » reste en pause.
