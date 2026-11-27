@@ -206,6 +206,12 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - Le parcours de création de Short depuis une URL Twitch dispose maintenant de validations d'URL, d'une progression de téléchargement, d'une extraction du broadcaster et d'un filtrage conservateur des voix, tous couverts par des tests/CI. Ces validations ne remplacent pas un essai réel avec un clip Twitch.
 - PR #37 : https://github.com/Sreleew/GTA_rankd/pull/37. Commit de merge : `e531be2a11343b9b4b29f2264d4e843ce4a91437`.
 
+## 10 ter. État au 27 novembre 2026
+
+- **PR #39 fusionnée** : FFprobe utilise désormais un timeout adaptatif selon la taille du fichier, avec un plancher de 5 minutes et un plafond de 30 minutes. Les timeouts explicitement fournis restent prioritaires. CI Linux et Windows réussie. Commit de merge : `d673c385e48f1957bb32bc064e6e65ff35a5cabe`.
+- **PR #40 en cours** : le formulaire de création de Short s'ouvre par défaut sur la saisie d'une URL Twitch ; le texte sur le filtrage des voix correspond au comportement réel ; le hook d'ouverture passe à 2,6 secondes ; le kicker de miniature décrit correctement un clip Twitch. Les clés de cache des fichiers statiques sont actualisées pour la prochaine version. CI Linux/Windows en cours.
+- **Priorité utilisateur confirmée** : travailler d'abord sur la création de Shorts depuis une URL de clip Twitch, puis sur le Daily Best Of. La fonctionnalité « Moments forts » est explicitement en pause ; ne pas la développer ni l'optimiser sauf blocage direct d'une priorité.
+
 ## 11. Prochaines étapes priorisées
 
 1. **Créer un Short depuis un clip Twitch : priorité immédiate.** PR #32 corrige la progression réelle du téléchargement et PR #34 valide strictement les URLs Twitch ; les deux sont fusionnées et leurs CI Linux/Windows sont réussies. Les URL Twitch sont validées, la progression du téléchargement est réelle et le titre/nom du broadcaster sont extraits avec des replis sûrs. Prochain lot : auditer le parcours de sélection et de durée de l'extrait, puis vérifier le filtrage des voix du jeu, le hook, la miniature et la review. Le pipeline existant passe par `JobRunner`, ffprobe/audio/Whisper, métadonnées locales avec Ollama facultatif, ASS, rendu vertical FFmpeg et contrôle qualité. Les sources de moins de 165 secondes sont préservées intégralement. Distinguer tests simulés et téléchargements/rendus réels.
