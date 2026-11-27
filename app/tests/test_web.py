@@ -1241,6 +1241,7 @@ def test_batch_twitch_short_import_queues_valid_urls_and_reports_invalid_ones(tm
     assert all(job["metadata"]["batch_count"] == 3 for job in jobs)
     assert sorted(job["metadata"]["batch_index"] for job in jobs) == [1, 2, 3]
     assert all(job["metadata"]["options"]["layout"] == "blur" for job in jobs)
+    assert all(job["metadata"]["options"]["captions_enabled"] is False for job in jobs)
 
     queued_batch = client.get(f"/api/shorts/batches/{payload['batch_id']}")
     assert queued_batch.status_code == 200
@@ -1354,6 +1355,9 @@ def test_short_caption_option_requires_local_whisper_and_is_persisted(tmp_path: 
     whisper_cli = config.path_for("executables", "whisper_cli")
     whisper_cli.parent.mkdir(parents=True, exist_ok=True)
     whisper_cli.write_bytes(b"fake whisper binary")
+    missing_model = client.post("/api/shorts/url", data=payload)
+    assert missing_model.status_code == 409
+    assert "large-v3-turbo" in missing_model.json()["detail"]
     app.state.model_manager._model_is_valid = lambda: True
 
     accepted = client.post("/api/shorts/url", data=payload)
