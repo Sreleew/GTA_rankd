@@ -220,6 +220,7 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - SHA-256 du ZIP v0.8.6 : `bcbe46f063fc3918b3a6a9b33a25f56ed87e453fb9e2f769b763878c870cee0e`.
 - CI post-fusion sur le commit de release : Linux et Windows réussis. Les dernières mises à jour documentaires sont en cours de revalidation sur `main`.
 - PR #26 : saisie des plages horaires en `HH:MM:SS` ou en secondes pour les scans fichier local et URL Twitch, fusionnée dans `main` (commit `2bba365`). Le parser vérifie les composants minutes/secondes et préserve la limite de 3 h par passage. Les champs UI et leur aide ont été adaptés.
+- PR #27 en préparation : lancement d'un lot de plages Twitch consécutives pour analyser une VOD longue sans retaper chaque intervalle. Chaque tranche devient un scan indépendant, jusqu'à 48 analyses ; segmentation, métadonnées de lot et affichage des numéros de tranche.
 - Tests PR #26 : conversion de `12:30:00` à `15:00:00`, rejet de `12:75:00`, conservation des entrées numériques et plages vides.
 - CI PR #26 : Linux [45987424184](https://github.com/Sreleew/GTA_rankd/actions/runs/45987424184) et Windows [45987424049](https://github.com/Sreleew/GTA_rankd/actions/runs/45987424049) réussis, y compris Ruff, pip-audit, suites complètes et package Windows.
 - La saisie `HH:MM:SS` est fusionnée sur `main`, mais pas encore intégrée à la release stable v0.8.6. Prévoir de l'inclure dans le prochain lot/release stable.
