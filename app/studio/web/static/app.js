@@ -868,7 +868,7 @@ async function submitShortBatch(form) {
     if (!response.ok) throw new Error(data.detail || `Erreur HTTP ${response.status}`);
     const errors = (data.rejected || []).map(item => `• ${item.url} : ${item.reason}`);
     if (data.batch_id) trackShortBatch(data.batch_id);
-    feedback.textContent = [data.message || `${data.created_count} Short(s) ajouté(s).`, ...errors].join('\\n');
+    feedback.textContent = [data.message || `${data.created_count} Short(s) ajouté(s).`, ...errors].join('\n');
     toast(data.message || 'Lot ajouté à la file.');
     $('#short-batch-urls').value = '';
     await Promise.all([loadJobs(), loadDashboard()]);
