@@ -59,6 +59,10 @@ def test_hook_style_inference_selects_distinct_animations_for_short_hooks(tmp_pa
         content = path.read_text(encoding="utf-8-sig")
         assert animation_marker in content
 
+    # A generic summary must not override the actual hook's intended treatment.
+    assert infer_hook_style("THE CLEANEST GETAWAY", "What happened during the chase?") == "impact"
+    assert infer_hook_style("", "Wait for the police") == "suspense"
+
 
 def test_caption_active_word_gets_a_subtle_kinetic_pop(tmp_path: Path):
     path = create_ass_file(
