@@ -198,7 +198,7 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 4. Corriger uniquement les défauts récurrents qui empêchent de publier : coupe incompréhensible, cadrage raté, sous-titres illisibles, audio défectueux ou métadonnées trompeuses.
 5. Démarrer la publication régulière et mesurer les résultats avant d'investir du temps dans les fonctions secondaires.
 
-## 12. Journal de travail du 27 novembre 2026
+## Journal complémentaire du 27 novembre 2026
 
 - PR #19 : refonte éditoriale Vice City Dispatch, fusionnée.
 - PR #20 : score payoff basé sur le contraste du pic audio et les réactions proches, avec migration SQLite, fusionnée.
@@ -207,8 +207,11 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - Tests de release : Linux et Windows validés, audits Ruff/pip-audit réussis, suite de régression complète réussie, package Windows construit et vérifié (exclusions et SHA-256).
 - Publication : workflow [45978493951](https://github.com/Sreleew/GTA_rankd/actions/runs/45978493951) réussi. Release [v0.8.5](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.5) publique.
 - SHA-256 du ZIP : `39712b747d7401fe80cd78728ffe762c199ae0a982ee7d303e8f12b2fbe2ffa3`.
-- Suite Linux sur la candidate : 160 tests réussis, 1 ignoré. Suite Windows : complète et réussie.
+- Suite Linux sur la candidate v0.8.5 : 160 tests réussis, 1 ignoré. Suite Windows : complète et réussie.
+- PR #23 (en cours) : diversité des candidats automatiques. Ajout d'une déduplication des transcriptions longues quasi identiques, même lorsque les passages sont éloignés dans la VOD. Les transcriptions courtes et les scans audio seuls restent hors de cette règle.
+- Tests ajoutés : répétition éloignée éliminée et événements avec transcriptions distinctes conservés.
+- CI PR #23 : Ruff, pip-audit et contrôle documentaire réussis. Les suites Linux/Windows ont identifié un fixture de transcriptions courtes qui ne contenait pas de payoff assez proche du pic audio et ne franchissait donc pas le seuil de score. Le scénario est réaligné sur deux événements équivalents, avec réaction immédiate après le pic. Aucun seuil produit n'est abaissé ; les validations complètes sont relancées.
 
-## 13. Message de reprise prêt à copier
+## 12. Message de reprise prêt à copier
 
  > Nous reprenons GTA Ranked Studio. Lis `docs/CONTINUATION.md` puis `docs/WORKING-AGREEMENT.md`. La dernière Release stable est v0.8.5, publiée avec ZIP Windows et SHA256SUMS. Les PR #19 à #22 sont fusionnées. La source de développement est `app/`. Préserve les données locales, valide les changements transversaux sous Linux et Windows, et publie une Release stable après validation. La RX 9060 XT n'a pas encore été validée physiquement pour AMF/Vulkan. L'utilisateur demande de travailler de façon autonome, sans demander de confirmations répétitives, jusqu'à un résultat propre et publié.

@@ -188,6 +188,54 @@ def test_highlight_candidates_are_unlimited_above_score_threshold() -> None:
     assert [item["rank"] for item in candidates] == list(range(1, len(candidates) + 1))
 
 
+def test_repeated_transcript_moments_are_deduplicated_even_when_far_apart() -> None:
+    duration = 240
+    audio = [
+        {"start": float(second), "end": float(second + 2),
+         "rms": 0.06 if (40 <= second < 70 or 150 <= second < 180) else 0.005}
+        for second in range(0, duration, 2)
+    ]
+    phrase = ["BRO", "WHAT", "NO", "WAIT", "OMG", "INSANE", "CRAZY", "HOLY",
+              "SHIT", "FUCK", "DAMN", "BRUH", "the", "blue", "sports", "car",
+              "just", "exploded", "behind", "the", "garage", "while", "driving"]
+    words = [
+        WordTiming(start + 1.0 + index * 0.8, start + 1.3 + index * 0.8, token)
+        for start in (42.0, 152.0) for index, token in enumerate(phrase)
+    ]
+
+    candidates = score_highlight_candidates(
+        duration, audio, words, candidate_seconds=30, max_candidates=None,
+    )
+
+    assert candidates
+    assert len(candidates) == 1
+
+
+def test_distinct_transcripts_at_separate_events_are_both_preserved() -> None:
+    duration = 240
+    audio = [
+        {"start": float(second), "end": float(second + 2),
+         "rms": 0.06 if (40 <= second < 70 or 150 <= second < 180) else 0.005}
+        for second in range(0, duration, 2)
+    ]
+    first_phrase = ["BRO", "WHAT", "NO", "WAIT", "OMG", "INSANE", "CRAZY", "HOLY",
+                    "the", "blue", "sports", "car", "exploded", "behind", "the", "garage"]
+    second_phrase = ["POLICE", "RUN", "KILLED", "CLUTCH", "NICE", "SICK",
+                     "officers", "blocked", "the", "entire", "street", "after", "crash", "downtown"]
+    words = [
+        WordTiming(start + 1.0 + index * 0.8, start + 1.3 + index * 0.8, token)
+        for start, phrase in ((42.0, first_phrase), (152.0, second_phrase))
+        for index, token in enumerate(phrase)
+    ]
+
+    candidates = score_highlight_candidates(
+        duration, audio, words, candidate_seconds=30, max_candidates=None,
+    )
+
+    assert len(candidates) == 2
+    assert candidates[0]["transcript"] != candidates[1]["transcript"]
+
+
 def test_store_migrates_existing_highlight_candidates_table(tmp_path: Path) -> None:
     import sqlite3
 
@@ -226,3 +274,28 @@ def test_store_migrates_existing_highlight_candidates_table(tmp_path: Path) -> N
     candidates = store.list_highlight_candidates("legacy-scan")
     assert candidates[0]["opening_score"] == 0.7
     assert candidates[0]["payoff_score"] == 0.8
+
+
+def test_short_reaction_transcripts_are_not_deduplicated() -> None:
+    duration = 240
+    audio = [
+        {"start": float(second), "end": float(second + 2),
+         "rms": 0.06 if (38 <= second < 68 or 150 <= second < 180) else 0.005}
+        for second in range(0, duration, 2)
+    ]
+    words = [
+        WordTiming(start + offset * 0.8, start + offset * 0.8 + 0.3, "yeah")
+        for start in (39.5, 152.0) for offset in range(20)
+    ]
+    words.extend(
+        WordTiming(start + 3.0 + offset, start + 3.3 + offset, token)
+        for start in (39.5, 152.0)
+        for offset, token in enumerate(("OH", "WOW", "HOLY"))
+    )
+
+    candidates = score_highlight_candidates(
+        duration, audio, words, candidate_seconds=30, max_candidates=None,
+    )
+
+    assert len(candidates) == 2
+    assert candidates[0]["transcript"] == candidates[1]["transcript"]

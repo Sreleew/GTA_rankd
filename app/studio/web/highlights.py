@@ -279,7 +279,10 @@ def score_highlight_candidates(
 
     ranked.sort(key=lambda item: item["score"], reverse=True)
     selected: list[dict[str, Any]] = []
+    selected_transcripts: list[set[str]] = []
     minimum_gap = 6.0
+    minimum_transcript_tokens = 8
+    transcript_similarity_threshold = 0.82
     for candidate in ranked:
         start = float(candidate["start_time"])
         end = float(candidate["end_time"])
@@ -290,7 +293,30 @@ def score_highlight_candidates(
         )
         if overlaps:
             continue
+
+        # Long VODs can contain repeated catchphrases or near-identical
+        # reactions far apart in time. Avoid filling the shortlist with the
+        # same spoken moment, while leaving short/audio-only transcripts alone.
+        tokens = {
+            token for token in re.findall(r"[a-z0-9']+", str(candidate.get("transcript", "")).lower())
+            if token not in REACTION_CUES
+        }
+        if len(tokens) >= minimum_transcript_tokens:
+            duplicate = False
+            for previous_tokens in selected_transcripts:
+                if len(previous_tokens) < minimum_transcript_tokens:
+                    continue
+                similarity = len(tokens & previous_tokens) / len(tokens | previous_tokens)
+                if similarity >= transcript_similarity_threshold:
+                    duplicate = True
+                    break
+            if duplicate:
+                continue
+        else:
+            tokens = set()
+
         selected.append(candidate)
+        selected_transcripts.append(tokens)
         if max_candidates is not None and len(selected) >= max_candidates:
             break
 
