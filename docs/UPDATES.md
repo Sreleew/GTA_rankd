@@ -1,5 +1,19 @@
 # Mises à jour GTA Ranked Studio
 
+## v0.8.6 : diversité des moments forts et accélération des scans VOD
+
+- La sélection automatique écarte les passages éloignés dont les transcriptions longues sont quasi identiques, sans éliminer les réactions très courtes ni les scans audio seuls.
+- L'analyse indexe les intervalles audio et les horodatages Whisper pour éviter de reparcourir l'ensemble de la VOD pour chaque fenêtre candidate.
+- Le comportement de repli reste compatible avec les entrées non triées et les intervalles qui chevauchent une fenêtre.
+- Mise à jour depuis v0.8.5 via **Paramètres > Mises à jour**. Les réglages et données locales sont préservés.
+- CI Linux et Windows, Ruff, pip-audit et package Windows validés.
+
+## v0.8.5 : montage intelligent, rétention et habillage Vice City
+
+- Le score des moments forts tient mieux compte du contraste du pic audio et des réactions proches du streamer.
+- Les coupes automatiques conservent les réactions verbales retardées après un impact sonore ou une pause.
+- La direction artistique Vice City Dispatch renforce l'identité éditoriale, les repères LIVE FEED et MOMENT DETECTED, le hook d'ouverture et la lisibilité des sous-titres.
+
 ## v0.8.4 : correctif critique de l'installateur Windows
 
 - Corrige le chemin d'import Python du smoke test runtime : la racine de l'application est ajoutée à `sys.path` avant les imports `studio`.
