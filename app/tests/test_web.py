@@ -1168,7 +1168,13 @@ def test_best_of_render_endpoint_runs_in_background_and_returns_output_url(tmp_p
                 (clip_id, clip_id, "2026-11-27", 140, str(output), "2026-11-27T12:00:00"),
             )
 
+    progress_updates = []
+
     def fake_render(plan, output_path, **kwargs):
+        progress_callback = kwargs.get("progress_callback")
+        if callable(progress_callback):
+            progress_callback(52, "Encodage 16:9 · 52%")
+            progress_updates.append((52, "Encodage 16:9 · 52%"))
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_bytes(b"episode")
         return {"output_path": str(output_path), "duration": 560, "width": 1920, "height": 1080}
@@ -1194,6 +1200,7 @@ def test_best_of_render_endpoint_runs_in_background_and_returns_output_url(tmp_p
     assert job.status_code == 200
     assert job.json()["status"] == "completed", job.json()
     assert job.json()["output_url"].startswith("/outputs/bestof/2026-11-27/")
+    assert progress_updates == [(52, "Encodage 16:9 · 52%")]
 
 def test_batch_twitch_short_import_queues_valid_urls_and_reports_invalid_ones(tmp_path: Path):
     config = load_config(_make_isolated_app_config(tmp_path))
