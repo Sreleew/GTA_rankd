@@ -4,8 +4,8 @@
 
 - **Dernière mise à jour :** 27 novembre 2026
 - **Progression des releases :** à chaque relance de développement, le compte rendu doit indiquer le lot livré, les PR/CI, l'état d'avancement vers la prochaine version et une estimation actualisée du nombre de lots restants avant sa publication. Cette estimation doit être réévaluée à chaque session, sans promettre une date artificielle.
-- **Version en préparation :** v0.9.0. La dernière version stable publiée reste v0.8.9 jusqu'à la réussite du workflow de publication.
-- **État :** PR #64 à #76 fusionnées dans `main`. La release v0.9.0 regroupe le parcours Short Twitch, la composition complète, les sous-titres locaux optionnels, le Daily Best Of persistant et la progression de rendu réelle. La publication officielle reste soumise au workflow de Release.
+- **Dernière version stable confirmée :** [v0.9.0](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.9.0), publiée le 27 novembre 2026.
+- **État :** PR #64 à #77 fusionnées dans `main`. La release v0.9.0 est publiée avec le parcours Short Twitch, la composition complète, les sous-titres locaux optionnels, le Daily Best Of persistant et la progression de rendu réelle.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
 - **Source active :** `app/`. Modifier directement les fichiers Python, JavaScript, CSS, HTML, tests et installateur présents dans ce dossier.
@@ -627,4 +627,6 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Version :** `VERSION.txt`, `app/VERSION.txt`, `app/pyproject.toml`, `app/config.yaml.default`, les notes de version et `.release-approval` sont synchronisés en `0.9.0` sur la branche `release/v0.9.0`.
 - **Validation déjà obtenue :** la PR #76 a passé l'audit Linux et la validation Windows, y compris les régressions, l'audit de dépendances, les scripts PowerShell et le package Windows.
 - **Limite :** le workflow ne remplace pas la validation physique AMD : AMF, Vulkan et la vitesse Whisper sur la RX 9060 XT restent à mesurer sur le PC utilisateur après installation.
-- **Suite :** fusionner la préparation après CI, puis laisser le workflow officiel publier le ZIP v0.9.0 et son SHA-256.
+- **Publication :** PR #77 fusionnée, commit squash `2e5510ca4084d3876a33dc5a26be259d49d642f6`. Le workflow officiel [46069811823](https://github.com/Sreleew/GTA_rankd/actions/runs/46069811823) a réussi et publié la Release v0.9.0, son ZIP Windows et `SHA256SUMS.txt`.
+- **Contrôles post-fusion :** Linux [46069811810](https://github.com/Sreleew/GTA_rankd/actions/runs/46069811810) et Windows [46069811807](https://github.com/Sreleew/GTA_rankd/actions/runs/46069811807) réussis.
+- **Suite :** installer v0.9.0 sur le PC Windows/AMD de test, puis mesurer AMF, Vulkan et Whisper sur de vrais médias avant le prochain lot.
