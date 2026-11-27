@@ -430,6 +430,11 @@ class JobRunner:
                 sound_effect_path=hook_sound_path if bool(options.get("sfx_enabled", True)) else None,
                 sound_effect_offset=min(0.12, max(0.0, (trim_end - trim_start) - 0.12)),
                 sound_effect_volume=float(self.config.get("shorts", "sfx_volume", default=0.14)),
+                progress_callback=lambda percent: self.store.update_job(
+                    job_id,
+                    progress=60 + int(round(max(0.0, min(100.0, percent)) * 0.25)),
+                    message=f"Encodage du Short · {int(round(max(0.0, min(100.0, percent))))} %",
+                ),
             )
             check_cancelled()
             stage_started = time.perf_counter()
