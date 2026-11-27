@@ -212,8 +212,13 @@ def test_render_reuses_source_probe_and_returns_output_probe(tmp_path: Path, mon
         probed.append(Path(path))
         return output_info
 
-    def fake_run(command, timeout=None, cwd=None):
+    reported_progress = []
+
+    def fake_run(command, timeout=None, cwd=None, progress_callback=None):
         output.write_bytes(b"rendered mp4")
+        if progress_callback is not None:
+            assert command[command.index("-progress") + 1] == "pipe:1"
+            progress_callback(4.0)
         return subprocess.CompletedProcess(command, 0, "", "")
 
     monkeypatch.setattr(short_renderer, "probe_media", fake_probe)
@@ -235,8 +240,10 @@ def test_render_reuses_source_probe_and_returns_output_probe(tmp_path: Path, mon
         height=640,
         trim_start=1.0,
         trim_duration=8.0,
+        progress_callback=reported_progress.append,
     )
 
+    assert reported_progress == [4.0]
     assert probed == [output]
     assert result["source_duration"] == 12.0
     assert result["output_media_info"] == output_info
