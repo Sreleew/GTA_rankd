@@ -6,6 +6,8 @@ import json
 import logging
 import math
 import shutil
+import struct
+import wave
 import subprocess
 import tempfile
 from fractions import Fraction
@@ -20,6 +22,67 @@ logger = logging.getLogger(__name__)
 class MediaError(RuntimeError):
     """Erreur lisible pendant l'analyse ou le rendu vidéo."""
 
+
+
+def create_hook_sound_effect(
+    output_path: Path,
+    style: str = "impact",
+    *,
+    sample_rate: int = 44100,
+) -> Path:
+    """Create a short, original hook cue without external audio assets or dependencies.
+
+    The four cues are deliberately restrained and distinct: bass impact,
+    two-note question ping, rising suspense sweep, and a sharp reaction snap.
+    """
+    if sample_rate < 8000:
+        raise ValueError("La fréquence audio doit être d'au moins 8 kHz.")
+    if style not in {"impact", "question", "suspense", "reaction"}:
+        style = "impact"
+
+    duration = 0.62 if style == "suspense" else 0.42
+    total = int(sample_rate * duration)
+    samples: list[int] = []
+    for index in range(total):
+        t = index / sample_rate
+        if style == "impact":
+            envelope = math.exp(-t * 12.0)
+            value = (
+                0.72 * math.sin(2 * math.pi * (54 - 18 * t) * t) * envelope
+                + 0.18 * math.sin(2 * math.pi * 112 * t) * math.exp(-t * 22.0)
+            )
+        elif style == "question":
+            first = math.exp(-max(0.0, t - 0.015) * 9.0) if t >= 0.015 else 0.0
+            second = math.exp(-max(0.0, t - 0.17) * 11.0) if t >= 0.17 else 0.0
+            value = 0.34 * first * math.sin(2 * math.pi * 660 * t)
+            value += 0.25 * second * math.sin(2 * math.pi * 990 * t)
+        elif style == "suspense":
+            progress = min(1.0, t / duration)
+            frequency = 105.0 + 520.0 * progress * progress
+            phase = 2 * math.pi * (105.0 * t + (520.0 * t**3) / (3 * duration**2))
+            envelope = 0.08 + 0.32 * progress
+            value = envelope * math.sin(phase)
+            value += 0.08 * math.sin(2 * math.pi * frequency * 1.51 * t)
+        else:
+            progress = min(1.0, t / 0.12)
+            frequency = 210.0 - 125.0 * progress
+            envelope = math.exp(-t * 17.0)
+            value = 0.52 * math.sin(2 * math.pi * frequency * t) * envelope
+            value += 0.16 * math.sin(2 * math.pi * 1450 * t) * math.exp(-t * 55.0)
+
+        # A short fade prevents clicks at the beginning and end of each cue.
+        attack = min(1.0, t / 0.008)
+        release = min(1.0, max(0.0, (duration - t) / 0.025))
+        samples.append(max(-32767, min(32767, int(value * attack * release * 24500))))
+
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with wave.open(str(output_path), "wb") as audio:
+        audio.setnchannels(1)
+        audio.setsampwidth(2)
+        audio.setframerate(sample_rate)
+        audio.writeframes(struct.pack(f"<{len(samples)}h", *samples))
+    return output_path
 
 def resolve_executable(name: str | Path) -> str:
     value = str(name)
