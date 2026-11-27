@@ -1100,6 +1100,40 @@ def test_batch_twitch_short_import_queues_valid_urls_and_reports_invalid_ones(tm
     assert summary["failed_count"] == 1
     assert summary["cancelled_count"] == 1
     assert {job["status"] for job in summary["jobs"]} == {"ready", "error", "cancelled"}
+    failed_item = next(job for job in summary["jobs"] if job["status"] == "error")
+    assert failed_item["retryable"] is True
+    assert failed_item["attempts"] == 1
+
+    # A retry is a new durable job, but it keeps the logical slot in the
+    # original batch. Progress therefore remains based on three clips.
+    retried = client.post(f"/api/jobs/{failed_item['id']}/reprocess")
+    assert retried.status_code == 202, retried.text
+    retry_id = retried.json()["id"]
+    retry_job = app.state.store.get_job(retry_id)
+    assert retry_job["batch_id"] == payload["batch_id"]
+    assert retry_job["metadata"]["batch_index"] == 2
+    assert retry_job["metadata"]["batch_count"] == 3
+    assert retry_job["metadata"]["options"]["layout"] == "blur"
+
+    retrying_batch = client.get(f"/api/shorts/batches/{payload['batch_id']}").json()
+    assert retrying_batch["total"] == 3
+    assert retrying_batch["active_count"] == 1
+    assert retrying_batch["completed_count"] == 2
+    assert retrying_batch["failed_count"] == 0
+    assert retrying_batch["progress"] == 67
+    retry_item = next(job for job in retrying_batch["jobs"] if job["batch_index"] == 2)
+    assert retry_item["id"] == retry_id
+    assert retry_item["attempts"] == 2
+    assert retry_item["status"] == "queued"
+    assert retry_item["retryable"] is False
+
+    app.state.store.update_job(retry_id, status="ready", progress=100, message="Short prêt après relance")
+    finished_batch = client.get(f"/api/shorts/batches/{payload['batch_id']}").json()
+    assert finished_batch["total"] == 3
+    assert finished_batch["completed_count"] == 3
+    assert finished_batch["ready_count"] == 2
+    assert finished_batch["failed_count"] == 0
+    assert finished_batch["progress"] == 100
 
     assert client.get("/api/shorts/batches/not-a-batch").status_code == 400
     assert client.get(f"/api/shorts/batches/{'0' * 32}").status_code == 404
@@ -1136,10 +1170,12 @@ def test_batch_twitch_import_is_available_in_shorts_ui():
     assert 'id="short-batch-urls"' in html
     assert 'id="short-batch-submit"' in html
     assert 'id="short-batch-tracker"' in html
-    assert "v=0.8.9-processing-timings" in html
+    assert "v=0.8.9-batch-retry" in html
     assert "JUSQU'À 10 URLS" in html
     assert "/api/shorts/url/batch" in js
     assert "/api/shorts/batches/" in js
+    assert "data-retry-short-batch" in js
+    assert "/api/jobs/${encodeURIComponent(jobId)}/reprocess" in js
     assert "gta-ranked-short-batches" in js
     assert "$$('[data-option-checkbox]', form).forEach" in js
     assert "submitShortBatch($('#url-form'))" in js
@@ -1162,6 +1198,67 @@ def test_store_adds_batch_id_to_existing_database_without_losing_jobs(tmp_path: 
         columns = {row[1] for row in connection.execute("PRAGMA table_info(jobs)")}
     assert "batch_id" in columns
     assert migrated.get_job("existing-job")["status"] == "ready"
+
+
+def test_cancelled_twitch_short_can_be_reprocessed(tmp_path: Path):
+    config = load_config(_make_isolated_app_config(tmp_path))
+    app = create_app(config)
+    submitted: list[str] = []
+    app.state.runner.submit = lambda job_id: submitted.append(job_id)
+    client = TestClient(app)
+
+    created = client.post(
+        "/api/shorts/url",
+        data={"url": "https://clips.twitch.tv/CancelledClip", "rights_confirmed": "true"},
+    )
+    assert created.status_code == 202
+    original_id = created.json()["id"]
+    app.state.store.update_job(original_id, status="cancelled", message="Traitement annulé")
+    submitted.clear()
+
+    retried = client.post(f"/api/jobs/{original_id}/reprocess")
+    assert retried.status_code == 202, retried.text
+    new_job = app.state.store.get_job(retried.json()["id"])
+    assert new_job["status"] == "queued"
+    assert new_job["source_url"] == "https://clips.twitch.tv/CancelledClip"
+    assert submitted == [new_job["id"]]
+
+
+def test_reprocess_preserves_twitch_url_when_reusing_local_download(tmp_path: Path):
+    config = load_config(_make_isolated_app_config(tmp_path))
+    app = create_app(config)
+    submitted: list[str] = []
+    app.state.runner.submit = lambda job_id: submitted.append(job_id)
+    client = TestClient(app)
+
+    source = tmp_path / "downloaded-twitch.mp4"
+    source.write_bytes(b"local Twitch media")
+    app.state.store.create_job({
+        "id": "local-twitch-source",
+        "source_kind": "url",
+        "source_url": "https://clips.twitch.tv/OriginalClip",
+        "source_path": str(source),
+        "streamer": "ExampleStreamer",
+        "rights_confirmed": True,
+    })
+    app.state.store.update_job("local-twitch-source", status="error", error="Render failed")
+    submitted.clear()
+
+    first_retry = client.post("/api/jobs/local-twitch-source/reprocess")
+    assert first_retry.status_code == 202, first_retry.text
+    first_job = app.state.store.get_job(first_retry.json()["id"])
+    assert first_job["source_kind"] == "upload"
+    assert first_job["source_path"] == str(source.resolve())
+    assert first_job["source_url"] == "https://clips.twitch.tv/OriginalClip"
+
+    source.unlink()
+    app.state.store.update_job(first_job["id"], status="error", error="Local media missing")
+    second_retry = client.post(f"/api/jobs/{first_job['id']}/reprocess")
+    assert second_retry.status_code == 202, second_retry.text
+    second_job = app.state.store.get_job(second_retry.json()["id"])
+    assert second_job["source_kind"] == "url"
+    assert second_job["source_url"] == "https://clips.twitch.tv/OriginalClip"
+    assert submitted == [first_job["id"], second_job["id"]]
 
 
 def test_short_audio_analysis_is_skipped_when_no_feature_needs_it():
