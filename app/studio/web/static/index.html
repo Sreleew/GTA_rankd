@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#101113">
   <title>GTA Ranked Studio</title>
-  <link rel="stylesheet" href="/static/styles.css?v=0.8.9-short-live-progress-captions">
+  <link rel="stylesheet" href="/static/styles.css?v=0.9.0-short-caption-language">
 </head>
 <body>
   <div class="app-shell">
@@ -81,8 +81,9 @@
                   <label><input type="checkbox" name="sfx_enabled" checked data-option-checkbox> Whoosh discret au moment fort</label>
                   <label><input type="checkbox" name="captions_enabled" data-option-checkbox> Sous-titres automatiques (Whisper local)</label>
                 </div>
-                <small class="form-note">Option facultative, désactivée par défaut pour garder le rendu rapide. Nécessite whisper.cpp et le modèle local large-v3-turbo (~1,6 Go), à installer dans Paramètres.</small>
+                <small class="form-note">Option facultative, désactivée par défaut pour garder le rendu rapide. Nécessite whisper.cpp et le modèle multilingue local large-v3-turbo (~1,6 Go), à installer dans Paramètres.</small>
                 <div class="form-grid edit-text-grid">
+                  <label>Langue parlée dans le clip<select name="caption_language"><option value="auto" selected>Détection automatique</option><option value="en">English</option><option value="fr">Français</option><option value="es">Español</option><option value="pt">Português</option><option value="de">Deutsch</option></select><small>La détection automatique convient à la plupart des clips. Tu peux imposer la langue si le résultat est incertain.</small></label>
                   <label>Hook personnalisé <span>OPTIONNEL · 8 MOTS MAX</span><input type="text" name="hook_text" maxlength="100" placeholder="ex. BRO THOUGHT HE WAS SAFE..."></label>
                   <label>Contexte à afficher <span>OPTIONNEL · 10 MOTS MAX</span><input type="text" name="context_text" maxlength="150" placeholder="ex. One wrong move during the police chase"></label>
                 </div>
@@ -117,8 +118,9 @@
                   <label><input type="checkbox" name="sfx_enabled" checked data-option-checkbox> Whoosh discret au moment fort</label>
                   <label><input type="checkbox" name="captions_enabled" data-option-checkbox> Sous-titres automatiques (Whisper local)</label>
                 </div>
-                <small class="form-note">Option facultative, désactivée par défaut pour garder le rendu rapide. Nécessite whisper.cpp et le modèle local large-v3-turbo (~1,6 Go), à installer dans Paramètres.</small>
+                <small class="form-note">Option facultative, désactivée par défaut pour garder le rendu rapide. Nécessite whisper.cpp et le modèle multilingue local large-v3-turbo (~1,6 Go), à installer dans Paramètres.</small>
                 <div class="form-grid edit-text-grid">
+                  <label>Langue parlée dans le clip<select name="caption_language"><option value="auto" selected>Détection automatique</option><option value="en">English</option><option value="fr">Français</option><option value="es">Español</option><option value="pt">Português</option><option value="de">Deutsch</option></select><small>La détection automatique convient à la plupart des clips. Tu peux imposer la langue si le résultat est incertain.</small></label>
                   <label>Hook personnalisé <span>OPTIONNEL · 8 MOTS MAX</span><input type="text" name="hook_text" maxlength="100" placeholder="ex. BRO THOUGHT HE WAS SAFE..."></label>
                   <label>Contexte à afficher <span>OPTIONNEL · 10 MOTS MAX</span><input type="text" name="context_text" maxlength="150" placeholder="ex. One wrong move during the police chase"></label>
                 </div>
@@ -234,7 +236,7 @@
         <section class="panel model-settings-panel">
           <div class="panel-heading"><div><div class="eyebrow">LOCAL AI MODELS</div><h3>Modèles IA sur ton PC</h3></div><button class="text-button" id="refresh-models">↻ Actualiser</button></div>
           <div class="model-row"><div><strong>Moteur whisper.cpp · Vulkan</strong><p id="whisper-engine-status">Vérification du moteur...</p><small id="whisper-engine-details">Le Studio vérifie le backend par un vrai chargement du modèle, pas par --list-devices.</small></div><div class="model-actions"><button type="button" class="mini-button" id="verify-whisper-gpu" aria-describedby="whisper-engine-details">Tester le GPU</button><a class="mini-button" href="https://github.com/jiang1997/whisper.cpp-release/releases" target="_blank" rel="noopener">Build Vulkan ↗</a></div></div>
-          <div class="model-row"><div><strong>Modèle Whisper large-v3-turbo</strong><p id="whisper-model-status">Vérification du modèle...</p><small>Modèle anglais local d'environ 1,6 Go. Le téléchargement ne se fait qu'une fois. Aucun média n'est envoyé dans le cloud.</small></div><div class="model-actions"><button class="button button-primary" id="download-whisper-model">Télécharger le modèle</button><button class="mini-button hidden" id="cancel-whisper-download">Annuler</button></div></div>
+          <div class="model-row"><div><strong>Modèle Whisper large-v3-turbo</strong><p id="whisper-model-status">Vérification du modèle...</p><small>Modèle multilingue local d'environ 1,6 Go. Le téléchargement ne se fait qu'une fois. Aucun média n'est envoyé dans le cloud.</small></div><div class="model-actions"><button class="button button-primary" id="download-whisper-model">Télécharger le modèle</button><button class="mini-button hidden" id="cancel-whisper-download">Annuler</button></div></div>
           <div class="model-progress hidden" id="whisper-progress-wrap"><div class="model-progress-track"><span id="whisper-progress-bar"></span></div><small id="whisper-progress-label">0 %</small></div>
           <div class="model-row"><div><strong>Ollama · Qwen 2.5 7B</strong><p id="ollama-model-status">Vérification d'Ollama...</p><small id="ollama-model-details">Génération locale des hooks, titres, descriptions et hashtags.</small></div><div class="model-actions"><a class="mini-button" href="https://ollama.com/download/windows" target="_blank" rel="noopener">Installer Ollama ↗</a><button type="button" class="mini-button" id="verify-ollama" aria-describedby="ollama-model-details">Vérifier</button></div></div>
           <div class="command-note">Après installation d'Ollama, ouvre un terminal et exécute : <code>ollama pull qwen2.5:7b-instruct</code>. L'inférence reste locale.</div>
@@ -245,6 +247,6 @@
     </main>
   </div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="/static/app.js?v=0.8.9-short-live-progress-captions"></script>
+  <script src="/static/app.js?v=0.9.0-short-caption-language"></script>
 </body>
 </html>
