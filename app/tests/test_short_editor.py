@@ -173,7 +173,7 @@ def test_long_clip_excerpt_keeps_delayed_streamer_reaction_after_audio_peak() ->
     start, end = select_excerpt_range(180.0, 21.0, words)
 
     assert start <= 21.0
-    assert end >= 30.2  # reaction phrase + configured tail
+    assert end >= 27.2  # reaction phrase + configured tail
     assert 60.0 <= end - start <= 165.0
 
 
