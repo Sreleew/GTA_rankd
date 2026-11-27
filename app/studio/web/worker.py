@@ -312,6 +312,12 @@ class JobRunner:
             check_cancelled()
             options = (job.get("metadata") or {}).get("options", {})
             captions_requested = bool(options.get("captions_enabled", False))
+            caption_language_requested = str(options.get("caption_language") or "config")
+            caption_language_effective = (
+                str(self.config.get("transcription", "language", default="en") or "en")
+                if caption_language_requested == "config"
+                else caption_language_requested
+            )
             if captions_requested:
                 whisper_cli = self.config.path_for("executables", "whisper_cli")
                 whisper_model = self.config.path_for("transcription", "model_path")
@@ -456,11 +462,7 @@ class JobRunner:
                             existing_audio_path=audio_path,
                             existing_audio_start=audio_path_start,
                             existing_audio_duration=audio_path_duration,
-                            language=(
-                                str(self.config.get("transcription", "language", default="en") or "en")
-                                if str(options.get("caption_language") or "config") == "config"
-                                else str(options.get("caption_language"))
-                            ),
+                            language=caption_language_effective,
                         )
                         transcription_status = str(transcription.get("status") or "unknown")
                         transcription_timestamp_mode = transcription.get("timestamp_mode")
@@ -658,14 +660,8 @@ class JobRunner:
                 "audio_analysis_skipped": not audio_analysis_needed,
                 "transcription_status": transcription_status,
                 "transcription_timestamp_mode": transcription_timestamp_mode,
-                "transcription_language_requested": (
-                    str(options.get("caption_language") or "config") if captions_requested else None
-                ),
-                "transcription_language": (
-                    str(self.config.get("transcription", "language", default="en") or "en")
-                    if captions_requested and str(options.get("caption_language") or "config") == "config"
-                    else (str(options.get("caption_language")) if captions_requested else None)
-                ),
+                "transcription_language_requested": caption_language_requested if captions_requested else None,
+                "transcription_language": caption_language_effective if captions_requested else None,
                 "transcribed_words": len(render_words),
                 "transcription_warning": transcription_warning,
                 "captions_enabled": captions_requested,
