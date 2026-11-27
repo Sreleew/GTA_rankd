@@ -343,3 +343,12 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Précision technique :** la diarisation distingue des locuteurs, mais ne sait pas lequel est le streamer. Le filtrage dominant reste une heuristique prudente, pas une identification garantie du streamer. La documentation de la fonction reflète désormais ce comportement réel.
 - **Tests :** vérification du rendu des libellés de statut et conservation des tests de filtrage existants. La validation complète Linux/Windows sera faite sur la PR.
 - **Limite :** aucun algorithme ne peut garantir que le locuteur dominant est le streamer sur tous les clips. Une sélection explicite du locuteur nécessitera un vrai parcours d'écoute/choix utilisateur, qui reste à concevoir.
+
+
+## 22. Taille téléchargée dans la progression Twitch, 27 novembre 2026
+
+- **Amélioration :** le message de téléchargement affiche maintenant la quantité reçue et la taille totale estimée, en MiB, en complément du pourcentage, du débit et du temps restant. Exemple : « 75 % · 75.0/100.0 MiB · 1.5 MiB/s · reste 00:05 ».
+- **Robustesse :** si yt-dlp ne fournit pas de taille totale, seule la quantité déjà reçue est affichée ; les valeurs invalides ou nulles sont ignorées.
+- **Impact :** aucun changement au comportement de téléchargement, aux reprises, aux fragments ou aux dépendances. La fréquence des mises à jour reste inchangée.
+- **Tests :** assertions de progression avec taille totale connue et cas sans total / valeur invalide.
+- **PR :** en attente de CI Linux et Windows.

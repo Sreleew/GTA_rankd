@@ -722,11 +722,11 @@ def test_twitch_download_reports_throttled_yt_dlp_progress(tmp_path: Path, monke
             assert download is True
             progress_hook = self.options["progress_hooks"][0]
             progress_hook({
-                "status": "downloading", "downloaded_bytes": 25, "total_bytes": 100,
+                "status": "downloading", "downloaded_bytes": 25 * 1024 * 1024, "total_bytes": 100 * 1024 * 1024,
                 "speed": 1.5 * 1024 * 1024, "eta": 12.4,
             })
             progress_hook({
-                "status": "downloading", "downloaded_bytes": 75, "total_bytes_estimate": 100,
+                "status": "downloading", "downloaded_bytes": 75 * 1024 * 1024, "total_bytes_estimate": 100 * 1024 * 1024,
                 "speed": 512 * 1024, "eta": 5.2,
             })
             self.downloaded_path = Path(self.options["outtmpl"].replace("%(ext)s", "mp4"))
@@ -757,9 +757,11 @@ def test_twitch_download_reports_throttled_yt_dlp_progress(tmp_path: Path, monke
     assert [fields["progress"] for _, fields in store.updates] == [12, 17, 19]
     messages = [fields["message"] for _, fields in store.updates]
     assert "25 %" in messages[0]
+    assert "25.0/100.0 MiB" in messages[0]
     assert "1.5 MiB/s" in messages[0]
     assert "reste 00:12" in messages[0]
     assert "75 %" in messages[1]
+    assert "75.0/100.0 MiB" in messages[1]
     assert "512 KiB/s" in messages[1]
     assert "reste 00:05" in messages[1]
     assert messages[-1] == "Téléchargement terminé · préparation du Short"
@@ -950,3 +952,12 @@ def test_retry_failed_twitch_url_creates_a_fresh_download_job(tmp_path: Path):
     assert new_job["streamer"] == "ExampleStreamer"
     assert new_job["note"] == "Retry this clip"
     assert new_job["metadata"]["options"]["captions_enabled"] is False
+
+
+def test_download_size_suffix_handles_unknown_or_invalid_totals():
+    from studio.web.worker import _download_size_suffix
+
+    mib = 1024 * 1024
+    assert _download_size_suffix({"downloaded_bytes": 2 * mib, "total_bytes": None}) == " · 2.0 MiB"
+    assert _download_size_suffix({"downloaded_bytes": 0, "total_bytes": 10 * mib}) == ""
+    assert _download_size_suffix({"downloaded_bytes": "invalid", "total_bytes": 10}) == ""
