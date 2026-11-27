@@ -1,0 +1,21 @@
+GTA Ranked Studio v0.9.0
+
+Création de Shorts Twitch :
+- Import groupé de jusqu'à 10 URLs Twitch, suivi persistant des lots et relance d'un clip échoué, annulé ou rejeté.
+- Progression détaillée du téléchargement et progression réelle du rendu FFmpeg pendant l'encodage vertical.
+- Composition 9:16 qui conserve toute l'image Twitch, webcam comprise, avec fond flouté.
+- Sous-titres Whisper locaux facultatifs : aucun téléchargement de modèle ni ralentissement lorsque l'option reste désactivée. Lorsque configurés localement, les sous-titres servent aussi aux métadonnées.
+
+Daily Best Of :
+- Création d'épisodes 16:9 à partir des Shorts validés.
+- Historique persistant, récupération manuelle d'un rendu interrompu et protection contre les doublons.
+- Pourcentage réel d'encodage et indication du fallback AMD AMF vers libx264.
+
+Fiabilité :
+- Un échec de l'habillage de miniature conserve le Short MP4 et l'image source.
+- Les rendus vidéo privilégient AMD AMF avec fallback CPU.
+- Les données locales, réglages, bases, médias, modèles et exports restent préservés.
+
+Validation :
+- PR #76 : audit Linux et validation Windows réussis, y compris régressions, scripts PowerShell et package Windows.
+- La validation matérielle réelle d'AMF, Vulkan et Whisper sur la RX 9060 XT reste à effectuer après installation.
