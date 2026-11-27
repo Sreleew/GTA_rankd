@@ -120,6 +120,8 @@ def test_whisper_cli_requests_dtw_full_json_for_word_timestamps(tmp_path: Path):
         base.with_suffix('.json').write_text(json.dumps(payload), encoding='utf-8')
         if '-dtw' not in args or '-ojf' not in args or '-nfa' not in args:
             raise SystemExit(4)
+        if args[args.index('-l') + 1] != 'fr':
+            raise SystemExit(5)
         raise SystemExit(0)
     """), encoding="utf-8")
     binary.chmod(0o755)
@@ -129,7 +131,7 @@ def test_whisper_cli_requests_dtw_full_json_for_word_timestamps(tmp_path: Path):
     audio.write_bytes(b"audio")
 
     result = transcribe_with_whisper_cpp(
-        audio, whisper_cli=binary, model_path=model, output_dir=tmp_path / "out"
+        audio, whisper_cli=binary, model_path=model, output_dir=tmp_path / "out", language="fr"
     )
 
     assert result["status"] == "completed"
@@ -153,6 +155,8 @@ def test_whisper_cli_falls_back_to_srt_when_dtw_is_unavailable(tmp_path: Path):
         base.with_suffix('.srt').write_text('1\\n00:00:00,000 --> 00:00:01,000\\nHello there!\\n', encoding='utf-8')
         if '-dtw' in args or '-ojf' in args:
             raise SystemExit(4)
+        if args[args.index('-l') + 1] != 'auto':
+            raise SystemExit(5)
         raise SystemExit(0)
     """), encoding="utf-8")
     binary.chmod(0o755)
@@ -162,7 +166,7 @@ def test_whisper_cli_falls_back_to_srt_when_dtw_is_unavailable(tmp_path: Path):
     audio.write_bytes(b"audio")
 
     result = transcribe_with_whisper_cpp(
-        audio, whisper_cli=binary, model_path=model, output_dir=tmp_path / "out"
+        audio, whisper_cli=binary, model_path=model, output_dir=tmp_path / "out", language="auto"
     )
 
     assert result["status"] == "completed_segment_fallback"

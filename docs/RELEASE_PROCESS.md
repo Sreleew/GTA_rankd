@@ -34,7 +34,7 @@ La voie `workflow_dispatch` reste disponible pour préparer une Release brouillo
 
 ## État au 27 novembre 2026
 
-- Dernière Release stable publiée : [v0.8.9](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.9), avec le ZIP Windows et `SHA256SUMS.txt`.
+- Dernière Release stable publiée : [v0.9.0](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.9.0), avec le ZIP Windows et `SHA256SUMS.txt` (publication vérifiée le 27 novembre 2026).
 - PR #41 fusionnée : constructeur de sélection Daily Best Of, avec CI Linux et Windows réussies.
 - PR #42 fusionnée : relance des jobs Twitch en erreur depuis l'URL d'origine, conservation des options et réutilisation du média local.
 - CI PR #42 : Linux [46012357301](https://github.com/Sreleew/GTA_rankd/actions/runs/46012357301) et Windows [46012357283](https://github.com/Sreleew/GTA_rankd/actions/runs/46012357283) réussies.
@@ -73,4 +73,4 @@ Les PR suivantes sont fusionnées après la création de l'archive v0.8.9. Elles
 - **PR #60** : import groupé de jusqu'à 10 clips Twitch dans le parcours Short, merge `90504c7c282e9032fb2bc9d90cc03f83f018f4e2`.
 - **PR #61** : environnement développeur local persistant et commandes de tests ciblés, merge `a90c85c60a10618b7d465da39bb11ba1439a93de`.
 - **PR #62** : suivi persistant des lots Twitch avec progression agrégée, merge `6514b37077cacefd4e9274a0dfa5364ada61871c`.
-- Les versions racine et applicative restent à `0.8.9` jusqu'à la préparation explicite de la prochaine Release stable. Ne pas modifier la version ni publier automatiquement à chaque PR produit.
+- Les versions racine et applicative restent à `0.9.0` jusqu'à la préparation explicite de la prochaine Release stable. Ne pas modifier la version ni publier automatiquement à chaque PR produit.
