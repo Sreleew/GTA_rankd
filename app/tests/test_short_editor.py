@@ -170,7 +170,9 @@ def test_long_clip_excerpt_keeps_delayed_streamer_reaction_after_audio_peak() ->
         WordTiming(27.8, 28.2, "crazy."),
     ]
 
-    start, end = select_excerpt_range(180.0, 21.0, words)
+    start, end = select_excerpt_range(
+        180.0, 21.0, words, minimum_seconds=60.0, maximum_seconds=165.0,
+    )
 
     assert start <= 21.0
     assert end >= 27.2  # reaction phrase + configured tail
