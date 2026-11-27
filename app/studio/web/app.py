@@ -638,7 +638,7 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         # s'ils provenaient du nouveau traitement.
         for key in (
             "title", "description", "transcription_status", "transcription_timestamp_mode",
-            "transcribed_words", "transcription_warning", "captions_path", "transcript",
+            "transcribed_words", "transcription_warning", "captions_enabled", "captions_path", "transcript",
         ):
             metadata.pop(key, None)
         store.create_job({
