@@ -140,7 +140,7 @@ def test_whisper_gpu_button_uses_fresh_script_and_visible_feedback():
     static = Path(__file__).resolve().parents[1] / "studio" / "web" / "static"
     html = (static / "index.html").read_text(encoding="utf-8")
     js = (static / "app.js").read_text(encoding="utf-8")
-    assert '<script src="/static/app.js?v=0.8.9-smart-source-fit"></script>' in html
+    assert '<script src="/static/app.js?v=0.8.9-bestof-live-progress"></script>' in html
     assert '<button type="button" class="mini-button" id="verify-whisper-gpu"' in html
     assert "/api/models/whisper/verify" in js
     assert "if (verifyGpuButton) verifyGpuButton.addEventListener('click', verifyWhisperGpu);" in js
@@ -213,7 +213,7 @@ def test_ollama_verify_button_has_a_dedicated_visible_handler():
     static = Path(__file__).resolve().parents[1] / "studio" / "web" / "static"
     html = (static / "index.html").read_text(encoding="utf-8")
     js = (static / "app.js").read_text(encoding="utf-8")
-    assert '<script src="/static/app.js?v=0.8.9-smart-source-fit"></script>' in html
+    assert '<script src="/static/app.js?v=0.8.9-bestof-live-progress"></script>' in html
     assert '<button type="button" class="mini-button" id="verify-ollama"' in html
     assert "#refresh-models-secondary" in js
     assert "/api/models/ollama/verify" in js
@@ -919,6 +919,7 @@ def test_daily_best_of_ui_exposes_selection_order_and_duration_validation():
     assert 'id="bestof-history"' in html
     assert "/api/bestof/jobs?limit=10" in js
     assert "bestOfHistoryPoll" in js
+    assert "progress-label" in js
     assert "data-retry-bestof" in js
     assert "/api/bestof/jobs/${encodeURIComponent(jobId)}/retry" in js
     assert "retryBestOfJob" in js
@@ -1167,7 +1168,13 @@ def test_best_of_render_endpoint_runs_in_background_and_returns_output_url(tmp_p
                 (clip_id, clip_id, "2026-11-27", 140, str(output), "2026-11-27T12:00:00"),
             )
 
+    progress_updates = []
+
     def fake_render(plan, output_path, **kwargs):
+        progress_callback = kwargs.get("progress_callback")
+        if callable(progress_callback):
+            progress_callback(52, "Encodage 16:9 · 52%")
+            progress_updates.append((52, "Encodage 16:9 · 52%"))
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_bytes(b"episode")
         return {"output_path": str(output_path), "duration": 560, "width": 1920, "height": 1080}
@@ -1193,6 +1200,7 @@ def test_best_of_render_endpoint_runs_in_background_and_returns_output_url(tmp_p
     assert job.status_code == 200
     assert job.json()["status"] == "completed", job.json()
     assert job.json()["output_url"].startswith("/outputs/bestof/2026-11-27/")
+    assert progress_updates == [(52, "Encodage 16:9 · 52%")]
 
 def test_batch_twitch_short_import_queues_valid_urls_and_reports_invalid_ones(tmp_path: Path):
     config = load_config(_make_isolated_app_config(tmp_path))
@@ -1335,7 +1343,7 @@ def test_batch_twitch_import_is_available_in_shorts_ui():
     assert 'id="short-batch-urls"' in html
     assert 'id="short-batch-submit"' in html
     assert 'id="short-batch-tracker"' in html
-    assert "v=0.8.9-smart-source-fit" in html
+    assert "v=0.8.9-bestof-live-progress" in html
     assert "JUSQU'À 10 URLS" in html
     assert "/api/shorts/url/batch" in js
     assert "/api/shorts/batches/" in js

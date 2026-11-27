@@ -206,3 +206,5 @@
 .bestof-history-action{flex:none}
 .bestof-history-missing{font-size:9px;color:#b99161}
 @media(max-width:560px){.bestof-history-item{align-items:flex-start;flex-direction:column}.bestof-history-action{width:100%}.bestof-history-action .mini-button{width:100%;justify-content:center}}
+
+.bestof-history-progress-label{font-family:var(--mono);font-size:8px;color:var(--muted);text-align:right}

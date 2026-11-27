@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
+import logging
 import math
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 MIN_EPISODE_SECONDS = 9 * 60
 MAX_EPISODE_SECONDS = 11 * 60
 MAX_SELECTED_CLIPS = 50
+
+logger = logging.getLogger(__name__)
 
 
 def build_best_of_plan(
@@ -134,6 +137,7 @@ def render_best_of_episode(
     ffmpeg: str = "ffmpeg",
     ffprobe: str = "ffprobe",
     encoder: str = "h264_amf",
+    progress_callback: Callable[[int, str], None] | None = None,
 ) -> dict[str, Any]:
     """Render validated vertical Shorts into one 1920x1080 landscape episode."""
     from studio.web.short_renderer import MediaError, probe_media, resolve_executable, run_command
@@ -146,11 +150,21 @@ def render_best_of_episode(
     if encoder not in {"h264_amf", "libx264"}:
         raise ValueError("Encodeur vidéo non pris en charge.")
 
+    def report_progress(progress: int, message: str) -> None:
+        if progress_callback is None:
+            return
+        try:
+            progress_callback(max(0, min(99, int(progress))), message)
+        except Exception:
+            # An unavailable progress display must never interrupt a video render.
+            return
+
+    report_progress(4, "Vérification des clips sources")
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     command = [resolve_executable(ffmpeg), "-hide_banner", "-y"]
     audio_input_indices: list[int] = []
-    for clip in clips:
+    for index, clip in enumerate(clips):
         source = Path(str(clip.get("output_path") or ""))
         if not source.is_file():
             raise MediaError(f"Le rendu du Short {str(clip.get('id') or '')[:8]} est introuvable.")
@@ -162,6 +176,10 @@ def render_best_of_episode(
             audio_input_indices.append(len(audio_input_indices))
         else:
             audio_input_indices.append(-1)
+        report_progress(
+            5 + int(5 * (index + 1) / len(clips)),
+            f"Vérification des sources · {index + 1}/{len(clips)}",
+        )
 
     # Add explicit silent tracks for Shorts without audio. Keeping each source
     # as a separate input avoids concat-demuxer assumptions about stream layouts.
@@ -182,6 +200,7 @@ def render_best_of_episode(
         len(clips), audio_input_indices,
         clip_durations=[float(clip.get("duration") or 0.0) for clip in clips],
     )
+    total_duration = sum(float(clip.get("duration") or 0.0) for clip in clips)
     command.extend([
         "-filter_complex", graph,
         "-map", "[outv]", "-map", "[outa]",
@@ -189,10 +208,22 @@ def render_best_of_episode(
         "-r", "30", "-pix_fmt", "yuv420p",
         "-c:a", "aac", "-b:a", "192k",
         "-movflags", "+faststart", "-max_muxing_queue_size", "2048",
-        str(output_path.resolve()),
     ])
+    if progress_callback is not None:
+        command.extend(["-progress", "pipe:1", "-stats_period", "1", "-nostats"])
+    command.append(str(output_path.resolve()))
+
+    def encoding_progress(elapsed_seconds: float) -> None:
+        if total_duration <= 0:
+            return
+        ratio = max(0.0, min(1.0, elapsed_seconds / total_duration))
+        report_progress(10 + int(round(ratio * 83)), f"Encodage 16:9 · {10 + int(round(ratio * 83))}%")
+
     try:
-        run_command(command, timeout=3600)
+        if progress_callback is None:
+            run_command(command, timeout=3600)
+        else:
+            run_command(command, timeout=3600, progress_callback=encoding_progress)
     except MediaError as exc:
         detail = str(exc).casefold()
         if encoder != "h264_amf" or not any(
@@ -202,10 +233,15 @@ def render_best_of_episode(
         # Some Windows systems expose AMF in FFmpeg but cannot initialize the
         # driver at runtime. Retry once with the CPU encoder rather than losing
         # the whole episode.
+        report_progress(10, "Encodeur AMD indisponible · reprise CPU")
         command[command.index("-c:v") + 1] = "libx264"
         bitrate_index = command.index("-b:v")
         command[bitrate_index:bitrate_index + 2] = ["-preset", "veryfast", "-crf", "20"]
-        run_command(command, timeout=3600)
+        if progress_callback is None:
+            run_command(command, timeout=3600)
+        else:
+            run_command(command, timeout=3600, progress_callback=encoding_progress)
+    report_progress(95, "Vérification du fichier exporté")
     result = probe_media(output_path, ffprobe, timeout=90)
     if int(result.get("width") or 0) != 1920 or int(result.get("height") or 0) != 1080:
         raise MediaError("Le fichier Daily Best Of exporté n'est pas au format 1920 × 1080.")
