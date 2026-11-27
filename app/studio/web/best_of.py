@@ -48,7 +48,7 @@ def build_best_of_plan(
             duration = float(clip.get("duration") or 0)
         except (TypeError, ValueError):
             duration = 0.0
-        if duration <= 0:
+        if duration <= 0 or not math.isfinite(duration):
             raise ValueError(f"La durée du Short {clip_id[:8]} est invalide.")
         total_duration += duration
         ordered.append({
