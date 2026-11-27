@@ -603,3 +603,17 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Branche :** `feat/short-render-live-progress`. Clé de cache des assets `0.8.9-short-live-progress`.
 - **Arbitrage ROI :** réutiliser le helper de progression FFmpeg du Daily Best Of, sans polling additionnel ni minuterie fictive.
 - **Suite :** tests ciblés Linux/Windows, puis validation de la PR. La vérification réelle sur Windows/AMD reste à faire sur le PC utilisateur.
+
+
+## 43. Sous-titres Whisper locaux facultatifs pour les Shorts, 27 novembre 2026
+
+- **Problème ciblé :** le pipeline Short n'utilisait plus la transcription, donc les rendus standards ne contenaient pas de sous-titres et les hooks/titres ne pouvaient pas exploiter les paroles.
+- **Choix ROI :** transcription strictement facultative, désactivée par défaut. Aucun modèle n'est téléchargé automatiquement et aucun coût Whisper n'est ajouté au rendu standard. L'activation nécessite le moteur whisper.cpp et le modèle local large-v3-turbo valide (~1,6 Go), vérifiés avant de mettre un upload ou une URL Twitch en file.
+- **Périmètre :** l'audio du seul extrait final sélectionné est transcrit. Le WAV déjà extrait pour l'analyse audio est réutilisé s'il correspond exactement à la plage ; sinon, FFmpeg extrait uniquement la plage Short. La transcription reste locale.
+- **Rendu :** les mots horodatés DTW sont privilégiés ; le SRT par segments reste le fallback du moteur. Les mots alimentent les captions ASS et le transcript fourni à la génération des métadonnées. Le SRT est conservé à côté du MP4 lorsqu'il existe. Le contrôle qualité vérifie les captions lorsqu'elles ont réellement été générées.
+- **Tolérance aux pannes :** si la source n'a pas d'audio ou si Whisper échoue après démarrage, le MP4 reste généré sans captions et l'interface affiche explicitement l'avertissement. Si le moteur ou le modèle manque dès la demande, l'API refuse la mise en file avec une explication avant de télécharger la source.
+- **Compatibilité :** aucun changement de dépendance ni d'encodeur. Le chemin AMD AMF et le fallback libx264 sont inchangés. Le choix de captions est conservé dans les options du job et donc dans une relance.
+- **Tests ajoutés :** validation API du prérequis Whisper, persistance de l'option sur URL et lot Twitch, réutilisation du WAV correspondant, extraction exacte de la plage lorsque le WAV existant couvre une autre durée, et vérification de l'affichage du résultat.
+- **Cache UI :** `0.8.9-short-live-progress-captions`.
+- **Limites :** les tests ne mesurent pas encore la vitesse réelle de Whisper sur la RX 9060 XT. Le modèle large-v3-turbo reste volontairement optionnel ; une transcription longue peut prolonger le traitement lorsque l'option est activée.
+- **Suite :** validation CI Linux/Windows de la PR groupée, puis validation manuelle sur un clip Twitch réel avec le modèle présent, en comparant durée de transcription, synchronisation et lisibilité mobile.
