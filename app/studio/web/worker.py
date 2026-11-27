@@ -290,6 +290,17 @@ class JobRunner:
 
             if not source_range:
                 trim_start, trim_end = 0.0, float(source_info["duration"])
+            if auto_trim_enabled and not source_range:
+                trim_start, trim_end = select_excerpt_range(
+                    float(source_info["duration"]),
+                    peak_timestamp,
+                    [],
+                    threshold_seconds=float(self.config.get("shorts", "peak_trim_threshold_seconds", default=45)),
+                    lead_seconds=float(self.config.get("shorts", "peak_lead_seconds", default=1.5)),
+                    tail_seconds=float(self.config.get("shorts", "payoff_tail_seconds", default=2.0)),
+                    minimum_seconds=float(self.config.get("shorts", "auto_trim_min_seconds", default=15)),
+                    maximum_seconds=float(self.config.get("shorts", "auto_trim_max_seconds", default=45)),
+                )
             render_words: list[Any] = []
             render_peak_timestamp = max(0.0, peak_timestamp - trim_start)
             render_zoom_timestamps = [
