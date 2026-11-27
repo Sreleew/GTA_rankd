@@ -249,3 +249,13 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **CI de préparation v0.8.8 (PR #43) :** Linux [46013472471](https://github.com/Sreleew/GTA_rankd/actions/runs/46013472471) et Windows [46013472448](https://github.com/Sreleew/GTA_rankd/actions/runs/46013472448) réussies après retrait de l'ancienne copie `app/NOTES-v0.8.7.txt`.
 - **Release stable v0.8.8 publiée :** workflow officiel [46014440309](https://github.com/Sreleew/GTA_rankd/actions/runs/46014440309) réussi. ZIP Windows : 207 327 octets ; SHA-256 `c6155b1ce323edf6fb6088ceb386ae38223aaa4c0c875b95f245a7bbb76e8d1b`.
 - **Priorité utilisateur inchangée :** finaliser et tester la création de Shorts depuis une URL Twitch, puis terminer le rendu Daily Best Of. « Moments forts » reste en pause.
+
+
+
+## 13. Correctif du parcours de mise à jour, 27 novembre 2026
+
+- **Retour utilisateur :** lors de l'installation de la v0.8.8, l'interface a affiché « Failed to fetch » alors que la mise à jour semblait se terminer correctement.
+- **Diagnostic probable confirmé par le code :** le script de mise à jour arrête volontairement le serveur local avant de le redémarrer. Pendant cette courte coupure, le rafraîchissement automatique du tableau de bord continue toutes les 5 secondes et transformait l'indisponibilité attendue en toast « Failed to fetch ». Le polling de statut de mise à jour, lui, effaçait son intervalle au premier échec réseau et ne confirmait donc pas le retour du serveur.
+- **Correctif en cours :** l'interface distingue désormais la coupure réseau attendue d'une vraie erreur, garde le polling pendant le redémarrage, interroge la version après le retour du serveur et recharge la page lorsque la version attendue est bien installée. Les erreurs de rafraîchissement en arrière-plan sont masquées uniquement pendant la mise à jour.
+- **Branche :** `fix/silent-update-restart-fetch`. Tests de régression ajoutés dans `app/tests/test_updates.py`. CI, fusion et publication de la version corrective à renseigner après validation.
+- **Priorité utilisateur inchangée :** création de Shorts depuis Twitch, puis rendu Daily Best Of. Moments forts reste en pause.
