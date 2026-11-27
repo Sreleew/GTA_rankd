@@ -32,6 +32,7 @@ REQUIRED_FILES = {
     "gta-ranked-studio/config.yaml.default",
     "gta-ranked-studio/installer/install.ps1",
     "gta-ranked-studio/installer/apply_update.ps1",
+    "gta-ranked-studio/studio/config.py",
     "gta-ranked-studio/studio/web/updater.py",
     "gta-ranked-studio/studio/web/static/index.html",
     "gta-ranked-studio/docs/CONTINUATION.md",
@@ -61,7 +62,10 @@ def _validate_member(name: str, info: zipfile.ZipInfo) -> None:
         raise ValueError(f"Fichier de métadonnées/historique non nécessaire interdit dans le ZIP : {name}")
     if filename.startswith(".") and filename not in {".gitignore", ".env.example"}:
         raise ValueError(f"Fichier caché interdit dans le ZIP : {name}")
-    if filename.startswith("config.") and filename not in {"config.yaml.default", "config.example.yaml"}:
+    # studio/config.py est un module applicatif requis, pas une configuration utilisateur.
+    if (filename.startswith("config.")
+            and name != "gta-ranked-studio/studio/config.py"
+            and filename not in {"config.yaml.default", "config.example.yaml"}):
         raise ValueError(f"Configuration locale interdite dans le ZIP : {name}")
     if path.suffix.lower() in FORBIDDEN_SUFFIXES:
         raise ValueError(f"Fichier local/sensible interdit dans le ZIP : {name}")

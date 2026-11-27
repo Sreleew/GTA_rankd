@@ -27,6 +27,7 @@ def test_package_contains_runtime_and_canonical_docs_but_no_local_state(tmp_path
     (app / "NOTES-v0.8.1.txt").write_text("release notes", encoding="utf-8")
     (app / "VERIFICATION-v0.7.3.md").write_text("old checks", encoding="utf-8")
     (app / "config.yaml.default").write_text("app:\n  version: 0.8.1\n", encoding="utf-8")
+    (app / "studio/config.py").write_text("# runtime config module\n", encoding="utf-8")
     for path in (
         "installer/install.ps1", "installer/apply_update.ps1",
         "studio/web/updater.py", "studio/web/static/index.html",
@@ -52,6 +53,7 @@ def test_package_contains_runtime_and_canonical_docs_but_no_local_state(tmp_path
     with zipfile.ZipFile(package) as archive:
         names = set(archive.namelist())
         assert "gta-ranked-studio/assets/sfx/soft_whoosh.wav" in names
+        assert "gta-ranked-studio/studio/config.py" in names
         assert "gta-ranked-studio/installer/build_release_package.py" not in names
         assert not any("/NOTES-v" in name or "/VERIFICATION-v" in name for name in names)
         for name in builder.CANONICAL_DOCS:
