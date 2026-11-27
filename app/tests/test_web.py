@@ -909,6 +909,9 @@ def test_daily_best_of_ui_exposes_selection_order_and_duration_validation():
     assert 'id="bestof-available"' in html
     assert 'id="bestof-selected"' in html
     assert 'id="bestof-validate"' in html
+    assert 'id="bestof-render"' in html
+    assert "/api/bestof/render" in js
+    assert "/api/bestof/jobs/" in js
     assert "/api/bestof/plan" in js
     assert "data-bestof-up" in js
     assert "data-bestof-down" in js
@@ -979,3 +982,54 @@ def test_best_of_filter_graph_rejects_mismatched_audio_inputs():
 
     with pytest.raises(ValueError, match="plan vidéo"):
         build_best_of_filter_graph(2, [0])
+
+
+def test_best_of_render_endpoint_runs_in_background_and_returns_output_url(tmp_path: Path, monkeypatch):
+    import time
+    from types import SimpleNamespace
+    import studio.web.app as app_module
+
+    app = create_app(load_config(_make_isolated_app_config(tmp_path)))
+    client = TestClient(app)
+    clip_ids = ["episode-a", "episode-b", "episode-c", "episode-d"]
+    for clip_id in clip_ids:
+        output = tmp_path / f"{clip_id}.mp4"
+        output.write_bytes(b"rendered")
+        with app.state.store._connect() as connection:
+            connection.execute(
+                """INSERT INTO jobs (id, status, source_kind, created_at, updated_at)
+                   VALUES (?, 'validated', 'upload', ?, ?)""",
+                (clip_id, "2026-11-27T12:00:00", "2026-11-27T12:00:00"),
+            )
+            connection.execute(
+                """INSERT INTO clips (id, job_id, date_key, duration, output_path, status, created_at)
+                   VALUES (?, ?, ?, ?, ?, 'validated', ?)""",
+                (clip_id, clip_id, "2026-11-27", 140, str(output), "2026-11-27T12:00:00"),
+            )
+
+    def fake_render(plan, output_path, **kwargs):
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_bytes(b"episode")
+        return {"output_path": str(output_path), "duration": 560, "width": 1920, "height": 1080}
+
+    monkeypatch.setattr(app_module, "render_best_of_episode", fake_render)
+    monkeypatch.setattr(
+        app_module, "run_quiet",
+        lambda *args, **kwargs: SimpleNamespace(returncode=0, stdout="", stderr=""),
+    )
+    started = client.post(
+        "/api/bestof/render",
+        json={"clip_ids": clip_ids, "date_key": "2026-11-27"},
+    )
+    assert started.status_code == 202, started.text
+    job_id = started.json()["id"]
+
+    deadline = time.time() + 3
+    job = client.get(f"/api/bestof/jobs/{job_id}")
+    while job.json()["status"] not in {"completed", "error"} and time.time() < deadline:
+        time.sleep(0.02)
+        job = client.get(f"/api/bestof/jobs/{job_id}")
+
+    assert job.status_code == 200
+    assert job.json()["status"] == "completed", job.json()
+    assert job.json()["output_url"].startswith("/outputs/bestof/2026-11-27/")
