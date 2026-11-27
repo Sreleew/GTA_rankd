@@ -2,7 +2,7 @@
 
 Application Windows locale pour transformer des clips et VOD GTA en Shorts verticaux prêts à relire et publier.
 
-**Dernière version stable : v0.8.7.** [Consulter la Release stable v0.8.7](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.7).
+**Version en préparation : v0.8.8.** La dernière version stable publiée reste la [v0.8.7](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.7).
 
 ## Fonctionnalités
 
@@ -20,6 +20,8 @@ Application Windows locale pour transformer des clips et VOD GTA en Shorts verti
 - Miniature basée sur une capture réelle du clip.
 - Métadonnées locales avec Ollama/Qwen facultatif et fallback sans IA.
 - Contrôle qualité post-export et revue humaine.
+- Relance des jobs Twitch échoués directement depuis l'URL d'origine, avec conservation des réglages et réutilisation du média déjà téléchargé.
+- Constructeur de sélection Daily Best Of : clips validés par date, ordre manuel et contrôle de la durée cible 9 à 11 minutes. Le rendu vidéo final 16:9 reste à venir..
 
 Le pipeline reste local-first. Les médias, modèles, bases de données, réglages et exports ne sont pas envoyés vers un service cloud.
 
@@ -30,7 +32,7 @@ Le pipeline reste local-first. Les médias, modèles, bases de données, réglag
 - `tools/` : vérificateurs de cohérence et d'intégrité de release.
 - `archive/releases/v0.7.8/` : archive historique de provenance, conservée en lecture seule.
 
-Les dossiers `Best Of` et l'ancien flux d'URL par fichier texte ont été retirés : ils n'étaient reliés à aucun moteur de production.
+L'ancien flux d'URL par fichier texte a été retiré. Le Daily Best Of dispose maintenant d'un constructeur de sélection ; l'assemblage vidéo final 16:9 reste à développer.
 
 ## Installation et mise à jour
 
