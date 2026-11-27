@@ -35,6 +35,7 @@ def test_ass_contains_hook_branding_and_active_word_highlight(tmp_path: Path):
     assert "GTA VI" in content
     assert "GR  //  GTA VI" in content
     assert r"\fad(120,180)" in content
+    assert "0:00:02.60,Hook" in content
     assert "Style: Kicker" in content
     assert "HAPPENED?" in content
     assert r"\c&H0000C8F5&" in content
