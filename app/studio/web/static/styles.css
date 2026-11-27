@@ -191,3 +191,18 @@
 .short-batch-job-actions{display:flex;align-items:center;gap:6px;flex:none}
 .short-batch-job-actions .mini-button{padding:5px 7px;font-size:9px}
 @media(max-width:650px){.short-batch-job-actions{align-items:flex-end;flex-direction:column;gap:4px}}
+
+
+/* Persisted Daily Best Of render history */
+.bestof-history-panel{margin-top:14px}
+.bestof-history-list{display:grid;gap:8px}
+.bestof-history-item{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:11px;border:1px solid #30363d;border-radius:8px;background:#171a1e}
+.bestof-history-main{display:grid;gap:5px;min-width:0;flex:1}
+.bestof-history-heading{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.bestof-history-heading strong{font-size:11px;color:#e4e6e9}
+.bestof-history-main>small,.bestof-history-main>p{margin:0;color:#9099a3;font-size:9px;line-height:1.5;overflow-wrap:anywhere}
+.bestof-history-progress{height:4px;margin-top:3px;border-radius:6px;overflow:hidden;background:#353a40}
+.bestof-history-progress span{display:block;height:100%;background:var(--accent);transition:width .25s}
+.bestof-history-action{flex:none}
+.bestof-history-missing{font-size:9px;color:#b99161}
+@media(max-width:560px){.bestof-history-item{align-items:flex-start;flex-direction:column}.bestof-history-action{width:100%}.bestof-history-action .mini-button{width:100%;justify-content:center}}
