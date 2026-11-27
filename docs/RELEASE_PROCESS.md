@@ -34,7 +34,7 @@ La voie `workflow_dispatch` reste disponible pour préparer une Release brouillo
 
 ## État au 27 novembre 2026
 
-- Dernière Release stable publiée : [v0.9.1](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.9.1), avec le ZIP Windows et `SHA256SUMS.txt` (publication vérifiée le 27 novembre 2026).
+- Dernière Release stable publiée : [v0.9.2](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.9.2), avec le ZIP Windows et `SHA256SUMS.txt` (publication vérifiée le 27 novembre 2026).
 - PR #41 fusionnée : constructeur de sélection Daily Best Of, avec CI Linux et Windows réussies.
 - PR #42 fusionnée : relance des jobs Twitch en erreur depuis l'URL d'origine, conservation des options et réutilisation du média local.
 - CI PR #42 : Linux [46012357301](https://github.com/Sreleew/GTA_rankd/actions/runs/46012357301) et Windows [46012357283](https://github.com/Sreleew/GTA_rankd/actions/runs/46012357283) réussies.
@@ -60,7 +60,7 @@ Les changements de code doivent passer par une PR et les contrôles Linux/Window
 
 ### Vérification des assets publiés
 
-- Release stable GitHub vérifiée : [GTA Ranked Studio v0.8.9](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.9), publiée le 27 novembre 2026.
+- Release stable GitHub vérifiée : [GTA Ranked Studio v0.8.9](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.9), publiée le 28 novembre 2026.
 - ZIP Windows `GTA-Ranked-Studio-v0.8.9.zip` : 209 227 octets ; SHA-256 `949cbbe890c605493cccbb2dd8b30a530f037e33f9c48256ac84ce5a2b0c79c8`.
 - Manifeste `SHA256SUMS.txt` : 95 octets ; SHA-256 `b737b1eea388338c966ea35ae29666081fd6435e6ffd218b1c40348ae9713695`.
 - Le test réel de mise à jour depuis une installation Windows existante reste à confirmer sur le PC utilisateur.
