@@ -651,3 +651,72 @@ def test_queued_short_and_highlight_scan_can_be_cancelled_via_api(tmp_path: Path
     assert scan_response.status_code == 200
     assert store.get_job("cancel-short")["status"] == "cancelled"
     assert store.get_highlight_scan("cancel-scan")["status"] == "cancelled"
+
+
+def test_twitch_download_reports_throttled_yt_dlp_progress(tmp_path: Path, monkeypatch):
+    import sys
+    import types
+
+    from studio.web import worker as worker_module
+    from studio.web.worker import JobRunner
+
+    class FakeConfig:
+        def path_for(self, section, key):
+            assert (section, key) == ("paths", "temp")
+            return tmp_path / "temp"
+
+    class RecordingStore:
+        def __init__(self):
+            self.updates = []
+
+        def update_job(self, job_id, **fields):
+            self.updates.append((job_id, fields))
+
+    class FakeYoutubeDL:
+        def __init__(self, options):
+            self.options = options
+            self.downloaded_path = None
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc_value, traceback):
+            return False
+
+        def extract_info(self, url, download=True):
+            assert url == "https://clips.twitch.tv/ExampleClip"
+            assert download is True
+            progress_hook = self.options["progress_hooks"][0]
+            progress_hook({"status": "downloading", "downloaded_bytes": 25, "total_bytes": 100})
+            progress_hook({"status": "downloading", "downloaded_bytes": 75, "total_bytes_estimate": 100})
+            self.downloaded_path = Path(self.options["outtmpl"].replace("%(ext)s", "mp4"))
+            self.downloaded_path.parent.mkdir(parents=True, exist_ok=True)
+            self.downloaded_path.write_bytes(b"test video")
+            progress_hook({"status": "finished"})
+            return {"title": "Example Twitch clip"}
+
+        def prepare_filename(self, info):
+            assert info["title"] == "Example Twitch clip"
+            return str(self.downloaded_path)
+
+    fake_ytdlp = types.ModuleType("yt_dlp")
+    fake_ytdlp.YoutubeDL = FakeYoutubeDL
+    monkeypatch.setitem(sys.modules, "yt_dlp", fake_ytdlp)
+    ticks = iter((10.0, 10.5))
+    monkeypatch.setattr(worker_module.time, "monotonic", lambda: next(ticks))
+
+    store = RecordingStore()
+    runner = JobRunner.__new__(JobRunner)
+    runner.config = FakeConfig()
+    runner.store = store
+
+    downloaded_path, info = runner._download("test-job", "https://clips.twitch.tv/ExampleClip")
+
+    assert downloaded_path.is_file()
+    assert info["title"] == "Example Twitch clip"
+    assert [fields["progress"] for _, fields in store.updates] == [12, 17, 19]
+    messages = [fields["message"] for _, fields in store.updates]
+    assert "25 %" in messages[0]
+    assert "75 %" in messages[1]
+    assert messages[-1] == "Téléchargement terminé · préparation du Short"
+    assert all(job_id == "test-job" for job_id, _ in store.updates)
