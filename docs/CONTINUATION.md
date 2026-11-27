@@ -654,4 +654,6 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Test ajouté :** contrôle du format vertical 1080 × 1920 et de la présence de la palette jaune/noir sur le bandeau du hook.
 - **Branche :** `feat/gta-thumbnail-default-art-direction`.
 - **Limites :** le rendu automatique conserve la frame vidéo réelle et n'extrait pas une webcam séparée ; sa position dépend donc de la composition de la source.
-- **Suite :** vérifier les tests ciblés et la CI Linux/Windows de la PR avant fusion.
+- **CI PR #81 :** audit Linux [46076837564](https://github.com/Sreleew/GTA_rankd/actions/runs/46076837564) et validation Windows [46076837526](https://github.com/Sreleew/GTA_rankd/actions/runs/46076837526) réussis après correction du chevauchement du bandeau avec la frame de gameplay.
+- **Version :** v0.9.0 reste la release stable. La procédure de release exige une demande explicite pour préparer la suivante ; aucune nouvelle release n'est déclenchée par cette PR.
+- **Suite :** fusionner la PR #81 après les contrôles CI réussis.
