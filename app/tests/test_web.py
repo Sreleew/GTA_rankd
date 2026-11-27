@@ -653,6 +653,39 @@ def test_queued_short_and_highlight_scan_can_be_cancelled_via_api(tmp_path: Path
     assert store.get_highlight_scan("cancel-scan")["status"] == "cancelled"
 
 
+
+def test_extract_twitch_source_metadata_prefers_broadcaster_over_clip_creator():
+    from studio.web.worker import extract_twitch_source_metadata
+
+    title, streamer = extract_twitch_source_metadata({
+        "title": "Wild police chase",
+        "channel": "ActualStreamer",
+        "uploader": "PersonWhoCreatedClip",
+        "creator": "AnotherClipCreator",
+    })
+
+    assert title == "Wild police chase"
+    assert streamer == "ActualStreamer"
+
+
+def test_extract_twitch_source_metadata_uses_safe_fallbacks():
+    from studio.web.worker import extract_twitch_source_metadata
+
+    title, streamer = extract_twitch_source_metadata({
+        "id": "abc123",
+        "channel": "  ",
+        "uploader": "FallbackStreamer",
+    })
+
+    assert title == "Twitch source abc123"
+    assert streamer == "FallbackStreamer"
+
+    title, streamer = extract_twitch_source_metadata({})
+    assert title == "Source Twitch"
+    assert streamer == ""
+
+
+
 def test_twitch_download_reports_throttled_yt_dlp_progress(tmp_path: Path, monkeypatch):
     import sys
     import types
