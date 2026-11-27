@@ -1,6 +1,6 @@
 app:
   name: gta-ranked-studio
-  version: 0.8.4
+  version: 0.8.5
 
 hardware:
   gpu_model: AMD Radeon RX 9060 XT
