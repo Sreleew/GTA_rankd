@@ -31,6 +31,7 @@ Livrer des changements concrets, propres et testés sans passer un temps disprop
 11. **Livrer jusqu'à publication.** Quand l'utilisateur demande une modification et souhaite un résultat utilisable, aller jusqu'à l'intégration dans `main`, la création de la Release stable et la mise à disposition du package. Ne pas s'arrêter à un commit, une branche ou une PR. Si une validation échoue ou si un blocage technique empêche la publication, corriger le problème ou expliquer précisément le blocage.
 12. **Découper les gros chantiers.** Organiser les tâches longues en lots autonomes avec des validations et points de reprise. Éviter les réponses ou modifications monolithiques susceptibles d'expirer.
 13. **Mettre la mémoire à jour à chaque lot.** Après chaque lot de modifications, mettre à jour `docs/CONTINUATION.md` avant de terminer : remarques et décisions utilisateur, méthode de travail, changements réellement livrés, branche/PR/commit/Release, tests et limites. Rester concis, factuel et supprimer ou remplacer les informations devenues obsolètes. C'est une étape obligatoire, pas une tâche documentaire facultative.
+14. **Respecter les priorités produit en cours.** Le parcours « Créer un Short » depuis un clip Twitch est prioritaire, suivi du Daily Best Of construit depuis les clips validés. La fonctionnalité « Moments forts » est explicitement en pause : ne pas investir dans son évolution tant que les deux parcours prioritaires ne sont pas suffisamment fiables. Ne pas la supprimer ni casser ses dépendances existantes.
 
 ## Flux de développement
 
