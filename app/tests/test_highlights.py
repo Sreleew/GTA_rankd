@@ -4,7 +4,13 @@ import array
 import wave
 from pathlib import Path
 
-from studio.web.highlights import _IntervalIndex, read_audio_energy, score_highlight_candidates, write_wav_chunk
+from studio.web.highlights import (
+    _IntervalIndex,
+    read_audio_energy,
+    score_highlight_candidates,
+    select_distinct_highlight_candidates,
+    write_wav_chunk,
+)
 from studio.web.short_editor import WordTiming
 from studio.web.store import Store
 
@@ -55,6 +61,27 @@ def test_read_audio_energy_detects_loud_windows(tmp_path: Path) -> None:
     windows = read_audio_energy(audio_path, window_seconds=1)
     assert len(windows) == 20
     assert max(item["rms"] for item in windows[8:12]) > 5 * max(item["rms"] for item in windows[:8])
+
+
+def test_select_distinct_highlight_candidates_deduplicates_across_vod_segments() -> None:
+    repeated = (
+        "I cannot believe this police car just flew over the entire bridge "
+        "and landed right next to the casino entrance"
+    )
+    candidates = [
+        {"id": "same-lower", "start_time": 7200.0, "end_time": 7270.0, "score": 91.0, "transcript": repeated},
+        {"id": "distinct", "start_time": 14400.0, "end_time": 14470.0, "score": 92.0, "transcript": "The mission marker disappeared after we crossed the highway and entered the tunnel"},
+        {"id": "same-higher", "start_time": 900.0, "end_time": 970.0, "score": 95.0, "transcript": "BRO " + repeated},
+        {"id": "short-one", "start_time": 18000.0, "end_time": 18060.0, "score": 89.0, "transcript": "BRO WHAT"},
+        {"id": "short-two", "start_time": 21600.0, "end_time": 21660.0, "score": 88.0, "transcript": "BRO WHAT"},
+    ]
+
+    selected = select_distinct_highlight_candidates(candidates)
+
+    assert [item["id"] for item in selected] == [
+        "same-higher", "distinct", "short-one", "short-two",
+    ]
+    assert [item["rank"] for item in selected] == [1, 2, 3, 4]
 
 
 def test_score_candidates_returns_only_high_quality_ranked_results() -> None:
