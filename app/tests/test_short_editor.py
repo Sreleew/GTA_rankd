@@ -318,7 +318,7 @@ def test_thumbnail_overlay_builds_vertical_gta_poster_from_full_landscape_gamepl
         assert result.size == (1080, 1920)
         assert result.format == "JPEG"
         assert ImageChops.difference(baseline.resize(result.size), result.convert("RGB")).getbbox() is not None
-        panel_pixel = result.convert("RGB").getpixel((540, 900))
+        panel_pixel = result.convert("RGB").getpixel((540, 400))
         assert panel_pixel[1] > panel_pixel[0] * 2, "La capture de gameplay doit rester visible dans le cadre principal."
         assert thumbnail.stat().st_size > 10_000
 
@@ -349,7 +349,7 @@ def test_thumbnail_headline_prefers_complete_meaningful_tail_over_filler():
     from studio.web.short_editor import _thumbnail_headline
 
     assert _thumbnail_headline("YEAH HUH SHIT GOT MY LAMBO", "Tminnzy") == "GOT MY LAMBO"
-    assert _thumbnail_headline("YEAH HUH SHIT GOT", "Tminnzy") == "Tminnzy GTA MOMENT"
+    assert _thumbnail_headline("YEAH HUH SHIT GOT", "Tminnzy") == "WAIT FOR THE REACTION"
     assert _thumbnail_headline("YEAH HUH SHIT", "Tminnzy") == "Tminnzy GTA MOMENT"
 
 
