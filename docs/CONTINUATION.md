@@ -385,3 +385,12 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Compatibilité :** le statut `single_speaker` est conservé lorsque des mots sont attribués. Les seuils de dominance multi-voix, les timings DTW, la transcription et le rendu ne changent pas.
 - **Tests :** cas avec un mot streamer dans le segment et un mot hors segment, plus cas sans aucun mot attribuable.
 - **Validation :** CI Linux et Windows à effectuer sur la PR. Cette heuristique ne prouve toujours pas l'identité du streamer et ne sépare pas deux voix superposées dans un même segment.
+
+
+## 28. Import groupé de clips Twitch pour le workflow Shorts, 27 novembre 2026
+
+- **Fonctionnalité :** le formulaire « Créer un Short » accepte maintenant un lot de jusqu'à 10 URLs Twitch, une par ligne. Chaque URL valide crée un job Short indépendant dans la file existante et utilise les mêmes options de montage, sous-titres, hook, branding et audio.
+- **Robustesse :** URLs dédupliquées dans le lot ; chaque URL est validée individuellement ; une URL invalide est signalée sans empêcher les autres de partir ; si aucune URL valide ne reste, l'API retourne une erreur claire. La confirmation de droits reste obligatoire et vaut pour toutes les sources du lot.
+- **Interface :** panneau repliable sous l'import Twitch simple, retour du nombre de Shorts créés et liste des URLs rejetées.
+- **Validation :** tests API ajoutés pour les lots mixtes, la déduplication, les options partagées, l'obligation de confirmation et la limite de 10. CI Linux/Windows à exécuter sur la PR.
+- **Objectif :** accélérer la préparation quotidienne de plusieurs Shorts et alimenter plus facilement le Clip Bank pour le Daily Best Of. Ce lot ne touche pas à « Moments forts » ni à la webcam.
