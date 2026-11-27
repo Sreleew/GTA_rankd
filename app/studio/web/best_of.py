@@ -191,7 +191,21 @@ def render_best_of_episode(
         "-movflags", "+faststart", "-max_muxing_queue_size", "2048",
         str(output_path.resolve()),
     ])
-    run_command(command, timeout=3600)
+    try:
+        run_command(command, timeout=3600)
+    except MediaError as exc:
+        detail = str(exc).casefold()
+        if encoder != "h264_amf" or not any(
+            marker in detail for marker in ("amf", "encoder", "device", "initializing output stream")
+        ):
+            raise
+        # Some Windows systems expose AMF in FFmpeg but cannot initialize the
+        # driver at runtime. Retry once with the CPU encoder rather than losing
+        # the whole episode.
+        command[command.index("-c:v") + 1] = "libx264"
+        bitrate_index = command.index("-b:v")
+        command[bitrate_index:bitrate_index + 2] = ["-preset", "veryfast", "-crf", "20"]
+        run_command(command, timeout=3600)
     result = probe_media(output_path, ffprobe, timeout=90)
     if int(result.get("width") or 0) != 1920 or int(result.get("height") or 0) != 1080:
         raise MediaError("Le fichier Daily Best Of exporté n'est pas au format 1920 × 1080.")
