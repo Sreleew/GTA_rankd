@@ -213,7 +213,7 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - Tests PR #24 : équivalence des résultats de recherche pour les données triées et non triées, y compris les intervalles qui chevauchent le début d'une fenêtre.
 - CI PR #24 : Linux et Windows réussis ; Ruff, pip-audit, contrôle de cohérence, suites complètes et package Windows validés.
 - Microbenchmark synthétique des recherches d'intervalles : 5 346 fenêtres candidates, 5 400 fenêtres audio et 10 800 mots sur une source de 3 heures. Les résultats sont identiques au balayage complet ; recherche indexée mesurée à 68,2 fois plus rapide. Ce chiffre porte sur la recherche d'intervalles, pas sur le temps total du scan.
-- Release v0.8.6 : préparation sur `release/v0.8.6`, synchronisation des métadonnées et des notes en cours.
+- Release v0.8.6 : préparation sur `release/v0.8.6`, versions et notes synchronisées. `.release-approval` passe à `0.8.6` dans la PR pour déclencher automatiquement le workflow stable après fusion. Retrait de l'ancienne copie de notes `app/NOTES-v0.8.5.txt`, conformément au contrôle de cohérence.
 - Validation matérielle : aucune validation réelle AMF/Vulkan sur la RX 9060 XT n'a été effectuée pendant ces lots.
  
 ## 12. Message de reprise prêt à copier
