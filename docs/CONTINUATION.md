@@ -4,7 +4,7 @@
 
 - **Dernière mise à jour :** 27 novembre 2026
 - **Dernière version stable confirmée :** [0.8.6](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.6), publiée le 27 novembre 2026 avec le ZIP Windows et `SHA256SUMS.txt`.
-- **État :** PR #19 à #27 fusionnées. PR #23 ajoute la diversité des moments forts ; PR #24 accélère le scan par indexation temporelle ; PR #25 prépare la Release v0.8.6 ; PR #26 ajoute la saisie `HH:MM:SS` ; PR #27 ajoute les lots multi-tranches de VOD Twitch. La release stable v0.8.6 reste la dernière version publiée ; les PR #26 et #27 seront livrées dans une prochaine release.
+- **État :** PR #19 à #28 fusionnées. PR #23 ajoute la diversité des moments forts ; PR #24 accélère le scan par indexation temporelle ; PR #25 prépare la Release v0.8.6 ; PR #26 ajoute la saisie `HH:MM:SS` ; PR #27 ajoute les lots multi-tranches ; PR #28 consolide le classement à l'échelle de la VOD. La release stable v0.8.6 reste la dernière version publiée ; les PR #26 à #28 seront livrées dans une prochaine release.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
 - **Dernière Release stable confirmée :** [v0.8.6](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.6). Assets publiés : `GTA-Ranked-Studio-v0.8.6.zip` et `SHA256SUMS.txt`.
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
@@ -195,7 +195,7 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 ## 11. Prochaines étapes priorisées
 
 1. Mettre à jour une installation v0.8.5 via **Paramètres > Mises à jour**. La Release v0.8.6 publiée comprend le ZIP Windows et `SHA256SUMS.txt` ; aucune extraction manuelle n'est nécessaire.
-2. La saisie `HH:MM:SS` et le lancement de lots Twitch sont fusionnés dans `main` via PR #26 et #27, mais pas encore inclus dans le ZIP stable v0.8.6. À la prochaine release, découper les longues VOD en tranches de 30 à 180 minutes, 48 maximum par lot.
+2. La saisie `HH:MM:SS`, les lots Twitch multi-tranches et la shortlist consolidée sont fusionnés dans `main` via PR #26 à #28, mais pas encore inclus dans le ZIP stable v0.8.6. À la prochaine release, découper les longues VOD en tranches de 30 à 180 minutes, 48 maximum par lot, puis examiner le classement global.
 3. Générer un premier lot de 3 à 5 Shorts à partir de clips Twitch et de passages VOD, puis vérifier la diversité réelle des moments sélectionnés et les coupes de réaction.
 4. Vérifier sur la RX 9060 XT l'encodage AMF, Whisper Vulkan et Ollama/Qwen pendant un cycle complet de téléchargement, analyse et rendu.
 5. Corriger uniquement les défauts récurrents constatés sur les vrais rendus : coupe incompréhensible, cadrage raté, sous-titres illisibles, audio défectueux ou métadonnées trompeuses.
@@ -223,7 +223,11 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - PR #27 : lancement d'un lot de plages Twitch consécutives pour analyser une VOD longue sans retaper chaque intervalle, fusionnée dans `main` (commit `c707f937`). Chaque tranche devient un scan indépendant, jusqu'à 48 analyses ; insertion DB atomique, métadonnées de lot et affichage des numéros de tranche.
 - PR #28 en préparation : consolidation des candidats de toutes les tranches, classement global indicatif et dédoublonnage inter-segments, avec chaque candidat toujours relié à son scan d'origine pour l'export en Short.
 - CI PR #27 : Linux [45988769045](https://github.com/Sreleew/GTA_rankd/actions/runs/45988769045) et Windows [45988768966](https://github.com/Sreleew/GTA_rankd/actions/runs/45988768966) réussis, y compris Ruff, pip-audit, suites de régression et package Windows.
-- Limite PR #27 : les classements et dédoublonnages restent indépendants entre segments. Un regroupement et classement global des candidats par lot constitue la prochaine amélioration.
+- PR #28 : shortlist globale des moments forts à l'échelle de toutes les tranches, fusionnée dans `main` (commit `3ef77b1`). Les candidats sont réunis, triés, dédoublonnés entre segments et conservés avec le `scan_id` d'origine pour créer les Shorts depuis le bon extrait.
+- UI PR #28 : une carte de lot avec progression agrégée, erreurs, candidats consolidés et annulation globale des analyses restantes.
+- Tests PR #28 : phrases répétées à plusieurs heures d'intervalle filtrées ; événements distincts et réactions courtes conservés ; réponse API vérifiant que chaque candidat garde son scan source.
+- CI PR #28 : Linux [45990021147](https://github.com/Sreleew/GTA_rankd/actions/runs/45990021147) et Windows [45990020907](https://github.com/Sreleew/GTA_rankd/actions/runs/45990020907) réussis, avec Ruff, pip-audit, suites complètes et package Windows.
+- Limite de classement global : les scores audio sont normalisés à l'intérieur de chaque segment. La shortlist globale est donc indicative ; relire les meilleurs passages avant export. Une normalisation inter-segments basée sur une référence commune constituerait une amélioration future.
 - Tests PR #26 : conversion de `12:30:00` à `15:00:00`, rejet de `12:75:00`, conservation des entrées numériques et plages vides.
 - CI PR #26 : Linux [45987424184](https://github.com/Sreleew/GTA_rankd/actions/runs/45987424184) et Windows [45987424049](https://github.com/Sreleew/GTA_rankd/actions/runs/45987424049) réussis, y compris Ruff, pip-audit, suites complètes et package Windows.
 - La saisie `HH:MM:SS` est fusionnée sur `main`, mais pas encore intégrée à la release stable v0.8.6. Prévoir de l'inclure dans le prochain lot/release stable.
