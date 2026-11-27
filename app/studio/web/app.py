@@ -50,7 +50,7 @@ def _validate_edit_options(
     layout: str, crop_x: int, crop_y: int, dynamic_zoom: bool, zoom_percent: int,
     brand_enabled: bool, hook_text: str, context_text: str,
     auto_trim_enabled: bool = True, sfx_enabled: bool = True,
-    captions_enabled: bool = False, caption_language: str = "auto",
+    captions_enabled: bool = False, caption_language: str = "config",
 ) -> dict:
     if layout not in {"fill", "blur", "smart"}:
         raise HTTPException(status_code=400, detail="Le cadrage doit être 'smart', 'fill' ou 'blur'.")
@@ -58,11 +58,11 @@ def _validate_edit_options(
         raise HTTPException(status_code=400, detail="La position du cadrage doit être comprise entre 0 et 100.")
     if not 0 <= int(zoom_percent) <= 20:
         raise HTTPException(status_code=400, detail="Le zoom doit être compris entre 0 et 20 %.")
-    normalized_caption_language = str(caption_language or "auto").strip().lower()
-    if normalized_caption_language not in {"auto", "en", "fr", "es", "pt", "de"}:
+    normalized_caption_language = str(caption_language or "config").strip().lower()
+    if normalized_caption_language not in {"config", "auto", "en", "fr", "es", "pt", "de"}:
         raise HTTPException(
             status_code=400,
-            detail="Langue des sous-titres invalide. Choisis auto, anglais, français, espagnol, portugais ou allemand.",
+            detail="Langue des sous-titres invalide. Choisis le réglage du Studio, auto, anglais, français, espagnol, portugais ou allemand.",
         )
     return {
         "layout": layout, "crop_x": int(crop_x), "crop_y": int(crop_y),
@@ -677,7 +677,7 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         auto_trim_enabled: Annotated[bool, Form()] = True,
         sfx_enabled: Annotated[bool, Form()] = True,
         captions_enabled: Annotated[bool, Form()] = False,
-        caption_language: Annotated[str, Form()] = "auto",
+        caption_language: Annotated[str, Form()] = "config",
         hook_text: Annotated[str, Form()] = "",
         context_text: Annotated[str, Form()] = "",
     ) -> dict:
@@ -741,7 +741,7 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         auto_trim_enabled: Annotated[bool, Form()] = True,
         sfx_enabled: Annotated[bool, Form()] = True,
         captions_enabled: Annotated[bool, Form()] = False,
-        caption_language: Annotated[str, Form()] = "auto",
+        caption_language: Annotated[str, Form()] = "config",
         hook_text: Annotated[str, Form()] = "",
         context_text: Annotated[str, Form()] = "",
     ) -> dict:
@@ -781,7 +781,7 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         auto_trim_enabled: Annotated[bool, Form()] = True,
         sfx_enabled: Annotated[bool, Form()] = True,
         captions_enabled: Annotated[bool, Form()] = False,
-        caption_language: Annotated[str, Form()] = "auto",
+        caption_language: Annotated[str, Form()] = "config",
         hook_text: Annotated[str, Form()] = "",
         context_text: Annotated[str, Form()] = "",
     ) -> dict:
