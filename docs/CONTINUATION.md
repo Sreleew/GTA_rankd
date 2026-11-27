@@ -4,7 +4,7 @@
 
 - **Dernière mise à jour :** 27 novembre 2026
 - **Dernière version stable confirmée :** [v0.8.9](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.9), publiée le 27 novembre 2026. Correctif de redémarrage et de confirmation de version après mise à jour.
-- **État :** PR #38 à #50 fusionnées dans `main`. La v0.8.9 est la dernière Release stable publiée. Les PR #47 à #49 ajoutent les hooks cinétiques, le cadre éditorial du gameplay et le sound design local adapté à l'intention du hook. La PR #50 ajoute plusieurs impulsions de zoom pilotées par les accents audio.
+- **État :** PR #64 (pause des sous-titres et suppression webcam), #65 (réutilisation des probes FFprobe) et #66 (mesure des temps de traitement Short) fusionnées dans `main`. La v0.8.9 reste la dernière Release stable publiée ; les changements récents ne sont pas encore publiés dans une nouvelle release. Les PR #47 à #49 ajoutent les hooks cinétiques, le cadre éditorial du gameplay et le sound design local adapté à l'intention du hook. La PR #50 ajoute plusieurs impulsions de zoom pilotées par les accents audio.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
 - **Source active :** `app/`. Modifier directement les fichiers Python, JavaScript, CSS, HTML, tests et installateur présents dans ce dossier.
@@ -480,4 +480,5 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Détail FFmpeg :** le renderer ajoute le temps d'encodage, le probe du fichier exporté, la génération de miniature et son temps total.
 - **Diagnostic :** ajout de `audio_analysis_skipped` pour distinguer les clips qui évitent réellement l'extraction audio de ceux qui en ont besoin.
 - **Impact :** mesures uniquement, aucun changement au rendu ou à la qualité. Le coût est limité à quelques appels à `perf_counter`.
+- **Livraison :** PR #66 fusionnée après succès CI Linux et Windows, y compris la suite de régression Windows et la génération du package de mise à jour.
 - **Suite :** après un vrai rendu sur la machine utilisateur, exploiter ces durées pour prioriser le goulot dominant. Ne pas publier de chiffres de performance avant cette mesure réelle.
