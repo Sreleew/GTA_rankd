@@ -170,3 +170,20 @@ def test_real_ffmpeg_analysis_detects_inserted_black_segment(tmp_path: Path) -> 
     assert report["status"] == "review"
     assert len(report["metrics"]["black_segments"]) == 1
     assert report["metrics"]["black_segments"][0]["duration"] == pytest.approx(2.0, abs=0.15)
+
+
+def test_analyze_export_quality_reuses_preprobed_media_info(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    output = tmp_path / "short.mp4"
+    output.write_bytes(b"x" * 20_000)
+    info = {
+        "duration": 15.0, "width": 1080, "height": 1920, "has_audio": True,
+        "fps": 30.0, "video_codec": "h264", "audio_codec": "aac",
+    }
+    _mock_clean_media(monkeypatch)
+    monkeypatch.setattr(
+        export_quality, "probe_media",
+        lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("redundant FFprobe call")),
+    )
+    report = export_quality.analyze_export_quality(output, preprobed_info=info, expected_duration=15.0)
+    assert report["status"] == "passed"
+    assert report["metrics"]["width"] == 1080
