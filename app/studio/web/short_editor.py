@@ -552,7 +552,16 @@ def apply_thumbnail_overlay(
               footer_right, font=footer_font, fill=accent)
 
     final_image = Image.alpha_composite(canvas, overlay).convert("RGB")
-    final_image.save(image_path, format="JPEG", quality=94, optimize=True, progressive=True, subsampling=0)
+    # Write the finished cover beside the source and replace it only after a
+    # successful encode. A Pillow or disk error must not destroy the fallback
+    # frame that the renderer already extracted.
+    temporary_path = image_path.with_name(f"{image_path.stem}.overlay.tmp.jpg")
+    try:
+        final_image.save(temporary_path, format="JPEG", quality=94, optimize=True, progressive=True, subsampling=0)
+        temporary_path.replace(image_path)
+    except Exception:
+        temporary_path.unlink(missing_ok=True)
+        raise
     return image_path
 
 def select_excerpt_range(
