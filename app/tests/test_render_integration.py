@@ -7,7 +7,7 @@ import subprocess
 import pytest
 
 from studio.web.short_editor import WordTiming, create_ass_file
-from studio.web.short_renderer import build_filter_complex, create_hook_sound_effect, probe_media, render_vertical_short
+from studio.web.short_renderer import MediaError, build_filter_complex, create_hook_sound_effect, probe_media, render_vertical_short
 
 
 def test_smart_layout_fits_the_complete_source_inside_the_editorial_panel() -> None:
