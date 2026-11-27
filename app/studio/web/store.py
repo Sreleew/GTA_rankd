@@ -86,6 +86,26 @@ class Store:
                 CREATE UNIQUE INDEX IF NOT EXISTS idx_jobs_source_hash ON jobs(source_hash) WHERE source_hash IS NOT NULL;
                 CREATE UNIQUE INDEX IF NOT EXISTS idx_clips_source_hash ON clips(source_hash) WHERE source_hash IS NOT NULL;
 
+                CREATE TABLE IF NOT EXISTS best_of_jobs (
+                    id TEXT PRIMARY KEY,
+                    status TEXT NOT NULL,
+                    progress INTEGER NOT NULL DEFAULT 0,
+                    message TEXT NOT NULL DEFAULT '',
+                    date_key TEXT NOT NULL DEFAULT '',
+                    clip_count INTEGER NOT NULL DEFAULT 0,
+                    total_duration REAL NOT NULL DEFAULT 0,
+                    plan_json TEXT NOT NULL DEFAULT '{}',
+                    output_path TEXT,
+                    output_url TEXT,
+                    result_json TEXT NOT NULL DEFAULT '{}',
+                    error TEXT,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_best_of_jobs_created
+                    ON best_of_jobs(created_at DESC);
+
                 CREATE TABLE IF NOT EXISTS highlight_scans (
                     id TEXT PRIMARY KEY,
                     status TEXT NOT NULL DEFAULT 'queued',
@@ -240,6 +260,71 @@ class Store:
             "clip_bank": int(clips["total"] or 0),
             "recent_jobs": self.list_jobs(8),
         }
+
+    def create_best_of_job(self, job: dict[str, Any]) -> None:
+        """Persist the plan and lifecycle of one Daily Best Of render."""
+        now = self.now()
+        plan = job.get("plan") or {}
+        with self._connect() as connection:
+            connection.execute(
+                """INSERT INTO best_of_jobs (
+                    id, status, progress, message, date_key, clip_count,
+                    total_duration, plan_json, output_path, output_url,
+                    result_json, error, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    str(job["id"]),
+                    str(job.get("status") or "queued"),
+                    max(0, min(100, int(job.get("progress") or 0))),
+                    str(job.get("message") or ""),
+                    str(job.get("date_key") or plan.get("date_key") or ""),
+                    int(job.get("clip_count") or plan.get("clip_count") or 0),
+                    float(job.get("total_duration") or plan.get("total_duration") or 0),
+                    json.dumps(plan, ensure_ascii=False),
+                    str(job.get("output_path") or ""),
+                    job.get("output_url"),
+                    json.dumps(job.get("result") or {}, ensure_ascii=False),
+                    job.get("error"),
+                    now,
+                    now,
+                ),
+            )
+
+    def update_best_of_job(self, job_id: str, **fields: Any) -> None:
+        allowed = {"status", "progress", "message", "output_url", "result_json", "error"}
+        unknown = set(fields) - allowed
+        if unknown:
+            raise ValueError("Champs de rendu Best Of inconnus : " + ", ".join(sorted(unknown)))
+        if not fields:
+            return
+        values = dict(fields)
+        if "progress" in values:
+            values["progress"] = max(0, min(100, int(values["progress"])))
+        if "result_json" in values and not isinstance(values["result_json"], str):
+            values["result_json"] = json.dumps(values["result_json"] or {}, ensure_ascii=False)
+        values["updated_at"] = self.now()
+        assignments = ", ".join(f"{column} = ?" for column in values)
+        with self._connect() as connection:
+            connection.execute(
+                f"UPDATE best_of_jobs SET {assignments} WHERE id = ?",
+                (*values.values(), job_id),
+            )
+
+    def get_best_of_job(self, job_id: str) -> dict[str, Any] | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT * FROM best_of_jobs WHERE id = ?", (job_id,)
+            ).fetchone()
+        return self._best_of_job_dict(row) if row else None
+
+    def list_best_of_jobs(self, limit: int = 10) -> list[dict[str, Any]]:
+        safe_limit = max(1, min(int(limit), 50))
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT * FROM best_of_jobs ORDER BY created_at DESC LIMIT ?",
+                (safe_limit,),
+            ).fetchall()
+        return [self._best_of_job_dict(row) for row in rows]
 
     def find_duplicate_hash(self, source_hash: str) -> dict[str, Any] | None:
         with self._connect() as connection:
@@ -434,6 +519,16 @@ class Store:
             )
 
     @staticmethod
+    def _best_of_job_dict(row: sqlite3.Row) -> dict[str, Any]:
+        result = dict(row)
+        for column, target in (("plan_json", "plan"), ("result_json", "result")):
+            try:
+                result[target] = json.loads(result.pop(column) or "{}")
+            except (json.JSONDecodeError, TypeError):
+                result[target] = {}
+        return result
+
+    @staticmethod
     def _highlight_scan_dict(row: sqlite3.Row) -> dict[str, Any]:
         result = dict(row)
         try:
@@ -472,6 +567,19 @@ class Store:
             result["metadata"] = {}
         result["rights_confirmed"] = bool(result.get("rights_confirmed"))
         return result
+
+    def recover_interrupted_best_of_jobs(self) -> int:
+        """Mark renders interrupted by a server restart without trusting partial MP4 files."""
+        now = self.now()
+        message = "Rendu interrompu par l'arrêt de l'application. Vérifie la sélection puis relance l'épisode."
+        with self._connect() as connection:
+            cursor = connection.execute(
+                """UPDATE best_of_jobs
+                   SET status='error', message=?, error=?, updated_at=?
+                   WHERE status IN ('queued', 'running')""",
+                (message, message, now),
+            )
+            return int(cursor.rowcount or 0)
 
     def recover_interrupted_jobs(self) -> None:
         """Replace les jobs interrompus dans la file après un arrêt du serveur."""
