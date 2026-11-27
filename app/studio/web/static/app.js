@@ -750,7 +750,7 @@ async function submitShortBatch(form) {
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.detail || `Erreur HTTP ${response.status}`);
     const errors = (data.rejected || []).map(item => `• ${item.url} : ${item.reason}`);
-    feedback.textContent = [data.message || `${data.created_count} Short(s) ajouté(s).`, ...errors].join('\\n');
+    feedback.textContent = [data.message || `${data.created_count} Short(s) ajouté(s).`, ...errors].join('\n');
     toast(data.message || 'Lot ajouté à la file.');
     $('#short-batch-urls').value = '';
     await Promise.all([loadJobs(), loadDashboard()]);
@@ -883,6 +883,7 @@ function setupEvents() {
   dropzone.addEventListener('drop', event => setFile(event.dataTransfer.files[0]));
   $('#upload-form').addEventListener('submit', event => { event.preventDefault(); if (!$('#clip-file').files[0]) { toast('Sélectionne d’abord un fichier vidéo.', true); return; } submitForm(event.currentTarget, '/api/shorts/upload'); });
   $('#url-form').addEventListener('submit', event => { event.preventDefault(); submitForm(event.currentTarget, '/api/shorts/url'); });
+  $('#short-batch-submit').addEventListener('click', () => submitShortBatch($('#url-form')));
   $$('.highlight-source-tab').forEach(tab => tab.addEventListener('click', () => showHighlightSourceTab(tab.dataset.highlightSourceTab)));
   $('#highlight-upload-form').addEventListener('submit', event => { event.preventDefault(); if (!$('#highlight-file').files[0]) { toast('Sélectionne un fichier vidéo.', true); return; } submitHighlightForm(event.currentTarget, '/api/highlights/scan/upload'); });
   $('#highlight-url-form').addEventListener('submit', event => { event.preventDefault(); submitHighlightForm(event.currentTarget, '/api/highlights/scan/url'); });
