@@ -423,3 +423,14 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Règle de validation :** ne pas refaire l'installation ni les tests inchangés. Tests ciblés pendant le lot ; CI Linux/Windows avant fusion d'un lot cohérent ; validation manuelle sur le PC AMD uniquement pour les changements qui touchent réellement le rendu ou le matériel. La CI ne prouve jamais la qualité visuelle d'un vrai Short.
 - **Décision produit à respecter :** pas de chantier webcam dédié. La capture source contient déjà l'écran complet et la webcam ; conserver ce cadrage. webcam_zone n'est pas une priorité. « Moments forts » reste en pause.
 - **Suite :** fusionner la fondation du workflow développeur après validation, puis reprendre les améliorations concrètes du parcours Short Twitch et du rendu Daily Best Of, sans réécriture globale ni PR de micro-correctifs.
+
+
+## 30. Suivi persistant des lots d'import Twitch, 27 novembre 2026
+
+- **Amélioration produit :** chaque import groupé de clips Twitch reçoit désormais un identifiant de lot durable. Les jobs enregistrent cet identifiant dans SQLite, avec leur position et le nombre total de clips valides.
+- **Nouveau suivi API :** `GET /api/shorts/batches/{batch_id}` renvoie l'état agrégé du lot, la progression, les Shorts prêts à valider, les validations et les échecs, ainsi que le statut individuel de chaque URL.
+- **Interface :** un panneau de suivi affiche la progression du lot et l'état de chaque clip. Les quatre derniers lots suivis sont conservés dans le stockage local du navigateur pour retrouver leur progression après navigation ou redémarrage de l'application. Le suivi peut être masqué sans supprimer les jobs.
+- **Robustesse :** les URLs sont toutes validées avant la création des jobs ; les jobs du lot sont persistés avant leur soumission à la file. Les anciennes bases SQLite sont migrées sans supprimer ni réécrire les jobs existants.
+- **Tests :** couverture du lot en attente, du mélange Short prêt/échec, des compteurs, des identifiants invalides/inconnus, de l'interface et de la migration SQLite.
+- **Validation :** CI Linux/Windows requise sur la PR. Aucun vrai téléchargement Twitch ni rendu matériel n'est revendiqué.
+- **Suite :** après intégration, continuer à fiabiliser le rendu d'un Short Twitch sur un vrai clip, puis traiter la persistance des tâches de rendu Daily Best Of.
