@@ -2,21 +2,21 @@
 
 > Lire ce document en premier dans chaque nouvelle conversation sur le projet. Il décrit l'état réellement livré et la structure source actuelle.
 
-- **Dernière mise à jour :** 26 novembre 2026
-- **Dernière version stable confirmée :** 0.8.2 ; le tag Git `v0.8.4` existe, mais la présence des assets ZIP et SHA-256 de la Release reste à confirmer.
-- **État :** PR #14 fusionnée. Les workflows CI Linux et Windows de la PR #14 sont réussis. `.release-approval` vaut `0.8.4` et le tag Git `v0.8.4` est présent. Vérifier les assets de la Release avant de considérer la publication et l'installation comme terminées. PR #10, #11 et #12 restent intégrées dans `main`.
+- **Dernière mise à jour :** 27 novembre 2026
+- **Dernière version stable confirmée :** 0.8.5, publiée avec le ZIP Windows et `SHA256SUMS.txt`.
+- **État :** PR #19 (DA Vice City Dispatch), #20 (score payoff), #21 (réactions retardées) et #22 (préparation release 0.8.5) fusionnées. Release `v0.8.5` publiée et workflow de publication réussi. CI Linux et Windows verts sur la candidate de release, audit de sécurité et package Windows vérifiés.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
-- **Dernière Release stable confirmée :** [v0.8.2](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.2). Candidate suivante : [v0.8.4](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.4), tag présent, assets à vérifier.
+- **Dernière Release stable confirmée :** [v0.8.5](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.5). Assets publiés : `GTA-Ranked-Studio-v0.8.5.zip` et `SHA256SUMS.txt`.
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
 - **Source active :** `app/`. Modifier directement les fichiers Python, JavaScript, CSS, HTML, tests et installateur présents dans ce dossier.
-- **Mise à jour intégrée :** l'application consulte les Releases GitHub. La v0.8.4 prévoit le ZIP Windows et `SHA256SUMS.txt` ; vérifier leur présence sur la page de Release avant installation.
+- **Mise à jour intégrée :** l'application consulte les Releases GitHub. La Release v0.8.5 contient le ZIP Windows et `SHA256SUMS.txt`; installation depuis v0.8.4 via Paramètres > Mises à jour.
 - **CI PR #14 :** Linux et Windows terminés avec succès, y compris suites de régression, analyse statique, audit de dépendances et packaging. Les décomptes détaillés ne sont pas consignés ici.
 - **Sécurité et packaging :** Ruff et pip-audit réussis sur Linux et Windows, aucune vulnérabilité connue ; ZIP Windows et SHA-256 vérifiés.
 - **PR de maintenance :** [#10](https://github.com/Sreleew/GTA_rankd/pull/10), fusionnée dans `main`.
 - **PR coupes naturelles :** [#11](https://github.com/Sreleew/GTA_rankd/pull/11), fusionnée dans `main`. Le départ du Short préfère une frontière après ponctuation ou pause de 0,75 s ; fallback temporel conservé si aucune frontière fiable n'existe.
 - **PR profil de production :** [#12](https://github.com/Sreleew/GTA_rankd/pull/12), fusionnée dans `main`. VOD : candidats 60, 90, 120, 150 et 165 s ; sources Twitch plus courtes préservées.
 - **CI PR #12 :** Linux 155 réussis + 1 ignoré ; Windows 156 réussis. Ruff, pip-audit, ZIP et SHA-256 validés.
-- **Statut de livraison :** v0.8.2 reste la dernière Release confirmée. Le tag v0.8.4 existe ; vérifier les assets ZIP et SHA-256 avant de déclarer la nouvelle Release installable.
+- **Statut de livraison :** v0.8.5 publiée. Le ZIP Windows (191 287 octets) est attaché à la Release et GitHub expose son digest SHA-256 `39712b747d7401fe80cd78728ffe762c199ae0a982ee7d303e8f12b2fbe2ffa3`. Le fichier `SHA256SUMS.txt` est également publié.
 - **Release v0.8.2 :** [publication officielle](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.2), workflow [réussi](https://github.com/Sreleew/GTA_rankd/actions/runs/45850248905).
 - **PR de livraison v0.7.9 :** [#8](https://github.com/Sreleew/GTA_rankd/pull/8), fusionnée dans `main`.
 - **PR cadrage intelligent v0.8.0 :** [#9](https://github.com/Sreleew/GTA_rankd/pull/9), fusionnée dans `main` et publiée.
@@ -198,6 +198,17 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 4. Corriger uniquement les défauts récurrents qui empêchent de publier : coupe incompréhensible, cadrage raté, sous-titres illisibles, audio défectueux ou métadonnées trompeuses.
 5. Démarrer la publication régulière et mesurer les résultats avant d'investir du temps dans les fonctions secondaires.
 
-## 12. Message de reprise prêt à copier
+## 12. Journal de travail du 27 novembre 2026
 
- > Nous reprenons GTA Ranked Studio. Lis `docs/CONTINUATION.md` puis `docs/WORKING-AGREEMENT.md`. La source de développement est directement dans `app/`. Le tag v0.8.4 existe et les CI Linux/Windows de la PR #14 sont réussies ; vérifier les assets ZIP/SHA-256 de la Release avant l'installation. Pour la transition depuis v0.8.0 à v0.8.3, utiliser `UPDATE-FROM-ARCHIVE.bat` du ZIP v0.8.4. Préserve les données locales. Modifie uniquement les fichiers nécessaires, ajoute les tests pertinents, valide sous Linux et Windows pour les changements transversaux. La RX 9060 XT n'a pas encore été validée physiquement pour AMF/Vulkan. L'utilisateur souhaite que toute modification demandée soit intégrée et publiée directement dès que les contrôles sont réussis. Travailler directement dans GitHub, éviter les audits redondants, préserver une qualité élevée et maintenir ce mémo à chaque lot.
+- PR #19 : refonte éditoriale Vice City Dispatch, fusionnée.
+- PR #20 : score payoff basé sur le contraste du pic audio et les réactions proches, avec migration SQLite, fusionnée.
+- PR #21 : coupe intelligente qui préserve la réaction verbale retardée après un pic audio ou une pause, fusionnée.
+- PR #22 : préparation de release 0.8.5, synchronisation des versions, notes et README, fusionnée.
+- Tests de release : Linux et Windows validés, audits Ruff/pip-audit réussis, suite de régression complète réussie, package Windows construit et vérifié (exclusions et SHA-256).
+- Publication : workflow [45978493951](https://github.com/Sreleew/GTA_rankd/actions/runs/45978493951) réussi. Release [v0.8.5](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.5) publique.
+- SHA-256 du ZIP : `39712b747d7401fe80cd78728ffe762c199ae0a982ee7d303e8f12b2fbe2ffa3`.
+- Suite Linux sur la candidate : 160 tests réussis, 1 ignoré. Suite Windows : complète et réussie.
+
+## 13. Message de reprise prêt à copier
+
+ > Nous reprenons GTA Ranked Studio. Lis `docs/CONTINUATION.md` puis `docs/WORKING-AGREEMENT.md`. La dernière Release stable est v0.8.5, publiée avec ZIP Windows et SHA256SUMS. Les PR #19 à #22 sont fusionnées. La source de développement est `app/`. Préserve les données locales, valide les changements transversaux sous Linux et Windows, et publie une Release stable après validation. La RX 9060 XT n'a pas encore été validée physiquement pour AMF/Vulkan. L'utilisateur demande de travailler de façon autonome, sans demander de confirmations répétitives, jusqu'à un résultat propre et publié.
