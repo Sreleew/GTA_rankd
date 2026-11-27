@@ -401,16 +401,16 @@ def transcribe_with_whisper_cpp(
     }
 
 
-def detect_audio_peak_timestamps(
+def analyze_audio_peaks(
     wav_path: Path,
     window_seconds: float = 0.35,
     *,
     minimum_gap_seconds: float = 4.5,
     maximum_peaks: int = 5,
-) -> list[float]:
-    """Repère quelques accents audio nets, sans confondre bruit de fond et moments forts."""
+) -> tuple[float, list[float]]:
+    """Analyze a WAV once and return its strongest peak plus chronological accents."""
     if not wav_path.is_file():
-        return []
+        return 0.0, []
     try:
         with wave.open(str(wav_path), "rb") as audio:
             sample_rate = audio.getframerate()
@@ -418,7 +418,7 @@ def detect_audio_peak_timestamps(
             channels = audio.getnchannels()
             sample_width = audio.getsampwidth()
         if sample_width != 2 or sample_rate <= 0:
-            return []
+            return 0.0, []
         samples = array.array("h")
         samples.frombytes(frames)
         if channels > 1:
@@ -435,13 +435,12 @@ def detect_audio_peak_timestamps(
             center = (start + len(chunk) / 2) / sample_rate
             measurements.append((center, rms))
         if not measurements:
-            return []
+            return 0.0, []
         levels = sorted(level for _, level in measurements)
         median_level = levels[len(levels) // 2]
         maximum_level = max(levels)
-        # Avoid zooming on quiet room tone, compression noise or a uniformly loud mix.
         if maximum_level < 0.015 or maximum_level < median_level * 1.3:
-            return []
+            return 0.0, []
         threshold = max(0.015, median_level * 1.65, maximum_level * 0.42)
         candidates: list[tuple[float, float]] = []
         for index, (center, level) in enumerate(measurements):
@@ -449,17 +448,32 @@ def detect_audio_peak_timestamps(
             after = measurements[index + 1][1] if index + 1 < len(measurements) else -1.0
             if level >= threshold and level >= before and level >= after:
                 candidates.append((level, center))
-        # Keep the strongest accents first, then restore chronological order.
         selected: list[tuple[float, float]] = []
         for candidate in sorted(candidates, reverse=True):
             if all(abs(candidate[1] - existing[1]) >= minimum_gap_seconds for existing in selected):
                 selected.append(candidate)
                 if len(selected) >= max(1, int(maximum_peaks)):
                     break
-        return sorted(center for _, center in selected)
+        strongest = selected[0][1] if selected else 0.0
+        return strongest, sorted(center for _, center in selected)
     except (OSError, wave.Error, ValueError):
         logger.exception("Impossible d'analyser les accents audio pour le cadrage dynamique.")
-        return []
+        return 0.0, []
+
+
+def detect_audio_peak_timestamps(
+    wav_path: Path,
+    window_seconds: float = 0.35,
+    *,
+    minimum_gap_seconds: float = 4.5,
+    maximum_peaks: int = 5,
+) -> list[float]:
+    """Compatibilité : renvoie les accents audio dans l'ordre chronologique."""
+    return analyze_audio_peaks(
+        wav_path, window_seconds,
+        minimum_gap_seconds=minimum_gap_seconds,
+        maximum_peaks=maximum_peaks,
+    )[1]
 
 
 def detect_audio_peak_timestamp(wav_path: Path, window_seconds: float = 0.35) -> float:
