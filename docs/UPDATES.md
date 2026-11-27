@@ -1,5 +1,16 @@
 # Mises à jour GTA Ranked Studio
 
+## v0.8.8 : relance Twitch et constructeur Daily Best Of
+
+Version en préparation : les validations post-fusion et le workflow officiel de publication doivent encore réussir avant que cette version soit considérée comme stable.
+
+- Depuis un job Twitch en erreur, « Relancer » recrée un traitement à partir de l'URL Twitch d'origine si le média n'a pas été téléchargé.
+- Le streamer, la note et les options sont conservés. Un média local déjà présent est réutilisé sans nouveau téléchargement.
+- Le Daily Best Of dispose d'un constructeur de sélection par journée : choix des Shorts validés, ajout/retrait, ordre manuel et durée cible de 9 à 11 minutes.
+- L'API valide la date, le statut des clips, la présence des rendus locaux et l'ordre demandé.
+- Le rendu final horizontal 16:9 n'est pas encore inclus.
+- Mise à jour prévue depuis v0.8.7 via Paramètres > Mises à jour. Les données locales sont préservées.
+
 ## v0.8.7 : prise en charge des longues VOD Twitch
 
 Release stable publiée : https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.7. ZIP Windows : 197 246 octets. SHA-256 : `8239f0788fa788f793ae19228d589443e76ea32477cd04020e1f0267df1307f3`. Assets publiés : `GTA-Ranked-Studio-v0.8.7.zip` et `SHA256SUMS.txt`.
