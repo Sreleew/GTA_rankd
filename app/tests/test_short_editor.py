@@ -156,6 +156,40 @@ def test_long_clip_excerpt_can_start_after_a_natural_pause_without_punctuation()
 
 
 
+
+def test_long_clip_excerpt_keeps_delayed_streamer_reaction_after_audio_peak() -> None:
+    words = [
+        WordTiming(20.0, 20.3, "Wait"),
+        WordTiming(20.3, 20.6, "what"),
+        WordTiming(20.6, 20.9, "happened?"),
+        WordTiming(24.0, 24.3, "BRO"),
+        WordTiming(24.3, 24.7, "NO"),
+        WordTiming(24.7, 25.2, "WAY!"),
+        WordTiming(27.0, 27.4, "That"),
+        WordTiming(27.4, 27.8, "was"),
+        WordTiming(27.8, 28.2, "crazy."),
+    ]
+
+    start, end = select_excerpt_range(180.0, 21.0, words)
+
+    assert start <= 21.0
+    assert end >= 30.2  # reaction phrase + configured tail
+    assert 60.0 <= end - start <= 165.0
+
+
+def test_long_clip_excerpt_does_not_stop_at_pause_before_delayed_reaction() -> None:
+    words = [
+        WordTiming(30.0, 30.3, "Wait"),
+        WordTiming(30.3, 30.6, "for"),
+        WordTiming(30.6, 31.0, "it."),
+        WordTiming(36.0, 36.3, "NO"),
+        WordTiming(36.3, 36.8, "WAY!"),
+    ]
+
+    _, end = select_excerpt_range(180.0, 31.0, words)
+
+    assert end >= 38.8
+
 def test_production_excerpt_profile_targets_one_to_two_minutes_forty_five() -> None:
     short_source = select_excerpt_range(
         120.0, 55.0, [], threshold_seconds=165.0,
