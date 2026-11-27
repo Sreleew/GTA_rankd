@@ -1,4 +1,4 @@
-const state = { page: 'dashboard', file: null, toastTimer: null, modelPoll: null, whisperGpuProbeRunning: false, ollamaVerifyRunning: false, ollamaVerificationResult: null, updatePoll: null, updateInProgress: false, updateTargetVersion: '', bestOfClips: [], bestOfSelectedIds: [], bestOfDate: '', bestOfPlan: null, bestOfRenderJob: null };
+const state = { page: 'dashboard', file: null, toastTimer: null, modelPoll: null, whisperGpuProbeRunning: false, ollamaVerifyRunning: false, ollamaVerificationResult: null, updatePoll: null, updateInProgress: false, updateTargetVersion: '', bestOfClips: [], bestOfSelectedIds: [], bestOfDate: '', bestOfPlan: null, bestOfRenderJob: null, shortBatchIds: [] };
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 
@@ -91,7 +91,11 @@ function jobCard(job) {
 async function api(path, options = {}) {
   const response = await fetch(path, options);
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.detail || data.message || `Erreur HTTP ${response.status}`);
+  if (!response.ok) {
+    const error = new Error(data.detail || data.message || `Erreur HTTP ${response.status}`);
+    error.status = response.status;
+    throw error;
+  }
   return data;
 }
 
@@ -107,11 +111,72 @@ async function loadDashboard() {
   } catch (error) { if (!state.updateInProgress) toast(error.message, true); }
 }
 
+function persistShortBatchIds() {
+  try { localStorage.setItem('gta-ranked-short-batches', JSON.stringify(state.shortBatchIds)); }
+  catch { /* Le suivi reste disponible en mémoire si le stockage navigateur est indisponible. */ }
+}
+
+function trackShortBatch(batchId) {
+  if (!/^[a-f0-9]{32}$/.test(String(batchId || ''))) return;
+  state.shortBatchIds = [batchId, ...state.shortBatchIds.filter(id => id !== batchId)].slice(0, 4);
+  persistShortBatchIds();
+}
+
+function renderShortBatchTracker(batches) {
+  const container = $('#short-batch-tracker');
+  if (!container) return;
+  if (!batches.length) {
+    container.classList.add('hidden');
+    container.innerHTML = '';
+    return;
+  }
+  container.classList.remove('hidden');
+  container.innerHTML = batches.map(batch => {
+    const progress = Math.max(0, Math.min(100, Number(batch.progress) || 0));
+    const statusText = batch.status === 'running'
+      ? 'Traitement en cours'
+      : batch.status === 'completed_with_errors'
+        ? 'Terminé avec des erreurs'
+        : 'Lot terminé';
+    const rows = (batch.jobs || []).map(job => {
+      const label = job.status === 'error' ? 'Erreur'
+        : job.status === 'cancelled' ? 'Annulé'
+          : job.status === 'ready' ? 'À valider'
+            : job.status === 'validated' ? 'Validé'
+              : job.status === 'rejected' ? 'Rejeté'
+                : statusLabel(job.status);
+      const detail = job.error || job.message || '';
+      return `<li><span class="short-batch-job-title" title="${escapeHtml(job.title || '')}">${escapeHtml(job.title || 'Clip Twitch')}<small>${escapeHtml(detail)}</small></span><span class="status-pill ${escapeHtml(job.status)}">${escapeHtml(label)}</span></li>`;
+    }).join('');
+    return `<article class="short-batch-card">
+      <div class="short-batch-heading"><div><strong>Lot Twitch · ${batch.total} clips</strong><small>${escapeHtml(statusText)}</small></div><button type="button" class="text-button" data-dismiss-short-batch="${escapeHtml(batch.batch_id)}">Masquer</button></div>
+      <div class="short-batch-progress"><span style="width:${progress}%"></span></div>
+      <p>${escapeHtml(batch.message || '')} · ${progress}%</p>
+      <ul>${rows}</ul>
+    </article>`;
+  }).join('');
+}
+
+async function refreshShortBatchTracker() {
+  if (!state.shortBatchIds.length) return;
+  const results = await Promise.all(state.shortBatchIds.map(async batchId => {
+    try {
+      return { batchId, batch: await api(`/api/shorts/batches/${encodeURIComponent(batchId)}`), missing: false };
+    } catch (error) {
+      return { batchId, batch: null, missing: error.status === 404 };
+    }
+  }));
+  state.shortBatchIds = results.filter(item => !item.missing).map(item => item.batchId).slice(0, 4);
+  persistShortBatchIds();
+  renderShortBatchTracker(results.filter(item => item.batch).map(item => item.batch));
+}
+
 async function loadJobs() {
   try {
     const jobs = await api('/api/jobs?limit=100');
     $('#all-jobs').innerHTML = jobs.length ? jobs.map(jobCard).join('') : '<div class="empty-state">Tes clips apparaîtront ici après leur import.</div>';
     $('#nav-review-count').textContent = jobs.filter(job => job.status === 'ready').length;
+    await refreshShortBatchTracker();
   } catch (error) { if (!state.updateInProgress) toast(error.message, true); }
 }
 
@@ -802,7 +867,8 @@ async function submitShortBatch(form) {
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.detail || `Erreur HTTP ${response.status}`);
     const errors = (data.rejected || []).map(item => `• ${item.url} : ${item.reason}`);
-    feedback.textContent = [data.message || `${data.created_count} Short(s) ajouté(s).`, ...errors].join('\\n');
+    if (data.batch_id) trackShortBatch(data.batch_id);
+    feedback.textContent = [data.message || `${data.created_count} Short(s) ajouté(s).`, ...errors].join('\n');
     toast(data.message || 'Lot ajouté à la file.');
     $('#short-batch-urls').value = '';
     await Promise.all([loadJobs(), loadDashboard()]);
@@ -936,6 +1002,14 @@ function setupEvents() {
   $('#upload-form').addEventListener('submit', event => { event.preventDefault(); if (!$('#clip-file').files[0]) { toast('Sélectionne d’abord un fichier vidéo.', true); return; } submitForm(event.currentTarget, '/api/shorts/upload'); });
   $('#url-form').addEventListener('submit', event => { event.preventDefault(); submitForm(event.currentTarget, '/api/shorts/url'); });
   $('#short-batch-submit').addEventListener('click', () => submitShortBatch($('#url-form')));
+  $('#short-batch-tracker').addEventListener('click', event => {
+    const dismiss = event.target.closest('[data-dismiss-short-batch]');
+    if (!dismiss) return;
+    const batchId = dismiss.dataset.dismissShortBatch;
+    state.shortBatchIds = state.shortBatchIds.filter(id => id !== batchId);
+    persistShortBatchIds();
+    refreshShortBatchTracker();
+  });
   $$('.highlight-source-tab').forEach(tab => tab.addEventListener('click', () => showHighlightSourceTab(tab.dataset.highlightSourceTab)));
   $('#highlight-upload-form').addEventListener('submit', event => { event.preventDefault(); if (!$('#highlight-file').files[0]) { toast('Sélectionne un fichier vidéo.', true); return; } submitHighlightForm(event.currentTarget, '/api/highlights/scan/upload'); });
   $('#highlight-url-form').addEventListener('submit', event => { event.preventDefault(); submitHighlightForm(event.currentTarget, '/api/highlights/scan/url'); });
@@ -1004,6 +1078,12 @@ document.addEventListener('click', event => {
 }, true);
 
 setupEvents();
+try {
+  const storedBatches = JSON.parse(localStorage.getItem('gta-ranked-short-batches') || '[]');
+  state.shortBatchIds = Array.isArray(storedBatches)
+    ? storedBatches.filter(id => /^[a-f0-9]{32}$/.test(String(id))).slice(0, 4)
+    : [];
+} catch { state.shortBatchIds = []; }
 loadDashboard();
 loadHealth();
 setInterval(() => {

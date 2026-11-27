@@ -140,7 +140,7 @@ def test_whisper_gpu_button_uses_fresh_script_and_visible_feedback():
     static = Path(__file__).resolve().parents[1] / "studio" / "web" / "static"
     html = (static / "index.html").read_text(encoding="utf-8")
     js = (static / "app.js").read_text(encoding="utf-8")
-    assert '<script src="/static/app.js?v=0.8.9"></script>' in html
+    assert '<script src="/static/app.js?v=0.8.9-batch-progress"></script>' in html
     assert '<button type="button" class="mini-button" id="verify-whisper-gpu"' in html
     assert "/api/models/whisper/verify" in js
     assert "if (verifyGpuButton) verifyGpuButton.addEventListener('click', verifyWhisperGpu);" in js
@@ -213,7 +213,7 @@ def test_ollama_verify_button_has_a_dedicated_visible_handler():
     static = Path(__file__).resolve().parents[1] / "studio" / "web" / "static"
     html = (static / "index.html").read_text(encoding="utf-8")
     js = (static / "app.js").read_text(encoding="utf-8")
-    assert '<script src="/static/app.js?v=0.8.9"></script>' in html
+    assert '<script src="/static/app.js?v=0.8.9-batch-progress"></script>' in html
     assert '<button type="button" class="mini-button" id="verify-ollama"' in html
     assert "#refresh-models-secondary" in js
     assert "/api/models/ollama/verify" in js
@@ -1048,6 +1048,7 @@ def test_batch_twitch_short_import_queues_valid_urls_and_reports_invalid_ones(tm
             "urls": "\n".join([
                 "https://clips.twitch.tv/FirstClip",
                 "https://www.twitch.tv/videos/123456789",
+                "https://clips.twitch.tv/ThirdClip",
                 "https://clips.twitch.tv/FirstClip",
                 "https://example.com/not-twitch",
             ]),
@@ -1061,15 +1062,50 @@ def test_batch_twitch_short_import_queues_valid_urls_and_reports_invalid_ones(tm
 
     assert response.status_code == 202, response.text
     payload = response.json()
-    assert payload["created_count"] == 2
+    assert payload["created_count"] == 3
     assert payload["rejected_count"] == 1
-    assert len(queued) == 2
-    assert len(payload["jobs"]) == 2
+    assert len(queued) == 3
+    assert len(payload["jobs"]) == 3
+    assert len(payload["batch_id"]) == 32
     assert payload["rejected"][0]["url"] == "https://example.com/not-twitch"
     jobs = app.state.store.list_jobs(limit=10)
-    assert len(jobs) == 2
+    assert len(jobs) == 3
+    assert all(job["batch_id"] == payload["batch_id"] for job in jobs)
     assert all(job["metadata"]["batch_import"] is True for job in jobs)
+    assert all(job["metadata"]["batch_count"] == 3 for job in jobs)
+    assert sorted(job["metadata"]["batch_index"] for job in jobs) == [1, 2, 3]
     assert all(job["metadata"]["options"]["layout"] == "blur" for job in jobs)
+
+    queued_batch = client.get(f"/api/shorts/batches/{payload['batch_id']}")
+    assert queued_batch.status_code == 200
+    assert queued_batch.json()["status"] == "running"
+    assert queued_batch.json()["progress"] == 0
+    assert queued_batch.json()["active_count"] == 3
+
+    app.state.store.update_job(
+        payload["jobs"][0]["id"], status="ready", progress=100, message="Short prêt"
+    )
+    app.state.store.update_job(
+        payload["jobs"][1]["id"], status="error", progress=0,
+        message="Échec du téléchargement", error="Twitch indisponible",
+    )
+    app.state.store.update_job(
+        payload["jobs"][2]["id"], status="cancelled", progress=20,
+        message="Traitement annulé",
+    )
+    completed_batch = client.get(f"/api/shorts/batches/{payload['batch_id']}")
+    assert completed_batch.status_code == 200
+    summary = completed_batch.json()
+    assert summary["status"] == "completed_with_errors"
+    assert summary["progress"] == 100
+    assert summary["completed_count"] == 3
+    assert summary["ready_count"] == 1
+    assert summary["failed_count"] == 1
+    assert summary["cancelled_count"] == 1
+    assert {job["status"] for job in summary["jobs"]} == {"ready", "error", "cancelled"}
+
+    assert client.get("/api/shorts/batches/not-a-batch").status_code == 400
+    assert client.get(f"/api/shorts/batches/{'0' * 32}").status_code == 404
 
 
 def test_batch_twitch_short_import_requires_rights_and_limits_urls(tmp_path: Path):
@@ -1102,7 +1138,30 @@ def test_batch_twitch_import_is_available_in_shorts_ui():
 
     assert 'id="short-batch-urls"' in html
     assert 'id="short-batch-submit"' in html
+    assert 'id="short-batch-tracker"' in html
+    assert "v=0.8.9-batch-progress" in html
     assert "JUSQU'À 10 URLS" in html
     assert "/api/shorts/url/batch" in js
+    assert "/api/shorts/batches/" in js
+    assert "gta-ranked-short-batches" in js
     assert "$$('[data-option-checkbox]', form).forEach" in js
     assert "submitShortBatch($('#url-form'))" in js
+
+
+def test_store_adds_batch_id_to_existing_database_without_losing_jobs(tmp_path: Path):
+    import sqlite3
+
+    database = tmp_path / "legacy.sqlite"
+    with sqlite3.connect(database) as connection:
+        connection.execute(
+            "CREATE TABLE jobs (id TEXT PRIMARY KEY, status TEXT NOT NULL, created_at TEXT NOT NULL, source_hash TEXT, metadata_json TEXT NOT NULL DEFAULT '{}')"
+        )
+        connection.execute(
+            "INSERT INTO jobs (id, status, created_at) VALUES ('existing-job', 'ready', '2026-11-27T12:00:00')"
+        )
+
+    migrated = Store(database)
+    with sqlite3.connect(database) as connection:
+        columns = {row[1] for row in connection.execute("PRAGMA table_info(jobs)")}
+    assert "batch_id" in columns
+    assert migrated.get_job("existing-job")["status"] == "ready"

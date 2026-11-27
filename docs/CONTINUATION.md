@@ -419,7 +419,20 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **PR #58 fusionnée :** le moteur Daily Best Of 16:9 est intégré dans main. CI Linux run 46045887877 et Windows run 46045887918 réussies.
 - **PR #59 fermée volontairement :** elle a été remplacée par la PR #60, recréée sur main à jour pour éviter un conflit documentaire.
 - **PR #60 fusionnée :** import groupé de jusqu'à 10 URLs Twitch dans « Créer un Short », déduplication, validation individuelle et mise en file des URLs valides. CI Linux run 46046378763 et Windows run 46046378773 réussies. Commit de merge 90504c7c282e9032fb2bc9d90cc03f83f018f4e2.
-- **Fondation développeur en cours :** scripts PowerShell pour installer une seule fois un environnement Python .venv persistant, lancer les tests ciblés Shorts/Twitch/Best Of/Web, et exécuter la suite complète uniquement quand c'est justifié. Guide dédié docs/DEVELOPMENT.md.
+- **PR #61 fusionnée :** fondation du workflow développeur intégrée dans `main`, commit `a90c85c60a10618b7d465da39bb11ba1439a93de`. Scripts PowerShell pour conserver un environnement Python `.venv` et lancer les tests ciblés Shorts/Twitch/Best Of/Web, plus une suite complète réservée aux changements transversaux. Guide : `docs/DEVELOPMENT.md`.
+- **CI PR #61 :** Linux [46046826564](https://github.com/Sreleew/GTA_rankd/actions/runs/46046826564) et Windows [46046826607](https://github.com/Sreleew/GTA_rankd/actions/runs/46046826607) réussies.
+- **CI post-fusion PR #61 :** Linux [46047244429](https://github.com/Sreleew/GTA_rankd/actions/runs/46047244429) et Windows [46047244465](https://github.com/Sreleew/GTA_rankd/actions/runs/46047244465) réussies.
 - **Règle de validation :** ne pas refaire l'installation ni les tests inchangés. Tests ciblés pendant le lot ; CI Linux/Windows avant fusion d'un lot cohérent ; validation manuelle sur le PC AMD uniquement pour les changements qui touchent réellement le rendu ou le matériel. La CI ne prouve jamais la qualité visuelle d'un vrai Short.
 - **Décision produit à respecter :** pas de chantier webcam dédié. La capture source contient déjà l'écran complet et la webcam ; conserver ce cadrage. webcam_zone n'est pas une priorité. « Moments forts » reste en pause.
-- **Suite :** fusionner la fondation du workflow développeur après validation, puis reprendre les améliorations concrètes du parcours Short Twitch et du rendu Daily Best Of, sans réécriture globale ni PR de micro-correctifs.
+- **Suite :** suivre les lots d'import Twitch jusqu'à leur rendu et leur validation, puis fiabiliser les tâches Daily Best Of persistantes.
+
+
+## 30. Suivi persistant des lots d'import Twitch, 27 novembre 2026
+
+- **Amélioration produit :** chaque import groupé de clips Twitch reçoit désormais un identifiant de lot durable. Les jobs enregistrent cet identifiant dans SQLite, avec leur position et le nombre total de clips valides.
+- **Nouveau suivi API :** `GET /api/shorts/batches/{batch_id}` renvoie l'état agrégé du lot, la progression, les Shorts prêts à valider, les validations et les échecs, ainsi que le statut individuel de chaque URL.
+- **Interface :** un panneau de suivi affiche la progression du lot et l'état de chaque clip. Les quatre derniers lots suivis sont conservés dans le stockage local du navigateur pour retrouver leur progression après navigation ou redémarrage de l'application. Le suivi peut être masqué sans supprimer les jobs.
+- **Robustesse :** les URLs sont toutes validées avant la création des jobs ; les jobs du lot sont persistés avant leur soumission à la file. Les anciennes bases SQLite sont migrées sans supprimer ni réécrire les jobs existants.
+- **Tests :** couverture du lot en attente, du mélange Short prêt/échec, des compteurs, des identifiants invalides/inconnus, de l'interface et de la migration SQLite.
+- **Validation :** CI Linux/Windows requise sur la PR. Aucun vrai téléchargement Twitch ni rendu matériel n'est revendiqué.
+- **Suite :** après intégration, continuer à fiabiliser le rendu d'un Short Twitch sur un vrai clip, puis traiter la persistance des tâches de rendu Daily Best Of.

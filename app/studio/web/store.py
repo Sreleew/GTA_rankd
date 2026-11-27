@@ -17,7 +17,7 @@ def uuid4_hex() -> str:
 JOB_COLUMNS = {
     "status", "progress", "message", "source_path", "source_url", "streamer",
     "note", "duration", "output_path", "thumbnail_path", "error", "validated_at",
-    "source_hash", "source_title", "metadata_json",
+    "source_hash", "source_title", "metadata_json", "batch_id",
 }
 
 
@@ -41,6 +41,7 @@ class Store:
                 CREATE TABLE IF NOT EXISTS jobs (
                     id TEXT PRIMARY KEY,
                     kind TEXT NOT NULL DEFAULT 'short',
+                    batch_id TEXT,
                     status TEXT NOT NULL,
                     progress INTEGER NOT NULL DEFAULT 0,
                     message TEXT NOT NULL DEFAULT '',
@@ -129,6 +130,14 @@ class Store:
                 CREATE INDEX IF NOT EXISTS idx_highlight_candidates_scan ON highlight_candidates(scan_id, rank);
                 """
             )
+            job_columns = {
+                row["name"] for row in connection.execute("PRAGMA table_info(jobs)")
+            }
+            if "batch_id" not in job_columns:
+                connection.execute("ALTER TABLE jobs ADD COLUMN batch_id TEXT")
+            connection.execute(
+                "CREATE INDEX IF NOT EXISTS idx_jobs_batch_id ON jobs(batch_id, created_at)"
+            )
             candidate_columns = {
                 row["name"] for row in connection.execute("PRAGMA table_info(highlight_candidates)")
             }
@@ -150,6 +159,7 @@ class Store:
         payload = {
             "id": job["id"],
             "kind": job.get("kind", "short"),
+            "batch_id": job.get("batch_id"),
             "status": job.get("status", "queued"),
             "progress": int(job.get("progress", 0)),
             "message": job.get("message", "En attente"),
@@ -199,6 +209,15 @@ class Store:
         with self._connect() as connection:
             rows = connection.execute(
                 "SELECT * FROM jobs ORDER BY created_at DESC LIMIT ?", (limit,)
+            ).fetchall()
+        return [self._job_dict(row) for row in rows]
+
+    def list_batch_jobs(self, batch_id: str) -> list[dict[str, Any]]:
+        """Return the persisted jobs belonging to one Twitch import batch."""
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT * FROM jobs WHERE batch_id = ? ORDER BY rowid ASC",
+                (batch_id,),
             ).fetchall()
         return [self._job_dict(row) for row in rows]
 
