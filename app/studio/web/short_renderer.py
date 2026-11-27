@@ -178,7 +178,22 @@ def build_filter_complex(
             base += (
                 f"[fgsrc]scale=-2:{panel_height},setsar=1[panel];"
             )
-        base += f"[bg][panel]overlay=(W-w)/2:{panel_y},setsar=1[base]"
+        # Editorial frame: a restrained hairline and amber edge marker make
+        # the gameplay panel feel intentionally art-directed, not generic.
+        frame_x = max(8, int(width * 0.035))
+        frame_y = max(0, panel_y - max(2, int(height * 0.003)))
+        frame_width = max(1, width - frame_x * 2)
+        frame_height = panel_height + max(4, int(height * 0.006))
+        accent_width = max(3, int(width * 0.006))
+        accent_y = panel_y + max(4, int(panel_height * 0.025))
+        accent_height = max(1, panel_height - max(8, int(panel_height * 0.05)))
+        base += (
+            f"[bg][panel]overlay=(W-w)/2:{panel_y},"
+            f"drawbox=x={frame_x}:y={frame_y}:w={frame_width}:h={frame_height}:"
+            "color=white@0.30:t=2,"
+            f"drawbox=x={frame_x}:y={accent_y}:w={accent_width}:h={accent_height}:"
+            "color=0xF6C445@0.96:t=fill,setsar=1[base]"
+        )
     elif layout == "fill":
         base = (
             f"[0:v]scale={width}:{height}:force_original_aspect_ratio=increase,"
