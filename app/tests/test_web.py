@@ -37,7 +37,7 @@ def test_blur_layout_keeps_the_full_landscape_source_visible():
 
 def test_edit_options_are_validated_and_clamped_by_api():
     options = _validate_edit_options(
-        "fill", 50, 40, True, 8, True, True, "Wait for it", "A chase", True,
+        "fill", 50, 40, True, 8, True, "Wait for it", "A chase", True,
         captions_enabled=True, caption_language="fr",
     )
     assert options["layout"] == "fill"
@@ -46,18 +46,18 @@ def test_edit_options_are_validated_and_clamped_by_api():
     assert options["auto_trim_enabled"] is True
     assert options["captions_enabled"] is True
     assert options["caption_language"] == "fr"
-    smart = _validate_edit_options("smart", 80, 50, False, 0, True, True, "", "")
+    smart = _validate_edit_options("smart", 80, 50, False, 0, True, "", "")
     assert smart["layout"] == "smart"
     assert smart["crop_x"] == 80
     assert smart["caption_language"] == "config"
     try:
-        _validate_edit_options("smart", 80, 50, False, 0, True, True, "", "", caption_language="xx")
+        _validate_edit_options("smart", 80, 50, False, 0, True, "", "", caption_language="xx")
     except Exception as exc:
         assert "langue" in str(exc).lower()
     else:
         raise AssertionError("Unsupported caption language should be rejected")
     try:
-        _validate_edit_options("invalid", 50, 50, True, 8, True, True, "", "")
+        _validate_edit_options("invalid", 50, 50, True, 8, True, "", "")
     except Exception as exc:
         assert "cadrage" in str(exc).lower()
     else:
