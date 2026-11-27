@@ -237,3 +237,5 @@ def test_render_reuses_source_probe_and_returns_output_probe(tmp_path: Path, mon
     assert probed == [output]
     assert result["source_duration"] == 12.0
     assert result["output_media_info"] == output_info
+    assert set(result["performance_timings_ms"]) == {"encode_ms", "output_probe_ms", "thumbnail_ms", "total_ms"}
+    assert all(value >= 0 for value in result["performance_timings_ms"].values())
