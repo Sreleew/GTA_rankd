@@ -34,15 +34,15 @@ La voie `workflow_dispatch` reste disponible pour préparer une Release brouillo
 
 ## État au 27 novembre 2026
 
-- Dernière Release stable confirmée avant la candidate : [v0.8.5](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.5).
-- PR #19 à #24 sont fusionnées dans `main`. Les PR #23 et #24 ajoutent respectivement la diversité des candidats et l'indexation des fenêtres de scan.
-- CI PR #23 et #24 : suites Linux et Windows complètes réussies, Ruff, pip-audit et package Windows validés.
-- CI `main` après fusion : Linux et Windows validés avant préparation de la Release v0.8.2.
+- Dernière Release stable : [v0.8.6](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.6), publiée avec `GTA-Ranked-Studio-v0.8.6.zip` et `SHA256SUMS.txt`.
+- PR #19 à #25 sont fusionnées dans `main`. Les PR #23 et #24 ajoutent respectivement la diversité des candidats et l'indexation des fenêtres de scan ; la PR #25 prépare et approuve la v0.8.6.
+- CI PR #23, #24 et #25 : suites Linux et Windows complètes réussies, Ruff, pip-audit, contrôles de cohérence et package Windows validés.
+- Workflow de publication v0.8.6 : [45986253187](https://github.com/Sreleew/GTA_rankd/actions/runs/45986253187), terminé avec succès. ZIP vérifié, exclusions respectées et SHA-256 publié.
+- ZIP v0.8.6 : 193 520 octets ; SHA-256 `bcbe46f063fc3918b3a6a9b33a25f56ed87e453fb9e2f769b763878c870cee0e`.
+- La shortlist évite désormais les passages éloignés aux transcriptions longues presque identiques, sans filtrer les réactions courtes ni les scans audio seuls.
+- Le classement utilise des index temporels pour les fenêtres audio et les mots Whisper. Un benchmark synthétique a mesuré un facteur 68,2 sur la seule recherche des intervalles, sans représenter le temps total d'un scan complet.
 - Profil de production : passages VOD de 60, 90, 120, 150 et 165 secondes ; clips Twitch plus courts préservés sans rallongement artificiel.
-- La migration des anciennes valeurs de configuration v0.8.1 s'effectue en mémoire uniquement et préserve les valeurs personnalisées.
-- Release v0.8.6 en préparation sur la branche `release/v0.8.6`. La publication stable sera déclenchée après fusion de la préparation et approbation de version sur `main`.
 - La validation physique de la RX 9060 XT pour AMF/Vulkan reste à faire.
-
 ## Protection de main
 
 Les changements de code doivent passer par une PR et les contrôles Linux/Windows. Ne pas supposer que la protection GitHub de la branche est activée sans la vérifier dans les paramètres du dépôt.
