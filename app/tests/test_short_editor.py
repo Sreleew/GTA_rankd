@@ -371,6 +371,7 @@ def test_thumbnail_timestamp_recognizes_french_reactions_and_emphasis():
     assert 12.0 <= selected <= 14.0
 
 
+
 def test_thumbnail_overlay_keeps_original_when_atomic_save_fails(tmp_path: Path, monkeypatch):
     from PIL import Image
 
