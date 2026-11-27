@@ -553,7 +553,7 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         original = store.get_job(job_id)
         if original is None:
             raise HTTPException(status_code=404, detail="Job introuvable.")
-        if original.get("status") not in {"validated", "ready", "error", "rejected"}:
+        if original.get("status") not in {"validated", "ready", "error", "rejected", "cancelled"}:
             raise HTTPException(status_code=409, detail="Ce job est encore en cours de traitement.")
         source_value = original.get("source_path")
         source_path = Path(source_value) if source_value else None
@@ -563,11 +563,12 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
             source_payload = {
                 "source_kind": "upload",
                 "source_path": str(source_path.resolve()),
+                "source_url": source_url or None,
                 "source_title": original.get("source_title") or source_path.stem,
             }
             message = "Nouveau rendu demandé à partir du média déjà importé"
             success_message = "Nouveau traitement lancé à partir du média déjà importé."
-        elif original.get("source_kind") == "url" and source_url:
+        elif source_url:
             # Si le téléchargement Twitch a échoué avant de conserver le fichier,
             # permettre une vraie nouvelle tentative depuis l'URL d'origine.
             source_payload = {
@@ -590,6 +591,7 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         store.create_job({
             "id": new_id,
             "kind": original.get("kind", "short"),
+            "batch_id": original.get("batch_id"),
             **source_payload,
             "streamer": original.get("streamer", ""),
             "note": original.get("note", ""),
@@ -775,9 +777,30 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         """Return durable aggregate progress for a Twitch Short import batch."""
         if not re.fullmatch(r"[a-f0-9]{32}", batch_id):
             raise HTTPException(status_code=400, detail="Identifiant de lot invalide.")
-        jobs = store.list_batch_jobs(batch_id)
-        if not jobs:
+        all_jobs = store.list_batch_jobs(batch_id)
+        if not all_jobs:
             raise HTTPException(status_code=404, detail="Lot Twitch introuvable.")
+
+        # A retry is a new durable job, but it still represents the same clip
+        # in the original batch. Keep only the newest attempt for each slot so
+        # totals and progress do not grow when a failed clip is retried.
+        attempt_counts: dict[str, int] = {}
+        latest_by_slot: dict[str, dict] = {}
+        for job in all_jobs:
+            metadata = job.get("metadata") or {}
+            try:
+                batch_index = int(metadata.get("batch_index") or 0)
+            except (TypeError, ValueError):
+                batch_index = 0
+            slot = f"index:{batch_index}" if batch_index > 0 else f"job:{job['id']}"
+            attempt_counts[slot] = attempt_counts.get(slot, 0) + 1
+            latest_by_slot[slot] = job
+
+        batch_entries = list(latest_by_slot.items())
+        jobs = [job for _, job in batch_entries]
+        attempts_by_job_id = {
+            job["id"]: attempt_counts[slot] for slot, job in batch_entries
+        }
         active_statuses = {"queued", "running", "cancelling"}
         terminal_statuses = {"ready", "validated", "rejected", "error", "cancelled"}
         failed_statuses = {"error"}
@@ -828,6 +851,15 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
                     "message": job.get("message") or "",
                     "title": job.get("source_title") or job.get("streamer") or job.get("source_url") or "Clip Twitch",
                     "error": job.get("error"),
+                    "batch_index": (job.get("metadata") or {}).get("batch_index"),
+                    "attempts": attempts_by_job_id[job["id"]],
+                    "retryable": (
+                        job["status"] in {"error", "cancelled", "rejected"}
+                        and (
+                            bool(job.get("source_url"))
+                            or bool(job.get("source_path") and Path(str(job["source_path"])).is_file())
+                        )
+                    ),
                 }
                 for job in jobs
             ],
