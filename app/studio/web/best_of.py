@@ -133,7 +133,6 @@ def render_best_of_episode(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     command = [resolve_executable(ffmpeg), "-hide_banner", "-y"]
     audio_input_indices: list[int] = []
-    expected_audio = False
     for clip in clips:
         source = Path(str(clip.get("output_path") or ""))
         if not source.is_file():
@@ -144,14 +143,7 @@ def render_best_of_episode(
         command.extend(["-i", str(source.resolve())])
         if info.get("has_audio"):
             audio_input_indices.append(len(audio_input_indices))
-            expected_audio = True
         else:
-            silence_index = len(audio_input_indices) + sum(
-                1 for item in audio_input_indices if item < 0
-            )
-            # Inputs are appended sequentially, so the next input index is
-            # the current number of source inputs plus previously added silences.
-            silence_index = len(clips[:len(audio_input_indices)]) if False else -1
             audio_input_indices.append(-1)
 
     # Add explicit silent tracks for Shorts without audio. Keeping each source
