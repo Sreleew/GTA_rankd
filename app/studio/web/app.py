@@ -539,6 +539,32 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
             raise HTTPException(status_code=404, detail="Job introuvable.")
         if original.get("status") not in {"validated", "ready", "error", "rejected", "cancelled"}:
             raise HTTPException(status_code=409, detail="Ce job est encore en cours de traitement.")
+
+        # A batch slot has one current attempt. If a retry was already created,
+        # require subsequent retries to start from that newest job, avoiding
+        # duplicate queue entries after a slow response or a repeated click.
+        batch_id = original.get("batch_id")
+        metadata = original.get("metadata") or {}
+        try:
+            batch_index = int(metadata.get("batch_index") or 0)
+        except (TypeError, ValueError):
+            batch_index = 0
+        if batch_id and batch_index > 0:
+            latest_attempt = None
+            for candidate in store.list_batch_jobs(str(batch_id)):
+                candidate_metadata = candidate.get("metadata") or {}
+                try:
+                    candidate_index = int(candidate_metadata.get("batch_index") or 0)
+                except (TypeError, ValueError):
+                    continue
+                if candidate_index == batch_index:
+                    latest_attempt = candidate
+            if latest_attempt and latest_attempt["id"] != job_id:
+                raise HTTPException(
+                    status_code=409,
+                    detail="Une tentative plus récente existe déjà pour ce clip. Relance la dernière tentative depuis le suivi du lot.",
+                )
+
         source_value = original.get("source_path")
         source_path = Path(source_value) if source_value else None
         source_url = str(original.get("source_url") or "").strip()
