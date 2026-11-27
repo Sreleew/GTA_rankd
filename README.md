@@ -2,7 +2,7 @@
 
 Application Windows locale pour transformer des clips et VOD GTA en Shorts verticaux prêts à relire et publier.
 
-**Version candidate préparée : v0.8.7.** La dernière version stable publiée reste la [v0.8.6](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.6).
+**Dernière version stable : v0.8.7.** [Consulter la Release stable v0.8.7](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.7).
 
 ## Fonctionnalités
 
@@ -34,7 +34,7 @@ Les dossiers `Best Of` et l'ancien flux d'URL par fichier texte ont été retir�
 
 ## Installation et mise à jour
 
-Pour une première installation, extraire l'archive puis lancer `app/INSTALL.bat`. Pour une installation existante en v0.8.6, utiliser **Paramètres > Mises à jour** après publication effective de la v0.8.7.
+Pour une première installation, extraire l'archive puis lancer `app/INSTALL.bat`. Pour une installation existante en v0.8.6, utiliser **Paramètres > Mises à jour** pour passer à la v0.8.7.
 
 La mise à jour préserve les données locales. Ne jamais remplacer manuellement `config.yaml`.
 
