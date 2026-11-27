@@ -1142,6 +1142,9 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
             date_key = str(date_key).strip()
             if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", date_key):
                 raise HTTPException(status_code=400, detail="La date de l'épisode est invalide.")
+        retry_of_job_id = str(payload.get("retry_of_job_id") or "").strip() if isinstance(payload, dict) else ""
+        if retry_of_job_id and not re.fullmatch(r"[a-f0-9]{32}", retry_of_job_id):
+            raise HTTPException(status_code=400, detail="La référence de relance Best Of est invalide.")
         try:
             plan = build_best_of_plan(store.list_clips(200), clip_ids, date_key=date_key or None)
         except ValueError as exc:
@@ -1154,6 +1157,7 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
             date_folder = "episode"
         output_dir = outputs / "bestof" / date_folder
         output_path = output_dir / f"daily-best-of-{job_id[:8]}.mp4"
+        stored_plan = {**plan, "retry_of_job_id": retry_of_job_id} if retry_of_job_id else plan
         store.create_best_of_job({
             "id": job_id,
             "status": "queued",
@@ -1162,7 +1166,7 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
             "date_key": plan.get("date_key"),
             "clip_count": plan.get("clip_count"),
             "total_duration": plan.get("total_duration"),
-            "plan": plan,
+            "plan": stored_plan,
             "output_path": str(output_path),
         })
 
@@ -1213,6 +1217,44 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
             )
             raise HTTPException(status_code=500, detail="Le rendu Daily Best Of n'a pas pu démarrer.") from exc
         return {"id": job_id, "status": "queued", "message": "Rendu Daily Best Of lancé."}
+
+    @app.post("/api/bestof/jobs/{job_id}/retry", status_code=202)
+    def retry_best_of_job(job_id: str) -> dict:
+        """Requeue an interrupted/failed episode from its stored source selection."""
+        previous = store.get_best_of_job(job_id)
+        if previous is None:
+            raise HTTPException(status_code=404, detail="Rendu Daily Best Of introuvable.")
+        if previous.get("status") != "error":
+            raise HTTPException(
+                status_code=409,
+                detail="Seuls les rendus interrompus ou en erreur peuvent être relancés.",
+            )
+        previous_plan = previous.get("plan") or {}
+        clip_ids = [
+            str(clip.get("id") or "").strip()
+            for clip in previous_plan.get("clips", [])
+            if isinstance(clip, dict) and str(clip.get("id") or "").strip()
+        ]
+        if not clip_ids:
+            raise HTTPException(
+                status_code=409,
+                detail="La sélection d'origine n'est plus disponible pour cette relance.",
+            )
+        already_retried = any(
+            (candidate.get("plan") or {}).get("retry_of_job_id") == job_id
+            and candidate.get("status") in {"queued", "running", "completed"}
+            for candidate in store.list_best_of_jobs(50)
+        )
+        if already_retried:
+            raise HTTPException(
+                status_code=409,
+                detail="Une relance de cet épisode est déjà en cours ou a déjà abouti.",
+            )
+        return render_best_of({
+            "clip_ids": clip_ids,
+            "date_key": previous.get("date_key") or previous_plan.get("date_key"),
+            "retry_of_job_id": job_id,
+        })
 
     @app.get("/api/bestof/jobs/{job_id}")
     def get_best_of_job(job_id: str) -> dict:
