@@ -1174,11 +1174,13 @@ def test_batch_twitch_import_is_available_in_shorts_ui():
     assert 'id="short-batch-urls"' in html
     assert 'id="short-batch-submit"' in html
     assert 'id="short-batch-tracker"' in html
-    assert "v=0.8.9-batch-retry" in html
+    assert "v=0.8.9-thumbnail-fallback" in html
     assert "JUSQU'À 10 URLS" in html
     assert "/api/shorts/url/batch" in js
     assert "/api/shorts/batches/" in js
     assert "data-retry-short-batch" in js
+    assert "thumbnail_overlay_status" in js
+    assert "image source conservée" in js
     assert "/api/jobs/${encodeURIComponent(jobId)}/reprocess" in js
     assert "gta-ranked-short-batches" in js
     assert "$$('[data-option-checkbox]', form).forEach" in js
