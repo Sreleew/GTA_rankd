@@ -591,3 +591,15 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Arbitrage ROI :** réutiliser les rapports de progression natifs FFmpeg plutôt qu'ajouter un mécanisme de polling ou d'estimation séparé. Le coût supplémentaire est limité à la lecture des lignes de progression pendant le rendu.
 - **Progression v0.9.0 :** environ 85 % du regroupement technique estimé. Il reste principalement une validation guidée sur la machine Windows/AMD du flux Twitch vers Short et d'un rendu Daily Best Of réel, puis les éventuels ajustements réellement nécessaires avant une Release candidate. Ne pas annoncer de performance matérielle sans mesure locale.
 - **Suite prioritaire :** validation sur le PC Windows/AMD dès qu'une version regroupée est disponible. Exploiter ensuite les temps mesurés pour ne modifier que le goulot réellement observé.
+
+
+## 42. Progression réelle du rendu Short Twitch, 27 novembre 2026
+
+- **Problème ciblé :** pendant l'encodage vertical, le job restait sur un pourcentage fixe malgré un rendu parfois long. Le message ne permettait pas de distinguer un encodage lent d'un traitement bloqué.
+- **Mesure réelle :** le renderer peut activer le protocole FFmpeg `-progress pipe:1` et convertir les timestamps média encodés en progression basée sur la durée de l'extrait. Le mécanisme reste facultatif pour préserver les appels existants.
+- **Interface :** le worker mappe l'encodage de 60 à 85 %, affiche le pourcentage dans le message du job et ajoute une valeur numérique à côté de la barre de progression. Le contrôle qualité commence ensuite à 88 % comme auparavant.
+- **Encodeurs :** la même mesure s'applique à AMD AMF et à l'encodeur CPU de secours. Chaque tentative redémarre à zéro pour éviter un pourcentage trompeur après un fallback.
+- **Tests :** le test d'intégration simulé vérifie l'activation du protocole FFmpeg et la transmission des timestamps au callback. Le test FFmpeg réel existant conserve le chemin sans callback. Aucun rendu sur la RX 9060 XT n'est revendiqué.
+- **Branche :** `feat/short-render-live-progress`. Clé de cache des assets `0.8.9-short-live-progress`.
+- **Arbitrage ROI :** réutiliser le helper de progression FFmpeg du Daily Best Of, sans polling additionnel ni minuterie fictive.
+- **Suite :** tests ciblés Linux/Windows, puis validation de la PR. La vérification réelle sur Windows/AMD reste à faire sur le PC utilisateur.
