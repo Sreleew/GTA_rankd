@@ -208,9 +208,10 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - Publication : workflow [45978493951](https://github.com/Sreleew/GTA_rankd/actions/runs/45978493951) réussi. Release [v0.8.5](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.5) publique.
 - SHA-256 du ZIP : `39712b747d7401fe80cd78728ffe762c199ae0a982ee7d303e8f12b2fbe2ffa3`.
 - Suite Linux sur la candidate v0.8.5 : 160 tests réussis, 1 ignoré. Suite Windows : complète et réussie.
-- PR #23 (en cours) : diversité des candidats automatiques. Ajout d'une déduplication des transcriptions longues quasi identiques, même lorsque les passages sont éloignés dans la VOD. Les transcriptions courtes et les scans audio seuls restent hors de cette règle.
-- Tests ajoutés : répétition éloignée éliminée et événements avec transcriptions distinctes conservés.
-- CI PR #23 : Ruff, pip-audit et contrôle documentaire réussis. Les suites Linux/Windows ont identifié un fixture de transcriptions courtes qui ne contenait pas de payoff assez proche du pic audio et ne franchissait donc pas le seuil de score. Le scénario est réaligné sur deux événements équivalents, avec réaction immédiate après le pic. Aucun seuil produit n'est abaissé ; les validations complètes sont relancées.
+- PR #23 : diversité des candidats automatiques, fusionnée dans `main` (commit `6e088f0`). Les transcriptions longues quasi identiques sont dédoublonnées même lorsque les passages sont éloignés dans la VOD ; les transcriptions courtes et les scans audio seuls restent hors de cette règle.
+- Tests PR #23 : répétition éloignée éliminée, événements avec transcriptions distinctes préservés et réactions courtes similaires conservées.
+- CI PR #23 : Linux et Windows réussis sur le dernier commit. Ruff, pip-audit, contrôles documentaires, suites de régression complètes et package Windows validés. Le fixture des réactions courtes a été réaligné sur un payoff immédiatement après le pic audio, sans abaisser les seuils produit.
+- Nouveau chantier `perf/index-highlight-window-lookups` : indexation des intervalles audio et Whisper pour éviter de reparcourir toute la VOD pour chaque fenêtre candidate. Ajout d'une couverture des intervalles qui se chevauchent et du fallback pour les entrées non triées. Mesures de performance et CI à confirmer avant fusion.
 
 ## 12. Message de reprise prêt à copier
 
