@@ -1115,6 +1115,10 @@ def test_batch_twitch_short_import_queues_valid_urls_and_reports_invalid_ones(tm
     assert retry_job["metadata"]["batch_count"] == 3
     assert retry_job["metadata"]["options"]["layout"] == "blur"
 
+    stale_retry = client.post(f"/api/jobs/{failed_item['id']}/reprocess")
+    assert stale_retry.status_code == 409
+    assert "tentative plus récente" in stale_retry.json()["detail"]
+
     retrying_batch = client.get(f"/api/shorts/batches/{payload['batch_id']}").json()
     assert retrying_batch["total"] == 3
     assert retrying_batch["active_count"] == 1
