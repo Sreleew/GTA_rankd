@@ -669,3 +669,13 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Périmètre :** correction du parcours Short uniquement ; aucune modification du modèle, des réglages locaux, de la langue, du moteur AMD/CPU ou de la version de l'application.
 - **Branche :** `fix/short-captions-enabled-in-render`. CI Linux/Windows de la PR à vérifier avant fusion. Aucun rendu matériel réel ni benchmark Whisper sur la RX 9060 XT n'est revendiqué.
 - **Suite :** après CI, valider sur Windows un clip réel avec sous-titres activés et un autre sans sous-titres ; vérifier le MP4, le SRT annexe, la synchronisation et le rapport de contrôle qualité.
+## 48. Cadrage global des futures miniatures GTA, 28 novembre 2026
+
+- **Retour utilisateur sur v0.9.1 :** la sortie automatique recadrait la source verticale, réduisait la webcam à un fragment, gardait trop de fond vide et affichait « streamer + GTA MOMENT ». La demande porte sur le template global des futures miniatures ; le JPEG montré est uniquement un exemple de défaut et n'est pas retouché.
+- **Direction appliquée au générateur :** composition verticale resserrée avec l'image du streamer en haut lorsqu'une webcam déjà intégrée à la capture est repérée, une bande papier courte avec accroche au centre et le gameplay en bas. Nom du streamer en haut, signature GTA_Rankd discrète en bas. Le rendu reste déterministe et utilise la vraie image du clip.
+- **Cadrage :** pour une source verticale, recherche d'une zone d'image active afin d'écarter les grands espaces inactifs. Détection locale et conservatrice d'une webcam dans les quatre coins ; si aucun coin n'est assez crédible, la scène complète reste utilisée sans inventer de visage. Pour le panneau de gameplay, le coin de webcam repéré est écarté.
+- **Texte :** filtrage du nom du streamer, des tokens GTA/GTAV et des mots génériques « moment/clip » dans l'accroche. Un texte vide, fragmentaire ou composé de fillers utilise « WAIT FOR THE REACTION ».
+- **Fichiers :** compositeur app/studio/web/short_editor.py ; assertions existantes actualisées dans app/tests/test_short_editor.py ; ce mémo.
+- **Branche :** fix/thumbnail-collage-framing. La validation CI Linux/Windows de la PR devra confirmer le rendu et les régressions avant intégration.
+- **Limite :** le repérage de webcam est heuristique à partir des couleurs de peau et ne fonctionne que si elle est déjà visible dans la capture. Il ne remplace ni ne télécharge une webcam séparée.
+- **Suite :** ouvrir la PR, traiter les résultats CI Linux/Windows et livrer la nouvelle version stable selon le flux de release.
