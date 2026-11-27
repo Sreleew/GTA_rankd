@@ -959,7 +959,16 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
             try:
                 ffmpeg_bin = str(config.get("executables", "ffmpeg", default="ffmpeg"))
                 ffprobe_bin = str(config.get("executables", "ffprobe", default="ffprobe"))
-                encoder = "h264_amf" if shutil.which(ffmpeg_bin) else "libx264"
+                encoder_check = run_quiet(
+                    [ffmpeg_bin, "-hide_banner", "-encoders"],
+                    capture_output=True, text=True, encoding="utf-8", errors="replace",
+                    timeout=12, check=False,
+                )
+                encoder = (
+                    "h264_amf"
+                    if encoder_check.returncode == 0 and "h264_amf" in (encoder_check.stdout + encoder_check.stderr)
+                    else "libx264"
+                )
                 result = render_best_of_episode(
                     plan, output_path, ffmpeg=ffmpeg_bin, ffprobe=ffprobe_bin, encoder=encoder,
                 )
