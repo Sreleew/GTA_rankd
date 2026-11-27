@@ -168,3 +168,46 @@ def test_best_of_renderer_falls_back_to_cpu_when_amf_cannot_initialize(tmp_path:
     assert calls[1][calls[1].index("-c:v") + 1] == "libx264"
     assert "-crf" in calls[1]
     assert result["width"] == 1920
+
+
+
+def test_best_of_renderer_reports_real_encoding_progress(tmp_path: Path, monkeypatch):
+    from studio.web import short_renderer
+    from studio.web.best_of import render_best_of_episode
+
+    source = tmp_path / "source.mp4"
+    source.write_bytes(b"source")
+    output = tmp_path / "episode.mp4"
+    callbacks = []
+    commands = []
+
+    def fake_probe(path, ffprobe="ffprobe", timeout=None):
+        if Path(path) == output:
+            return {"width": 1920, "height": 1080, "duration": 560, "has_audio": True}
+        return {"width": 1080, "height": 1920, "duration": 560, "has_audio": True}
+
+    def fake_run(command, timeout=None, cwd=None, progress_callback=None):
+        commands.append(list(command))
+        assert "-progress" in command
+        assert command[command.index("-progress") + 1] == "pipe:1"
+        assert callable(progress_callback)
+        progress_callback(280.0)
+        output.write_bytes(b"rendered episode")
+
+    monkeypatch.setattr(short_renderer, "probe_media", fake_probe)
+    monkeypatch.setattr(short_renderer, "resolve_executable", lambda value: str(value))
+    monkeypatch.setattr(short_renderer, "run_command", fake_run)
+
+    render_best_of_episode(
+        {
+            "ready_for_render": True,
+            "clips": [{"id": "source", "output_path": str(source), "duration": 560}],
+        },
+        output,
+        encoder="libx264",
+        progress_callback=lambda progress, message: callbacks.append((progress, message)),
+    )
+
+    assert any(message == "Vérification des sources · 1/1" for _, message in callbacks)
+    assert (52, "Encodage 16:9 · 52%") in callbacks
+    assert callbacks[-1] == (95, "Vérification du fichier exporté")
