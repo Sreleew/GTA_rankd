@@ -36,7 +36,7 @@ def test_ass_contains_hook_branding_and_active_word_highlight(tmp_path: Path):
     assert "GR  //" not in content
     assert r"\fad(180,120)" in content
     assert "0:00:02.60,Hook" in content
-    assert "Style: Kicker" in content
+    assert "Style: HookKicker" not in content
     assert "HAPPENED?" in content
     assert r"\c&H0000C8F5&" in content
 
@@ -79,7 +79,7 @@ def test_caption_active_word_gets_a_subtle_kinetic_pop(tmp_path: Path):
     assert r"{\c&H00FFFFFF&\fscx100\fscy100\bord6}" in content
 
 
-def test_hook_uses_animated_ranked_dispatch_identity(tmp_path: Path):
+def test_hook_uses_direct_text_without_series_branding(tmp_path: Path):
     path = create_ass_file(
         tmp_path / "cinematic-hook.ass",
         words=[],
@@ -89,8 +89,7 @@ def test_hook_uses_animated_ranked_dispatch_identity(tmp_path: Path):
         brand_enabled=False,
     )
     content = path.read_text(encoding="utf-8-sig")
-    assert "Style: HookKicker" in content
-    assert "RANKED DISPATCH  //  GTA" in content
+    assert "RANKED DISPATCH" not in content
     assert "HE THOUGHT HE WAS SAFE" in content
     assert infer_hook_style("HE THOUGHT HE WAS SAFE") == "suspense"
     assert r"\blur7" in content
