@@ -1172,9 +1172,15 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
 
         def _run_best_of() -> None:
             store.update_best_of_job(
-                job_id, status="running", progress=10,
-                message="Assemblage et encodage 16:9",
+                job_id, status="running", progress=4,
+                message="Préparation du Daily Best Of",
             )
+
+            def _progress_callback(progress: int, message: str) -> None:
+                store.update_best_of_job(
+                    job_id, progress=progress, message=message,
+                )
+
             try:
                 ffmpeg_bin = str(config.get("executables", "ffmpeg", default="ffmpeg"))
                 ffprobe_bin = str(config.get("executables", "ffprobe", default="ffprobe"))
@@ -1189,7 +1195,8 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
                     else "libx264"
                 )
                 result = render_best_of_episode(
-                    plan, output_path, ffmpeg=ffmpeg_bin, ffprobe=ffprobe_bin, encoder=encoder,
+                    plan, output_path, ffmpeg=ffmpeg_bin, ffprobe=ffprobe_bin,
+                    encoder=encoder, progress_callback=_progress_callback,
                 )
                 relative = output_path.relative_to(outputs).as_posix()
                 store.update_best_of_job(
