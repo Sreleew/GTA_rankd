@@ -3,10 +3,9 @@
 > Lire ce document en premier dans chaque nouvelle conversation sur le projet. Il décrit l'état réellement livré et la structure source actuelle.
 
 - **Dernière mise à jour :** 27 novembre 2026
-- **Dernière version stable confirmée :** [0.8.7](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.7), publiée le 27 novembre 2026 avec le ZIP Windows et `SHA256SUMS.txt`.
-- **État :** PR #19 à #29 fusionnées. PR #26 ajoute la saisie `HH:MM:SS`, PR #27 les lots Twitch multi-tranches, PR #28 le classement global des lots et PR #29 prépare la Release v0.8.7. La v0.8.7 est publiée et constitue la dernière version stable.
+- **Dernière version stable confirmée :** [v0.8.7](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.7), publiée le 27 novembre 2026 avec le ZIP Windows et `SHA256SUMS.txt` (SHA-256 : `8239f0788fa788f793ae19228d589443e76ea32477cd04020e1f0267df1307f3`).
+- **État :** PR #19 à #29 fusionnées. PR #26 ajoute la saisie `HH:MM:SS`, PR #27 les lots Twitch multi-tranches, PR #28 le classement global des lots et PR #29 prépare la publication de la v0.8.7, désormais publiée et dernière version stable.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
-- **Dernière Release stable confirmée :** [v0.8.7](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.7). Assets publiés : `GTA-Ranked-Studio-v0.8.7.zip` et `SHA256SUMS.txt`.
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
 - **Source active :** `app/`. Modifier directement les fichiers Python, JavaScript, CSS, HTML, tests et installateur présents dans ce dossier.
 - **Mise à jour intégrée :** l'application consulte les Releases GitHub. La Release v0.8.7 contient le ZIP Windows et `SHA256SUMS.txt`; les installations v0.8.6 peuvent passer à v0.8.7 via Paramètres > Mises à jour.
@@ -142,9 +141,9 @@ finally {
 }
 Set-Location app
 node --check studio/web/static/app.js
-py -3.11 installer/build_release_package.py --version 0.8.1 --output-dir dist
+py -3.11 installer/build_release_package.py --version 0.8.7 --output-dir dist
 Set-Location ..
-py -3.11 tools/verify_release_package.py --package app/dist/GTA-Ranked-Studio-v0.8.1.zip --checksum app/dist/SHA256SUMS.txt --version 0.8.1
+py -3.11 tools/verify_release_package.py --package app/dist/GTA-Ranked-Studio-v0.8.7.zip --checksum app/dist/SHA256SUMS.txt --version 0.8.7
 ```
 
 Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquement si aucun fichier de configuration personnel n'existe. Ne jamais écraser un `config.yaml` existant.
