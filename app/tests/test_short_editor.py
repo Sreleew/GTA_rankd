@@ -354,3 +354,17 @@ def test_caption_groups_break_at_sentence_punctuation():
     assert len(events) == 5
     assert all("WAIT" not in event for event in events[:3])
     assert all("GOT" not in event for event in events[3:])
+
+
+def test_thumbnail_timestamp_recognizes_french_reactions_and_emphasis():
+    from studio.web.short_editor import select_thumbnail_timestamp
+
+    words = [
+        WordTiming(1.0, 1.3, "normal"),
+        WordTiming(12.0, 12.4, "C'est"),
+        WordTiming(12.4, 13.0, "INCROYABLE!"),
+        WordTiming(13.1, 13.5, "Putain!"),
+        WordTiming(13.6, 14.0, "DINGUE!"),
+    ]
+    selected = select_thumbnail_timestamp(words, 30.0, preferred=2.0)
+    assert 12.0 <= selected <= 14.0
