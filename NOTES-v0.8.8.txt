@@ -19,5 +19,7 @@ Mise à jour :
 Validation :
 - PR #41 : CI Linux et Windows réussies.
 - PR #42 : CI Linux et Windows réussies.
-- Les validations post-fusion sur main et le workflow de publication restent à confirmer.
+- CI post-fusion sur main : Linux [46012922370](https://github.com/Sreleew/GTA_rankd/actions/runs/46012922370) et Windows [46012922379](https://github.com/Sreleew/GTA_rankd/actions/runs/46012922379) réussies.
+- CI PR #43 de préparation v0.8.8 : Linux [46013472471](https://github.com/Sreleew/GTA_rankd/actions/runs/46013472471) et Windows [46013472448](https://github.com/Sreleew/GTA_rankd/actions/runs/46013472448) réussies.
+- Le workflow officiel de publication reste à confirmer après fusion.
 - La validation matérielle AMF/Vulkan sur la RX 9060 XT reste à effectuer.
