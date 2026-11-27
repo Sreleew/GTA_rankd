@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 from studio.config import load_config
 from studio.web.app import create_app, safe_upload_name
 from studio.web.short_renderer import build_filter_complex, build_render_command
+import studio.web.short_renderer as short_renderer
 from studio.web.app import _validate_edit_options
 from studio.web.store import Store
 
@@ -800,3 +801,45 @@ def test_short_url_api_accepts_only_public_twitch_clip_or_vod_urls(tmp_path: Pat
         assert job["status"] == "queued"
 
     assert submitted == created_ids
+
+
+def test_probe_media_scales_ffprobe_timeout_to_input_size(monkeypatch, tmp_path):
+    source = tmp_path / "twitch-clip.mp4"
+    source.write_bytes(b"media")
+    calls = {}
+
+    monkeypatch.setattr(short_renderer, "resolve_executable", lambda _name: "ffprobe")
+
+    def fake_run_command(args, *, timeout=None, cwd=None):
+        calls["timeout"] = timeout
+        return short_renderer.subprocess.CompletedProcess(
+            args, 0,
+            stdout='{"streams":[{"codec_type":"video","width":1920,"height":1080,"avg_frame_rate":"30/1"}],"format":{"duration":"90"}}',
+            stderr="",
+        )
+
+    monkeypatch.setattr(short_renderer, "run_command", fake_run_command)
+    result = short_renderer.probe_media(source)
+
+    assert result["duration"] == 90
+    assert calls["timeout"] == short_renderer.probe_timeout_for_file(source)
+    assert calls["timeout"] >= 300
+
+
+def test_probe_media_respects_explicit_timeout(monkeypatch, tmp_path):
+    source = tmp_path / "clip.mp4"
+    source.write_bytes(b"media")
+    calls = {}
+    monkeypatch.setattr(short_renderer, "resolve_executable", lambda _name: "ffprobe")
+
+    def fake_run_command(args, *, timeout=None, cwd=None):
+        calls["timeout"] = timeout
+        return short_renderer.subprocess.CompletedProcess(
+            args, 0,
+            stdout='{"streams":[{"codec_type":"video","width":1920,"height":1080}],"format":{"duration":"30"}}',
+            stderr="",
+        )
+
+    monkeypatch.setattr(short_renderer, "run_command", fake_run_command)
+    short_renderer.probe_media(source, timeout=42)
+    assert calls["timeout"] == 42

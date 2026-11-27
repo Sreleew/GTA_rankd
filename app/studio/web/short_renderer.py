@@ -70,8 +70,12 @@ def probe_media(
     input_path: Path,
     ffprobe: str = "ffprobe",
     *,
-    timeout: int = 60,
+    timeout: int | None = None,
 ) -> dict[str, Any]:
+    # Scale the probe timeout to the actual media size. A fixed 60-second
+    # timeout can reject valid Twitch downloads before the Short pipeline starts.
+    if timeout is None:
+        timeout = probe_timeout_for_file(input_path)
     ffprobe_bin = resolve_executable(ffprobe)
     result = run_command([
         ffprobe_bin, "-v", "error", "-show_streams", "-show_format", "-of", "json", str(input_path.resolve())
