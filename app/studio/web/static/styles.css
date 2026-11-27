@@ -104,3 +104,9 @@
 .button-secondary{width:100%;background:#2a3036;border:1px solid #434b54;color:#e3e7eb}
 .button-secondary:hover{background:#343b43;border-color:#b39a45;color:#f2d36a}
 .button-secondary:disabled{opacity:.55;cursor:wait}
+
+
+.highlight-batch-errors{margin:10px 0;padding:8px 10px;border-left:2px solid #a94a4a;background:#211718;color:#e8b5b5;font-size:11px}
+.highlight-batch-errors p{margin:3px 0;line-height:1.45}
+.highlight-batch-card .highlight-candidates{margin-top:14px}
+.highlight-batch-card .highlight-method-note{display:block;margin-top:10px}

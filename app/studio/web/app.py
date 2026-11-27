@@ -29,7 +29,7 @@ from studio.web.worker import JobRunner
 from studio.web.transcribe import inspect_whisper_cli, probe_whisper_vulkan
 from studio.web.model_manager import ModelManager
 from studio.web.updater import UpdateService
-from studio.web.highlights import HighlightScanner
+from studio.web.highlights import HighlightScanner, select_distinct_highlight_candidates
 
 logger = logging.getLogger(__name__)
 ALLOWED_EXTENSIONS = {".mp4", ".mov", ".mkv", ".webm", ".m4v"}
@@ -174,8 +174,61 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
     @app.get("/api/highlights")
     def list_highlights(limit: int = 30) -> list[dict]:
         scans = store.list_highlight_scans(max(1, min(limit, 100)))
+        batch_groups: dict[str, list[dict]] = {}
         for scan in scans:
             scan["candidates"] = store.list_highlight_candidates(scan["id"])
+            batch_id = str(scan.get("metadata", {}).get("batch_id") or "")
+            if batch_id:
+                batch_groups.setdefault(batch_id, []).append(scan)
+
+        for batch_id, members in batch_groups.items():
+            expected_count = int(members[0].get("metadata", {}).get("batch_count") or 0)
+            if expected_count <= 1 or len(members) != expected_count:
+                continue
+            members.sort(key=lambda item: int(item.get("metadata", {}).get("batch_index") or 0))
+            candidates = []
+            for member in members:
+                for candidate in member.get("candidates", []):
+                    candidates.append({**candidate, "scan_id": member["id"]})
+            shortlist = select_distinct_highlight_candidates(candidates, max_candidates=30)
+            terminal_statuses = {"completed", "error", "cancelled"}
+            completed = sum(member["status"] == "completed" for member in members)
+            errors = sum(member["status"] == "error" for member in members)
+            cancelled = sum(member["status"] == "cancelled" for member in members)
+            progress_values = [
+                100.0 if member["status"] in terminal_statuses
+                else max(0.0, min(100.0, float(member.get("progress") or 0.0)))
+                for member in members
+            ]
+            summary = {
+                "batch_id": batch_id,
+                "total": len(members),
+                "completed": completed,
+                "errors": errors,
+                "cancelled": cancelled,
+                "queued": sum(member["status"] == "queued" for member in members),
+                "running": sum(member["status"] in {"running", "cancelling"} for member in members),
+                "progress": round(sum(progress_values) / len(progress_values)),
+                "source_title": next((member.get("source_title") for member in members if member.get("source_title")), None),
+                "source_url": members[0].get("source_url"),
+                "streamer": members[0].get("streamer"),
+                "scans": [
+                    {
+                        "id": member["id"],
+                        "status": member["status"],
+                        "progress": member.get("progress", 0),
+                        "window_start": member.get("window_start"),
+                        "window_end": member.get("window_end"),
+                        "error": member.get("error"),
+                        "message": member.get("message"),
+                    }
+                    for member in members
+                ],
+                "candidates": shortlist,
+            }
+            anchor = next((member for member in members if int(member.get("metadata", {}).get("batch_index") or 0) == 1), None)
+            if anchor is not None:
+                anchor["batch_summary"] = summary
         return scans
 
     @app.post("/api/highlights/{scan_id}/cancel")

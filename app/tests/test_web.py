@@ -493,6 +493,79 @@ def test_highlight_url_batch_rejects_too_many_segments_and_invalid_chunk_size(tm
     assert submitted == []
 
 
+def test_highlight_batch_response_provides_one_global_deduplicated_shortlist(tmp_path: Path):
+    app = create_app(load_config(_make_isolated_app_config(tmp_path)))
+    store = app.state.store
+    batch_id = "long-vod-batch"
+    for index, scan_id in enumerate(("segment-1", "segment-2"), start=1):
+        store.create_highlight_scan({
+            "id": scan_id,
+            "source_kind": "url",
+            "source_url": "https://www.twitch.tv/videos/123456",
+            "streamer": "TestStreamer",
+            "rights_confirmed": True,
+            "window_start": (index - 1) * 3600,
+            "window_end": index * 3600,
+            "metadata": {
+                "batch_id": batch_id,
+                "batch_index": index,
+                "batch_count": 2,
+            },
+        })
+        store.update_highlight_scan(scan_id, status="completed", progress=100, source_title="Long VOD")
+    repeated = (
+        "I cannot believe this police car just flew over the entire bridge "
+        "and landed right next to the casino entrance"
+    )
+    store.save_highlight_candidates("segment-1", [{
+        "id": "candidate-1",
+        "rank": 1,
+        "start_time": 120.0,
+        "end_time": 190.0,
+        "media_start": 120.0,
+        "media_end": 190.0,
+        "score": 95.0,
+        "transcript": repeated,
+    }])
+    store.save_highlight_candidates("segment-2", [
+        {
+            "id": "candidate-2",
+            "rank": 1,
+            "start_time": 3720.0,
+            "end_time": 3790.0,
+            "media_start": 120.0,
+            "media_end": 190.0,
+            "score": 93.0,
+            "transcript": repeated,
+        },
+        {
+            "id": "candidate-3",
+            "rank": 2,
+            "start_time": 4500.0,
+            "end_time": 4570.0,
+            "media_start": 900.0,
+            "media_end": 970.0,
+            "score": 90.0,
+            "transcript": "The mission marker vanished after we crossed the highway and entered the tunnel",
+        },
+    ])
+    client = TestClient(app)
+
+    response = client.get("/api/highlights?limit=100")
+
+    assert response.status_code == 200
+    scans = response.json()
+    anchor = next(scan for scan in scans if scan["id"] == "segment-1")
+    summary = anchor["batch_summary"]
+    assert summary["total"] == 2
+    assert summary["completed"] == 2
+    assert len(summary["candidates"]) == 2
+    assert [candidate["id"] for candidate in summary["candidates"]] == ["candidate-1", "candidate-3"]
+    assert [candidate["scan_id"] for candidate in summary["candidates"]] == ["segment-1", "segment-2"]
+    assert summary["candidates"][0]["rank"] == 1
+    assert summary["candidates"][1]["rank"] == 2
+
+
 def test_highlight_url_accepts_blank_optional_range_and_queues_scan(tmp_path: Path):
     app = create_app(load_config(_make_isolated_app_config(tmp_path)))
     submitted: list[str] = []

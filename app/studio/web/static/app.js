@@ -172,6 +172,93 @@ function highlightScanCard(scan) {
   </article>`;
 }
 
+function highlightBatchCard(scan, summary) {
+  const sourceName = summary.source_title || scan.source_title || summary.source_url || 'VOD Twitch';
+  const total = Number(summary.total) || 0;
+  const completed = Number(summary.completed) || 0;
+  const errors = Number(summary.errors) || 0;
+  const cancelled = Number(summary.cancelled) || 0;
+  const queued = Number(summary.queued) || 0;
+  const running = Number(summary.running) || 0;
+  const active = queued + running;
+  const progress = Math.max(0, Math.min(100, Number(summary.progress) || 0));
+  const status = active
+    ? 'LOT EN COURS'
+    : errors
+      ? 'LOT TERMINÉ AVEC ERREURS'
+      : cancelled
+        ? (cancelled === total ? 'LOT ANNULÉ' : 'LOT PARTIELLEMENT ANNULÉ')
+        : 'LOT TERMINÉ';
+  const statusClass = active ? 'running' : errors ? 'error' : 'validated';
+  const pendingIds = (summary.scans || [])
+    .filter(item => ['queued', 'running'].includes(item.status))
+    .map(item => item.id)
+    .join(',');
+  const cancelAction = pendingIds
+    ? `<div class="highlight-actions"><button class="mini-button danger" data-highlight-batch-cancel data-scan-ids="${escapeHtml(pendingIds)}">Annuler le lot</button></div>`
+    : '';
+  const message = active
+    ? `${completed}/${total} tranches terminées · ${queued} en attente · ${running} en cours`
+    : `${completed}/${total} tranches terminées · ${errors} erreurs · ${cancelled} annulées`;
+  const candidates = (summary.candidates || []).length
+    ? `<div class="highlight-candidates">${summary.candidates.map(candidate => highlightCandidateCard({ id: candidate.scan_id }, candidate)).join('')}</div>`
+    : (active
+      ? ''
+      : '<div class="empty-state compact-empty">Aucun passage ne dépasse le seuil strict de 80/100 sur ce lot. Essaie une autre plage horaire.</div>');
+  const failed = (summary.scans || []).filter(item => item.status === 'error');
+  const errorsList = failed.length
+    ? `<div class="highlight-batch-errors">${failed.map(item => `<p>${formatMediaTime(item.window_start)} → ${formatMediaTime(item.window_end)} · ${escapeHtml(item.error || item.message || 'Erreur inconnue')}</p>`).join('')}</div>`
+    : '';
+  return `<article class="highlight-scan-card highlight-batch-card">
+    <div class="highlight-scan-header"><div><div class="eyebrow">TWITCH VOD · LOT DE ${total} TRANCHES · ${progress}%</div><h4>${escapeHtml(sourceName)}</h4><small>${escapeHtml(summary.streamer || scan.streamer || 'Streamer non renseigné')} · ${message}</small></div><span class="status-pill ${statusClass}">${status}</span></div>
+    <div class="highlight-progress"><div class="highlight-progress-track"><span style="width:${progress}%"></span></div><small>${progress}% · progression moyenne des tranches</small></div>
+    ${cancelAction}${errorsList}
+    <small class="highlight-method-note">Classement consolidé indicatif · doublons entre tranches filtrés · vérifie les meilleurs passages avant de créer les Shorts.</small>
+    ${candidates}
+  </article>`;
+}
+
+function renderHighlightScans(scans) {
+  const groups = new Map();
+  for (const scan of scans) {
+    const batchId = scan.metadata && scan.metadata.batch_id;
+    if (batchId && Number(scan.metadata.batch_count) > 1) {
+      if (!groups.has(batchId)) groups.set(batchId, []);
+      groups.get(batchId).push(scan);
+    }
+  }
+  const rendered = new Set();
+  return scans.map(scan => {
+    const batchId = scan.metadata && scan.metadata.batch_id;
+    if (!batchId || Number(scan.metadata.batch_count) <= 1) return highlightScanCard(scan);
+    const group = groups.get(batchId) || [];
+    const expected = Number(scan.metadata.batch_count);
+    if (group.length !== expected) return highlightScanCard(scan);
+    if (rendered.has(batchId)) return '';
+    rendered.add(batchId);
+    const anchor = group.find(item => Number(item.metadata.batch_index) === 1);
+    return anchor && anchor.batch_summary ? highlightBatchCard(anchor, anchor.batch_summary) : group.map(highlightScanCard).join('');
+  }).join('');
+}
+
+async function cancelHighlightBatch(button) {
+  const scanIds = (button.dataset.scanIds || '').split(',').filter(Boolean);
+  if (!scanIds.length) return;
+  button.disabled = true;
+  button.textContent = 'Annulation du lot…';
+  let cancelled = 0;
+  for (const scanId of scanIds) {
+    try {
+      await api(`/api/highlights/${scanId}/cancel`, { method: 'POST' });
+      cancelled += 1;
+    } catch {
+      // A segment may finish or enter cancellation while the batch is being stopped.
+    }
+  }
+  toast(`${cancelled}/${scanIds.length} analyses annulées.`, cancelled !== scanIds.length);
+  await loadHighlights();
+}
+
 async function cancelHighlightScan(button) {
   const scanId = button.dataset.scanId;
   button.disabled = true;
@@ -191,7 +278,7 @@ async function loadHighlights() {
   try {
     const scans = await api('/api/highlights?limit=100');
     $('#highlight-scans').innerHTML = scans.length
-      ? scans.map(highlightScanCard).join('')
+      ? renderHighlightScans(scans)
       : '<div class="empty-state">Aucune analyse pour le moment. Ajoute une VOD ou un clip Twitch pour commencer.</div>';
   } catch (error) { toast(error.message, true); }
 }
@@ -626,6 +713,8 @@ function setupEvents() {
   $('#highlight-scans').addEventListener('click', event => {
     const createButton = event.target.closest('[data-highlight-create]');
     if (createButton) createShortFromHighlight(createButton);
+    const batchCancelButton = event.target.closest('[data-highlight-batch-cancel]');
+    if (batchCancelButton) cancelHighlightBatch(batchCancelButton);
     const cancelButton = event.target.closest('[data-highlight-cancel]');
     if (cancelButton) cancelHighlightScan(cancelButton);
   });
