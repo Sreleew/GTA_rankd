@@ -38,6 +38,46 @@ function outputUrlFromPath(filePath) {
   return `/outputs/${parts.map(encodeURIComponent).join('/')}`;
 }
 
+function formatProcessingDuration(value) {
+  const milliseconds = Number(value);
+  if (!Number.isFinite(milliseconds) || milliseconds < 0) return '';
+  if (milliseconds >= 60000) return `${(milliseconds / 60000).toFixed(1)} min`;
+  return `${(milliseconds / 1000).toFixed(1)} s`;
+}
+
+function processingTimingsHtml(metadata) {
+  const timings = metadata.processing_timings_ms;
+  if (!timings || typeof timings !== 'object' || Array.isArray(timings)) return '';
+  const groups = [
+    { title: 'Préparation', items: [
+      ['download_ms', 'Téléchargement'],
+      ['source_hash_ms', 'Vérification du fichier'],
+      ['source_probe_ms', 'Lecture des propriétés'],
+      ['audio_analysis_ms', 'Analyse audio'],
+      ['metadata_generation_ms', 'Préparation des métadonnées'],
+      ['hook_sound_ms', 'Sound design'],
+    ]},
+    { title: 'Rendu et finitions', items: [
+      ['render_encode_ms', 'Encodage vidéo'],
+      ['render_output_probe_ms', 'Vérification du rendu'],
+      ['export_quality_ms', 'Contrôle qualité'],
+      ['render_thumbnail_ms', 'Création miniature'],
+      ['thumbnail_overlay_ms', 'Finition miniature'],
+    ]},
+  ];
+  const sections = groups.map(group => {
+    const rows = group.items
+      .filter(([key]) => Number.isFinite(Number(timings[key])) && Number(timings[key]) >= 0)
+      .map(([key, label]) => `<div><span>${label}</span><strong>${formatProcessingDuration(timings[key])}</strong></div>`)
+      .join('');
+    return rows ? `<section><h4>${group.title}</h4>${rows}</section>` : '';
+  }).join('');
+  const total = formatProcessingDuration(timings.total_processing_ms);
+  if (!sections && !total) return '';
+  const note = metadata.audio_analysis_skipped ? '<p class="timing-note">Analyse audio ignorée automatiquement pour éviter un traitement inutile.</p>' : '';
+  return `<details class="timing-report"><summary><span>Temps de traitement</span><strong>${total ? `Total : ${total}` : 'Détails'}</strong></summary><div class="timing-grid">${sections}</div>${note}</details>`;
+}
+
 function jobCard(job) {
   const outputUrl = outputUrlFromPath(job.output_path);
   const thumbUrl = outputUrlFromPath(job.thumbnail_path);
@@ -68,9 +108,10 @@ function jobCard(job) {
   const quality = metadata.quality_report || null;
   const qualityLabels = { passed: 'QC OK', review: 'À vérifier', partial: 'Contrôle partiel', failed: 'Problème détecté' };
   const qualityHtml = quality ? `<details class="quality-report ${escapeHtml(quality.status || 'partial')}"><summary><span>Contrôle qualité</span><strong>${escapeHtml(qualityLabels[quality.status] || 'Contrôle')}</strong></summary><p>${escapeHtml(quality.summary || '')}</p>${(quality.warnings || []).length ? `<ul>${quality.warnings.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>` : ''}</details>` : '';
+  const timingsHtml = processingTimingsHtml(metadata);
   return `<article class="job-card">
     ${thumbUrl ? `<img class="job-thumb" src="${thumbUrl}" alt="Miniature du Short">` : `<div class="job-thumb job-thumb-placeholder">▶</div>`}
-    <div class="job-main"><strong title="${escapeHtml(title)}">${escapeHtml(title)}</strong>${socialCaption ? `<div class="job-caption">${escapeHtml(socialCaption)}</div>` : ''}<div class="job-meta">${escapeHtml(meta || (job.source_kind || 'clip').toUpperCase())}</div><div class="job-message">${escapeHtml(job.message || '')}${job.error ? ` · ${escapeHtml(job.error.slice(0, 200))}` : ''}</div>${qualityHtml}${['queued','running'].includes(job.status) ? `<div class="job-progress"><span style="width:${progress}%"></span></div>` : ''}${actions}</div>
+    <div class="job-main"><strong title="${escapeHtml(title)}">${escapeHtml(title)}</strong>${socialCaption ? `<div class="job-caption">${escapeHtml(socialCaption)}</div>` : ''}<div class="job-meta">${escapeHtml(meta || (job.source_kind || 'clip').toUpperCase())}</div><div class="job-message">${escapeHtml(job.message || '')}${job.error ? ` · ${escapeHtml(job.error.slice(0, 200))}` : ''}</div>${qualityHtml}${timingsHtml}${['queued','running'].includes(job.status) ? `<div class="job-progress"><span style="width:${progress}%"></span></div>` : ''}${actions}</div>
     <div class="job-side"><span class="status-pill ${escapeHtml(job.status)}">${statusLabel(job.status)}</span></div>
   </article>`;
 }
