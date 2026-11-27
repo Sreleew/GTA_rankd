@@ -456,7 +456,11 @@ class JobRunner:
                             existing_audio_path=audio_path,
                             existing_audio_start=audio_path_start,
                             existing_audio_duration=audio_path_duration,
-                            language=str(options.get("caption_language") or ""),
+                            language=(
+                                str(self.config.get("transcription", "language", default="en") or "en")
+                                if str(options.get("caption_language") or "config") == "config"
+                                else str(options.get("caption_language"))
+                            ),
                         )
                         transcription_status = str(transcription.get("status") or "unknown")
                         transcription_timestamp_mode = transcription.get("timestamp_mode")
@@ -655,8 +659,12 @@ class JobRunner:
                 "transcription_status": transcription_status,
                 "transcription_timestamp_mode": transcription_timestamp_mode,
                 "transcription_language_requested": (
-                    str(options.get("caption_language") or self.config.get("transcription", "language", default="en"))
-                    if captions_requested else None
+                    str(options.get("caption_language") or "config") if captions_requested else None
+                ),
+                "transcription_language": (
+                    str(self.config.get("transcription", "language", default="en") or "en")
+                    if captions_requested and str(options.get("caption_language") or "config") == "config"
+                    else (str(options.get("caption_language")) if captions_requested else None)
                 ),
                 "transcribed_words": len(render_words),
                 "transcription_warning": transcription_warning,
