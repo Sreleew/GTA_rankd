@@ -4,7 +4,7 @@
 
 - **Dernière mise à jour :** 27 novembre 2026
 - **Dernière version stable confirmée :** [v0.8.9](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.9), publiée le 27 novembre 2026. Correctif de redémarrage et de confirmation de version après mise à jour.
-- **État :** PR #38 à #47 fusionnées dans `main`. La v0.8.9 est la dernière Release stable publiée. La PR #47 ajoute quatre animations de hook selon l'intention éditoriale et une emphase cinétique du mot actif.
+- **État :** PR #38 à #48 fusionnées dans `main`. La v0.8.9 est la dernière Release stable publiée. La PR #47 ajoute quatre animations de hook selon l'intention éditoriale et une emphase cinétique du mot actif. La PR #48 ajoute la détection francophone des hooks et le cadre éditorial du gameplay.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
 - **Source active :** `app/`. Modifier directement les fichiers Python, JavaScript, CSS, HTML, tests et installateur présents dans ce dossier.
@@ -308,3 +308,12 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Exemples couverts :** « POURQUOI IL A FAIT ÇA ? » -> question ; « ATTENDS DE VOIR LA SUITE » -> suspense ; « C'EST INCROYABLE ! » -> réaction.
 - **Effet utilisateur :** les hooks français reçoivent eux aussi une animation cohérente avec leur intention, au lieu de tomber systématiquement sur l'animation impact par défaut.
 - **Suite :** finaliser le cadre éditorial du layout smart, puis travailler sur les transitions sonores et les vrais médias source webcam disponibles.
+
+
+## 19. Sound design adapté au hook, 27 novembre 2026
+
+- **Chantier en cours :** générer localement quatre cues audio originaux (impact, question, suspense, réaction) avec la bibliothèque standard Python. Aucun téléchargement, fichier tiers ou dépendance supplémentaire.
+- **Intégration prévue :** classifier le hook final généré, créer le WAV correspondant dans le dossier temporaire du job, puis le mixer au début du Short. Le son reste désactivable avec le réglage SFX existant.
+- **Objectif éditorial :** remplacer le whoosh identique appliqué à tous les Shorts par un accent sonore cohérent avec l'intention du hook.
+- **Tests ajoutés :** vérifier les propriétés WAV, la présence d'échantillons et le fallback sur le cue impact pour un style inconnu.
+- **Limite à vérifier :** le rendu synthétique doit encore être écouté sur un vrai Short et ajusté en volume sur le PC de l'utilisateur. Les contrôles CI Linux/Windows restent obligatoires avant fusion.
