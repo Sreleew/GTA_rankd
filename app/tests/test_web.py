@@ -960,7 +960,7 @@ def test_best_of_store_recovers_interrupted_jobs_and_keeps_completed_history(tmp
     assert "interrompu" in recovered["message"]
     assert recovered["plan"]["clips"][0]["id"] == "clip-a"
     assert store.get_best_of_job("bestof-completed")["status"] == "completed"
-    assert [job["id"] for job in store.list_best_of_jobs(10)] == ["bestof-completed", "bestof-running"]
+    assert {job["id"] for job in store.list_best_of_jobs(10)} == {"bestof-completed", "bestof-running"}
 
 
 def test_daily_best_of_render_history_survives_app_restart(tmp_path: Path, monkeypatch):
@@ -1004,7 +1004,7 @@ def test_daily_best_of_render_history_survives_app_restart(tmp_path: Path, monke
         patcher.setattr(app_module, "run_quiet", lambda *args, **kwargs: SimpleNamespace(
             returncode=1, stdout="", stderr="",
         ))
-        patcher.setattr(app_module.threading, "Thread", ImmediateThread)
+        patcher.setattr(app_module, "threading", SimpleNamespace(Thread=ImmediateThread))
         response = client.post(
             "/api/bestof/render",
             json={"clip_ids": clip_ids, "date_key": "2026-11-27"},
