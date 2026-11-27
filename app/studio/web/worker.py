@@ -68,6 +68,21 @@ def _download_metrics_suffix(data: dict[str, Any]) -> str:
     return " · " + " · ".join(metrics) if metrics else ""
 
 
+def _download_size_suffix(data: dict[str, Any]) -> str:
+    """Format downloaded and total bytes as a compact progress suffix."""
+    try:
+        downloaded = max(0, int(data.get("downloaded_bytes") or 0))
+        total = max(0, int(data.get("total_bytes") or data.get("total_bytes_estimate") or 0))
+    except (TypeError, ValueError, OverflowError):
+        return ""
+    if downloaded <= 0:
+        return ""
+    mib = 1024 * 1024
+    if total > 0:
+        return f" · {downloaded / mib:.1f}/{total / mib:.1f} MiB"
+    return f" · {downloaded / mib:.1f} MiB"
+
+
 def _metadata_text(info: dict[str, Any], *keys: str) -> str:
     """Return the first useful yt-dlp metadata value without leaking null-like text."""
     for key in keys:
@@ -549,7 +564,7 @@ class JobRunner:
             except (TypeError, ValueError, OverflowError):
                 downloaded, total = 0, 0
 
-            metrics_suffix = _download_metrics_suffix(data)
+            metrics_suffix = _download_size_suffix(data) + _download_metrics_suffix(data)
             now = time.monotonic()
             if total > 0:
                 percent = min(100, max(0, downloaded * 100 // total))
