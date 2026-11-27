@@ -185,3 +185,9 @@
 .timing-grid section strong{font:9px var(--mono);color:#e0e2e5;white-space:nowrap}
 .timing-note{margin:0;padding:0 10px 9px;color:#879c8d;font-size:9px}
 @media(max-width:560px){.timing-grid{grid-template-columns:1fr}}
+
+
+/* Retry controls in durable Twitch batch tracking */
+.short-batch-job-actions{display:flex;align-items:center;gap:6px;flex:none}
+.short-batch-job-actions .mini-button{padding:5px 7px;font-size:9px}
+@media(max-width:650px){.short-batch-job-actions{align-items:flex-end;flex-direction:column;gap:4px}}
