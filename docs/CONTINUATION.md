@@ -640,6 +640,7 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Pipeline :** la langue choisie est validée côté API, persistée dans les options du job, transmise à whisper.cpp via le paramètre -l, conservée lors d'une relance et enregistrée dans les métadonnées du rendu (langue demandée et langue effectivement passée au moteur).
 - **Modèle :** clarification de l'interface : ggml-large-v3-turbo est présenté comme modèle multilingue, pas comme modèle anglais uniquement.
 - **Tests :** validation de l'allowlist API, persistance des langues distinctes sur upload, URL et import groupé, rejet d'une langue invalide, et vérification des arguments -l fr et -l auto dans les tests du moteur Whisper DTW/SRT.
+- **Premier retour CI :** 238 tests passés et 1 ignoré ; deux tests UI échouaient uniquement parce qu'ils attendaient encore l'ancienne clé de cache 0.8.9. Les deux assertions ont été alignées sur 0.9.0-short-caption-language ; la validation finale doit confirmer la correction.
 - **Cache UI :** 0.9.0-short-caption-language.
 - **Version :** aucun numéro de version ni fichier d'approbation de release modifié. La Release publique reste v0.9.0 ; cette évolution est destinée à une prochaine release.
 - **Validation :** CI Linux/Windows de la PR à vérifier avant fusion. Aucun rendu Whisper réel ni mesure sur la RX 9060 XT n'est revendiqué.
