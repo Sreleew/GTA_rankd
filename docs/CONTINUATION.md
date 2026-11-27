@@ -471,3 +471,13 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Tests ajoutés :** vérifier que le renderer ne reprobe pas la source lorsqu'elle est déjà connue et que le contrôle qualité ne reprobe pas l'export lorsqu'il reçoit les métadonnées validées.
 - **Validation :** CI Linux et Windows requise avant fusion. Aucun benchmark chronométré sur une vidéo Twitch réelle ni sur le GPU AMD local n'a encore été effectué.
 - **Suite étape 2 :** examiner le coût du contrôle qualité FFmpeg et du choix de miniature sans dégrader la fiabilité ni le résultat visuel. Ne pas désactiver les contrôles ni réduire la qualité par défaut sans mesure.
+
+
+## 34. Mesure des temps de traitement Short, 27 novembre 2026
+
+- **Objectif :** rendre les prochaines optimisations guidées par les vrais coûts sur le PC Windows/AMD, plutôt que de deviner où le temps est passé.
+- **Métadonnées du Short :** ajout de `processing_timings_ms` dans `meta.json`, avec téléchargement, calcul du hash, probe source, analyse audio, génération des métadonnées, sound effect, contrôle qualité, finition miniature et durée totale.
+- **Détail FFmpeg :** le renderer ajoute le temps d'encodage, le probe du fichier exporté, la génération de miniature et son temps total.
+- **Diagnostic :** ajout de `audio_analysis_skipped` pour distinguer les clips qui évitent réellement l'extraction audio de ceux qui en ont besoin.
+- **Impact :** mesures uniquement, aucun changement au rendu ou à la qualité. Le coût est limité à quelques appels à `perf_counter`.
+- **Suite :** après un vrai rendu sur la machine utilisateur, exploiter ces durées pour prioriser le goulot dominant. Ne pas publier de chiffres de performance avant cette mesure réelle.
