@@ -1435,3 +1435,10 @@ def test_short_audio_analysis_is_skipped_when_no_feature_needs_it():
     assert _needs_audio_analysis(True, 90, dynamic_zoom=False, auto_trim=True) is True
     assert _needs_audio_analysis(True, 30, dynamic_zoom=True, auto_trim=False) is True
     assert _needs_audio_analysis(False, 90, dynamic_zoom=True, auto_trim=True) is False
+
+
+def test_short_ui_explains_full_frame_twitch_composition() -> None:
+    html = Path("studio/web/static/index.html").read_text(encoding="utf-8-sig")
+    assert "Image Twitch entière, webcam comprise" in html
+    assert "Utilisé uniquement en mode plein écran recadré." in html
+    assert "Composition 9:16, image complète et webcam Twitch préservées" in html
