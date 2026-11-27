@@ -48,8 +48,6 @@ def test_hook_sound_effects_are_valid_and_distinct(tmp_path: Path, style: str) -
 
 
 def test_unknown_hook_sound_style_falls_back_to_impact(tmp_path: Path) -> None:
-    import wave
-
     expected = create_hook_sound_effect(tmp_path / "impact.wav", "impact")
     fallback = create_hook_sound_effect(tmp_path / "fallback.wav", "unexpected")
     assert expected.read_bytes() == fallback.read_bytes()
