@@ -4,7 +4,7 @@
 
 - **Dernière mise à jour :** 27 novembre 2026
 - **Dernière version stable confirmée :** [v0.8.7](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.7), publiée le 27 novembre 2026 avec le ZIP Windows et `SHA256SUMS.txt` (SHA-256 : `8239f0788fa788f793ae19228d589443e76ea32477cd04020e1f0267df1307f3`).
-- **État :** PR #19 à #29 fusionnées. PR #26 ajoute la saisie `HH:MM:SS`, PR #27 les lots Twitch multi-tranches, PR #28 le classement global des lots et PR #29 prépare la publication de la v0.8.7, désormais publiée et dernière version stable.
+- **État :** PR #38, #39, #40 et #41 fusionnées dans `main`. PR #41 ajoute le constructeur de sélection Daily Best Of (date, ajout/retrait, ordre manuel, contrôle de durée 9 à 11 min). Le rendu final Daily Best Of n'est pas encore implémenté. La v0.8.7 reste la dernière release stable confirmée.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
 - **Source active :** `app/`. Modifier directement les fichiers Python, JavaScript, CSS, HTML, tests et installateur présents dans ce dossier.
@@ -231,3 +231,11 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 ## 12. Message de reprise prêt à copier
 
 > Nous reprenons GTA Ranked Studio. Lis `docs/CONTINUATION.md` et `docs/WORKING-AGREEMENT.md`. Dernière Release stable : v0.8.7. Priorité 1 : améliorer « Créer un Short » directement depuis un clip Twitch, du collage de l'URL jusqu'au rendu 9:16, aux métadonnées et à la review. Priorité 2 : développer « Daily Best Of » à partir des clips validés de la bibliothèque, en 16:9 sur 9 à 11 minutes. Laisser « Moments forts » en pause, sans supprimer ce qui existe. Travailler directement dans GitHub, par petits lots courts, tests adaptés, fusion/release après validation. Mettre obligatoirement ce mémo à jour à chaque lot avec les décisions de l'utilisateur, les modifications, PR, commits, tests et limites. Réponses courtes, préserver les données locales et distinguer CI, tests simulés et validation réelle sur le PC.
+
+
+## 10. Reprise du 27 novembre 2026
+
+- **Priorité 1 :** finaliser et fiabiliser le parcours de création d'un Short depuis une URL de clip Twitch, du téléchargement au rendu et à la validation. Priorité 2 : rendre la compilation Daily Best Of réellement exportable en 16:9. La fonctionnalité « Moments forts » est mise en pause et ne doit pas être développée sauf blocage direct.
+- **PR #41 :** fusionnée dans `main` (merge commit `101e3a3c6e2114d024aed602e01d5e764bf22e37`). CI Linux run `46009727834` et Windows run `46009727859` réussis. Le constructeur Daily Best Of valide une sélection mais ne produit pas encore la vidéo finale.
+- **Méthode confirmée :** travailler directement dans `Sreleew/GTA_rankd`, avancer sans demander de validation à chaque petite étape, privilégier les améliorations réellement utilisables plutôt que les PR de tests ou de documentation isolées. Garder les lots cohérents, tester Linux et Windows avant fusion, et signaler clairement ce qui est livré versus ce qui reste à faire.
+- **Lot en cours :** amélioration de la relance des Shorts Twitch. Si un téléchargement depuis l'URL échoue avant la sauvegarde du média local, l'action « Relancer » doit créer un nouveau job depuis l'URL Twitch d'origine en conservant les options, streamer et note. Si le média a déjà été téléchargé, continuer à le réutiliser sans le télécharger une seconde fois.
