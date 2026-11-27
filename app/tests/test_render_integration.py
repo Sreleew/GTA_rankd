@@ -17,7 +17,7 @@ def test_smart_layout_builds_large_gameplay_panel_and_respects_horizontal_focus(
     )
     assert "scale=-2:806" in graph
     assert "crop=1080:806:(in_w-out_w)*0.800" in graph
-    assert "overlay=(W-w)/2:633" in graph
+    assert "overlay=(W-w)/2:576" in graph
     assert "boxblur=28:10" in graph
 
 
