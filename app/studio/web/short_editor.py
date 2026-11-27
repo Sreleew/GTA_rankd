@@ -446,7 +446,7 @@ def apply_thumbnail_overlay(
         draw.text((58, 66), creator.upper(), font=load_font(38), fill=white,
                   stroke_width=3, stroke_fill=(0, 0, 0, 190))
 
-    paper_top, paper_bottom = 795, 1430
+    paper_top, paper_bottom = 1005, 1575
     draw.polygon(
         [(-30, paper_top + 18), (105, paper_top + 5), (270, paper_top + 17),
          (440, paper_top - 1), (620, paper_top + 14), (805, paper_top + 2),
@@ -483,7 +483,7 @@ def apply_thumbnail_overlay(
             break
         font_size -= 4
 
-    first_y = 860
+    first_y = 1070
     line_height = font_size + 12
     if len(lines) == 2:
         second_y = first_y + line_height + 24
