@@ -270,6 +270,7 @@ class JobRunner:
                 auto_trim_enabled = bool(options.get("auto_trim_enabled", self.config.get("shorts", "auto_trim_enabled", default=True)))
                 trim_start, trim_end = 0.0, float(source_info["duration"])
             render_words: list[Any] = []
+            speaker_filter: dict[str, Any] = {"mode": "paused", "status": "not_run"}
             render_peak_timestamp = max(0.0, peak_timestamp - trim_start)
             render_zoom_timestamps = [
                 round(item - trim_start, 3)
@@ -302,7 +303,7 @@ class JobRunner:
             check_cancelled()
 
             captions_active = False
-            ass_path = temp_dir / "captions.ass"
+            ass_path = temp_dir / "overlay.ass"
             create_ass_file(
                 ass_path,
                 words=render_words,
@@ -317,7 +318,7 @@ class JobRunner:
                 brand_enabled=bool(options.get("brand_enabled", True)),
                 layout=str(options.get("layout", self.config.get("shorts", "layout", default="smart"))),
             )
-            shutil.copy2(ass_path, output_dir / "captions.ass")
+            shutil.copy2(ass_path, output_dir / "overlay.ass")
 
             check_cancelled()
             hook_text = str(metadata.get("hook_text", ""))
