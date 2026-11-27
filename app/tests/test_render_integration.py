@@ -19,6 +19,8 @@ def test_smart_layout_builds_large_gameplay_panel_and_respects_horizontal_focus(
     assert "crop=1080:921:(in_w-out_w)*0.800" in graph
     assert "overlay=(W-w)/2:576" in graph
     assert "boxblur=28:10" in graph
+    assert "drawbox=x=37:y=571:w=1006:h=932:color=white@0.30:t=2" in graph
+    assert "drawbox=x=37:y=599:w=6:h=875:color=0xF6C445@0.96:t=fill" in graph
 
 
 def test_smart_layout_preserves_portrait_sources_without_aggressive_crop() -> None:

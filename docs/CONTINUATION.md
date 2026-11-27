@@ -3,8 +3,8 @@
 > Lire ce document en premier dans chaque nouvelle conversation sur le projet. Il décrit l'état réellement livré et la structure source actuelle.
 
 - **Dernière mise à jour :** 27 novembre 2026
-- **Dernière version stable confirmée :** [v0.8.8](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.8), publiée le 27 novembre 2026 avec le ZIP Windows (207 327 octets) et `SHA256SUMS.txt` (SHA-256 : `c6155b1ce323edf6fb6088ceb386ae38223aaa4c0c875b95f245a7bbb76e8d1b`).
-- **État :** PR #38 à #43 fusionnées dans `main`. La v0.8.8 est la dernière Release stable publiée. Elle intègre le constructeur de sélection Daily Best Of et la relance des téléchargements Twitch depuis l'URL d'origine.
+- **Dernière version stable confirmée :** [v0.8.9](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.8.9), publiée le 27 novembre 2026. Correctif de redémarrage et de confirmation de version après mise à jour.
+- **État :** PR #38 à #47 fusionnées dans `main`. La v0.8.9 est la dernière Release stable publiée. La PR #47 ajoute quatre animations de hook selon l'intention éditoriale et une emphase cinétique du mot actif.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
 - **Source active :** `app/`. Modifier directement les fichiers Python, JavaScript, CSS, HTML, tests et installateur présents dans ce dossier.
@@ -291,3 +291,20 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - Finition des captions : le mot prononcé reçoit une emphase légère par couleur, échelle et contour, puis revient au style normal pour garder une lecture mobile dynamique sans surcharger chaque mot.
 - Intégration : sélection automatique dans create_ass_file, sans changer le parcours utilisateur ni les options existantes. Un style explicitement reconnu peut aussi être passé par le code appelant.
 - Tests ajoutés/ajustés : détection des quatre intentions, priorité du hook sur le texte de contexte, fallback contextuel si aucun hook n'est fourni, présence des animations associées et emphase du mot actif. Les validations Linux/Windows de la première version doivent être relancées après cette correction ; aucun rendu réel sur le PC n'est revendiqué.
+
+
+## 17. Composition éditoriale du gameplay vertical, 27 novembre 2026
+
+- **PR #47 fusionnée :** `Give Shorts a cinematic animated hook identity`, commit de merge `20b720a9f0d665c9959b2095dc3062d3d7d0d7db`. Quatre styles de hook (impact, question, suspense, réaction), kicker RANKED DISPATCH et emphase du mot actif dans les sous-titres. CI PR Linux et Windows réussies. CI post-fusion lancée ; résultat à confirmer.
+- **Nouveau lot en cours :** renforcer la composition `smart` du Short avec un cadre éditorial fin autour du gameplay et un repère vertical ambre. L'objectif est de donner au panneau de jeu une finition de marque cohérente avec la typographie du hook, sans rogner davantage l'image ni réduire sa lisibilité.
+- **Fichiers modifiés :** `app/studio/web/short_renderer.py` et `app/tests/test_render_integration.py`. Le cadre est généré directement par FFmpeg et ne nécessite aucun asset externe.
+- **Limite assumée :** cette évolution ne prétend pas isoler une webcam. Les clips Twitch déjà composés sont rendus tels quels ; la séparation réelle d'une webcam n'est possible que si une source webcam distincte est disponible.
+- **Suite :** valider le nouveau cadre sur les runners Linux/Windows, puis s'attaquer à une composition verticale plus ambitieuse et à la gestion de la webcam selon les médias réellement disponibles.
+
+
+## 18. Détection des hooks francophones, 27 novembre 2026
+
+- **Amélioration ajoutée à la PR #48 :** la classification des hooks reconnaît maintenant les formulations françaises (question, suspense, réaction) en plus de l'anglais. Les accents sont normalisés avant l'analyse afin que les caractères accentués soient correctement traités.
+- **Exemples couverts :** « POURQUOI IL A FAIT ÇA ? » -> question ; « ATTENDS DE VOIR LA SUITE » -> suspense ; « C'EST INCROYABLE ! » -> réaction.
+- **Effet utilisateur :** les hooks français reçoivent eux aussi une animation cohérente avec leur intention, au lieu de tomber systématiquement sur l'animation impact par défaut.
+- **Suite :** finaliser le cadre éditorial du layout smart, puis travailler sur les transitions sonores et les vrais médias source webcam disponibles.
