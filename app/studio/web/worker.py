@@ -34,6 +34,34 @@ from studio.web.transcribe import (
 logger = logging.getLogger(__name__)
 
 
+def _metadata_text(info: dict[str, Any], *keys: str) -> str:
+    """Return the first useful yt-dlp metadata value without leaking null-like text."""
+    for key in keys:
+        value = info.get(key)
+        if isinstance(value, str):
+            cleaned = value.strip()
+            if cleaned:
+                return cleaned[:240]
+    return ""
+
+
+def extract_twitch_source_metadata(info: dict[str, Any]) -> tuple[str, str]:
+    """Extract the clip/VOD title and the broadcaster, not the clip creator.
+
+    Twitch clip metadata can distinguish the broadcaster (channel) from the
+    account that created the clip (uploader/creator). Prefer channel fields.
+    """
+    title = _metadata_text(info, "title", "fulltitle", "alt_title")
+    if not title:
+        source_id = _metadata_text(info, "display_id", "id")
+        title = f"Twitch source {source_id}" if source_id else "Source Twitch"
+
+    streamer = _metadata_text(
+        info, "channel", "channel_name", "broadcaster_name", "uploader", "uploader_id"
+    )
+    return title, streamer
+
+
 def safe_slug(value: str, fallback: str = "gta-clip") -> str:
     cleaned = re.sub(r"[^a-zA-Z0-9_-]+", "-", value.strip().lower()).strip("-_")
     return cleaned[:70] or fallback
@@ -121,8 +149,9 @@ class JobRunner:
             if source_path is None and source_url:
                 self.store.update_job(job_id, progress=10, message="Téléchargement de la source")
                 source_path, info = self._download(job_id, source_url)
-                job["source_title"] = job.get("source_title") or str(info.get("title") or "")
-                job["streamer"] = job.get("streamer") or str(info.get("uploader") or info.get("channel") or "")
+                extracted_title, extracted_streamer = extract_twitch_source_metadata(info)
+                job["source_title"] = job.get("source_title") or extracted_title
+                job["streamer"] = job.get("streamer") or extracted_streamer
                 job["source_path"] = str(source_path)
                 source_hash = self._hash_file(source_path)
                 duplicate = self.store.find_duplicate_hash(source_hash)
