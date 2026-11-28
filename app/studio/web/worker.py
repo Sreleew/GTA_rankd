@@ -146,6 +146,11 @@ def _captions_should_render(captions_requested: bool, words: list[Any]) -> bool:
     return bool(captions_requested and words)
 
 
+def _hook_sound_should_render(sfx_requested: bool, hook_text: str) -> bool:
+    """Only add an opening cue when an actual editorial hook will be visible."""
+    return bool(sfx_requested and str(hook_text or "").strip())
+
+
 def _filter_caption_words(
     audio_path: str | Path | None,
     words: list[Any],
@@ -621,11 +626,14 @@ class JobRunner:
             check_cancelled()
             hook_text = str(metadata.get("hook_text", ""))
             hook_context = str(metadata.get("context_card", ""))
-            hook_sound_style = infer_hook_style(hook_text, hook_context)
+            hook_sound_enabled = _hook_sound_should_render(
+                bool(options.get("sfx_enabled", True)), hook_text
+            )
+            hook_sound_style = infer_hook_style(hook_text, hook_context) if hook_sound_enabled else None
             hook_sound_path = temp_dir / "hook-sound.wav"
-            if bool(options.get("sfx_enabled", True)):
+            if hook_sound_enabled:
                 stage_started = time.perf_counter()
-                create_hook_sound_effect(hook_sound_path, hook_sound_style)
+                create_hook_sound_effect(hook_sound_path, hook_sound_style or "impact")
                 timings["hook_sound_ms"] = max(0, int(round((time.perf_counter() - stage_started) * 1000)))
             self.store.update_job(job_id, progress=60, message="Rendu vertical 9:16 plein écran et finitions")
             result = render_vertical_short(
@@ -653,7 +661,7 @@ class JobRunner:
                 zoom_percent=int(options.get("zoom_percent", 8)),
                 trim_start=trim_start,
                 trim_duration=trim_end - trim_start,
-                sound_effect_path=hook_sound_path if bool(options.get("sfx_enabled", True)) else None,
+                sound_effect_path=hook_sound_path if hook_sound_enabled else None,
                 sound_effect_offset=min(0.12, max(0.0, (trim_end - trim_start) - 0.12)),
                 sound_effect_volume=float(self.config.get("shorts", "sfx_volume", default=0.14)),
                 progress_callback=lambda percent: self.store.update_job(
@@ -712,7 +720,7 @@ class JobRunner:
                 "output_height": result["output_height"],
                 "layout": result["layout"],
                 "sound_effect_used": result.get("sound_effect_used", False),
-                "hook_sound_style": hook_sound_style if bool(options.get("sfx_enabled", True)) else None,
+                "hook_sound_style": hook_sound_style,
                 "peak_timestamp": peak_timestamp,
                 "render_peak_timestamp": render_peak_timestamp,
                 "render_zoom_timestamps": render_zoom_timestamps,

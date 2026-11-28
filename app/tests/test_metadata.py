@@ -287,3 +287,91 @@ def test_fallback_hook_recognises_spanish_and_portuguese_reaction_cues() -> None
     assert "INCREÍBLE" in _fallback_hook(spanish)
     assert "INCRÍVEL" in _fallback_hook(portuguese)
     assert _last_complete_phrase("Le flic a percuté la voiture").endswith("percuté la voiture")
+
+
+def test_model_hook_rejects_an_unsupported_event_claim(monkeypatch):
+    import io
+    import json
+    from studio.web import metadata as metadata_module
+
+    payload = {
+        "response": json.dumps({
+            "title": "Tminnzy's Lambo moment in GTA 5",
+            "description": "A tense moment with his Lambo.",
+            "hashtags": ["#GTA5", "#GTAClips"],
+            "hook_text": "HE STOLE MY LAMBO",
+            "thumbnail_text": "MY LAMBO",
+        })
+    }
+
+    class FakeResponse(io.BytesIO):
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            self.close()
+
+    monkeypatch.setattr(
+        metadata_module.urllib.request,
+        "urlopen",
+        lambda request, timeout: FakeResponse(json.dumps(payload).encode("utf-8")),
+    )
+    result = metadata_module.generate_short_metadata(
+        streamer="Tminnzy",
+        source_title="GTA 5",
+        transcript="I finally got my Lambo back!",
+        source_url="https://www.twitch.tv/tminnzy/clip/example",
+    )
+
+    assert result["title"] == "Tminnzy's Lambo moment in GTA 5"
+    assert result["hook_text"] == "I FINALLY GOT MY LAMBO BACK"
+
+
+def test_manual_two_word_hook_is_preserved_with_local_model(monkeypatch):
+    import io
+    import json
+    from studio.web import metadata as metadata_module
+
+    payload = {
+        "response": json.dumps({
+            "title": "Tminnzy really said “got my” in GTA 5",
+            "description": "A tense moment with his Lambo.",
+            "hashtags": ["#GTA5", "#GTAClips"],
+            "hook_text": "MODEL GENERATED TEXT",
+            "thumbnail_text": "MY LAMBO",
+        })
+    }
+
+    class FakeResponse(io.BytesIO):
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            self.close()
+
+    monkeypatch.setattr(
+        metadata_module.urllib.request,
+        "urlopen",
+        lambda request, timeout: FakeResponse(json.dumps(payload).encode("utf-8")),
+    )
+    result = metadata_module.generate_short_metadata(
+        streamer="Tminnzy",
+        source_title="GTA 5",
+        transcript="I finally got my Lambo back!",
+        custom_hook="NO WAY!",
+    )
+
+    assert result["hook_text"] == "NO WAY!"
+
+
+def test_metadata_without_a_reliable_transcript_does_not_invent_a_generic_hook():
+    result = generate_short_metadata(
+        streamer="Streamer",
+        source_title="GTA 5",
+        transcript="",
+        note="",
+        source_url="https://clips.twitch.tv/example",
+    )
+
+    assert result["hook_text"] == ""
+    assert "WAIT FOR THE REACTION" not in result["hook_text"]

@@ -190,3 +190,12 @@ def test_caption_voice_filter_skips_diarization_when_transcript_is_empty(monkeyp
     assert filtered == []
     assert report["status"] == "no_words"
     assert called == []
+
+
+
+def test_hook_sound_requires_a_visible_hook_and_user_opt_in():
+    assert worker._hook_sound_should_render(True, "WAIT, WHAT JUST HAPPENED?")
+    assert worker._hook_sound_should_render(True, "  NO WAY!  ")
+    assert not worker._hook_sound_should_render(True, "")
+    assert not worker._hook_sound_should_render(True, "   ")
+    assert not worker._hook_sound_should_render(False, "WAIT, WHAT JUST HAPPENED?")
