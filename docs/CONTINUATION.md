@@ -5,7 +5,7 @@
 - **Dernière mise à jour :** 28 novembre 2026
 - **Progression des releases :** à chaque relance de développement, le compte rendu doit indiquer le lot livré, les PR/CI, l'état d'avancement vers la prochaine version et une estimation actualisée du nombre de lots restants avant sa publication. Cette estimation doit être réévaluée à chaque session, sans promettre une date artificielle.
 - **Dernière version stable confirmée :** [v0.9.3](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.9.3), publiée le 28 novembre 2026.
-- **État :** les PR #92 et #93 sont intégrées dans `main` ; la PR #93 a été fusionnée au commit `c05ea08`. La release v0.9.3 reste publiée ; les évolutions suivantes sont destinées à une prochaine version après validation d'un Short réel sur le PC Windows.
+- **État :** les PR #92, #93 et #94 sont intégrées dans `main` ; la PR #94 a été fusionnée au commit `2b124724`. La release v0.9.3 reste publiée ; les évolutions suivantes sont destinées à une prochaine version après validation d'un Short réel sur le PC Windows.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
 - **Source active :** `app/`. Modifier directement les fichiers Python, JavaScript, CSS, HTML, tests et installateur présents dans ce dossier.
@@ -749,7 +749,21 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - Correction : les overlays sont maintenant répartis sur une ou deux lignes équilibrées selon la longueur réelle du texte. La taille de police est réduite de façon bornée lorsque nécessaire et tient compte du grossissement maximal de chaque animation de hook. Le contexte descend automatiquement lorsque le hook occupe deux lignes. Les animations, les durées (hook 2,0 s, contexte 2,6 s) et l'absence d'intro sont conservées.
 - Tests : ajout de cas français longs (hook et contexte sur deux lignes) et d'un hook court qui conserve la position compacte du contexte.
 - Périmètre : aucun logo, miniature, cadre, changement de composition Twitch, modèle Whisper, encodeur, paramètre utilisateur ou donnée locale. « Moments forts » reste en pause.
-- PR #94 : [Mobile-safe hook and context layout](https://github.com/Sreleew/GTA_rankd/pull/94), branche feat/mobile-hook-layout, commit e8ca8577c393a32053d1f0d6cbcdada471e6dfe9. Les validations Linux et Windows doivent réussir sur le HEAD final avant fusion.
+- PR #94 : [Mobile-safe hook and context layout](https://github.com/Sreleew/GTA_rankd/pull/94), branche feat/mobile-hook-layout, fusionnée dans main au commit 2b124724671a9550296e20c8044d7de89eebb53d après réussite Linux/Windows sur le HEAD final.
 - Release : v0.9.3 reste la dernière version stable ; aucune nouvelle release ni approbation de publication n'est créée.
 - Limite : aucun rendu réel ni mesure de rétention sur une vidéo publiée n'est revendiqué.
-- Suite : valider les hooks sur plusieurs clips français et anglais, puis poursuivre la consolidation du parcours Short.
+- CI post-fusion : Linux [46100550613](https://github.com/Sreleew/GTA_rankd/actions/runs/46100550613) et Windows [46100550610](https://github.com/Sreleew/GTA_rankd/actions/runs/46100550610) ont réussi ; Linux confirme 241 tests passés et 1 ignoré, et le package Windows a été construit et vérifié.
+- Suite : utiliser la transcription pour choisir le meilleur instant de la vignette existante, sans créer de miniature graphique, puis valider les hooks sur plusieurs clips français et anglais.
+
+
+## 55. Utiliser la transcription pour choisir l'instant de vignette, 28 novembre 2026
+
+- État de départ : PR #94 fusionnée dans main ; ses contrôles post-fusion Linux et Windows ont réussi.
+- Défaut identifié : le worker recevait bien les mots Whisper du Short, mais passait une liste vide à select_thumbnail_timestamp. Le sélecteur ignorait donc les paroles et retombait systématiquement sur le pic audio.
+- Correction : transmettre les mots transcrits, déjà recalés sur l'extrait final, au sélecteur existant. Les mots-clés d'action et de réaction en français et en anglais peuvent ainsi guider le choix du timestamp ; en l'absence de mots pertinents, le pic audio reste le fallback inchangé.
+- Tests : ajout d'un cluster français « incroyable / police / crash / explosion » et d'un cas sans mots descriptifs qui vérifie le fallback au pic audio.
+- Périmètre : sélection du timestamp de la vignette/aperçu déjà existant uniquement ; aucune miniature graphique générée, aucune modification de couverture de plateforme, de layout, de Whisper, d'encodeur ou de paramètres. « Moments forts » reste en pause.
+- PR #95 : [Use transcript cues for Short thumbnail timestamp](https://github.com/Sreleew/GTA_rankd/pull/95), branche fix/transcript-aware-short-cover. Les validations Linux et Windows doivent réussir sur le HEAD final avant fusion.
+- Release : v0.9.3 reste la dernière version stable ; aucune nouvelle release ni approbation de publication n'est créée.
+- Limite : aucun rendu réel Twitch ni mesure d'engagement sur une plateforme n'est revendiqué.
+- Suite : valider le parcours complet du Short sur des clips réels, puis reprendre le Daily Best Of lorsque le flux Shorts sera suffisamment consolidé.

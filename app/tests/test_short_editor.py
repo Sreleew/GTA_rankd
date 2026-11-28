@@ -2,7 +2,7 @@ from pathlib import Path
 
 from studio.web.short_editor import (
     WordTiming, create_ass_file, infer_hook_style, parse_srt,
-    rebase_word_timings, select_excerpt_range, write_srt_file,
+    rebase_word_timings, select_excerpt_range, select_thumbnail_timestamp, write_srt_file,
 )
 
 
@@ -447,3 +447,22 @@ def test_short_hook_keeps_context_in_its_compact_position(tmp_path: Path):
     assert r"\pos(540,576)" in context_line
     assert "WAIT FOR IT" in hook_line
     assert "THE GETAWAY GOES WRONG" in context_line
+
+
+def test_thumbnail_timestamp_prefers_cluster_of_transcribed_action_cues():
+    words = [
+        WordTiming(4.0, 4.2, "Incroyable!"),
+        WordTiming(4.3, 4.5, "Police!"),
+        WordTiming(5.0, 5.2, "Crash!"),
+        WordTiming(6.0, 6.2, "Explosion!"),
+    ]
+
+    selected = select_thumbnail_timestamp(words, 20.0, preferred=12.0)
+
+    assert 4.5 <= selected <= 5.5
+
+
+def test_thumbnail_timestamp_falls_back_to_audio_peak_without_descriptive_words():
+    words = [WordTiming(1.0, 1.2, "hello"), WordTiming(2.0, 2.2, "everyone")]
+
+    assert select_thumbnail_timestamp(words, 20.0, preferred=12.0) == 12.0
