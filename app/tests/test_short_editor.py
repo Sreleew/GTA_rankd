@@ -386,4 +386,3 @@ def test_word_dtw_keeps_multiword_records_on_their_real_phrase_interval(tmp_path
     assert "0:00:01.25,0:00:01.60" in caption_lines[2]
     assert "FAST!" in caption_lines[2]
     assert r"{\c&H0000C8F5&" in caption_lines[2]
-
