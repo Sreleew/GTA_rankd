@@ -20,7 +20,7 @@ from studio.process import ProcessingCancelled, check_cancelled, set_current_can
 from studio.web.metadata import generate_short_metadata
 from studio.web.short_editor import (
     create_ass_file, infer_hook_style,
-    select_thumbnail_timestamp, select_excerpt_range,
+    select_thumbnail_timestamp, select_excerpt_range, write_srt_file,
 )
 from studio.web.short_renderer import MediaError, create_hook_sound_effect, probe_media, render_vertical_short
 from studio.web.export_quality import analyze_export_quality
@@ -31,6 +31,7 @@ from studio.web.transcribe import (
     extract_audio_wav,
     transcribe_with_whisper_cpp,
 )
+from studio.web.speakers import SpeakerFilterError, diarize_and_filter
 
 logger = logging.getLogger(__name__)
 
@@ -143,6 +144,50 @@ def _captions_should_render(captions_requested: bool, words: list[Any]) -> bool:
     return bool(captions_requested and words)
 
 
+def _filter_caption_words(
+    audio_path: str | Path | None,
+    words: list[Any],
+) -> tuple[list[Any], dict[str, Any]]:
+    """Keep only a confidently dominant voice; never fall back to every dialogue."""
+    base = {
+        "mode": "dominant",
+        "status": "not_run",
+        "words_before": len(words),
+        "words_after": len(words),
+    }
+    if not words:
+        return [], {**base, "status": "no_words", "words_after": 0}
+    if not audio_path:
+        return [], {
+            **base,
+            "status": "diarization_unavailable",
+            "words_after": 0,
+            "reason": "Audio de l'extrait indisponible pour isoler la voix principale.",
+        }
+    try:
+        filtered, report = diarize_and_filter(Path(audio_path), words)
+    except SpeakerFilterError as exc:
+        return [], {
+            **base,
+            "status": "diarization_unavailable",
+            "words_after": 0,
+            "reason": str(exc)[:500],
+        }
+    except Exception as exc:
+        logger.exception("Filtrage vocal inattendu impossible")
+        return [], {
+            **base,
+            "status": "diarization_unavailable",
+            "words_after": 0,
+            "reason": str(exc)[:500],
+        }
+    report = dict(report)
+    report["mode"] = "dominant"
+    report["words_before"] = len(words)
+    report["words_after"] = len(filtered)
+    return filtered, report
+
+
 def _transcribe_short_excerpt(
     source_path: Path,
     temp_dir: Path,
@@ -171,11 +216,24 @@ def _transcribe_short_excerpt(
         audio_path = existing_audio_path
     else:
         audio_path = temp_dir / "short-captions-16k.wav"
+        audio_source = source_path
+        audio_source_start = float(trim_start)
+        analysis_audio_covers_excerpt = (
+            existing_audio_path is not None
+            and existing_audio_path.is_file()
+            and existing_audio_duration is not None
+            and float(existing_audio_start) <= float(trim_start)
+            and float(existing_audio_start) + float(existing_audio_duration) >= float(trim_end) - 0.05
+        )
+        if analysis_audio_covers_excerpt:
+            # Slice the already-decoded 16 kHz WAV instead of decoding the source video again.
+            audio_source = existing_audio_path
+            audio_source_start = max(0.0, float(trim_start) - float(existing_audio_start))
         extract_audio_wav(
-            source_path,
+            audio_source,
             audio_path,
             ffmpeg=str(config.get("executables", "ffmpeg", default="ffmpeg")),
-            start_seconds=float(trim_start),
+            start_seconds=audio_source_start,
             duration_seconds=duration,
         )
 
@@ -190,7 +248,7 @@ def _transcribe_short_excerpt(
     except (TypeError, ValueError, OverflowError):
         timeout = 1800
 
-    return transcribe_with_whisper_cpp(
+    result = transcribe_with_whisper_cpp(
         audio_path,
         whisper_cli=config.path_for("executables", "whisper_cli"),
         model_path=config.path_for("transcription", "model_path"),
@@ -200,6 +258,8 @@ def _transcribe_short_excerpt(
         vad_model_path=vad_model_path,
         timeout=timeout,
     )
+    result["audio_path"] = str(audio_path)
+    return result
 
 
 def safe_slug(value: str, fallback: str = "gta-clip") -> str:
@@ -421,6 +481,12 @@ class JobRunner:
             transcription_timestamp_mode = None
             transcription_warning = None
             captions_output_path: Path | None = None
+            speaker_filter_report: dict[str, Any] = {
+                "mode": "dominant",
+                "status": "not_requested",
+                "words_before": 0,
+                "words_after": 0,
+            }
             if captions_requested:
                 stage_started = time.perf_counter()
                 if not source_info["has_audio"]:
@@ -443,17 +509,50 @@ class JobRunner:
                         transcription_status = str(transcription.get("status") or "unknown")
                         transcription_timestamp_mode = transcription.get("timestamp_mode")
                         render_words = list(transcription.get("words") or [])
-                        render_transcript = str(transcription.get("text") or "")
                         if render_words:
-                            source_srt = Path(str(transcription.get("srt_path") or ""))
-                            if source_srt.is_file():
+                            self.store.update_job(
+                                job_id,
+                                progress=46,
+                                message="Filtrage local de la voix principale · sous-titres",
+                            )
+                            filter_started = time.perf_counter()
+                            check_cancelled()
+                            render_words, speaker_filter_report = _filter_caption_words(
+                                transcription.get("audio_path"),
+                                render_words,
+                            )
+                            timings["speaker_filter_ms"] = max(
+                                0, int(round((time.perf_counter() - filter_started) * 1000))
+                            )
+                            check_cancelled()
+                            render_transcript = " ".join(
+                                str(word.text) for word in render_words
+                            ).strip()
+                            if render_words:
                                 try:
-                                    captions_output_path = output_dir / "captions.srt"
-                                    shutil.copy2(source_srt, captions_output_path)
+                                    captions_output_path = write_srt_file(
+                                        output_dir / "captions.srt", render_words
+                                    )
                                 except OSError:
                                     captions_output_path = None
-                                    logger.warning("Le SRT de %s n'a pas pu être copié ; les captions intégrées restent disponibles.", job_id, exc_info=True)
+                                    logger.warning(
+                                        "Le SRT filtré de %s n'a pas pu être écrit ; les captions intégrées restent disponibles.",
+                                        job_id,
+                                        exc_info=True,
+                                    )
+                            else:
+                                transcription_warning = str(
+                                    speaker_filter_report.get("reason")
+                                    or "Voix principale non isolée : sous-titres omis."
+                                )[:240]
                         else:
+                            render_transcript = ""
+                            speaker_filter_report = {
+                                "mode": "dominant",
+                                "status": "no_words",
+                                "words_before": 0,
+                                "words_after": 0,
+                            }
                             transcription_warning = str(
                                 transcription.get("reason") or "Aucune parole exploitable détectée."
                             )[:240]
@@ -627,6 +726,7 @@ class JobRunner:
                 "audio_analysis_skipped": not audio_analysis_needed,
                 "transcription_status": transcription_status,
                 "transcription_timestamp_mode": transcription_timestamp_mode,
+                "speaker_filter": speaker_filter_report,
                 "transcription_language_requested": caption_language_requested if captions_requested else None,
                 "transcription_language": caption_language_effective if captions_requested else None,
                 "transcribed_words": len(render_words),

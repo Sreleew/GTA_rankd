@@ -795,13 +795,13 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - PR #97 : [Enforce one date per Daily Best Of](https://github.com/Sreleew/GTA_rankd/pull/97), branche fix/daily-best-of-single-date, fusionnée dans main au commit 7613e9838db158d3a619ed2550234ca1d1bbe79a après réussite Linux/Windows sur le HEAD final.
 - Release : v0.9.3 reste la dernière version stable ; aucune nouvelle release ni approbation de publication n'est créée.
 - CI PR #97 : Linux [46101518330](https://github.com/Sreleew/GTA_rankd/actions/runs/46101518330) a réussi (246 tests passés, 1 ignoré, package Windows construit et vérifié) et Windows [46101518418](https://github.com/Sreleew/GTA_rankd/actions/runs/46101518418) a réussi (audit, PowerShell, tests et package).
-- CI post-fusion PR #97 : Linux [46101715515](https://github.com/Sreleew/GTA_rankd/actions/runs/46101715515) et Windows [46101715501](https://github.com/Sreleew/GTA_rankd/actions/runs/46101715501) sont en cours.
+- CI post-fusion PR #97 : Linux [46101715515](https://github.com/Sreleew/GTA_rankd/actions/runs/46101715515) et Windows [46101715501](https://github.com/Sreleew/GTA_rankd/actions/runs/46101715501) ont réussi.
 - Suite : adoucir les bords audio de l'épisode Daily Best Of, puis confirmer la composition 16:9 sur un rendu complet.
 
 
 ## 58. Adoucir l'entrée et la sortie audio du Daily Best Of, 28 novembre 2026
 
-- État de départ : PR #97 fusionnée dans main après réussite Linux/Windows ; les contrôles post-fusion sont en cours.
+- État de départ : PR #97 fusionnée dans main après réussite Linux/Windows ; les contrôles post-fusion ont réussi.
 - Défaut identifié : la concaténation audio des Shorts validés démarrait et s'arrêtait sans fondu, ce qui pouvait donner une coupe sèche au début ou à la fin de l'épisode.
 - Correction : appliquer un fondu audio d'entrée de 0,35 s et un fondu de sortie de 0,75 s au mix final lorsque les durées exactes sont disponibles. Les durées sont bornées pour les tests ou les épisodes exceptionnellement courts. Aucun crossfade n'est ajouté entre les clips afin de ne pas brouiller les dialogues ni les effets de gameplay.
 - Tests : vérifier les timestamps exacts sur un épisode de 560 s, le comportement historique sans durées connues et le bornage sur un flux de 0,2 s.
@@ -809,17 +809,34 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - PR #98 : [Add clean audio edges to Daily Best Of](https://github.com/Sreleew/GTA_rankd/pull/98), branche feat/daily-best-of-audio-edges, fusionnée dans main au commit d7d96db68a360f376a3adf07beeb33b7894128bc après réussite Linux/Windows sur le HEAD final.
 - Release : v0.9.3 reste la dernière version stable ; aucune nouvelle release ni approbation de publication n'est créée.
 - CI PR #98 : Linux [46101822791](https://github.com/Sreleew/GTA_rankd/actions/runs/46101822791) et Windows [46101822773](https://github.com/Sreleew/GTA_rankd/actions/runs/46101822773) ont réussi ; Linux confirme 249 tests passés et 1 ignoré, le package Windows a été construit et vérifié.
-- CI post-fusion PR #98 : Linux [46101996557](https://github.com/Sreleew/GTA_rankd/actions/runs/46101996557) et Windows [46101996393](https://github.com/Sreleew/GTA_rankd/actions/runs/46101996393) sont en cours.
+- CI post-fusion PR #98 : Linux [46101996557](https://github.com/Sreleew/GTA_rankd/actions/runs/46101996557) et Windows [46101996393](https://github.com/Sreleew/GTA_rankd/actions/runs/46101996393) ont réussi.
 - Suite : vérifier le son sur un Daily Best Of complet et ne considérer des transitions entre clips que si elles améliorent la compréhension sans masquer la parole.
 
 
 ## 59. Vérifier la durée réelle des Shorts avant le rendu Daily Best Of, 28 novembre 2026
 
-- État de départ : PR #98 fusionnée dans main après réussite Linux/Windows ; ses contrôles post-fusion sont en cours.
+- État de départ : PR #98 fusionnée dans main après réussite Linux/Windows ; ses contrôles post-fusion ont réussi.
 - Défaut identifié : le renderer utilisait uniquement la durée enregistrée dans la bibliothèque pour couper chaque Short et calculer la progression. Si un fichier avait été remplacé ou modifié après validation, la concaténation et le fondu final pouvaient être décalés, voire produire un épisode plus court que prévu.
 - Correction : comparer la durée ffprobe de chaque fichier à la durée enregistrée, avec une tolérance bornée à 1 seconde ou 1 % pour absorber les écarts de conteneur. Utiliser ensuite les durées réelles pour les pistes silencieuses, le graphe FFmpeg, les fondus audio et la progression. Refuser le rendu si les durées ont changé ou si le total réel sort de la plage 9 à 11 minutes.
 - Tests : ajouter un cas où un Short a été raccourci après validation ; les tests de rendu existants continuent de vérifier les durées exactes utilisées par FFmpeg.
 - Périmètre : contrôle avant encodage ; aucun fichier local n'est modifié, aucun clip n'est supprimé et aucune donnée de bibliothèque n'est réécrite. Les encodeurs AMD/CPU et le fallback restent inchangés. « Moments forts » reste en pause.
-- PR #99 : [Verify source durations before Daily Best Of render](https://github.com/Sreleew/GTA_rankd/pull/99), branche fix/verify-best-of-source-durations, commit ebc66b259e81f288bf6aa5176e1036c83f33c056. Les validations Linux et Windows doivent réussir sur le HEAD final avant fusion.
+- PR #99 : [Verify source durations before Daily Best Of render](https://github.com/Sreleew/GTA_rankd/pull/99), branche fix/verify-best-of-source-durations, fusionnée dans main au commit 5f511a375405eb9bc3ef9c6a2ab37ef2941f056a après réussite Linux [46102143385](https://github.com/Sreleew/GTA_rankd/actions/runs/46102143385) et Windows [46102143376](https://github.com/Sreleew/GTA_rankd/actions/runs/46102143376) sur le HEAD final.
 - Release : v0.9.3 reste la dernière version stable ; aucune nouvelle release ni approbation de publication n'est créée.
+- CI post-fusion PR #99 : audit Linux [46102320456](https://github.com/Sreleew/GTA_rankd/actions/runs/46102320456) réussi ; validation Windows [46102320463](https://github.com/Sreleew/GTA_rankd/actions/runs/46102320463) en cours.
 - Suite : valider le rendu complet 16:9 et le son sur un ensemble de Shorts validés avant d'élargir le montage.
+
+
+
+## 60. Filtrer les sous-titres sur la voix principale et réutiliser le WAV d'analyse, 28 novembre 2026
+
+- **État de départ :** PR #99 est fusionnée dans main au commit 5f511a375405eb9bc3ef9c6a2ab37ef2941f056a après réussite des validations PR Linux/Windows. Son contrôle post-fusion Linux est réussi ; le contrôle Windows est encore en cours.
+- **Défaut identifié :** le module local `speakers.py` et ses tests existaient toujours, mais le pipeline Whisper facultatif ne l'appelait plus. Les mots de toutes les voix pouvaient être intégrés aux sous-titres et au transcript utilisé pour le hook/métadonnées. Le SRT annexe copié depuis Whisper contenait également les dialogues non filtrés.
+- **Correction produit :** lorsque les sous-titres sont demandés, le worker passe maintenant les mots horodatés au filtre local de voix dominante. Si la diarisation est indisponible, ambiguë ou n'attribue pas assez de mots, le pipeline omet les sous-titres au lieu de revenir à toutes les voix. Le transcript transmis au générateur de hook et au sélecteur d'aperçu est recalculé depuis les seuls mots conservés.
+- **SRT annexe :** le fichier `captions.srt` est reconstruit à partir des mots filtrés et de leurs intervalles d'origine avec le writer SRT déjà présent dans `short_editor.py`. Le SRT brut Whisper n'est plus copié dans le dossier de sortie, afin de ne pas réintroduire les dialogues du jeu.
+- **Performance :** lorsque le WAV d'analyse audio existant couvre l'extrait choisi, Whisper et la diarisation utilisent une découpe de ce WAV au lieu de décoder une deuxième fois la vidéo source. Un WAV déjà exactement aligné reste réutilisé directement.
+- **Transparence :** la fiche du Short indique si la voix principale a été isolée ou si les sous-titres ont été omis ; le temps supplémentaire de filtrage vocal apparaît dans le rapport de traitement. L'interface précise que la diarisation est bêta et ne garantit pas que la voix dominante soit celle du streamer.
+- **Coût et limite :** aucun filtre n'est exécuté si les sous-titres sont désactivés. Le paquet local `diarize==0.1.2` reste installé à la demande lors du premier usage des sous-titres ; cette étape peut être longue. En cas d'échec, le Short continue sans sous-titres. La méthode ne sépare pas les voix superposées et ne certifie pas l'identité du streamer.
+- **Tests :** couverture de la réutilisation/sélection du WAV d'analyse, du comportement fail-closed de la diarisation, de l'absence de transcription et de l'écriture SRT avec timestamps exacts.
+- **Périmètre :** aucune modification de l'encodeur AMD/CPU, du cadrage source complet, des données locales, des paramètres de rendu, des jobs existants ou des miniatures personnalisées. « Moments forts » reste en pause.
+- **PR #100 :** [Filter Short captions to the dominant voice](https://github.com/Sreleew/GTA_rankd/pull/100), branche `feat/streamer-voice-caption-filter`. La première CI Linux a détecté une redéfinition de `write_srt_file` ; le correctif réutilise maintenant la fonction existante. Les validations repartent sur le nouveau HEAD.
+- **Suite :** valider les suites Linux et Windows, puis effectuer un essai sur un clip Twitch réel pour vérifier si la voix dominante retenue est effectivement celle du streamer et mesurer le surcoût du filtre sur le PC Windows/AMD.
