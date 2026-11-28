@@ -2,7 +2,7 @@ from pathlib import Path
 
 from studio.web.short_editor import (
     WordTiming, create_ass_file, infer_hook_style, parse_srt,
-    rebase_word_timings, select_excerpt_range, select_reaction_zoom_timestamps,
+    rebase_word_timings, sanitize_word_timings, select_excerpt_range, select_reaction_zoom_timestamps,
     select_thumbnail_timestamp, tighten_speech_edges, write_srt_file,
 )
 
@@ -606,3 +606,50 @@ def test_rebase_word_timings_rejects_invalid_cut_bounds():
 
     assert rebase_word_timings(words, float("nan"), 3.0) == []
     assert rebase_word_timings(words, 3.0, 2.0) == []
+
+
+
+def test_sanitize_word_timings_clips_sorts_and_discards_invalid_words():
+    words = [
+        WordTiming(1.5, 2.0, "later"),
+        WordTiming(float("nan"), 0.5, "nan start"),
+        WordTiming(0.2, float("inf"), "infinite end"),
+        WordTiming(1.0, 0.5, "reversed"),
+        WordTiming(-0.2, 0.3, "  clipped start  "),
+        WordTiming(4.8, 5.5, "clipped end"),
+        WordTiming(5.1, 5.4, "outside"),
+        WordTiming(2.2, 2.4, "   "),
+    ]
+
+    assert sanitize_word_timings(words, 5.0) == [
+        WordTiming(0.0, 0.3, "clipped start"),
+        WordTiming(1.5, 2.0, "later"),
+        WordTiming(4.8, 5.0, "clipped end"),
+    ]
+
+
+def test_ass_caption_generation_ignores_invalid_raw_word_timings(tmp_path: Path):
+    path = create_ass_file(
+        tmp_path / "sanitized-caption-input.ass",
+        words=[
+            WordTiming(float("nan"), 0.5, "NAN WORD"),
+            WordTiming(0.5, float("inf"), "INFINITE WORD"),
+            WordTiming(1.0, 1.4, "VALID WORD"),
+        ],
+        word_timed_captions=True,
+        brand_enabled=False,
+    )
+
+    content = path.read_text(encoding="utf-8-sig")
+    assert "VALID WORD" in content
+    assert "NAN WORD" not in content
+    assert "INFINITE WORD" not in content
+
+
+def test_thumbnail_timestamp_ignores_invalid_raw_word_timings():
+    words = [
+        WordTiming(float("nan"), 1.0, "CRASH"),
+        WordTiming(2.0, float("inf"), "EXPLOSION"),
+    ]
+
+    assert select_thumbnail_timestamp(words, 10.0, preferred=3.0) == 3.0
