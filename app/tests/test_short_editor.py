@@ -466,3 +466,19 @@ def test_thumbnail_timestamp_falls_back_to_audio_peak_without_descriptive_words(
     words = [WordTiming(1.0, 1.2, "hello"), WordTiming(2.0, 2.2, "everyone")]
 
     assert select_thumbnail_timestamp(words, 20.0, preferred=12.0) == 12.0
+
+
+def test_filtered_srt_sidecar_preserves_only_supplied_words_and_exact_intervals(tmp_path: Path):
+    from studio.web.short_editor import parse_srt, write_srt_file
+
+    words = [
+        WordTiming(0.125, 0.450, "STREAMER"),
+        WordTiming(1.200, 1.850, "REACTION!"),
+    ]
+    path = write_srt_file(tmp_path / "captions.srt", words)
+
+    assert parse_srt(path) == words
+    content = path.read_text(encoding="utf-8-sig")
+    assert "00:00:00,125 --> 00:00:00,450" in content
+    assert "00:00:01,200 --> 00:00:01,850" in content
+    assert "GAME_DIALOGUE" not in content

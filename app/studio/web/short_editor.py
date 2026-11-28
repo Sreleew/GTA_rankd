@@ -49,7 +49,6 @@ def _srt_time(value: str) -> float:
     return int(hours) * 3600 + int(minutes) * 60 + float(seconds)
 
 
-
 def select_thumbnail_timestamp(
     words: list[WordTiming], duration: float, *, preferred: float = 0.0,
 ) -> float:

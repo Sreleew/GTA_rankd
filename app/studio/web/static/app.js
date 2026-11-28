@@ -59,6 +59,7 @@ function processingTimingsHtml(metadata) {
       ['source_probe_ms', 'Lecture des propriétés'],
       ['audio_analysis_ms', 'Analyse audio'],
       ['transcription_ms', 'Transcription Whisper'],
+      ['speaker_filter_ms', 'Filtrage de la voix'],
       ['metadata_generation_ms', 'Préparation des métadonnées'],
       ['hook_sound_ms', 'Sound design'],
     ]},
@@ -112,11 +113,18 @@ function jobCard(job) {
   const qualityLabels = { passed: 'QC OK', review: 'À vérifier', partial: 'Contrôle partiel', failed: 'Problème détecté' };
   const qualityHtml = quality ? `<details class="quality-report ${escapeHtml(quality.status || 'partial')}"><summary><span>Contrôle qualité</span><strong>${escapeHtml(qualityLabels[quality.status] || 'Contrôle')}</strong></summary><p>${escapeHtml(quality.summary || '')}</p>${(quality.warnings || []).length ? `<ul>${quality.warnings.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>` : ''}</details>` : '';
   const timingsHtml = processingTimingsHtml(metadata);
-  const captionNote = metadata.transcription_warning
-    ? ` · ${escapeHtml(metadata.transcription_warning)}`
-    : (Number(metadata.transcribed_words) > 0
-      ? ` · Sous-titres · ${Number(metadata.transcribed_words)} mots`
-      : '');
+  const speakerFilterStatus = metadata.speaker_filter?.status || '';
+  const voiceFilterOmitted = [
+    'ambiguous_speakers', 'low_word_attribution', 'diarization_unavailable',
+    'no_speaker_segments', 'no_word_attribution',
+  ].includes(speakerFilterStatus);
+  const captionNote = voiceFilterOmitted
+    ? ` · Sous-titres omis : voix non isolée${metadata.transcription_warning ? ` (${escapeHtml(metadata.transcription_warning)})` : ''}`
+    : metadata.transcription_warning
+      ? ` · ${escapeHtml(metadata.transcription_warning)}`
+      : (Number(metadata.transcribed_words) > 0
+        ? ` · Voix principale · ${Number(metadata.transcribed_words)} mots`
+        : '');
   return `<article class="job-card">
     ${thumbUrl ? `<img class="job-thumb" src="${thumbUrl}" alt="Image d’aperçu du Short" title="Image d’aperçu interne ; la plateforme choisira l’image publiée">` : `<div class="job-thumb job-thumb-placeholder">▶</div>`}
     <div class="job-main"><strong title="${escapeHtml(title)}">${escapeHtml(title)}</strong>${socialCaption ? `<div class="job-caption">${escapeHtml(socialCaption)}</div>` : ''}<div class="job-meta">${escapeHtml(meta || (job.source_kind || 'clip').toUpperCase())}</div><div class="job-message">${escapeHtml(job.message || '')}${captionNote}${job.error ? ` · ${escapeHtml(job.error.slice(0, 200))}` : ''}</div>${qualityHtml}${timingsHtml}${['queued','running'].includes(job.status) ? `<div class="job-progress"><span style="width:${progress}%"></span></div><small class="job-progress-label">${progress}%</small>` : ''}${actions}</div>
