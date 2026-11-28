@@ -168,7 +168,7 @@ def test_whisper_gpu_button_uses_fresh_script_and_visible_feedback():
     static = Path(__file__).resolve().parents[1] / "studio" / "web" / "static"
     html = (static / "index.html").read_text(encoding="utf-8")
     js = (static / "app.js").read_text(encoding="utf-8")
-    assert '<script src="/static/app.js?v=0.9.4-hook-transcription-toggle"></script>' in html
+    assert '<script src="/static/app.js?v=0.9.5-short-pacing-microzoom"></script>' in html
     assert '<button type="button" class="mini-button" id="verify-whisper-gpu"' in html
     assert "/api/models/whisper/verify" in js
     assert "if (verifyGpuButton) verifyGpuButton.addEventListener('click', verifyWhisperGpu);" in js
@@ -241,7 +241,7 @@ def test_ollama_verify_button_has_a_dedicated_visible_handler():
     static = Path(__file__).resolve().parents[1] / "studio" / "web" / "static"
     html = (static / "index.html").read_text(encoding="utf-8")
     js = (static / "app.js").read_text(encoding="utf-8")
-    assert '<script src="/static/app.js?v=0.9.4-hook-transcription-toggle"></script>' in html
+    assert '<script src="/static/app.js?v=0.9.5-short-pacing-microzoom"></script>' in html
     assert '<button type="button" class="mini-button" id="verify-ollama"' in html
     assert "#refresh-models-secondary" in js
     assert "/api/models/ollama/verify" in js
@@ -1491,12 +1491,13 @@ def test_batch_twitch_import_is_available_in_shorts_ui():
     static = Path(__file__).resolve().parents[1] / "studio" / "web" / "static"
     html = (static / "index.html").read_text(encoding="utf-8")
     js = (static / "app.js").read_text(encoding="utf-8")
-    assert html.count("peut couper les bords, y compris une webcam en bord d’écran") == 2
-    assert html.count("Désactivé tant que la case reste décochée.") == 2
-    assert html.count('<output data-zoom-output>8 %</output>') == 2
-    assert html.count('name="zoom_percent" min="0" max="20" value="8"') == 2
-    assert html.count('name="dynamic_zoom" data-option-checkbox> Zoom dynamique') == 2
-    assert 'name="dynamic_zoom" checked' not in html
+    assert html.count("peut rogner légèrement les bords de la composition") == 2
+    assert html.count("Il ne se déclenche pas sur un simple bruit du jeu") == 2
+    assert html.count('<output data-zoom-output>4 %</output>') == 2
+    assert html.count('name="zoom_percent" min="2" max="6" value="4"') == 2
+    assert html.count('name="dynamic_zoom" checked data-option-checkbox> Micro-zoom sur les réactions parlées') == 2
+    assert 'name="dynamic_zoom" data-option-checkbox' not in html
+
     assert html.count("Effet sonore du hook") == 2
     assert html.count("Whisper alimente aussi le hook automatique.") == 2
     assert html.count('name="brand_enabled" data-option-checkbox') == 2
@@ -1510,7 +1511,7 @@ def test_batch_twitch_import_is_available_in_shorts_ui():
     assert 'id="short-batch-urls"' in html
     assert 'id="short-batch-submit"' in html
     assert 'id="short-batch-tracker"' in html
-    assert "v=0.9.4-hook-transcription-toggle" in html
+    assert "v=0.9.5-short-pacing-microzoom" in html
     assert "JUSQU'À 10 URLS" in html
     assert "/api/shorts/url/batch" in js
     assert "/api/shorts/batches/" in js
@@ -1619,7 +1620,7 @@ def test_short_audio_analysis_is_skipped_when_no_feature_needs_it():
 
     assert _needs_audio_analysis(True, 30, dynamic_zoom=False, auto_trim=True) is False
     assert _needs_audio_analysis(True, 90, dynamic_zoom=False, auto_trim=True) is True
-    assert _needs_audio_analysis(True, 30, dynamic_zoom=True, auto_trim=False) is True
+    assert _needs_audio_analysis(True, 30, dynamic_zoom=True, auto_trim=False) is False
     assert _needs_audio_analysis(False, 90, dynamic_zoom=True, auto_trim=True) is False
 
 

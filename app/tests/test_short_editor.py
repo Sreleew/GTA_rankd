@@ -2,7 +2,8 @@ from pathlib import Path
 
 from studio.web.short_editor import (
     WordTiming, create_ass_file, infer_hook_style, parse_srt,
-    rebase_word_timings, select_excerpt_range, select_thumbnail_timestamp, write_srt_file,
+    rebase_word_timings, select_excerpt_range, select_reaction_zoom_timestamps,
+    select_thumbnail_timestamp, tighten_speech_edges, write_srt_file,
 )
 
 
@@ -18,6 +19,56 @@ def test_parse_srt_word_timestamps(tmp_path: Path):
     assert [word.text for word in words] == ["Bro", "what", "HAPPENED?"]
     assert words[0].start == 0.12
     assert words[-1].end == 1.0
+
+
+def test_tighten_speech_edges_removes_only_long_lead_and_tail_gaps():
+    words = [
+        WordTiming(3.0, 3.3, "Wait"),
+        WordTiming(30.0, 30.3, "what"),
+        WordTiming(54.8, 55.0, "happened?"),
+    ]
+
+    start, end = tighten_speech_edges(words, 60.0)
+
+    assert start == 2.7
+    assert end == 57.0
+
+
+def test_tighten_speech_edges_preserves_short_natural_pauses_and_unknown_audio():
+    words = [WordTiming(0.4, 0.7, "Hey"), WordTiming(19.0, 19.3, "later")]
+
+    assert tighten_speech_edges(words, 20.0) == (0.0, 20.0)
+    assert tighten_speech_edges([], 20.0) == (0.0, 20.0)
+
+
+def test_reaction_zoom_targets_spoken_reactions_and_stays_sparse():
+    words = [
+        WordTiming(0.5, 0.8, "WHAT?"),
+        WordTiming(2.1, 2.3, "What?"),
+        WordTiming(8.0, 8.2, "No"),
+        WordTiming(8.3, 8.5, "WAY!"),
+        WordTiming(15.0, 15.3, "INSANE!"),
+        WordTiming(21.0, 21.3, "normal"),
+    ]
+
+    assert select_reaction_zoom_timestamps(words, 30.0) == [2.2, 8.4, 15.15]
+
+
+def test_reaction_zoom_recognizes_french_spanish_and_portuguese_reactions():
+    words = [
+        WordTiming(3.0, 3.3, "PUTAIN!"),
+        WordTiming(9.0, 9.3, "¡INCREÍBLE!"),
+        WordTiming(15.0, 15.3, "INCRÍVEL!"),
+    ]
+
+    assert len(select_reaction_zoom_timestamps(words, 24.0)) == 3
+
+
+def test_reaction_zoom_skips_generic_speech_and_very_short_clips():
+    words = [WordTiming(3.0, 3.3, "We"), WordTiming(5.0, 5.3, "drove")]
+
+    assert select_reaction_zoom_timestamps(words, 20.0) == []
+    assert select_reaction_zoom_timestamps([WordTiming(1.0, 1.3, "OMG!")], 2.0) == []
 
 
 def test_ass_contains_hook_branding_and_active_word_highlight(tmp_path: Path):

@@ -72,11 +72,11 @@
                   <label>Format vidéo<select name="layout"><option value="blur" selected>Vidéo entière + fond flouté</option><option value="fill">Plein écran recadré 9:16</option></select><small>La capture complète reste visible, sans cadre ni bande qui coupe l’image.</small></label>
                   <label>Focus horizontal (mode recadré) <output data-crop-output>80 %</output><input type="range" name="crop_x" min="0" max="100" value="80" data-crop-slider><small>Utilisé uniquement en mode plein écran recadré.</small></label>
                   <label>Position verticale (mode recadré) <output data-crop-output>50 %</output><input type="range" name="crop_y" min="0" max="100" value="50" data-crop-slider><small>Utilisé uniquement en mode plein écran recadré.</small></label>
-                  <label>Puissance du zoom <output data-zoom-output>8 %</output><input type="range" name="zoom_percent" min="0" max="20" value="8" data-zoom-slider><small>Zoom progressif autour du pic audio. Amplitude de 8 % si activé ; il peut couper les bords, y compris une webcam en bord d’écran. Désactivé tant que la case reste décochée.</small></label>
+                  <label>Puissance du micro-zoom <output data-zoom-output>4 %</output><input type="range" name="zoom_percent" min="2" max="6" value="4" data-zoom-slider><small>Zoom très léger de 4 % par défaut, placé sur les réactions verbales détectées par Whisper. Il ne se déclenche pas sur un simple bruit du jeu et peut rogner légèrement les bords de la composition.</small></label>
                 </div>
                 <div class="edit-toggles">
                   <label><input type="checkbox" name="auto_trim_enabled" checked data-option-checkbox> Recadrer automatiquement les sources de plus de 2 min 45</label>
-                  <label><input type="checkbox" name="dynamic_zoom" data-option-checkbox> Zoom dynamique</label>
+                  <label><input type="checkbox" name="dynamic_zoom" checked data-option-checkbox> Micro-zoom sur les réactions parlées</label>
                   <label><input type="checkbox" name="brand_enabled" data-option-checkbox> Afficher GTA_rankd discrètement</label>
                   <label><input type="checkbox" name="sfx_enabled" checked data-option-checkbox> Effet sonore du hook</label>
                   <label><input type="checkbox" name="hook_transcription_enabled" value="true" checked data-option-checkbox> Analyser la voix pour le hook automatique (Whisper local)</label>
@@ -113,11 +113,11 @@
                   <label>Format vidéo<select name="layout"><option value="blur" selected>Vidéo entière + fond flouté</option><option value="fill">Plein écran recadré 9:16</option></select><small>La capture complète reste visible, sans cadre ni bande qui coupe l’image.</small></label>
                   <label>Focus horizontal (mode recadré) <output data-crop-output>80 %</output><input type="range" name="crop_x" min="0" max="100" value="80" data-crop-slider><small>Utilisé uniquement en mode plein écran recadré.</small></label>
                   <label>Position verticale (mode recadré) <output data-crop-output>50 %</output><input type="range" name="crop_y" min="0" max="100" value="50" data-crop-slider><small>Utilisée avec le plein écran recadré.</small></label>
-                  <label>Puissance du zoom <output data-zoom-output>8 %</output><input type="range" name="zoom_percent" min="0" max="20" value="8" data-zoom-slider><small>Zoom progressif autour du pic audio. Amplitude de 8 % si activé ; il peut couper les bords, y compris une webcam en bord d’écran. Désactivé tant que la case reste décochée.</small></label>
+                  <label>Puissance du micro-zoom <output data-zoom-output>4 %</output><input type="range" name="zoom_percent" min="2" max="6" value="4" data-zoom-slider><small>Zoom très léger de 4 % par défaut, placé sur les réactions verbales détectées par Whisper. Il ne se déclenche pas sur un simple bruit du jeu et peut rogner légèrement les bords de la composition.</small></label>
                 </div>
                 <div class="edit-toggles">
                   <label><input type="checkbox" name="auto_trim_enabled" checked data-option-checkbox> Recadrer automatiquement les sources de plus de 2 min 45</label>
-                  <label><input type="checkbox" name="dynamic_zoom" data-option-checkbox> Zoom dynamique</label>
+                  <label><input type="checkbox" name="dynamic_zoom" checked data-option-checkbox> Micro-zoom sur les réactions parlées</label>
                   <label><input type="checkbox" name="brand_enabled" data-option-checkbox> Afficher GTA_rankd discrètement</label>
                   <label><input type="checkbox" name="sfx_enabled" checked data-option-checkbox> Effet sonore du hook</label>
                   <label><input type="checkbox" name="hook_transcription_enabled" value="true" checked data-option-checkbox> Analyser la voix pour le hook automatique (Whisper local)</label>
@@ -254,6 +254,6 @@
     </main>
   </div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="/static/app.js?v=0.9.4-hook-transcription-toggle"></script>
+  <script src="/static/app.js?v=0.9.5-short-pacing-microzoom"></script>
 </body>
 </html>

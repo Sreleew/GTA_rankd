@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import re
 import unicodedata
 from dataclasses import dataclass
@@ -605,6 +606,131 @@ def rebase_word_timings(words: list[WordTiming], trim_start: float, trim_end: fl
         end = round(max(start + 0.04, min(trim_end, word.end) - trim_start), 3)
         result.append(WordTiming(start, end, word.text))
     return result
+
+
+def tighten_speech_edges(
+    words: list[WordTiming],
+    duration: float,
+    *,
+    minimum_leading_silence: float = 1.25,
+    minimum_trailing_silence: float = 1.5,
+    head_padding: float = 0.30,
+    tail_padding: float = 0.55,
+    maximum_trim_per_edge: float = 3.0,
+    maximum_trim_fraction: float = 0.06,
+) -> tuple[float, float]:
+    """Return a conservative keep-range that removes only long silent lead/tail gaps.
+
+    Internal pauses are deliberately preserved so a delayed GTA payoff or streamer
+    reaction never gets rushed. Existing Whisper word timings are reused; no extra
+    transcription or audio decoding is required.
+    """
+    try:
+        clip_duration = float(duration)
+    except (TypeError, ValueError, OverflowError):
+        return 0.0, 0.0
+    if not math.isfinite(clip_duration) or clip_duration <= 0:
+        return 0.0, 0.0
+
+    valid: list[WordTiming] = []
+    for word in words or []:
+        try:
+            start = float(word.start)
+            end = float(word.end)
+        except (AttributeError, TypeError, ValueError, OverflowError):
+            continue
+        if not math.isfinite(start) or not math.isfinite(end) or end <= start:
+            continue
+        if end <= 0 or start >= clip_duration:
+            continue
+        valid.append(WordTiming(max(0.0, start), min(clip_duration, end), str(word.text or "")))
+    if not valid:
+        return 0.0, round(clip_duration, 3)
+
+    valid.sort(key=lambda item: (item.start, item.end))
+    first_speech = valid[0].start
+    last_speech = max(item.end for item in valid)
+    per_edge_cap = min(
+        max(0.0, float(maximum_trim_per_edge)),
+        clip_duration * max(0.0, min(0.1, float(maximum_trim_fraction))),
+    )
+
+    start = 0.0
+    end = clip_duration
+    if first_speech >= max(0.0, float(minimum_leading_silence)):
+        start = min(per_edge_cap, max(0.0, first_speech - max(0.0, float(head_padding))))
+    trailing_gap = clip_duration - last_speech
+    if trailing_gap >= max(0.0, float(minimum_trailing_silence)):
+        tail_trim = min(per_edge_cap, max(0.0, trailing_gap - max(0.0, float(tail_padding))))
+        end = max(start + 0.5, clip_duration - tail_trim)
+
+    if end - start < max(0.5, clip_duration * 0.75):
+        return 0.0, round(clip_duration, 3)
+    return round(start, 3), round(end, 3)
+
+
+_REACTION_ZOOM_WEIGHTS = {
+    "wtf": 4.2, "omg": 4.0, "insane": 3.1, "unreal": 2.8,
+    "whoa": 2.8, "holy": 2.5, "fuck": 3.0, "shit": 2.8,
+    "damn": 2.5, "crazy": 2.4, "wow": 2.2, "what": 1.9,
+    "way": 1.6, "nah": 1.8, "god": 2.0, "impossible": 2.7,
+    "help": 1.7, "seriously": 1.7, "bruh": 1.6,
+    "putain": 3.2, "merde": 3.0, "incroyable": 2.9, "dingue": 2.5,
+    "abuse": 2.4, "fou": 2.2, "folle": 2.2, "serieux": 1.9,
+    "joder": 3.1, "mierda": 3.0, "increible": 2.9, "locura": 2.7,
+    "dios": 2.6, "imposible": 2.7, "caramba": 2.5,
+    "incrivel": 2.9, "impossivel": 2.7, "nao": 1.2, "deus": 2.6,
+    "merda": 3.0,
+}
+
+
+def select_reaction_zoom_timestamps(
+    words: list[WordTiming],
+    duration: float,
+    *,
+    maximum_points: int = 3,
+    minimum_gap_seconds: float = 4.5,
+    minimum_timestamp: float = 2.0,
+) -> list[float]:
+    """Choose a few spaced, speech-led reaction timestamps for restrained micro-zooms."""
+    try:
+        clip_duration = float(duration)
+    except (TypeError, ValueError, OverflowError):
+        return []
+    if not math.isfinite(clip_duration) or clip_duration <= 2.5:
+        return []
+
+    candidates: list[tuple[float, float]] = []
+    for word in words or []:
+        try:
+            start = float(word.start)
+            end = float(word.end)
+        except (AttributeError, TypeError, ValueError, OverflowError):
+            continue
+        if not math.isfinite(start) or not math.isfinite(end) or end <= start:
+            continue
+        timestamp = (start + end) / 2
+        if timestamp < max(0.0, float(minimum_timestamp)) or timestamp > clip_duration - 0.3:
+            continue
+
+        raw_text = str(word.text or "")
+        normalized = unicodedata.normalize("NFKD", raw_text.casefold())
+        normalized = "".join(char for char in normalized if not unicodedata.combining(char))
+        tokens = re.findall(r"[a-z0-9']+", normalized)
+        score = sum(_REACTION_ZOOM_WEIGHTS.get(token, 0.0) for token in tokens)
+        if re.search(r"[!?…]+[\"')\]]*$", raw_text.strip()):
+            score += 0.9
+        if score >= 2.4:
+            candidates.append((round(timestamp, 3), score))
+
+    selected: list[tuple[float, float]] = []
+    min_gap = max(1.0, float(minimum_gap_seconds))
+    for timestamp, score in sorted(candidates, key=lambda item: item[1], reverse=True):
+        if all(abs(timestamp - previous[0]) >= min_gap for previous in selected):
+            selected.append((timestamp, score))
+        if len(selected) >= max(1, min(5, int(maximum_points))):
+            break
+    return sorted(timestamp for timestamp, _score in selected)
 
 
 def _format_srt_time(seconds: float) -> str:
