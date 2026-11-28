@@ -128,17 +128,11 @@ def _needs_audio_analysis(
     ))
 
 
-def _validate_short_excerpt_duration(duration: float, maximum: float) -> float:
-    """Reject an overlong excerpt before expensive metadata or optional Whisper work."""
+def _validate_short_excerpt_duration(duration: float) -> float:
+    """Validate that a Short excerpt has a positive duration, without a length cap."""
     selected = float(duration)
-    limit = float(maximum)
     if selected <= 0:
         raise MediaError("La durée de l'extrait Short doit être supérieure à zéro.")
-    if selected > limit:
-        raise MediaError(
-            f"L'extrait sélectionné dure {selected:.1f} s, au-delà de la limite Short de {limit:.0f} s. "
-            "Active le recadrage automatique ou sélectionne une plage plus courte."
-        )
     return selected
 
 
@@ -486,8 +480,7 @@ class JobRunner:
             if source_range:
                 trim_start = max(0.0, float(source_range.get("start", 0.0)))
                 trim_end = min(float(source_info["duration"]), float(source_range.get("end", source_info["duration"])))
-                maximum_short_duration = float(self.config.get("shorts", "max_input_duration_seconds", default=165))
-                _validate_short_excerpt_duration(trim_end - trim_start, maximum_short_duration)
+                _validate_short_excerpt_duration(trim_end - trim_start)
                 peak_timestamp = trim_start + (trim_end - trim_start) / 2
                 auto_trim_enabled = False
             else:
@@ -547,8 +540,7 @@ class JobRunner:
                     minimum_seconds=float(self.config.get("shorts", "auto_trim_min_seconds", default=15)),
                     maximum_seconds=float(self.config.get("shorts", "auto_trim_max_seconds", default=45)),
                 )
-            maximum_short_duration = float(self.config.get("shorts", "max_input_duration_seconds", default=165))
-            _validate_short_excerpt_duration(trim_end - trim_start, maximum_short_duration)
+            _validate_short_excerpt_duration(trim_end - trim_start)
             render_words: list[Any] = []
             render_transcript = ""
             transcription_status = (
@@ -742,7 +734,7 @@ class JobRunner:
                 ffprobe=str(self.config.get("executables", "ffprobe", default="ffprobe")),
                 preferred_encoder=str(self.config.get("encoding", "video_codec", default="h264_amf")),
                 fallback_encoder=str(self.config.get("encoding", "fallback_video_codec", default="libx264")),
-                max_duration=float(self.config.get("shorts", "max_input_duration_seconds", default=60)),
+                max_duration=None,
                 bitrate=str(self.config.get("encoding", "amf_bitrate", default="12M")),
                 loudness_lufs=int(self.config.get("encoding", "short_loudness_lufs", default=-14)),
                 width=int(self.config.get("encoding", "width_short", default=1080)),

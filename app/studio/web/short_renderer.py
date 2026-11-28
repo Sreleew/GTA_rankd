@@ -391,7 +391,7 @@ def render_vertical_short(
     ffprobe: str = "ffprobe",
     preferred_encoder: str = "h264_amf",
     fallback_encoder: str = "libx264",
-    max_duration: float = 60.0,
+    max_duration: float | None = None,
     bitrate: str = "12M",
     loudness_lufs: int = -14,
     width: int = 1080,
@@ -425,9 +425,9 @@ def render_vertical_short(
     info = dict(source_media_info) if source_media_info is not None else probe_media(input_path, ffprobe)
     trim_start = max(0.0, float(trim_start))
     output_duration = float(trim_duration) if trim_duration is not None else info["duration"]
-    if output_duration > max_duration:
+    if max_duration is not None and float(max_duration) > 0 and output_duration > float(max_duration):
         raise MediaError(
-            f"L'extrait dure {output_duration:.1f} s. La limite actuelle est de {max_duration:.0f} s."
+            f"L'extrait dure {output_duration:.1f} s. La limite configurée est de {float(max_duration):.0f} s."
         )
     if output_duration <= 0 or trim_start >= info["duration"] or trim_start + output_duration > info["duration"] + 0.25:
         raise MediaError("Les bornes de coupe dépassent la durée de la vidéo source.")

@@ -538,9 +538,8 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
             raise HTTPException(status_code=409, detail="Le média source n'est plus disponible sur ce PC.")
         media_start = float(candidate["media_start"])
         media_end = float(candidate["media_end"])
-        max_short_seconds = float(config.get("shorts", "max_input_duration_seconds", default=165))
-        if media_end <= media_start or media_end - media_start > max_short_seconds:
-            raise HTTPException(status_code=409, detail="La durée du passage candidat est invalide pour un Short.")
+        if media_end <= media_start:
+            raise HTTPException(status_code=409, detail="Les bornes du passage candidat sont invalides.")
         job_id = uuid.uuid4().hex
         options = {
             "layout": "blur", "crop_x": 80, "crop_y": 50, "dynamic_zoom": False, "zoom_percent": 0,
@@ -1216,7 +1215,7 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         if not plan.get("ready_for_render"):
-            raise HTTPException(status_code=400, detail="La sélection doit durer entre 9 et 11 minutes.")
+            raise HTTPException(status_code=400, detail="La sélection doit durer entre 10 et 11 minutes.")
         with app.state.best_of_lock:
             active_job = store.get_active_best_of_job()
             if active_job is not None:

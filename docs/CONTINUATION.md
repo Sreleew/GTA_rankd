@@ -5,7 +5,7 @@
 - **Dernière mise à jour :** 28 novembre 2026
 - **Progression des releases :** à chaque relance de développement, le compte rendu doit indiquer le lot livré, les PR/CI, l'état d'avancement vers la prochaine version et une estimation actualisée du nombre de lots restants avant sa publication. Cette estimation doit être réévaluée à chaque session, sans promettre une date artificielle.
 - **Dernière version stable confirmée :** [v0.9.3](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.9.3), publiée le 28 novembre 2026.
-- **État :** les PR #92 à #112 sont intégrées dans `main` (HEAD `88962e05738c2bf0a91fb43159aab340dcd0beb3`). La PR #113 est ouverte sur `fix/hook-diarization-runtime-fallback` pour préserver l’analyse du hook si la diarisation optionnelle installée échoue techniquement, sans relâcher le filtrage strict des sous-titres. La v0.9.3 reste la dernière release stable ; la prochaine publication attend la consolidation du parcours Short et la validation matérielle Windows/AMD.
+- **État :** les PR #92 à #113 sont intégrées dans `main` (PR #113 fusionnée au commit `c6db2c2f79bfcbeaaf18dc0b5d58e90f36a24284`, après réussite Linux/Windows). La PR #114 est en cours de validation pour la sélection Daily Best Of multi-jours, les Shorts sans limite de durée et le seuil minimum de 10 minutes. La v0.9.3 reste la dernière release stable ; la prochaine publication attend la consolidation du parcours Short et la validation matérielle Windows/AMD.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
 - **Source active :** `app/`. Modifier directement les fichiers Python, JavaScript, CSS, HTML, tests et installateur présents dans ce dossier.
@@ -1000,3 +1000,35 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Périmètre :** robustesse du hook automatique uniquement. Aucun changement au filtrage des sous-titres, à Whisper, au rendu FFmpeg, à la webcam, aux paramètres locaux, aux encodeurs AMD/CPU, au Daily Best Of ou aux releases. « Moments forts » reste en pause.
 - **Release :** v0.9.3 reste la dernière version stable ; aucun numéro de version, tag ou `.release-approval` modifié.
 - **Suite :** valider Linux/Windows puis comparer sur des clips réels le hook avec diarisation disponible, indisponible et ambiguë, en vérifiant que le fallback ne présente jamais sa transcription brute comme une attribution certaine au streamer.
+
+## 74. Autoriser les Daily Best Of multi-jours, 28 novembre 2026
+
+- **Demande utilisateur :** supprimer la règle qui imposait une seule journée par épisode. L'utilisateur souhaite pouvoir mélanger librement des Shorts validés provenant de plusieurs dates.
+- **Correction :** retirer le contrôle qui comparait chaque Short à la date sélectionnée et supprimer l'obligation de disposer d'une date sur le premier Short. La date reste conservée sur chaque clip pour les métadonnées et l'historique ; le champ `date_key` global est maintenu à titre de compatibilité, mais ne sert plus à rejeter une sélection.
+- **Tests :** remplacer les tests qui exigeaient une date unique par des tests couvrant le mélange de trois journées différentes, la préservation exacte de l'ordre choisi et l'acceptation d'un Short sans date.
+- **Préservé :** seuls les Shorts validés restent acceptés ; les doublons, fichiers locaux manquants, durées invalides, dépassements de 50 clips et épisodes hors de la plage 9 à 11 minutes restent contrôlés. La vérification FFprobe des durées réelles, les fondus audio et le verrou anti-rendus parallèles restent inchangés.
+- **PR :** branche `feat/daily-best-of-mixed-dates`. Les validations Linux et Windows doivent réussir sur le HEAD final avant fusion.
+- **Release :** v0.9.3 reste la dernière version stable. Aucune release n'est créée.
+- **Suite :** vérifier que l'interface de sélection permet bien de sélectionner des Shorts de plusieurs dates, puis poursuivre les améliorations du parcours Short et Daily Best Of.
+
+
+## 75. Durée libre des Shorts et Daily Best Of minimum 10 minutes, 28 novembre 2026
+
+- **Demande utilisateur :** ne pas imposer de restriction de durée aux Shorts, y compris lorsqu'ils durent moins d'une minute ; le Daily Best Of doit en revanche durer au minimum 10 minutes.
+- **Shorts :** suppression du plafond de durée dans le worker, le renderer et le parcours de création depuis les passages candidats. La durée doit rester strictement positive et les bornes de coupe doivent rester dans la source, mais aucune limite minimale ou maximale n'est imposée. Le paramètre obsolète est retiré du modèle de configuration par défaut ; aucun fichier de configuration local existant n'est modifié.
+- **Daily Best Of :** seuil minimum serveur porté de 9 à 10 minutes ; plafond existant de 11 minutes conservé. Mise à jour des calculs, messages et tests.
+- **Interface Daily Best Of :** suppression du filtre par journée ; tous les Shorts validés de toutes les dates sont sélectionnables ensemble. La date d'origine reste visible sur chaque clip. L'ordre manuel est préservé.
+- **Tests :** ajustement des tests de plan et de rendu autour d'un épisode de 10 min 20 ; couverture existante du mélange de plusieurs dates conservée.
+- **Périmètre :** pas de modification des fichiers Shorts existants, paramètres locaux, encodeurs AMD/CPU, historique ou fonctionnalité « moments forts » en pause.
+- **PR :** changements ajoutés à la PR #114 ; attendre CI Linux/Windows sur le HEAD final avant toute fusion.
+- **Release :** v0.9.3 reste la dernière version stable. Aucune release créée.
+
+
+## 76. Correction des régressions CI sur la durée Daily Best Of et la configuration Short, 28 novembre 2026
+
+- **État de départ :** PR #113 fusionnée dans `main` au commit `c6db2c2f79bfcbeaaf18dc0b5d58e90f36a24284` après réussite Linux [46136755342](https://github.com/Sreleew/GTA_rankd/actions/runs/46136755342) et Windows [46136755350](https://github.com/Sreleew/GTA_rankd/actions/runs/46136755350). PR #114 HEAD `58a50a5bff1686fb1973faaedbea4ae56adf747f` a échoué sur les deux suites.
+- **Causes CI :** plusieurs tests web utilisaient encore des épisodes de 560 secondes et attendaient l’ancienne limite de 9 minutes ; le message d’erreur API conservait aussi « 9 à 11 minutes ». Deux tests de configuration attendaient encore l’ancienne clé `max_input_duration_seconds`, supprimée du profil par défaut. Un test UI attendait l’ancien seuil JavaScript de 540 secondes.
+- **Corrections :** fixtures d’épisode ajustées à 620 secondes, test API modifié pour mélanger réellement deux dates sans transmettre de date globale, assertions UI à 600 secondes, messages backend et renderer à 10–11 minutes. Retrait de la clé Short obsolète de la migration mémoire et adaptation des tests pour confirmer qu’elle n’est plus injectée.
+- **Sécurité :** les fichiers `config.yaml` locaux de l’utilisateur ne sont jamais modifiés ; seuls le profil par défaut et le comportement de migration mémoire sont concernés. Aucun plafond de durée Short n’est réintroduit.
+- **Validation :** les premières exécutions Linux/Windows ont révélé 7 échecs chacune ; les corrections sont poussées, une nouvelle validation complète est requise avant toute fusion. Aucun test n’est déclaré vert à ce stade.
+- **Release :** v0.9.3 reste la dernière version stable. Pas de tag, version ou `.release-approval`. « Moments forts » reste en pause.

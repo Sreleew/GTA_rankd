@@ -5,7 +5,7 @@ import pytest
 from studio.web.best_of import build_best_of_plan
 
 
-def _clip(tmp_path: Path, clip_id: str, duration: float = 140.0, *, date_key: str = "2026-11-27", status: str = "validated"):
+def _clip(tmp_path: Path, clip_id: str, duration: float = 155.0, *, date_key: str = "2026-11-27", status: str = "validated"):
     output = tmp_path / f"{clip_id}.mp4"
     output.write_bytes(b"rendered short")
     return {
@@ -21,14 +21,14 @@ def _clip(tmp_path: Path, clip_id: str, duration: float = 140.0, *, date_key: st
     }
 
 
-def test_best_of_plan_preserves_user_order_and_targets_nine_to_eleven_minutes(tmp_path: Path):
+def test_best_of_plan_preserves_user_order_and_targets_ten_to_eleven_minutes(tmp_path: Path):
     clips = [_clip(tmp_path, f"clip-{index}") for index in range(5)]
     plan = build_best_of_plan(clips, ["clip-3", "clip-1", "clip-4", "clip-0"], date_key="2026-11-27")
 
     assert [clip["id"] for clip in plan["clips"]] == ["clip-3", "clip-1", "clip-4", "clip-0"]
     assert plan["clip_count"] == 4
-    assert plan["total_duration"] == 560.0
-    assert plan["formatted_duration"] == "09:20"
+    assert plan["total_duration"] == 620.0
+    assert plan["formatted_duration"] == "10:20"
     assert plan["ready_for_render"] is True
     assert plan["remaining_to_minimum"] == 0
 
@@ -39,7 +39,7 @@ def test_best_of_plan_reports_selection_that_is_too_short_or_too_long(tmp_path: 
     too_long = build_best_of_plan(clips, ["long"])
 
     assert too_short["ready_for_render"] is False
-    assert too_short["remaining_to_minimum"] == 420
+    assert too_short["remaining_to_minimum"] == 480
     assert too_long["ready_for_render"] is False
     assert too_long["over_maximum"] == 40
 
@@ -51,7 +51,6 @@ def test_best_of_plan_reports_selection_that_is_too_short_or_too_long(tmp_path: 
         ([], ["missing"], None, "plus dans la bibliothèque"),
         ([{"id": "a", "status": "validated"}], ["a", "a"], None, "une seule fois"),
         ([{"id": "a", "status": "ready", "date_key": "2026-11-27"}], ["a"], None, "validés"),
-        ([{"id": "a", "status": "validated", "date_key": "2026-11-26"}], ["a"], "2026-11-27", "date sélectionnée"),
     ],
 )
 def test_best_of_plan_rejects_invalid_selection(clips, ids, date_key, message):
@@ -80,9 +79,9 @@ def test_best_of_renderer_reencodes_landscape_and_adds_silence_when_needed(tmp_p
     def fake_probe(path, ffprobe="ffprobe", timeout=None):
         probes.append(Path(path))
         if Path(path) == output:
-            return {"width": 1920, "height": 1080, "duration": 560.0, "has_audio": True}
+            return {"width": 1920, "height": 1080, "duration": 620.0, "has_audio": True}
         return {
-            "width": 1080, "height": 1920, "duration": 280.0,
+            "width": 1080, "height": 1920, "duration": 310.0,
             "has_audio": Path(path) == first,
         }
 
@@ -101,8 +100,8 @@ def test_best_of_renderer_reencodes_landscape_and_adds_silence_when_needed(tmp_p
         {
             "ready_for_render": True,
             "clips": [
-                {"id": "first", "output_path": str(first), "duration": 280},
-                {"id": "second", "output_path": str(second), "duration": 280},
+                {"id": "first", "output_path": str(first), "duration": 310},
+                {"id": "second", "output_path": str(second), "duration": 310},
             ],
         },
         output,
@@ -115,7 +114,7 @@ def test_best_of_renderer_reencodes_landscape_and_adds_silence_when_needed(tmp_p
     assert result["clip_count"] == 2
     assert "anullsrc=channel_layout=stereo:sample_rate=48000" in command
     assert "concat=n=2:v=1:a=1[outv][outa_raw]" in graph
-    assert "[outa_raw]afade=t=in:st=0:d=0.350,afade=t=out:st=559.250:d=0.750[outa]" in graph
+    assert "[outa_raw]afade=t=in:st=0:d=0.350,afade=t=out:st=619.250:d=0.750[outa]" in graph
     assert command[-1] == str(output.resolve())
 
 
@@ -143,8 +142,8 @@ def test_best_of_renderer_falls_back_to_cpu_when_amf_cannot_initialize(tmp_path:
 
     def fake_probe(path, ffprobe="ffprobe", timeout=None):
         if Path(path) == output:
-            return {"width": 1920, "height": 1080, "duration": 560, "has_audio": True}
-        return {"width": 1080, "height": 1920, "duration": 560, "has_audio": True}
+            return {"width": 1920, "height": 1080, "duration": 620, "has_audio": True}
+        return {"width": 1080, "height": 1920, "duration": 620, "has_audio": True}
 
     def fake_run(command, timeout=None, cwd=None):
         calls.append(list(command))
@@ -159,7 +158,7 @@ def test_best_of_renderer_falls_back_to_cpu_when_amf_cannot_initialize(tmp_path:
     result = render_best_of_episode(
         {
             "ready_for_render": True,
-            "clips": [{"id": "source", "output_path": str(source), "duration": 560}],
+            "clips": [{"id": "source", "output_path": str(source), "duration": 620}],
         },
         output,
         encoder="h264_amf",
@@ -184,15 +183,15 @@ def test_best_of_renderer_reports_real_encoding_progress(tmp_path: Path, monkeyp
 
     def fake_probe(path, ffprobe="ffprobe", timeout=None):
         if Path(path) == output:
-            return {"width": 1920, "height": 1080, "duration": 560, "has_audio": True}
-        return {"width": 1080, "height": 1920, "duration": 560, "has_audio": True}
+            return {"width": 1920, "height": 1080, "duration": 620, "has_audio": True}
+        return {"width": 1080, "height": 1920, "duration": 620, "has_audio": True}
 
     def fake_run(command, timeout=None, cwd=None, progress_callback=None):
         commands.append(list(command))
         assert "-progress" in command
         assert command[command.index("-progress") + 1] == "pipe:1"
         assert callable(progress_callback)
-        progress_callback(280.0)
+        progress_callback(310.0)
         output.write_bytes(b"rendered episode")
 
     monkeypatch.setattr(short_renderer, "probe_media", fake_probe)
@@ -202,7 +201,7 @@ def test_best_of_renderer_reports_real_encoding_progress(tmp_path: Path, monkeyp
     render_best_of_episode(
         {
             "ready_for_render": True,
-            "clips": [{"id": "source", "output_path": str(source), "duration": 560}],
+            "clips": [{"id": "source", "output_path": str(source), "duration": 620}],
         },
         output,
         encoder="libx264",
@@ -214,99 +213,49 @@ def test_best_of_renderer_reports_real_encoding_progress(tmp_path: Path, monkeyp
     assert callbacks[-1] == (95, "Vérification du fichier exporté")
 
 
-def test_best_of_plan_infers_one_day_and_rejects_mixed_days_without_filter(tmp_path: Path):
+def test_best_of_plan_allows_mixing_shorts_from_different_days(tmp_path: Path):
     clips = [
-        _clip(tmp_path, "same-a", date_key="2026-11-27"),
-        _clip(tmp_path, "same-b", date_key="2026-11-27"),
-        _clip(tmp_path, "same-c", date_key="2026-11-27"),
-        _clip(tmp_path, "same-d", date_key="2026-11-27"),
+        _clip(tmp_path, "day-one-a", date_key="2026-11-27"),
+        _clip(tmp_path, "day-two-b", date_key="2026-11-28"),
+        _clip(tmp_path, "day-three-c", date_key="2026-11-29"),
+        _clip(tmp_path, "day-one-d", date_key="2026-11-27"),
     ]
-    plan = build_best_of_plan(clips, ["same-a", "same-b", "same-c", "same-d"])
-    assert plan["date_key"] == "2026-11-27"
 
-    mixed = [
-        _clip(tmp_path, "mixed-a", date_key="2026-11-27"),
-        _clip(tmp_path, "mixed-b", date_key="2026-11-28"),
+    plan = build_best_of_plan(
+        clips,
+        ["day-two-b", "day-one-a", "day-three-c", "day-one-d"],
+    )
+
+    assert [clip["id"] for clip in plan["clips"]] == [
+        "day-two-b", "day-one-a", "day-three-c", "day-one-d",
     ]
-    with pytest.raises(ValueError, match="date sélectionnée"):
-        build_best_of_plan(mixed, ["mixed-a", "mixed-b"])
+    assert [clip["date_key"] for clip in plan["clips"]] == [
+        "2026-11-28", "2026-11-27", "2026-11-29", "2026-11-27",
+    ]
+    assert plan["ready_for_render"] is True
 
 
-def test_best_of_plan_requires_a_date_when_the_selected_short_has_none(tmp_path: Path):
+def test_best_of_plan_allows_shorts_without_a_date(tmp_path: Path):
     clip = _clip(tmp_path, "undated", date_key="")
 
-    with pytest.raises(ValueError, match="date des Shorts sélectionnés"):
-        build_best_of_plan([clip], ["undated"])
+    plan = build_best_of_plan([clip], ["undated"])
+
+    assert plan["clips"][0]["id"] == "undated"
+    assert plan["date_key"] == ""
 
 
-def test_best_of_filter_graph_keeps_legacy_audio_when_durations_are_unknown():
-    from studio.web.best_of import build_best_of_filter_graph
-
-    graph = build_best_of_filter_graph(1, [0])
-
-    assert "concat=n=1:v=1:a=1[outv][outa]" in graph
-    assert "afade=" not in graph
 
 
-def test_best_of_filter_graph_clamps_edge_fades_for_short_test_durations():
-    from studio.web.best_of import build_best_of_filter_graph
+def test_best_of_plan_accepts_exactly_ten_minutes_and_rejects_just_under(tmp_path: Path):
+    clips = [
+        _clip(tmp_path, f"ten-minute-{index}", duration=120.0)
+        for index in range(5)
+    ]
+    exact = build_best_of_plan(clips, [clip["id"] for clip in clips])
+    assert exact["total_duration"] == 600.0
+    assert exact["ready_for_render"] is True
 
-    graph = build_best_of_filter_graph(1, [0], clip_durations=[0.2])
-
-    assert "[outa_raw]afade=t=in:st=0:d=0.050,afade=t=out:st=0.150:d=0.050[outa]" in graph
-
-
-def test_best_of_renderer_rejects_source_duration_changed_after_validation(tmp_path: Path, monkeypatch):
-    from studio.web import short_renderer
-    from studio.web.best_of import render_best_of_episode
-
-    source = tmp_path / "changed-short.mp4"
-    source.write_bytes(b"source")
-    output = tmp_path / "episode.mp4"
-
-    def fake_probe(path, ffprobe="ffprobe", timeout=None):
-        return {"width": 1080, "height": 1920, "duration": 240, "has_audio": True}
-
-    monkeypatch.setattr(short_renderer, "probe_media", fake_probe)
-    monkeypatch.setattr(short_renderer, "resolve_executable", lambda value: str(value))
-
-    with pytest.raises(short_renderer.MediaError, match="durée du Short .* a changé"):
-        render_best_of_episode(
-            {
-                "ready_for_render": True,
-                "clips": [{"id": "changed", "output_path": str(source), "duration": 280}],
-            },
-            output,
-            encoder="libx264",
-        )
-
-
-def test_best_of_renderer_rejects_truncated_output_duration(tmp_path: Path, monkeypatch):
-    from studio.web import short_renderer
-    from studio.web.best_of import render_best_of_episode
-
-    source = tmp_path / "source.mp4"
-    source.write_bytes(b"source")
-    output = tmp_path / "episode.mp4"
-
-    def fake_probe(path, ffprobe="ffprobe", timeout=None):
-        if Path(path) == output:
-            return {"width": 1920, "height": 1080, "duration": 500, "has_audio": True}
-        return {"width": 1080, "height": 1920, "duration": 560, "has_audio": True}
-
-    def fake_run(command, timeout=None, cwd=None):
-        output.write_bytes(b"truncated episode")
-
-    monkeypatch.setattr(short_renderer, "probe_media", fake_probe)
-    monkeypatch.setattr(short_renderer, "resolve_executable", lambda value: str(value))
-    monkeypatch.setattr(short_renderer, "run_command", fake_run)
-
-    with pytest.raises(short_renderer.MediaError, match="durée du Daily Best Of exporté"):
-        render_best_of_episode(
-            {
-                "ready_for_render": True,
-                "clips": [{"id": "source", "output_path": str(source), "duration": 560}],
-            },
-            output,
-            encoder="libx264",
-        )
+    clips[-1]["duration"] = 119.99
+    under = build_best_of_plan(clips, [clip["id"] for clip in clips])
+    assert under["ready_for_render"] is False
+    assert under["remaining_to_minimum"] == 0.01
