@@ -411,6 +411,7 @@ def test_long_hook_and_context_are_balanced_and_kept_inside_mobile_safe_area(tmp
     path = create_ass_file(
         tmp_path / "long-editorial-overlays.ass",
         hook_text="IL A VRAIMENT PENSÉ POUVOIR ÉCHAPPER À LA POLICE",
+        hook_style="impact",
         context_text="ET LE STREAMER N'AVAIT ABSOLUMENT RIEN VU VENIR",
         captions_enabled=False,
         brand_enabled=False,
@@ -422,6 +423,7 @@ def test_long_hook_and_context_are_balanced_and_kept_inside_mobile_safe_area(tmp
     assert hook_line.count(r"\N") == 1
     assert context_line.count(r"\N") == 1
     assert r"\fs" in hook_line
+    assert r"\fscx142" in hook_line
     assert r"\fs" in context_line
     assert "0:00:00.00,0:00:02.00" in hook_line
     assert "0:00:00.35,0:00:02.60" in context_line

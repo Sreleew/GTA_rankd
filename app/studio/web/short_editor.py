@@ -201,6 +201,13 @@ _HOOK_ANIMATIONS = {
     "reaction": r"\fad(20,130)\fscx78\fscy122\frz4\blur3\t(0,110,\fscx108\fscy96\frz-1\blur0)\t(110,210,\fscx100\fscy100\frz0)",
 }
 
+_HOOK_MAX_HORIZONTAL_SCALE = {
+    "impact": 1.42,
+    "question": 1.0,
+    "suspense": 1.0,
+    "reaction": 1.22,
+}
+
 
 def _merge_punctuation(words: Iterable[WordTiming]) -> list[WordTiming]:
     output: list[WordTiming] = []
@@ -409,9 +416,10 @@ Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
         if selected_hook_style == "auto" or selected_hook_style not in _HOOK_ANIMATIONS:
             selected_hook_style = infer_hook_style(clean_hook, context_text)
         motion = _HOOK_ANIMATIONS[selected_hook_style]
+        maximum_animation_scale = _HOOK_MAX_HORIZONTAL_SCALE[selected_hook_style]
         hook_overlay, hook_font_size = _wrap_overlay_text(
             clean_hook,
-            max_line_chars=max(16, round(width / 44)),
+            max_line_chars=max(12, round(width / (42 * maximum_animation_scale))),
             base_font_size=86,
             min_font_size=54,
         )
