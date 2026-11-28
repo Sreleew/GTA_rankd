@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import re
 from pathlib import Path
 from typing import Any, Iterable
@@ -79,7 +80,10 @@ def _word_timing_issues(words: Iterable[Any], duration: float) -> int:
     for word in words:
         try:
             start, end = float(word.start), float(word.end)
-        except (AttributeError, TypeError, ValueError):
+        except (AttributeError, TypeError, ValueError, OverflowError):
+            invalid += 1
+            continue
+        if not math.isfinite(start) or not math.isfinite(end):
             invalid += 1
             continue
         if start < -0.02 or end <= start or end > duration + 0.25:
