@@ -495,10 +495,13 @@ def analyze_audio_peaks(
                     samples = array.array("h", samples[::channels])
                 pending.extend(samples)
 
-                while len(pending) >= window_size:
-                    record_window(pending[:window_size])
-                    del pending[:hop_size]
+                offset = 0
+                while len(pending) - offset >= window_size:
+                    record_window(pending[offset:offset + window_size])
+                    offset += hop_size
                     pending_start += hop_size
+                if offset:
+                    del pending[:offset]
 
             if len(pending) >= minimum_chunk_samples:
                 record_window(pending)
