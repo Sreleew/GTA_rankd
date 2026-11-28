@@ -279,3 +279,34 @@ def test_best_of_renderer_rejects_source_duration_changed_after_validation(tmp_p
             output,
             encoder="libx264",
         )
+
+
+def test_best_of_renderer_rejects_truncated_output_duration(tmp_path: Path, monkeypatch):
+    from studio.web import short_renderer
+    from studio.web.best_of import render_best_of_episode
+
+    source = tmp_path / "source.mp4"
+    source.write_bytes(b"source")
+    output = tmp_path / "episode.mp4"
+
+    def fake_probe(path, ffprobe="ffprobe", timeout=None):
+        if Path(path) == output:
+            return {"width": 1920, "height": 1080, "duration": 500, "has_audio": True}
+        return {"width": 1080, "height": 1920, "duration": 560, "has_audio": True}
+
+    def fake_run(command, timeout=None, cwd=None):
+        output.write_bytes(b"truncated episode")
+
+    monkeypatch.setattr(short_renderer, "probe_media", fake_probe)
+    monkeypatch.setattr(short_renderer, "resolve_executable", lambda value: str(value))
+    monkeypatch.setattr(short_renderer, "run_command", fake_run)
+
+    with pytest.raises(short_renderer.MediaError, match="durée du Daily Best Of exporté"):
+        render_best_of_episode(
+            {
+                "ready_for_render": True,
+                "clips": [{"id": "source", "output_path": str(source), "duration": 560}],
+            },
+            output,
+            encoder="libx264",
+        )
