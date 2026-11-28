@@ -451,7 +451,7 @@ def generate_short_metadata(
         thumbnail_text = _limit_words(str(data.get("thumbnail_text", fallback["thumbnail_text"])), 8)
         if not thumbnail_text or _has_incomplete_quote(f"“{thumbnail_text}”") or _is_incomplete_phrase(thumbnail_text):
             thumbnail_text = fallback["thumbnail_text"]
-        if invalid_title:
+        if invalid_title and not custom_hook:
             hook = fallback["hook_text"]
         shared = {"title": title, "description": description, "hashtags": tags}
         platforms = {key: dict(shared) for key in PLATFORMS}
