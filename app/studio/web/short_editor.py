@@ -210,12 +210,16 @@ _HOOK_MAX_HORIZONTAL_SCALE = {
 
 def _merge_punctuation(words: Iterable[WordTiming]) -> list[WordTiming]:
     output: list[WordTiming] = []
-    punctuation = re.compile(r"^[,.;:!?)]")
+    closing_punctuation = re.compile(r"^[,.;:!?…)]\\]\\}»”’]+$")
+    opening_punctuation = re.compile(r"^[¿¡(\\[\\{«“‘]+$")
     for word in words:
         text = _clean_ass_text(word.text)
         if not text:
             continue
-        if output and (punctuation.match(text) or text.startswith("'")):
+        if output and (closing_punctuation.fullmatch(text) or text.startswith("'")):
+            previous = output[-1]
+            output[-1] = WordTiming(previous.start, max(previous.end, word.end), previous.text + text)
+        elif output and opening_punctuation.fullmatch(output[-1].text):
             previous = output[-1]
             output[-1] = WordTiming(previous.start, max(previous.end, word.end), previous.text + text)
         else:
