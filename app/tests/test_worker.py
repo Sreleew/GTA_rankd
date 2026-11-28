@@ -136,7 +136,6 @@ def test_requested_short_captions_stay_enabled_for_the_final_overlay():
     assert worker._captions_should_render(True, []) is False
 
 
-
 def test_caption_voice_filter_keeps_only_words_returned_by_the_diarizer(tmp_path: Path, monkeypatch):
     from studio.web.short_editor import WordTiming
 

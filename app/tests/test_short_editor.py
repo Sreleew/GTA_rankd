@@ -468,7 +468,6 @@ def test_thumbnail_timestamp_falls_back_to_audio_peak_without_descriptive_words(
     assert select_thumbnail_timestamp(words, 20.0, preferred=12.0) == 12.0
 
 
-
 def test_filtered_srt_sidecar_preserves_only_supplied_words_and_exact_intervals(tmp_path: Path):
     from studio.web.short_editor import parse_srt, write_srt_file
 
