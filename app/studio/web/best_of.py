@@ -36,11 +36,17 @@ def build_best_of_plan(
     if missing:
         raise ValueError("Certains Shorts sélectionnés ne sont plus dans la bibliothèque. Actualise la page.")
 
-    # A Daily Best Of may intentionally combine validated Shorts from different days.
-    # Keep date_key only as optional episode metadata for backwards compatibility.
-    selected_date_key = str(
-        date_key or by_id[normalized_ids[0]].get("date_key") or ""
-    ).strip()
+    # Keep a truthful episode date label when selections span multiple source days.
+    selected_dates = {
+        str(by_id[clip_id].get("date_key") or "").strip()
+        for clip_id in normalized_ids
+    }
+    if len(selected_dates) > 1:
+        selected_date_key = "multi"
+    else:
+        selected_date_key = next(iter(selected_dates), "")
+        if not selected_date_key and date_key:
+            selected_date_key = str(date_key).strip()
 
     ordered: list[dict[str, Any]] = []
     total_duration = 0.0

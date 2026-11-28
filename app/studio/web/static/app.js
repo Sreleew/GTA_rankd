@@ -333,9 +333,11 @@ async function loadBestOfHistory(silent = false) {
     };
     container.innerHTML = jobs.length ? jobs.map(job => {
       const progress = Math.max(0, Math.min(100, Number(job.progress) || 0));
-      const dateLabel = job.date_key
-        ? new Date(`${job.date_key}T12:00:00`).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
-        : '';
+      const dateLabel = job.date_key === 'multi'
+        ? 'Plusieurs dates'
+        : (job.date_key
+          ? new Date(`${job.date_key}T12:00:00`).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
+          : '');
       const createdLabel = job.created_at
         ? new Date(job.created_at).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
         : '';

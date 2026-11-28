@@ -233,6 +233,7 @@ def test_best_of_plan_allows_mixing_shorts_from_different_days(tmp_path: Path):
         "2026-11-28", "2026-11-27", "2026-11-29", "2026-11-27",
     ]
     assert plan["ready_for_render"] is True
+    assert plan["date_key"] == "multi"
 
 
 def test_best_of_plan_allows_shorts_without_a_date(tmp_path: Path):
