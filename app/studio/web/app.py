@@ -46,6 +46,13 @@ def safe_upload_name(filename: str) -> str:
 
 
 
+def _resolve_dynamic_zoom(config: AppConfig, requested: bool | None) -> bool:
+    """Use an explicit form choice, otherwise respect the configured opt-in."""
+    if requested is not None:
+        return bool(requested)
+    return bool(config.get("shorts", "dynamic_zoom", default=False))
+
+
 def _validate_edit_options(
     layout: str, crop_x: int, crop_y: int, dynamic_zoom: bool, zoom_percent: int,
     brand_enabled: bool, hook_text: str, context_text: str,
@@ -674,7 +681,7 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         layout: Annotated[str, Form()] = "blur",
         crop_x: Annotated[int, Form()] = 80,
         crop_y: Annotated[int, Form()] = 50,
-        dynamic_zoom: Annotated[bool, Form()] = False,
+        dynamic_zoom: Annotated[bool | None, Form()] = None,
         zoom_percent: Annotated[int, Form()] = 8,
         brand_enabled: Annotated[bool, Form()] = False,
         auto_trim_enabled: Annotated[bool, Form()] = True,
@@ -689,7 +696,7 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         if captions_enabled:
             _require_whisper_ready(config, model_manager)
         options = _validate_edit_options(
-            layout, crop_x, crop_y, dynamic_zoom, zoom_percent, brand_enabled,
+            layout, crop_x, crop_y, _resolve_dynamic_zoom(config, dynamic_zoom), zoom_percent, brand_enabled,
             hook_text, context_text, auto_trim_enabled, sfx_enabled, captions_enabled,
             caption_language,
         )
@@ -738,7 +745,7 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         layout: Annotated[str, Form()] = "blur",
         crop_x: Annotated[int, Form()] = 80,
         crop_y: Annotated[int, Form()] = 50,
-        dynamic_zoom: Annotated[bool, Form()] = False,
+        dynamic_zoom: Annotated[bool | None, Form()] = None,
         zoom_percent: Annotated[int, Form()] = 8,
         brand_enabled: Annotated[bool, Form()] = False,
         auto_trim_enabled: Annotated[bool, Form()] = True,
@@ -755,7 +762,7 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         if captions_enabled:
             _require_whisper_ready(config, model_manager)
         options = _validate_edit_options(
-            layout, crop_x, crop_y, dynamic_zoom, zoom_percent, brand_enabled,
+            layout, crop_x, crop_y, _resolve_dynamic_zoom(config, dynamic_zoom), zoom_percent, brand_enabled,
             hook_text, context_text, auto_trim_enabled, sfx_enabled, captions_enabled,
             caption_language,
         )
@@ -778,7 +785,7 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         layout: Annotated[str, Form()] = "blur",
         crop_x: Annotated[int, Form()] = 80,
         crop_y: Annotated[int, Form()] = 50,
-        dynamic_zoom: Annotated[bool, Form()] = False,
+        dynamic_zoom: Annotated[bool | None, Form()] = None,
         zoom_percent: Annotated[int, Form()] = 8,
         brand_enabled: Annotated[bool, Form()] = False,
         auto_trim_enabled: Annotated[bool, Form()] = True,
@@ -800,7 +807,7 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         if captions_enabled:
             _require_whisper_ready(config, model_manager)
         options = _validate_edit_options(
-            layout, crop_x, crop_y, dynamic_zoom, zoom_percent, brand_enabled,
+            layout, crop_x, crop_y, _resolve_dynamic_zoom(config, dynamic_zoom), zoom_percent, brand_enabled,
             hook_text, context_text, auto_trim_enabled, sfx_enabled, captions_enabled,
             caption_language,
         )
