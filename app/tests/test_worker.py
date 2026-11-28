@@ -298,3 +298,12 @@ def test_hook_sound_requires_a_visible_hook_and_user_opt_in():
     assert not worker._hook_sound_should_render(True, "")
     assert not worker._hook_sound_should_render(True, "   ")
     assert not worker._hook_sound_should_render(False, "WAIT, WHAT JUST HAPPENED?")
+
+
+
+def test_short_excerpt_duration_rejects_non_finite_and_non_numeric_values():
+    import pytest
+
+    for invalid_duration in (float("nan"), float("inf"), float("-inf"), None, "not-a-number"):
+        with pytest.raises(worker.MediaError, match="finie et supérieure à zéro"):
+            worker._validate_short_excerpt_duration(invalid_duration)
