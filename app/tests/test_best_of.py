@@ -235,6 +235,9 @@ def test_best_of_plan_allows_mixing_shorts_from_different_days(tmp_path: Path):
     assert plan["ready_for_render"] is True
     assert plan["date_key"] == "multi"
 
+    same_day = build_best_of_plan(clips, ["day-one-a", "day-one-d"])
+    assert same_day["date_key"] == "2026-11-27"
+
 
 def test_best_of_plan_allows_shorts_without_a_date(tmp_path: Path):
     clip = _clip(tmp_path, "undated", date_key="")
