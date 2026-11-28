@@ -503,8 +503,12 @@ def analyze_audio_peaks(
                 if offset:
                     del pending[:offset]
 
-            if len(pending) >= minimum_chunk_samples:
+            while len(pending) >= minimum_chunk_samples:
                 record_window(pending)
+                if len(pending) <= hop_size:
+                    break
+                del pending[:hop_size]
+                pending_start += hop_size
 
         if not measurements:
             return 0.0, []
