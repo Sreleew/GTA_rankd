@@ -12,6 +12,7 @@ import subprocess
 import sys
 import tempfile
 import wave
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -45,6 +46,39 @@ def _binary_invocation(binary: Path) -> list[str]:
         return [sys.executable, str(binary)]
     return [str(binary)]
 
+
+@lru_cache(maxsize=16)
+def _whisper_supports_dtw_cached(
+    binary_path: str,
+    modified_ns: int,
+    changed_ns: int,
+    size: int,
+) -> bool:
+    """Cache DTW capability for this exact local Whisper binary version."""
+    binary = Path(binary_path)
+    result = run_quiet(
+        [*_binary_invocation(binary), "--help"],
+        cwd=str(binary.parent),
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=20,
+        check=False,
+    )
+    help_text = (result.stdout or "") + "\n" + (result.stderr or "")
+    return all(flag in help_text for flag in ("-dtw", "-ojf", "-nfa"))
+
+
+def _whisper_supports_dtw(binary: Path) -> bool:
+    """Reuse CLI capability detection across batch clips, invalidating on binary updates."""
+    stat = binary.stat()
+    return _whisper_supports_dtw_cached(
+        str(binary.resolve()),
+        stat.st_mtime_ns,
+        stat.st_ctime_ns,
+        stat.st_size,
+    )
 
 
 def inspect_whisper_cli(binary_value: str | Path, *, timeout: int = 12) -> dict[str, Any]:
@@ -356,20 +390,14 @@ def transcribe_with_whisper_cpp(
     srt_path = output_base.with_suffix(".srt")
     json_path = output_base.with_suffix(".json")
 
-    # Détecte le support DTW du binaire au lieu de supposer qu'il est présent.
-    # Le préfixe fonctionne aussi sous Windows pour les wrappers de test .py.
-    binary_command = _binary_invocation(binary)
+    # Détecte le support DTW une fois par version du binaire, y compris pour les imports groupés.
     supports_dtw = False
     try:
-        help_result = run_quiet(
-            [*binary_command, "--help"], cwd=str(binary.parent), capture_output=True,
-            text=True, encoding="utf-8", errors="replace", timeout=20, check=False,
-        )
-        help_text = (help_result.stdout or "") + "\n" + (help_result.stderr or "")
-        supports_dtw = all(flag in help_text for flag in ("-dtw", "-ojf", "-nfa"))
+        supports_dtw = _whisper_supports_dtw(binary)
     except (OSError, subprocess.TimeoutExpired):
         logger.info("Impossible de lire l'aide Whisper, utilisation du mode SRT standard.")
 
+    binary_command = _binary_invocation(binary)
     command = [
         *binary_command, "-m", str(model_path.resolve()), "-f", str(audio_path.resolve()),
         "-l", language or "en", "-osrt", "-of", str(output_base), "-np",
@@ -430,32 +458,58 @@ def analyze_audio_peaks(
     minimum_gap_seconds: float = 4.5,
     maximum_peaks: int = 5,
 ) -> tuple[float, list[float]]:
-    """Analyze a WAV once and return its strongest peak plus chronological accents."""
+    """Analyze a WAV in bounded chunks and return its strongest peak plus accents."""
     if not wav_path.is_file():
         return 0.0, []
     try:
         with wave.open(str(wav_path), "rb") as audio:
             sample_rate = audio.getframerate()
-            frames = audio.readframes(audio.getnframes())
             channels = audio.getnchannels()
             sample_width = audio.getsampwidth()
-        if sample_width != 2 or sample_rate <= 0:
-            return 0.0, []
-        samples = array.array("h")
-        samples.frombytes(frames)
-        if channels > 1:
-            samples = array.array("h", samples[::channels])
-        window_size = max(1, int(sample_rate * window_seconds))
-        hop_size = max(1, window_size // 2)
-        measurements: list[tuple[float, float]] = []
-        for start in range(0, len(samples), hop_size):
-            chunk = samples[start:start + window_size]
-            if len(chunk) < max(1, window_size // 3):
-                continue
-            square_sum = sum(int(value) * int(value) for value in chunk)
-            rms = math.sqrt(square_sum / len(chunk)) / 32768.0
-            center = (start + len(chunk) / 2) / sample_rate
-            measurements.append((center, rms))
+            if sample_width != 2 or sample_rate <= 0:
+                return 0.0, []
+
+            window_size = max(1, int(sample_rate * window_seconds))
+            hop_size = max(1, window_size // 2)
+            minimum_chunk_samples = max(1, window_size // 3)
+            read_chunk_frames = max(1, sample_rate * 10)
+            measurements: list[tuple[float, float]] = []
+            pending = array.array("h")
+            pending_start = 0
+
+            def record_window(chunk: array.array) -> None:
+                if len(chunk) < minimum_chunk_samples:
+                    return
+                square_sum = sum(int(value) * int(value) for value in chunk)
+                rms = math.sqrt(square_sum / len(chunk)) / 32768.0
+                center = (pending_start + len(chunk) / 2) / sample_rate
+                measurements.append((center, rms))
+
+            while True:
+                frame_data = audio.readframes(read_chunk_frames)
+                if not frame_data:
+                    break
+                samples = array.array("h")
+                samples.frombytes(frame_data)
+                if channels > 1:
+                    samples = array.array("h", samples[::channels])
+                pending.extend(samples)
+
+                offset = 0
+                while len(pending) - offset >= window_size:
+                    record_window(pending[offset:offset + window_size])
+                    offset += hop_size
+                    pending_start += hop_size
+                if offset:
+                    del pending[:offset]
+
+            while len(pending) >= minimum_chunk_samples:
+                record_window(pending)
+                if len(pending) <= hop_size:
+                    break
+                del pending[:hop_size]
+                pending_start += hop_size
+
         if not measurements:
             return 0.0, []
         levels = sorted(level for _, level in measurements)
@@ -481,8 +535,6 @@ def analyze_audio_peaks(
     except (OSError, wave.Error, ValueError):
         logger.exception("Impossible d'analyser les accents audio pour le cadrage dynamique.")
         return 0.0, []
-
-
 def detect_audio_peak_timestamps(
     wav_path: Path,
     window_seconds: float = 0.35,

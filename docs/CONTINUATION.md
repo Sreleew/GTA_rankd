@@ -5,7 +5,7 @@
 - **Dernière mise à jour :** 28 novembre 2026
 - **Progression des releases :** à chaque relance de développement, le compte rendu doit indiquer le lot livré, les PR/CI, l'état d'avancement vers la prochaine version et une estimation actualisée du nombre de lots restants avant sa publication. Cette estimation doit être réévaluée à chaque session, sans promettre une date artificielle.
 - **Dernière version stable confirmée :** [v0.9.3](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.9.3), publiée le 28 novembre 2026.
-- **État :** les PR #92 à #113 sont intégrées dans `main` (PR #113 fusionnée au commit `c6db2c2f79bfcbeaaf18dc0b5d58e90f36a24284`, après réussite Linux/Windows). La PR #114 est en cours de validation pour la sélection Daily Best Of multi-jours, les Shorts sans limite de durée et le seuil minimum de 10 minutes. La v0.9.3 reste la dernière release stable ; la prochaine publication attend la consolidation du parcours Short et la validation matérielle Windows/AMD.
+- **État :** les PR #92 à #116 sont intégrées dans `main` (HEAD `8f56d588b58df590d6d3e4fc236e17d4f2d56791` après fusion de la PR #116). La PR #114 reste ouverte sur `feat/daily-best-of-mixed-dates` pour la sélection multi-jours du Daily Best Of, le seuil 10–11 minutes et la suppression des limites de durée Short. Son ancien HEAD a échoué sur une assertion de test de configuration obsolète ; le test est corrigé et la branche est remise à jour sur le `main` courant. La signature `GTA_rankd` reste désactivée par défaut conformément à `docs/WORKING-AGREEMENT.md`. v0.9.3 reste la dernière release stable ; la prochaine publication attend la consolidation du parcours Short et la validation matérielle Windows/AMD.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
 - **Source active :** `app/`. Modifier directement les fichiers Python, JavaScript, CSS, HTML, tests et installateur présents dans ce dossier.
@@ -1001,34 +1001,51 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Release :** v0.9.3 reste la dernière version stable ; aucun numéro de version, tag ou `.release-approval` modifié.
 - **Suite :** valider Linux/Windows puis comparer sur des clips réels le hook avec diarisation disponible, indisponible et ambiguë, en vérifiant que le fallback ne présente jamais sa transcription brute comme une attribution certaine au streamer.
 
-## 74. Autoriser les Daily Best Of multi-jours, 28 novembre 2026
 
-- **Demande utilisateur :** supprimer la règle qui imposait une seule journée par épisode. L'utilisateur souhaite pouvoir mélanger librement des Shorts validés provenant de plusieurs dates.
-- **Correction :** retirer le contrôle qui comparait chaque Short à la date sélectionnée et supprimer l'obligation de disposer d'une date sur le premier Short. La date reste conservée sur chaque clip pour les métadonnées et l'historique ; le champ `date_key` global est maintenu à titre de compatibilité, mais ne sert plus à rejeter une sélection.
-- **Tests :** remplacer les tests qui exigeaient une date unique par des tests couvrant le mélange de trois journées différentes, la préservation exacte de l'ordre choisi et l'acceptation d'un Short sans date.
-- **Préservé :** seuls les Shorts validés restent acceptés ; les doublons, fichiers locaux manquants, durées invalides, dépassements de 50 clips et épisodes hors de la plage 9 à 11 minutes restent contrôlés. La vérification FFprobe des durées réelles, les fondus audio et le verrou anti-rendus parallèles restent inchangés.
-- **PR :** branche `feat/daily-best-of-mixed-dates`. Les validations Linux et Windows doivent réussir sur le HEAD final avant fusion.
-- **Release :** v0.9.3 reste la dernière version stable. Aucune release n'est créée.
-- **Suite :** vérifier que l'interface de sélection permet bien de sélectionner des Shorts de plusieurs dates, puis poursuivre les améliorations du parcours Short et Daily Best Of.
+## 74. Optimiser la préparation audio des Shorts et les imports groupés, 28 novembre 2026
 
-
-## 75. Durée libre des Shorts et Daily Best Of minimum 10 minutes, 28 novembre 2026
-
-- **Demande utilisateur :** ne pas imposer de restriction de durée aux Shorts, y compris lorsqu'ils durent moins d'une minute ; le Daily Best Of doit en revanche durer au minimum 10 minutes.
-- **Shorts :** suppression du plafond de durée dans le worker, le renderer et le parcours de création depuis les passages candidats. La durée doit rester strictement positive et les bornes de coupe doivent rester dans la source, mais aucune limite minimale ou maximale n'est imposée. Le paramètre obsolète est retiré du modèle de configuration par défaut ; aucun fichier de configuration local existant n'est modifié.
-- **Daily Best Of :** seuil minimum serveur porté de 9 à 10 minutes ; plafond existant de 11 minutes conservé. Mise à jour des calculs, messages et tests.
-- **Interface Daily Best Of :** suppression du filtre par journée ; tous les Shorts validés de toutes les dates sont sélectionnables ensemble. La date d'origine reste visible sur chaque clip. L'ordre manuel est préservé.
-- **Tests :** ajustement des tests de plan et de rendu autour d'un épisode de 10 min 20 ; couverture existante du mélange de plusieurs dates conservée.
-- **Périmètre :** pas de modification des fichiers Shorts existants, paramètres locaux, encodeurs AMD/CPU, historique ou fonctionnalité « moments forts » en pause.
-- **PR :** changements ajoutés à la PR #114 ; attendre CI Linux/Windows sur le HEAD final avant toute fusion.
-- **Release :** v0.9.3 reste la dernière version stable. Aucune release créée.
+- **État de départ :** main au commit c6db2c2f79bfcbeaaf18dc0b5d58e90f36a24284, après fusion de la PR #113. La PR #114 reste ouverte sur le chantier Daily Best Of ; elle n'a pas été modifiée dans ce lot Shorts.
+- **Défauts identifiés :** chaque clip relançait whisper-cli --help pour détecter DTW, -ojf et -nfa ; l'analyse des pics audio chargeait l'intégralité du WAV en mémoire, ce qui pouvait provoquer une forte consommation RAM sur une longue source Twitch.
+- **Corrections :** mise en cache de la détection DTW pour les 16 dernières versions de binaires Whisper. La clé combine le chemin résolu, la taille, la date de modification et la date de changement ; les erreurs et timeouts ne sont pas mis en cache. L'analyse des pics audio lit maintenant des blocs de 10 secondes avec chevauchement et conserve toutes les fenêtres partielles valides en fin de fichier. Les seuils, le calcul RMS et l'ordre des pics restent inchangés.
+- **Tests ajoutés :** réutilisation du résultat --help entre deux transcriptions ; invalidation après modification du binaire ; lecture WAV bornée ; conservation des pics après une frontière de bloc et dans les fenêtres partielles finales.
+- **PR #115 :** [Optimize Short audio analysis for batch imports and long Twitch sources](https://github.com/Sreleew/GTA_rankd/pull/115), branche perf/cache-whisper-cli-capabilities, code et tests validés sur le HEAD 9903e786c60c80e96888e35a30cac1c02960eaf1.
+- **Validation Linux :** [workflow 46141984511](https://github.com/Sreleew/GTA_rankd/actions/runs/46141984511) réussi ; 280 tests passés, 1 ignoré ; Ruff, pip-audit et vérification du package Windows réussis.
+- **Validation Windows :** [workflow 46141984531](https://github.com/Sreleew/GTA_rankd/actions/runs/46141984531) réussi ; 282 tests passés ; Ruff, pip-audit, scripts PowerShell et package Windows réussis.
+- **Limite matérielle :** aucun test réel sur la RX 9060 XT ni sur un VOD de 19 heures. L'analyse ne charge plus tout le WAV en RAM, mais l'extraction audio complète crée toujours un fichier temporaire volumineux et conserve son coût disque/décodage.
+- **Release :** v0.9.3 reste la version stable ; aucun numéro, tag ou .release-approval modifié. Les données locales, paramètres et encodeurs AMD/CPU ne sont pas touchés. « Moments forts » reste en pause.
+- **Suite :** mesurer le gain sur un import groupé réel et valider la tenue disque/RAM sur une longue source Twitch Windows/AMD avant d'étendre le chantier.
 
 
-## 76. Correction des régressions CI sur la durée Daily Best Of et la configuration Short, 28 novembre 2026
+## 77. Préférences de finition Short confirmées et amélioration des fallbacks éditoriaux, 28 novembre 2026
 
-- **État de départ :** PR #113 fusionnée dans `main` au commit `c6db2c2f79bfcbeaaf18dc0b5d58e90f36a24284` après réussite Linux [46136755342](https://github.com/Sreleew/GTA_rankd/actions/runs/46136755342) et Windows [46136755350](https://github.com/Sreleew/GTA_rankd/actions/runs/46136755350). PR #114 HEAD `58a50a5bff1686fb1973faaedbea4ae56adf747f` a échoué sur les deux suites.
-- **Causes CI :** plusieurs tests web utilisaient encore des épisodes de 560 secondes et attendaient l’ancienne limite de 9 minutes ; le message d’erreur API conservait aussi « 9 à 11 minutes ». Deux tests de configuration attendaient encore l’ancienne clé `max_input_duration_seconds`, supprimée du profil par défaut. Un test UI attendait l’ancien seuil JavaScript de 540 secondes.
-- **Corrections :** fixtures d’épisode ajustées à 620 secondes, test API modifié pour mélanger réellement deux dates sans transmettre de date globale, assertions UI à 600 secondes, messages backend et renderer à 10–11 minutes. Retrait de la clé Short obsolète de la migration mémoire et adaptation des tests pour confirmer qu’elle n’est plus injectée.
-- **Sécurité :** les fichiers `config.yaml` locaux de l’utilisateur ne sont jamais modifiés ; seuls le profil par défaut et le comportement de migration mémoire sont concernés. Aucun plafond de durée Short n’est réintroduit.
-- **Validation :** les premières exécutions Linux/Windows ont révélé 7 échecs chacune ; les corrections sont poussées, une nouvelle validation complète est requise avant toute fusion. Aucun test n’est déclaré vert à ce stade.
-- **Release :** v0.9.3 reste la dernière version stable. Pas de tag, version ou `.release-approval`. « Moments forts » reste en pause.
+- **Décisions utilisateur :** ne pas modifier le chevauchement de sous-titres observé sur les exports ; conserver la signature `GTA_rankd` désactivée par défaut conformément à `docs/WORKING-AGREEMENT.md` ; accepter « WAIT FOR THE REACTION » uniquement si aucune accroche précise fiable ne peut être formée à partir de la transcription, de la note ou du contexte.
+- **Habillage :** le moteur actuel retire déjà l'ancien cadre gris et le trait jaune du layout historique `smart`, en le normalisant vers la composition floutée sans `drawbox`. Les tests de `test_render_integration.py` vérifient explicitement l'absence de cadre et de trait. Les captures de test fournies semblent issues de l'ancien habillage.
+- **Signature :** la case `Afficher GTA_rankd discrètement` reste décochée par défaut dans les deux formulaires ; le worker et `create_ass_file` gardent également `false` comme défaut. L’activation explicite reste disponible.
+- **Hooks :** lorsqu'aucun texte fiable n'est exploitable, le moteur peut maintenant utiliser `WAIT FOR THE REACTION` en dernier recours. Les hooks spécifiques issus d'une transcription complète, d'une note ou d'une saisie manuelle restent prioritaires ; aucune action factuelle n'est inventée.
+- **Descriptions :** le fallback neutre évite de reformuler mot pour mot le titre lorsqu'aucun détail fiable n'est disponible ; il crédite toujours le créateur, la source et les hashtags.
+- **Périmètre :** aucune correction de chevauchement de sous-titres, aucune nouvelle miniature, aucun changement de cadrage ni d'export/encodeur. « Moments forts » reste en pause. Les améliorations montage proposées restent à évaluer avant développement.
+- **Release :** aucun numéro de version, tag ou `.release-approval` modifié. v0.9.3 reste la dernière release stable.
+
+
+## 78. Corriger les fallbacks de hook et réaligner la signature sur l'accord de travail, 28 novembre 2026
+
+- **État de départ :** PR #116 sur `feat/short-editorial-polish`, HEAD `a318b1f8f376e7a2f5b6a635bc2d376934c47d61`. Les workflows Linux [46143970097](https://github.com/Sreleew/GTA_rankd/actions/runs/46143970097) et Windows [46143970192](https://github.com/Sreleew/GTA_rankd/actions/runs/46143970192) échouaient chacun sur deux assertions.
+- **Causes :** un ancien test attendait encore un hook vide alors que le nouveau fallback générique était intentionnel ; un test UI cherchait le texte exact du hook dans le HTML au lieu de vérifier l'explication destinée à l'utilisateur. La PR avait aussi activé la signature par défaut, en contradiction avec la consigne versionnée dans `docs/WORKING-AGREEMENT.md`.
+- **Corrections :** le test de transcription ASR incomplète attend maintenant le hook générique de dernier recours, sans réutiliser le fragment comme citation. Si la transcription est incomplète, le moteur essaie d'abord de former un hook spécifique à partir du contexte ou de la note. Un test couvre ce cas. Le test UI vérifie le libellé explicatif. La signature reste facultative et désactivée par défaut dans les formulaires, le worker et le renderer.
+- **Validation sur le HEAD code `71687d41e3d981bc8f1d94cdade7bfd5c4312d38` :**
+- **Linux :** [workflow 46146373657](https://github.com/Sreleew/GTA_rankd/actions/runs/46146373657) réussi ; 283 tests passés, 1 ignoré ; Ruff, pip-audit et vérification du package Windows v0.9.3 réussis.
+- **Windows :** [workflow 46146373673](https://github.com/Sreleew/GTA_rankd/actions/runs/46146373673) réussi ; 284 tests passés ; Ruff, pip-audit, scripts PowerShell et vérification du package Windows v0.9.3 réussis.
+- **Historique CI :** les deux suites avaient d'abord échoué sur deux assertions obsolètes ; les corrections ont été poussées avant ces validations vertes.
+- **Release :** v0.9.3 reste la dernière version stable. Aucun numéro, tag ou `.release-approval` modifié. Aucune donnée locale ou configuration utilisateur modifiée. « Moments forts » reste en pause.
+- **Suite :** la PR #116 est fusionnée au commit `8f56d588b58df590d6d3e4fc236e17d4f2d56791`. Reprendre l'amélioration du rendu Shorts sans toucher au chevauchement de sous-titres ni au cadrage confirmé ; la PR #114 a été remise à jour sur le `main` courant et doit repasser les validations Linux/Windows.
+
+
+## 79. Remettre à jour le Daily Best Of et préserver les anciennes configurations Short, 28 novembre 2026
+
+- **État de départ :** PR #114 était basée sur `c6db2c2f79bfcbeaaf18dc0b5d58e90f36a24284`, avant les PR #115 et #116. Les changements de ces deux PR ont été intégrés dans sa branche ; les modifications communes de `index.html` et `test_web.py` ont été combinées sans perdre le parcours Shorts ni le formulaire Daily Best Of.
+- **Fonctionnalités conservées :** sélection de Shorts validés issus de plusieurs dates, ordre manuel, durée Daily Best Of de 10 à 11 minutes, maximum de 50 clips et vérification des fichiers/durées réelles. Le worker et le renderer n'imposent plus de durée maximale aux Shorts ; les durées doivent rester positives et les bornes dans la source.
+- **Défaut CI identifié sur l'ancien HEAD `41b9dc0d420a0694351edb7e90f385f23efcbcd5` :** Linux [46141534962](https://github.com/Sreleew/GTA_rankd/actions/runs/46141534962) et Windows [46141534994](https://github.com/Sreleew/GTA_rankd/actions/runs/46141534994) échouaient chacun sur une assertion qui cherchait `max_input_duration_seconds: 60` dans un profil par défaut où cette clé a été supprimée.
+- **Correction des tests :** le test du profil par défaut vérifie désormais que la configuration n'est pas réécrite. Le test d'une ancienne configuration personnalisée injecte une valeur historique de 90 secondes et vérifie qu'elle reste présente dans le fichier et dans la configuration chargée ; le worker et le renderer n'utilisent plus cette ancienne valeur comme limite. Les paramètres existants ne sont donc pas supprimés.
+- **Synchronisation :** la branche `feat/daily-best-of-mixed-dates` intègre maintenant le `main` qui contient les PR #115 et #116. Les assertions UI ajoutées par #116 et le nouveau texte expliquant le hook générique sont conservés.
+- **Validation :** les anciennes exécutions n'ont pas validé le HEAD synchronisé. Les suites Linux et Windows doivent réussir sur le nouveau HEAD avant fusion ; aucune validation n'est présumée.
+- **Release :** v0.9.3 reste la dernière version stable. Aucun numéro, tag ou `.release-approval` modifié. Aucun fichier de configuration local ni média utilisateur modifié. « Moments forts » reste en pause.

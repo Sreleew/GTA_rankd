@@ -36,12 +36,13 @@ def test_legacy_default_short_profile_upgrades_in_memory_without_rewriting_user_
     assert config.get("shorts", "peak_trim_threshold_seconds") == 165
     assert config.get("shorts", "auto_trim_min_seconds") == 60
     assert config.get("shorts", "auto_trim_max_seconds") == 165
-    assert "max_input_duration_seconds: 60" in path.read_text(encoding="utf-8")
+    assert path.read_text(encoding="utf-8") == source
 
 
 def test_legacy_short_profile_keeps_user_customized_limits(tmp_path):
     project_root = Path(__file__).resolve().parents[1]
     source = _legacy_config_source(project_root, "0.8.0")
+    source = source.replace("shorts:\n", "shorts:\n  max_input_duration_seconds: 90\n", 1)
     source = source.replace("peak_trim_threshold_seconds: 165", "peak_trim_threshold_seconds: 45")
     source = source.replace("auto_trim_min_seconds: 60", "auto_trim_min_seconds: 20")
     source = source.replace("auto_trim_max_seconds: 165", "auto_trim_max_seconds: 45")
@@ -50,10 +51,11 @@ def test_legacy_short_profile_keeps_user_customized_limits(tmp_path):
 
     config = load_config(path)
 
-    assert config.get("shorts", "max_input_duration_seconds") is None
+    assert config.get("shorts", "max_input_duration_seconds") == 90
     assert config.get("shorts", "peak_trim_threshold_seconds") == 165
     assert config.get("shorts", "auto_trim_min_seconds") == 20
     assert config.get("shorts", "auto_trim_max_seconds") == 165
+    assert path.read_text(encoding="utf-8") == source
 
 
 def test_missing_config_raises_clear_error(tmp_path):

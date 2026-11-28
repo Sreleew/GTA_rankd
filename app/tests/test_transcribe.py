@@ -377,3 +377,131 @@ def test_whisper_clock_parser_rejects_out_of_range_minute_and_second_fields():
     assert _parse_whisper_timestamp("00:60:00.000") is None
     assert _parse_whisper_timestamp("00:00:60.000") is None
     assert _parse_whisper_timestamp("01:59:59.999") == 7199.999
+
+
+def test_whisper_dtw_capability_cache_is_invalidated_when_binary_changes(tmp_path, monkeypatch):
+    import os
+    from types import SimpleNamespace
+
+    import studio.web.transcribe as transcribe_module
+
+    binary = tmp_path / "fake-whisper"
+    binary.write_bytes(b"first binary")
+    calls = []
+
+    def fake_run(command, **kwargs):
+        calls.append(command)
+        help_text = "-dtw -ojf -nfa" if len(calls) == 1 else "-osrt"
+        return SimpleNamespace(returncode=0, stdout=help_text, stderr="")
+
+    monkeypatch.setattr(transcribe_module, "run_quiet", fake_run)
+    transcribe_module._whisper_supports_dtw_cached.cache_clear()
+    try:
+        assert transcribe_module._whisper_supports_dtw(binary) is True
+        assert transcribe_module._whisper_supports_dtw(binary) is True
+        assert len(calls) == 1
+
+        previous = binary.stat()
+        binary.write_bytes(b"replacement binary with a different size")
+        os.utime(binary, ns=(previous.st_atime_ns, previous.st_mtime_ns + 2_000_000_000))
+
+        assert transcribe_module._whisper_supports_dtw(binary) is False
+        assert len(calls) == 2
+    finally:
+        transcribe_module._whisper_supports_dtw_cached.cache_clear()
+
+
+def test_whisper_cli_help_is_reused_across_short_transcriptions(tmp_path):
+    import sys
+    import textwrap
+
+    counter = tmp_path / "help-calls.txt"
+    binary = tmp_path / "fake-whisper.py"
+    script = textwrap.dedent("""\
+        #!__PYTHON__
+        import pathlib, sys
+        if "--help" in sys.argv:
+            counter = pathlib.Path(__COUNTER__)
+            previous = counter.read_text(encoding="utf-8") if counter.exists() else ""
+            counter.write_text(previous + "help\\n", encoding="utf-8")
+            print("-osrt --output-srt")
+            raise SystemExit(0)
+        args = sys.argv[1:]
+        base = pathlib.Path(args[args.index("-of") + 1])
+        base.with_suffix(".srt").write_text(
+            chr(10).join(["1", "00:00:00,000 --> 00:00:01,000", "Hello there!", ""]),
+            encoding="utf-8",
+        )
+    """).lstrip().replace("__PYTHON__", sys.executable).replace("__COUNTER__", repr(str(counter)))
+    binary.write_text(script, encoding="utf-8")
+    binary.chmod(0o755)
+
+    model = tmp_path / "model.bin"
+    model.write_bytes(b"model")
+    audio = tmp_path / "audio.wav"
+    audio.write_bytes(b"audio")
+
+    first = transcribe_with_whisper_cpp(
+        audio, whisper_cli=binary, model_path=model, output_dir=tmp_path / "first"
+    )
+    second = transcribe_with_whisper_cpp(
+        audio, whisper_cli=binary, model_path=model, output_dir=tmp_path / "second"
+    )
+
+    assert first["status"] == second["status"] == "completed_segment_fallback"
+    assert counter.read_text(encoding="utf-8").splitlines() == ["help"]
+
+
+def test_audio_peak_analysis_reads_wav_in_bounded_chunks(tmp_path, monkeypatch):
+    import math
+    import struct
+    import wave
+
+    import studio.web.transcribe as transcribe_module
+
+    path = tmp_path / "streamed-accents.wav"
+    sample_rate = 16000
+    total_frames = int(sample_rate * 12.4)
+    samples = []
+    for index in range(total_frames):
+        timestamp = index / sample_rate
+        active = 1.0 <= timestamp <= 1.7 or 10.0 <= timestamp <= 10.7
+        amplitude = 12000 if active else 100
+        samples.append(int(amplitude * math.sin(2 * math.pi * 440 * timestamp)))
+    with wave.open(str(path), "wb") as audio:
+        audio.setnchannels(1)
+        audio.setsampwidth(2)
+        audio.setframerate(sample_rate)
+        audio.writeframes(struct.pack(f"<{len(samples)}h", *samples))
+
+    original_open = transcribe_module.wave.open
+    requested_frames = []
+
+    class TrackingReader:
+        def __init__(self, *args, **kwargs):
+            self.reader = original_open(*args, **kwargs)
+
+        def __enter__(self):
+            self.reader.__enter__()
+            return self
+
+        def __exit__(self, *args):
+            return self.reader.__exit__(*args)
+
+        def __getattr__(self, name):
+            return getattr(self.reader, name)
+
+        def readframes(self, count):
+            requested_frames.append(count)
+            assert count < total_frames
+            return self.reader.readframes(count)
+
+    monkeypatch.setattr(transcribe_module.wave, "open", TrackingReader)
+
+    peaks = transcribe_module.detect_audio_peak_timestamps(path)
+
+    assert len(requested_frames) >= 2
+    assert max(requested_frames) < total_frames
+    assert len(peaks) == 2
+    assert peaks[0] == pytest.approx(1.35, abs=0.35)
+    assert peaks[1] == pytest.approx(10.35, abs=0.35)

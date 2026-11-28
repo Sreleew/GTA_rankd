@@ -275,7 +275,10 @@ def _fallback_metadata(
         complete_phrase = _last_complete_phrase(raw_text)
         hook = _limit_words(custom_hook or _fallback_hook(complete_phrase or raw_text, note), 6)
         if not custom_hook and _is_incomplete_phrase(hook):
-            hook = ""
+            hook = _limit_words(_fallback_hook("", custom_context or note), 6)
+        if not hook:
+            # A generic editorial cue is acceptable only when no supported specific hook exists.
+            hook = "WAIT FOR THE REACTION"
         if complete_phrase:
             phrase_words = _word_tokens(complete_phrase)[-4:]
             while phrase_words and _token_key(phrase_words[0]) in _LEADING_DANGLING_WORDS:
@@ -291,7 +294,7 @@ def _fallback_metadata(
             # An ASR fragment is not a quote. Stay factual until a complete
             # spoken thought or a reliable editorial summary is available.
             title = _fit_caption(f"{creator}'s {game} moment 😭" if creator else f"A {game} moment 😭", 90)
-            caption = f"A {game} moment with {creator} 😭" if creator else f"A {game} moment 😭"
+            caption = f"From {creator}'s {game} session. 😭" if creator else f"From a {game} session. 😭"
             thumbnail_text = f"{creator.split()[0]} GTA MOMENT" if creator else "GTA MOMENT"
 
     credit = f"Clip: {creator}" if creator else "Original clip"
@@ -352,8 +355,9 @@ def generate_short_metadata(
         "creator tag when known. Thumbnail text: 2-4 punchy words, readable on a phone, not a sentence. Never use a transcript fragment as the thumbnail headline. "
         "If a spoken phrase is incomplete or has no clear ending, do not quote it in the title, description, hook or thumbnail. "
         "Do not claim that a car was stolen, returned, recovered, won, lost, crashed or exploded unless the transcript or note explicitly supports that event. "
-        "Prefer an action-led summary only when the action is explicitly supported by the transcript or supplied context; otherwise use a short neutral GTA moment title and an empty hook. "
-        "Hook text: 3-6 words for the opening 2.6 seconds, grounded in a complete thought from the transcript. context_card must be empty "
+        "Prefer an action-led summary only when the action is explicitly supported by the transcript or supplied context; otherwise use a short neutral GTA moment title. "
+        "When no reliable specific hook can be formed, use the generic fallback 'WAIT FOR THE REACTION' rather than inventing an event. "
+        "Hook text: 3-6 words for the opening 2.6 seconds, grounded in a complete thought from the transcript whenever possible. context_card must be empty "
         "unless a custom context was supplied. Return valid JSON only with title, description, hashtags, "
         "hook_text, context_card and thumbnail_text."
     )
