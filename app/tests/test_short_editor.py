@@ -297,7 +297,7 @@ def test_ass_uses_safe_segment_timing_when_timestamp_mode_is_not_supplied(tmp_pa
     caption_lines = [line for line in content.splitlines() if line.startswith("Dialogue: 0,")]
     assert len(caption_lines) == 1
     assert "0:00:00.25,0:00:01.65" in caption_lines[0]
-    assert "WE GOT AWAY FROM THE POLICE!" in caption_lines[0]
+    assert "WE GOT AWAY FROM THE POLICE!" in caption_lines[0].replace(r"\N", " ")
     assert r"\c&H0000C8F5&" not in caption_lines[0]
 
 
