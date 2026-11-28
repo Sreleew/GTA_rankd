@@ -381,6 +381,45 @@ def build_render_command(
     return command
 
 
+def _validate_rendered_output(
+    rendered_info: dict[str, Any],
+    *,
+    expected_duration: float,
+    expected_width: int,
+    expected_height: int,
+    expect_audio: bool,
+) -> None:
+    """Reject incomplete exports before a Short can be marked as completed."""
+    actual_width = int(rendered_info.get("width") or 0)
+    actual_height = int(rendered_info.get("height") or 0)
+    if actual_width != expected_width or actual_height != expected_height:
+        raise MediaError(
+            f"Le rendu n'est pas au format Short attendu : {actual_width}x{actual_height} "
+            f"au lieu de {expected_width}x{expected_height}."
+        )
+
+    try:
+        actual_duration = float(rendered_info.get("duration") or 0.0)
+        expected_duration = float(expected_duration)
+    except (TypeError, ValueError):
+        actual_duration = 0.0
+        expected_duration = 0.0
+    if (
+        not math.isfinite(actual_duration)
+        or actual_duration <= 0
+        or not math.isfinite(expected_duration)
+        or expected_duration <= 0
+    ):
+        raise MediaError("La durée du rendu Short est invalide.")
+    tolerance = min(0.5, max(0.25, expected_duration * 0.01))
+    if abs(actual_duration - expected_duration) > tolerance:
+        raise MediaError(
+            "La durée du rendu est incohérente : "
+            f"{actual_duration:.2f} s au lieu de {expected_duration:.2f} s."
+        )
+    if expect_audio and not bool(rendered_info.get("has_audio")):
+        raise MediaError("La piste audio présente dans la source a disparu du rendu Short.")
+
 def render_vertical_short(
     input_path: Path,
     output_path: Path,
@@ -485,10 +524,13 @@ def render_vertical_short(
     probe_started = time.perf_counter()
     rendered_info = probe_media(output_path, ffprobe)
     performance_timings["output_probe_ms"] = max(0, int(round((time.perf_counter() - probe_started) * 1000)))
-    if rendered_info["width"] != width or rendered_info["height"] != height:
-        raise MediaError(
-            f"Le rendu n'est pas au format Short attendu : {rendered_info['width']}x{rendered_info['height']} au lieu de {width}x{height}."
-        )
+    _validate_rendered_output(
+        rendered_info,
+        expected_duration=output_duration,
+        expected_width=width,
+        expected_height=height,
+        expect_audio=bool(info["has_audio"]),
+    )
     # Sample the selected excerpt and avoid blank sky/transition frames for the cover.
     thumbnail_started = time.perf_counter()
     preferred_thumbnail_time = peak_timestamp if thumbnail_timestamp is None else thumbnail_timestamp

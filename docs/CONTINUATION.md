@@ -1052,3 +1052,13 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Windows :** [workflow 46147363384](https://github.com/Sreleew/GTA_rankd/actions/runs/46147363384) réussi ; 280 tests passés ; Ruff, pip-audit, scripts PowerShell et package Windows v0.9.3 vérifiés.
 - **Suite :** fusionner la PR #114 après ces deux validations vertes, puis reprendre une amélioration Shorts visible et valider le rendu réel sur Windows/AMD lorsque l'utilisateur pourra le lancer.
 - **Release :** v0.9.3 reste la dernière version stable. Aucun numéro, tag ou `.release-approval` modifié. Aucun fichier de configuration local ni média utilisateur modifié. « Moments forts » reste en pause.
+
+
+## 80. Vérifier l'intégrité réelle du rendu vertical Short, 28 novembre 2026
+
+- **Problème :** après FFmpeg, le renderer vérifiait la résolution mais pouvait accepter un export dont la durée réelle était tronquée ou dont la piste audio source avait disparu, puis laisser le worker marquer le Short comme terminé.
+- **Correction :** un contrôle commun vérifie maintenant la résolution attendue, la durée FFprobe avec une tolérance proportionnelle plafonnée à 0,5 s, et la présence audio lorsque la source en possède une. Une sortie incohérente échoue avant validation du job.
+- **Tests :** cas nominal avec dérive de conteneur mineure, vidéo tronquée rejetée, audio manquant rejeté, et assertion de durée réelle ajoutée au rendu FFmpeg d'intégration.
+- **Compatibilité :** le choix AMF puis repli libx264 existant n'est pas modifié. Aucun paramètre utilisateur, média ou fichier local n'est touché. La validation CI ne remplace pas un essai réel sur le GPU AMD de l'utilisateur.
+- **Validation :** PR #117 à ouvrir ; Linux et Windows doivent être verts avant fusion. Aucun numéro de version, tag ou `.release-approval` modifié.
+- **Suite :** après validation, continuer le parcours Twitch Short sur des sources réelles, sans réintroduire « Moments forts ».

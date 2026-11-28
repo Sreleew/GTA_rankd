@@ -8,8 +8,8 @@ import pytest
 
 from studio.web.short_editor import WordTiming, create_ass_file
 from studio.web.short_renderer import (
-    MediaError, build_filter_complex, build_render_command, create_hook_sound_effect,
-    normalize_short_layout, probe_media, render_vertical_short,
+    MediaError, _validate_rendered_output, build_filter_complex, build_render_command,
+    create_hook_sound_effect, normalize_short_layout, probe_media, render_vertical_short,
 )
 
 
@@ -161,6 +161,37 @@ def test_thumbnail_visual_score_rejects_blank_sky_frame(tmp_path: Path) -> None:
     assert _thumbnail_visual_score(detailed) > _thumbnail_visual_score(blank) + 0.15
 
 
+def test_rendered_output_validation_accepts_small_container_duration_drift():
+    _validate_rendered_output(
+        {"width": 1080, "height": 1920, "duration": 15.2, "has_audio": True},
+        expected_duration=15.0,
+        expected_width=1080,
+        expected_height=1920,
+        expect_audio=True,
+    )
+
+
+def test_rendered_output_validation_rejects_truncated_video():
+    with pytest.raises(MediaError, match="durée du rendu"):
+        _validate_rendered_output(
+            {"width": 1080, "height": 1920, "duration": 12.0, "has_audio": True},
+            expected_duration=15.0,
+            expected_width=1080,
+            expected_height=1920,
+            expect_audio=True,
+        )
+
+
+def test_rendered_output_validation_rejects_missing_source_audio():
+    with pytest.raises(MediaError, match="audio"):
+        _validate_rendered_output(
+            {"width": 1080, "height": 1920, "duration": 15.0, "has_audio": False},
+            expected_duration=15.0,
+            expected_width=1080,
+            expected_height=1920,
+            expect_audio=True,
+        )
+
 @pytest.mark.skipif(shutil.which("ffmpeg") is None or shutil.which("ffprobe") is None, reason="FFmpeg/FFprobe absent")
 def test_real_vertical_short_render(tmp_path: Path) -> None:
     ffmpeg = shutil.which("ffmpeg")
@@ -248,6 +279,7 @@ def test_real_vertical_short_render(tmp_path: Path) -> None:
     assert result["trim_start"] == pytest.approx(0.25)
     assert rendered["width"] == 360
     assert rendered["height"] == 640
+    assert rendered["duration"] == pytest.approx(1.5, abs=0.25)
     assert rendered["has_audio"] is True
     assert progress_updates
     assert all(0.0 <= value <= 100.0 for value in progress_updates)
