@@ -5,7 +5,7 @@
 - **Dernière mise à jour :** 28 novembre 2026
 - **Progression des releases :** à chaque relance de développement, le compte rendu doit indiquer le lot livré, les PR/CI, l'état d'avancement vers la prochaine version et une estimation actualisée du nombre de lots restants avant sa publication. Cette estimation doit être réévaluée à chaque session, sans promettre une date artificielle.
 - **Dernière version stable confirmée :** [v0.9.3](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.9.3), publiée le 28 novembre 2026.
-- **État :** les PR #92 à #101 sont intégrées dans `main` ; la PR #101 sur la durée finale du Daily Best Of a été fusionnée au commit `b190c33f` après validations Linux/Windows réussies. La PR #102 fiabilise les timestamps DTW de Whisper et attend ses validations Linux/Windows. La release v0.9.3 reste publiée ; aucune nouvelle release sans validation réelle sur le PC Windows.
+- **État :** les PR #92 à #102 sont intégrées dans `main` ; la PR #102 a fiabilisé les timestamps DTW de Whisper et a été fusionnée au commit `7052efbf` après validations Linux/Windows réussies. La PR #103 améliore l'attachement de la ponctuation multilingue aux sous-titres et attend ses validations Linux/Windows. La release v0.9.3 reste publiée ; aucune nouvelle release sans validation réelle sur le PC Windows.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
 - **Source active :** `app/`. Modifier directement les fichiers Python, JavaScript, CSS, HTML, tests et installateur présents dans ce dossier.
@@ -861,7 +861,19 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Défaut identifié :** le parseur DTW rejetait les valeurs non numériques et les timestamps négatifs, mais pouvait accepter un token horodaté avant/après les bornes de son segment Whisper. Une borne de segment absente ou inversée pouvait aussi conduire à inventer une fenêtre d'une seconde. Cela risquait de décaler un mot hors de sa phrase ou hors de l'extrait final.
 - **Correction :** valider les champs minutes/secondes de l'horloge Whisper ; ignorer les segments dont les bornes sont absentes, invalides, inversées ou trop courtes ; conserver uniquement les tokens dans l'intervalle du segment avec une marge minimale pour leur durée ; trier les tokens par timestamp avant de reconstruire les mots. Si aucun mot DTW fiable ne survit, le pipeline existant revient au SRT segmentaire, sans fabriquer de timing mot à mot.
 - **Tests :** couvrir les tokens avant/après leur segment, les bornes manquantes/inversées/malformées, les tokens fournis dans le désordre et le fallback SRT via le faux exécutable Whisper.
-- **PR #102 :** [Bound Whisper DTW timestamps to their source segments](https://github.com/Sreleew/GTA_rankd/pull/102), branche `fix/whisper-dtw-segment-bounds`. Cinq tests de régression couvrent les bornes, le tri des tokens et le fallback SRT ; CI Linux/Windows à vérifier sur le dernier commit de code.
+- **PR #102 :** [Bound Whisper DTW timestamps to their source segments](https://github.com/Sreleew/GTA_rankd/pull/102), branche `fix/whisper-dtw-segment-bounds`, fusionnée au commit `7052efbfb3135d5eafd4032568867d065da0dfe4`. Sur le commit de code final `576267d5bb78272d00f4373056330657f2adf057`, CI Linux [46106691275](https://github.com/Sreleew/GTA_rankd/actions/runs/46106691275) et Windows [46106691201](https://github.com/Sreleew/GTA_rankd/actions/runs/46106691201) réussies ; tests complets, audit et package Windows validés.
 - **Périmètre :** aucun changement de modèle, de paramètres Whisper, de données locales, d'encodeur AMD/CPU ou de release. Les miniatures personnalisées et « Moments forts » restent en pause.
 - **Release :** v0.9.3 reste la dernière version stable ; aucune nouvelle release ni approbation de publication n'est créée.
-- **Suite :** terminer les validations Linux/Windows de la PR #102, puis vérifier la synchronisation des sous-titres et le filtrage de voix sur un vrai clip Twitch avant d'élargir le montage.
+- **Suite :** poursuivre la fiabilisation éditoriale des sous-titres Shorts, puis vérifier leur rendu sur un vrai clip Twitch et le filtrage de voix avant d'élargir le montage.
+
+
+## 63. Attacher la ponctuation multilingue aux mots des sous-titres, 28 novembre 2026
+
+- **État de départ :** PR #102 est fusionnée au commit `7052efbf` après succès des validations Linux et Windows sur son commit final.
+- **Défaut identifié :** le regroupement des tokens rattachait les ponctuations de fermeture anglaises courantes, mais pouvait laisser `¿`, `¡` ou `«` comme événements isolés et séparer `»`, les guillemets typographiques ou les crochets du mot concerné. Sur mobile, ces signes pouvaient apparaître seuls ou avec un timing décalé.
+- **Correction :** reconnaître les préfixes ouvrants espagnols/français et les ponctuations fermantes typographiques ; rattacher les préfixes au mot suivant et les fermetures au mot précédent, en conservant l'intervalle temporel combiné. Le comportement existant des apostrophes anglaises est conservé.
+- **Tests :** vérifier le regroupement `¿Qué`, `pasó?` et `«incroyable»`, ainsi que la conservation des bornes de début et de fin.
+- **PR #103 :** [Keep multilingual punctuation attached to Short captions](https://github.com/Sreleew/GTA_rankd/pull/103), branche `fix/multilingual-caption-punctuation`, commit code `4fcfd819d23bb97358beb4ddcef7043f869dd9c2`. CI Linux/Windows à vérifier sur le dernier commit après mise à jour du mémo.
+- **Périmètre :** aucune modification du moteur Whisper, des paramètres, des données locales, des encodeurs AMD/CPU ou du Daily Best Of. « Moments forts » reste en pause.
+- **Release :** v0.9.3 reste la dernière version stable ; aucune nouvelle release sans validation réelle sur le PC Windows.
+- **Suite :** valider la PR #103, puis tester des clips courts en espagnol/français et anglais pour vérifier que la ponctuation et les timings restent lisibles sur mobile.
