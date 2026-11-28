@@ -749,7 +749,7 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - Correction : les overlays sont maintenant répartis sur une ou deux lignes équilibrées selon la longueur réelle du texte. La taille de police est réduite de façon bornée lorsque nécessaire et tient compte du grossissement maximal de chaque animation de hook. Le contexte descend automatiquement lorsque le hook occupe deux lignes. Les animations, les durées (hook 2,0 s, contexte 2,6 s) et l'absence d'intro sont conservées.
 - Tests : ajout de cas français longs (hook et contexte sur deux lignes) et d'un hook court qui conserve la position compacte du contexte.
 - Périmètre : aucun logo, miniature, cadre, changement de composition Twitch, modèle Whisper, encodeur, paramètre utilisateur ou donnée locale. « Moments forts » reste en pause.
-- PR #94 : [Mobile-safe hook and context layout](https://github.com/Sreleew/GTA_rankd/pull/94), branche feat/mobile-hook-layout. Les validations Linux et Windows doivent réussir sur le HEAD final avant fusion.
+- PR #94 : [Mobile-safe hook and context layout](https://github.com/Sreleew/GTA_rankd/pull/94), branche feat/mobile-hook-layout, commit e8ca8577c393a32053d1f0d6cbcdada471e6dfe9. Les validations Linux et Windows doivent réussir sur le HEAD final avant fusion.
 - Release : v0.9.3 reste la dernière version stable ; aucune nouvelle release ni approbation de publication n'est créée.
 - Limite : aucun rendu réel ni mesure de rétention sur une vidéo publiée n'est revendiqué.
 - Suite : valider les hooks sur plusieurs clips français et anglais, puis poursuivre la consolidation du parcours Short.
