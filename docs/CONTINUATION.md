@@ -763,7 +763,7 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - Correction : transmettre les mots transcrits, déjà recalés sur l'extrait final, au sélecteur existant. Les mots-clés d'action et de réaction en français et en anglais peuvent ainsi guider le choix du timestamp ; en l'absence de mots pertinents, le pic audio reste le fallback inchangé.
 - Tests : ajout d'un cluster français « incroyable / police / crash / explosion » et d'un cas sans mots descriptifs qui vérifie le fallback au pic audio.
 - Périmètre : sélection du timestamp de la vignette/aperçu déjà existant uniquement ; aucune miniature graphique générée, aucune modification de couverture de plateforme, de layout, de Whisper, d'encodeur ou de paramètres. « Moments forts » reste en pause.
-- PR #95 : [Use transcript cues for Short thumbnail timestamp](https://github.com/Sreleew/GTA_rankd/pull/95), branche fix/transcript-aware-short-cover. Les validations Linux et Windows doivent réussir sur le HEAD final avant fusion.
+- PR #95 : [Use transcript cues for Short thumbnail timestamp](https://github.com/Sreleew/GTA_rankd/pull/95), branche fix/transcript-aware-short-cover, commit 23a0bbcbde870a5290a3b0fde1031d7ee5b9462a. Les validations Linux et Windows doivent réussir sur le HEAD final avant fusion.
 - Release : v0.9.3 reste la dernière version stable ; aucune nouvelle release ni approbation de publication n'est créée.
 - Limite : aucun rendu réel Twitch ni mesure d'engagement sur une plateforme n'est revendiqué.
 - Suite : valider le parcours complet du Short sur des clips réels, puis reprendre le Daily Best Of lorsque le flux Shorts sera suffisamment consolidé.
