@@ -405,4 +405,3 @@ def test_word_timed_caption_scales_long_unbreakable_word_without_changing_timing
     assert word in caption_line
     assert r"\fscx60" in caption_line
     assert r"\fscx64" in caption_line
-
