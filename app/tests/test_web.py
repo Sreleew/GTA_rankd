@@ -1,4 +1,8 @@
 from pathlib import Path
+import shutil
+import subprocess
+
+import pytest
 
 from fastapi.testclient import TestClient
 
@@ -309,6 +313,8 @@ def test_render_command_mixes_optional_original_whoosh(tmp_path: Path):
     graph = command[command.index("-filter_complex") + 1]
     assert str(sfx.resolve()) in command
     assert "adelay=2350:all=1" in graph
+    assert "asplit=2[main_for_ducking][main_for_mix]" in graph
+    assert "[main_for_ducking]" in graph and "[main_for_mix]" in graph
     assert "amix=inputs=2" in graph
     assert command[command.index("-map", command.index("-filter_complex")) + 1] == "[v]"
 
@@ -1595,3 +1601,56 @@ def test_daily_best_of_rejects_parallel_active_render_but_allows_a_new_one_after
     assert next_render.status_code == 202, next_render.text
     assert next_render.json()["id"] != first_id
     assert app.state.store.get_active_best_of_job()["id"] == next_render.json()["id"]
+
+def test_hook_sound_effect_filter_graph_executes_with_real_ffmpeg(tmp_path: Path):
+    ffmpeg = shutil.which("ffmpeg")
+    if not ffmpeg:
+        pytest.skip("FFmpeg is required for the audio filtergraph integration test")
+
+    source = tmp_path / "source.mp4"
+    sound_effect = tmp_path / "whoosh.wav"
+    output = tmp_path / "short.mp4"
+
+    subprocess.run(
+        [
+            ffmpeg, "-hide_banner", "-loglevel", "error", "-y",
+            "-f", "lavfi", "-i", "testsrc=size=320x240:rate=30:duration=1",
+            "-f", "lavfi", "-i", "sine=frequency=440:sample_rate=44100:duration=1",
+            "-map", "0:v:0", "-map", "1:a:0",
+            "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac",
+            "-shortest", str(source),
+        ],
+        check=True,
+        capture_output=True,
+        timeout=90,
+    )
+    subprocess.run(
+        [
+            ffmpeg, "-hide_banner", "-loglevel", "error", "-y",
+            "-f", "lavfi", "-i", "sine=frequency=880:sample_rate=44100:duration=0.25",
+            "-c:a", "pcm_s16le", str(sound_effect),
+        ],
+        check=True,
+        capture_output=True,
+        timeout=90,
+    )
+
+    command = build_render_command(
+        ffmpeg,
+        source,
+        output,
+        width=180,
+        height=320,
+        source_width=320,
+        source_height=240,
+        encoder="libx264",
+        has_audio=True,
+        layout="blur",
+        duration=1.0,
+        sound_effect_path=sound_effect,
+        sound_effect_offset=0.12,
+    )
+    subprocess.run(command, check=True, capture_output=True, timeout=120)
+
+    assert output.is_file()
+    assert output.stat().st_size > 0

@@ -90,11 +90,12 @@ def test_hook_sound_is_ducked_under_source_audio_and_keeps_the_first_syllable(mo
 
     assert "afade=t=in:st=0:d=0.020[main_audio]" in graph
     assert "adelay=120:all=1[sfx_audio]" in graph
+    assert "[main_audio]asplit=2[main_for_ducking][main_for_mix]" in graph
     assert (
-        "[sfx_audio][main_audio]sidechaincompress="
+        "[sfx_audio][main_for_ducking]sidechaincompress="
         "threshold=0.03:ratio=8:attack=8:release=180:makeup=1[sfx_ducked]"
     ) in graph
-    assert "[main_audio][sfx_ducked]amix=inputs=2" in graph
+    assert "[main_for_mix][sfx_ducked]amix=inputs=2" in graph
     assert "afade=t=in:st=0:d=0.120[main_audio]" not in graph
 
 
