@@ -227,7 +227,7 @@ def _last_complete_phrase(transcript: str) -> str:
 
 
 def _has_unsupported_event_claim(title: str, transcript: str, note: str = "") -> bool:
-    """Reject strong event verbs that the source text does not actually support."""
+    """Reject strong event claims that the source text does not actually support."""
     source_tokens = set(re.findall(r"[A-Za-z0-9']+", f"{transcript} {note}".lower()))
     title_tokens = set(re.findall(r"[A-Za-z0-9']+", str(title or "").lower()))
     claims = {
@@ -439,7 +439,13 @@ def generate_short_metadata(
         description = "\n".join(part for part in (description, "", credit, source_line, " ".join(tags)) if part is not None)
 
         hook = _limit_words(custom_hook or str(data.get("hook_text", fallback["hook_text"])), 6)
-        if _has_incomplete_quote(f"“{hook}”") or (not custom_hook and _is_incomplete_phrase(hook)):
+        # A manual hook is an explicit editorial choice. Validate only model-generated
+        # hooks, and reject event claims that the transcript/note cannot support.
+        if not custom_hook and (
+            _has_incomplete_quote(f"“{hook}”")
+            or _is_incomplete_phrase(hook)
+            or _has_unsupported_event_claim(hook, transcript, note)
+        ):
             hook = fallback["hook_text"]
         context = _limit_words(custom_context, 10)
         thumbnail_text = _limit_words(str(data.get("thumbnail_text", fallback["thumbnail_text"])), 8)
