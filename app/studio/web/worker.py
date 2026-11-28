@@ -20,7 +20,7 @@ from studio.config import AppConfig
 from studio.process import ProcessingCancelled, check_cancelled, set_current_cancel_event
 from studio.web.metadata import generate_short_metadata
 from studio.web.short_editor import (
-    create_ass_file, infer_hook_style, rebase_word_timings,
+    create_ass_file, infer_hook_style, rebase_word_timings, sanitize_word_timings,
     select_reaction_zoom_timestamps, select_thumbnail_timestamp,
     select_excerpt_range, tighten_speech_edges, write_srt_file,
 )
@@ -595,6 +595,15 @@ class JobRunner:
                         transcription_status = str(transcription.get("status") or "unknown")
                         transcription_timestamp_mode = transcription.get("timestamp_mode")
                         render_words = list(transcription.get("words") or [])
+                        raw_word_count = len(render_words)
+                        render_words = sanitize_word_timings(
+                            render_words, max(0.0, trim_end - trim_start),
+                        )
+                        if raw_word_count > len(render_words):
+                            logger.warning(
+                                "Whisper returned %s invalid or out-of-range word timings for job %s; ignored.",
+                                raw_word_count - len(render_words), job_id,
+                            )
                         if render_words:
                             if captions_requested:
                                 self.store.update_job(

@@ -5,7 +5,7 @@
 - **Dernière mise à jour :** 28 novembre 2026
 - **Progression des releases :** à chaque relance de développement, le compte rendu doit indiquer le lot livré, les PR/CI, l'état d'avancement vers la prochaine version et une estimation actualisée du nombre de lots restants avant sa publication. Cette estimation doit être réévaluée à chaque session, sans promettre une date artificielle.
 - **Dernière version stable confirmée :** [v0.9.3](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.9.3), publiée le 28 novembre 2026.
-- **État :** les PR #114, #116, #117, #119 et #118 sont intégrées dans `main` ; la PR #118 a été fusionnée au commit `d621683701f894b52c27573891fcfcdbd9122e67` après réussite Linux/Windows sur son HEAD final. La [PR #120](https://github.com/Sreleew/GTA_rankd/pull/120) est ouverte sur `fix/sanitize-rebased-short-caption-timings` pour sécuriser le recalage des timestamps Whisper. v0.9.3 reste la dernière version stable.
+- **État :** les PR #114, #116, #117, #118, #119 et #120 sont intégrées dans `main` ; la PR #120 a été fusionnée au commit `2c061f66dbeef818d90ef60c7fd39f066bb88976` après réussite Linux/Windows sur son HEAD final. La [PR #121](https://github.com/Sreleew/GTA_rankd/pull/121) est ouverte sur `fix/validate-raw-short-caption-timings` pour sécuriser les timestamps Whisper dès la transcription, avant diarisation et rendu. v0.9.3 reste la dernière version stable.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
 - **Source active :** `app/`. Modifier directement les fichiers Python, JavaScript, CSS, HTML, tests et installateur présents dans ce dossier.
@@ -1096,5 +1096,15 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Correction :** valider les bornes de coupe et chaque intervalle mot avant recalage ; rejeter les valeurs non numériques, NaN, infinies et les intervalles inversés ; conserver les mots valides qui croisent les bornes en les limitant proprement à la coupe. Les timestamps valides gardent leur comportement actuel.
 - **Tests :** couvrir les débuts NaN, fins infinies, valeurs négatives infinies, intervalles inversés, bornes de coupe invalides et mots qui traversent les limites. Aucun changement de position ou de chevauchement visuel des sous-titres.
 - **Compatibilité :** aucun changement aux hooks, au rendu FFmpeg, au cadrage webcam, aux paramètres locaux, aux médias ou aux encodeurs AMD/CPU. Aucun numéro de version, tag ou `.release-approval` modifié.
-- **Branche / PR :** `fix/sanitize-rebased-short-caption-timings`, [PR #120 ouverte](https://github.com/Sreleew/GTA_rankd/pull/120) ; Linux et Windows doivent passer sur le HEAD final avant fusion.
+- **Fusion :** PR #120 fusionnée dans `main` au commit `2c061f66dbeef818d90ef60c7fd39f066bb88976`. Linux [workflow 46152981278](https://github.com/Sreleew/GTA_rankd/actions/runs/46152981278) et Windows [workflow 46152981345](https://github.com/Sreleew/GTA_rankd/actions/runs/46152981345) sont terminés avec succès.
 - **Release :** v0.9.3 reste la dernière version stable. « Moments forts » reste en pause.
+
+
+## 84. Nettoyer les timestamps Whisper dès la transcription avant le rendu Short, 28 novembre 2026
+
+- **Problème :** la PR #120 sécurisait le recalage après une coupe, mais les timestamps bruts passaient encore directement dans le filtre de voix et les sélecteurs de hook/miniature lorsque la coupe automatique ne retirait aucun temps mort. Une valeur NaN ou infinie pouvait donc faire échouer les sous-titres ou être comptée à tort comme valide par le contrôle qualité.
+- **Correction :** ajouter `sanitize_word_timings` pour rejeter les intervalles non numériques, non finis, inversés, vides ou hors extrait ; clipper les mots qui traversent les bornes ; trier les mots valides chronologiquement. L'appliquer immédiatement après Whisper, avant la diarisation, puis comme garde-fou dans les captions ASS et le choix du timestamp de miniature. Le contrôle qualité compte désormais NaN et +/-inf comme invalides.
+- **Tests :** couvrir filtrage, clipping, tri, génération ASS avec mots mal formés, fallback du timestamp de miniature et détection des durées non finies dans le contrôle qualité.
+- **Compatibilité :** aucun changement visuel pour les timestamps valides ; aucun changement de chevauchement des sous-titres, de hook, de cadrage webcam, de paramètres, de médias locaux ou d'encodeur. Aucun numéro de version, tag ou `.release-approval` modifié.
+- **Branche / PR :** `fix/validate-raw-short-caption-timings`, [PR #121 ouverte](https://github.com/Sreleew/GTA_rankd/pull/121). CI Linux et Windows à vérifier sur le HEAD final avant fusion.
+- **Suite :** après fusion, prioriser un lot produit Short à impact perceptible et préparer la validation d'un export réel sur Windows/AMD. Estimation : 1 lot de consolidation logicielle, puis validation matérielle, avant de décider si une release v0.9.4 est justifiée. Daily Best Of reste secondaire et « Moments forts » reste en pause.

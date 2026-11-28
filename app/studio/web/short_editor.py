@@ -18,6 +18,45 @@ class WordTiming:
     text: str
 
 
+def sanitize_word_timings(
+    words: Iterable[WordTiming] | None,
+    duration: float | None = None,
+) -> list[WordTiming]:
+    """Keep finite, ordered word intervals and clip them to an optional excerpt."""
+    limit: float | None = None
+    if duration is not None:
+        try:
+            limit = float(duration)
+        except (TypeError, ValueError, OverflowError):
+            return []
+        if not math.isfinite(limit) or limit <= 0:
+            return []
+
+    cleaned: list[WordTiming] = []
+    for word in words or []:
+        try:
+            start = float(word.start)
+            end = float(word.end)
+        except (AttributeError, TypeError, ValueError, OverflowError):
+            continue
+        if not math.isfinite(start) or not math.isfinite(end) or end <= start:
+            continue
+
+        start = max(0.0, start)
+        if limit is not None:
+            if end <= 0 or start >= limit:
+                continue
+            end = min(limit, end)
+        if end <= start:
+            continue
+
+        text = str(getattr(word, "text", "") or "").strip()
+        if text:
+            cleaned.append(WordTiming(start, end, text))
+
+    return sorted(cleaned, key=lambda item: item.start)
+
+
 def parse_srt(path: Path) -> list[WordTiming]:
     """Lit un SRT Whisper et récupère ses segments horodatés."""
     if not path.is_file():
@@ -55,6 +94,7 @@ def select_thumbnail_timestamp(
 ) -> float:
     """Find a visually useful timestamp near the clip's most descriptive spoken moment."""
     limit = max(0.25, float(duration))
+    words = sanitize_word_timings(words, limit)
     preferred = max(0.0, min(float(preferred or 0.0), limit - 0.25))
     weights = {
         "youtube": 5.0, "subscribe": 6.0, "sub": 4.0, "button": 3.0, "like": 5.0,
@@ -223,7 +263,7 @@ def _merge_punctuation(words: Iterable[WordTiming]) -> list[WordTiming]:
     output: list[WordTiming] = []
     closing_punctuation = re.compile(r"^[,.;:!?…)\]\}»”’]+$")
     opening_punctuation = re.compile(r"^[¿¡(\[\{«“‘]+$")
-    for word in words:
+    for word in sanitize_word_timings(words):
         text = _clean_ass_text(word.text)
         if not text:
             continue
