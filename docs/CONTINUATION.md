@@ -767,17 +767,17 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - Release : v0.9.3 reste la dernière version stable ; aucune nouvelle release ni approbation de publication n'est créée.
 - Limite : aucun rendu réel Twitch ni mesure d'engagement sur une plateforme n'est revendiqué.
 - CI PR #95 : Linux [46100755822](https://github.com/Sreleew/GTA_rankd/actions/runs/46100755822) et Windows [46100755831](https://github.com/Sreleew/GTA_rankd/actions/runs/46100755831) ont réussi sur le HEAD final ; Linux confirme 243 tests passés et 1 ignoré, le package Windows a été construit et vérifié.
-- CI post-fusion PR #95 : Linux [46100933598](https://github.com/Sreleew/GTA_rankd/actions/runs/46100933598) en cours au moment de cette mise à jour.
+- CI post-fusion PR #95 : Linux [46100933598](https://github.com/Sreleew/GTA_rankd/actions/runs/46100933598) et Windows [46100933521](https://github.com/Sreleew/GTA_rankd/actions/runs/46100933521) ont réussi.
 - Suite : valider le parcours complet du Short sur des clips réels, puis consolider la génération Daily Best Of.
 
 
 ## 56. Empêcher les rendus Daily Best Of concurrents, 28 novembre 2026
 
-- État de départ : PR #95 fusionnée dans main après réussite Linux/Windows ; le contrôle post-fusion Linux est encore en cours.
+- État de départ : PR #95 fusionnée dans main après réussite Linux/Windows ; ses contrôles post-fusion Linux et Windows ont également réussi.
 - Défaut identifié : l'API pouvait accepter plusieurs demandes Daily Best Of pendant qu'un premier rendu était en file ou en cours. Plusieurs encodages de 9 à 11 minutes pouvaient alors se disputer CPU/GPU et les ressources disque.
 - Correction : une réservation protégée par verrou local vérifie atomiquement l'existence d'un job queued/running avant d'en créer un autre. Une demande concurrente reçoit HTTP 409 avec l'identifiant court du rendu actif. Les rendus terminés ou en erreur ne bloquent pas un nouvel épisode. Le stockage expose une requête ciblée sur le seul job actif.
 - Tests : un test API démarre un premier rendu différé, vérifie que le second est refusé, puis simule l'échec du premier et confirme qu'un nouveau rendu peut démarrer.
 - Périmètre : aucun changement aux clips validés, à leur ordre, aux rendus existants, aux paramètres, aux fichiers locaux ou aux encodeurs AMD/CPU. « Moments forts » reste en pause.
-- PR #96 : [Prevent parallel Daily Best Of renders](https://github.com/Sreleew/GTA_rankd/pull/96), branche fix/prevent-parallel-best-of-renders. Les validations Linux et Windows doivent réussir sur le HEAD final avant fusion.
+- PR #96 : [Prevent parallel Daily Best Of renders](https://github.com/Sreleew/GTA_rankd/pull/96), branche fix/prevent-parallel-best-of-renders, commit 2fcc6e4fda9c8d020e93c6ff340d142851c73971. Les validations Linux et Windows doivent réussir sur le HEAD final avant fusion.
 - Release : v0.9.3 reste la dernière version stable ; aucune nouvelle release ni approbation de publication n'est créée.
 - Suite : après fiabilisation de la file de rendu, vérifier la reprise après interruption et la composition 16:9 sur des Shorts validés.
