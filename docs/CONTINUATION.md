@@ -1000,3 +1000,17 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Périmètre :** robustesse du hook automatique uniquement. Aucun changement au filtrage des sous-titres, à Whisper, au rendu FFmpeg, à la webcam, aux paramètres locaux, aux encodeurs AMD/CPU, au Daily Best Of ou aux releases. « Moments forts » reste en pause.
 - **Release :** v0.9.3 reste la dernière version stable ; aucun numéro de version, tag ou `.release-approval` modifié.
 - **Suite :** valider Linux/Windows puis comparer sur des clips réels le hook avec diarisation disponible, indisponible et ambiguë, en vérifiant que le fallback ne présente jamais sa transcription brute comme une attribution certaine au streamer.
+
+
+## 74. Optimiser la préparation audio des Shorts et les imports groupés, 28 novembre 2026
+
+- **État de départ :** main au commit c6db2c2f79bfcbeaaf18dc0b5d58e90f36a24284, après fusion de la PR #113. La PR #114 reste ouverte sur le chantier Daily Best Of ; elle n'a pas été modifiée dans ce lot Shorts.
+- **Défauts identifiés :** chaque clip relançait whisper-cli --help pour détecter DTW, -ojf et -nfa ; l'analyse des pics audio chargeait l'intégralité du WAV en mémoire, ce qui pouvait provoquer une forte consommation RAM sur une longue source Twitch.
+- **Corrections :** mise en cache de la détection DTW pour les 16 dernières versions de binaires Whisper. La clé combine le chemin résolu, la taille, la date de modification et la date de changement ; les erreurs et timeouts ne sont pas mis en cache. L'analyse des pics audio lit maintenant des blocs de 10 secondes avec chevauchement et conserve toutes les fenêtres partielles valides en fin de fichier. Les seuils, le calcul RMS et l'ordre des pics restent inchangés.
+- **Tests ajoutés :** réutilisation du résultat --help entre deux transcriptions ; invalidation après modification du binaire ; lecture WAV bornée ; conservation des pics après une frontière de bloc et dans les fenêtres partielles finales.
+- **PR #115 :** [Optimize Short audio analysis for batch imports and long Twitch sources](https://github.com/Sreleew/GTA_rankd/pull/115), branche perf/cache-whisper-cli-capabilities, code et tests validés sur le HEAD 9903e786c60c80e96888e35a30cac1c02960eaf1.
+- **Validation Linux :** [workflow 46141984511](https://github.com/Sreleew/GTA_rankd/actions/runs/46141984511) réussi ; 280 tests passés, 1 ignoré ; Ruff, pip-audit et vérification du package Windows réussis.
+- **Validation Windows :** [workflow 46141984531](https://github.com/Sreleew/GTA_rankd/actions/runs/46141984531) réussi ; 282 tests passés ; Ruff, pip-audit, scripts PowerShell et package Windows réussis.
+- **Limite matérielle :** aucun test réel sur la RX 9060 XT ni sur un VOD de 19 heures. L'analyse ne charge plus tout le WAV en RAM, mais l'extraction audio complète crée toujours un fichier temporaire volumineux et conserve son coût disque/décodage.
+- **Release :** v0.9.3 reste la version stable ; aucun numéro, tag ou .release-approval modifié. Les données locales, paramètres et encodeurs AMD/CPU ne sont pas touchés. « Moments forts » reste en pause.
+- **Suite :** mesurer le gain sur un import groupé réel et valider la tenue disque/RAM sur une longue source Twitch Windows/AMD avant d'étendre le chantier.
