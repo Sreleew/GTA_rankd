@@ -136,6 +136,15 @@ def test_requested_short_captions_stay_enabled_for_the_final_overlay():
     assert worker._captions_should_render(True, []) is False
 
 
+def test_short_transcription_can_run_for_hook_without_burning_captions():
+    words = [object(), object()]
+
+    assert worker._short_transcription_requested(False, True) is True
+    assert worker._short_transcription_requested(True, False) is True
+    assert worker._short_transcription_requested(False, False) is False
+    assert worker._captions_should_render(False, words) is False
+
+
 def test_caption_voice_filter_keeps_only_words_returned_by_the_diarizer(tmp_path: Path, monkeypatch):
     from studio.web.short_editor import WordTiming
 

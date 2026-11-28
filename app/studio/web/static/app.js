@@ -119,11 +119,11 @@ function jobCard(job) {
     'no_speaker_segments', 'no_word_attribution',
   ].includes(speakerFilterStatus);
   const captionNote = voiceFilterOmitted
-    ? ` · Sous-titres omis : voix non isolée${metadata.transcription_warning ? ` (${escapeHtml(metadata.transcription_warning)})` : ''}`
+    ? ` · ${metadata.captions_enabled ? 'Sous-titres omis' : 'Analyse vocale écartée'} : voix non isolée${metadata.transcription_warning ? ` (${escapeHtml(metadata.transcription_warning)})` : ''}`
     : metadata.transcription_warning
       ? ` · ${escapeHtml(metadata.transcription_warning)}`
       : (Number(metadata.transcribed_words) > 0
-        ? ` · Voix principale · ${Number(metadata.transcribed_words)} mots`
+        ? ` · ${metadata.captions_enabled ? 'Voix principale' : 'Analyse vocale'} · ${Number(metadata.transcribed_words)} mots`
         : '');
   return `<article class="job-card">
     ${thumbUrl ? `<img class="job-thumb" src="${thumbUrl}" alt="Image d’aperçu du Short" title="Image d’aperçu interne ; la plateforme choisira l’image publiée">` : `<div class="job-thumb job-thumb-placeholder">▶</div>`}

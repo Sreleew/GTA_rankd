@@ -58,6 +58,7 @@ def _validate_edit_options(
     brand_enabled: bool, hook_text: str, context_text: str,
     auto_trim_enabled: bool = True, sfx_enabled: bool = True,
     captions_enabled: bool = False, caption_language: str = "config",
+    hook_transcription_enabled: bool = False,
 ) -> dict:
     if layout == "smart":
         layout = "blur"
@@ -79,6 +80,7 @@ def _validate_edit_options(
         "brand_enabled": bool(brand_enabled),
         "auto_trim_enabled": bool(auto_trim_enabled), "sfx_enabled": bool(sfx_enabled),
         "captions_enabled": bool(captions_enabled),
+        "hook_transcription_enabled": bool(hook_transcription_enabled),
         "caption_language": normalized_caption_language,
         "hook_text": str(hook_text or "").strip()[:100],
         "context_text": str(context_text or "").strip()[:150],
@@ -686,6 +688,7 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         brand_enabled: Annotated[bool, Form()] = False,
         auto_trim_enabled: Annotated[bool, Form()] = True,
         sfx_enabled: Annotated[bool, Form()] = True,
+        hook_transcription_enabled: Annotated[bool, Form()] = True,
         captions_enabled: Annotated[bool, Form()] = False,
         caption_language: Annotated[str, Form()] = "config",
         hook_text: Annotated[str, Form()] = "",
@@ -698,7 +701,7 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         options = _validate_edit_options(
             layout, crop_x, crop_y, _resolve_dynamic_zoom(config, dynamic_zoom), zoom_percent, brand_enabled,
             hook_text, context_text, auto_trim_enabled, sfx_enabled, captions_enabled,
-            caption_language,
+            caption_language, hook_transcription_enabled,
         )
         safe_name = safe_upload_name(file.filename or "clip.mp4")
         max_mb = int(config.get("web", "max_upload_mb", default=2048))
@@ -750,6 +753,7 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         brand_enabled: Annotated[bool, Form()] = False,
         auto_trim_enabled: Annotated[bool, Form()] = True,
         sfx_enabled: Annotated[bool, Form()] = True,
+        hook_transcription_enabled: Annotated[bool, Form()] = True,
         captions_enabled: Annotated[bool, Form()] = False,
         caption_language: Annotated[str, Form()] = "config",
         hook_text: Annotated[str, Form()] = "",
@@ -764,7 +768,7 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         options = _validate_edit_options(
             layout, crop_x, crop_y, _resolve_dynamic_zoom(config, dynamic_zoom), zoom_percent, brand_enabled,
             hook_text, context_text, auto_trim_enabled, sfx_enabled, captions_enabled,
-            caption_language,
+            caption_language, hook_transcription_enabled,
         )
         store.create_job({
             "id": job_id, "source_kind": "url", "source_url": clean_url,
@@ -790,6 +794,7 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         brand_enabled: Annotated[bool, Form()] = False,
         auto_trim_enabled: Annotated[bool, Form()] = True,
         sfx_enabled: Annotated[bool, Form()] = True,
+        hook_transcription_enabled: Annotated[bool, Form()] = True,
         captions_enabled: Annotated[bool, Form()] = False,
         caption_language: Annotated[str, Form()] = "config",
         hook_text: Annotated[str, Form()] = "",
@@ -809,7 +814,7 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         options = _validate_edit_options(
             layout, crop_x, crop_y, _resolve_dynamic_zoom(config, dynamic_zoom), zoom_percent, brand_enabled,
             hook_text, context_text, auto_trim_enabled, sfx_enabled, captions_enabled,
-            caption_language,
+            caption_language, hook_transcription_enabled,
         )
         validated_urls: list[str] = []
         rejected: list[dict[str, str]] = []

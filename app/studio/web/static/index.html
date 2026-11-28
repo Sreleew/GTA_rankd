@@ -79,11 +79,13 @@
                   <label><input type="checkbox" name="dynamic_zoom" data-option-checkbox> Zoom dynamique</label>
                   <label><input type="checkbox" name="brand_enabled" data-option-checkbox> Afficher GTA_rankd discrètement</label>
                   <label><input type="checkbox" name="sfx_enabled" checked data-option-checkbox> Effet sonore du hook</label>
+                  <label><input type="checkbox" name="hook_transcription_enabled" checked data-option-checkbox> Analyser la voix pour le hook automatique (Whisper local)</label>
                   <label><input type="checkbox" name="captions_enabled" data-option-checkbox> Sous-titres de la voix principale (Whisper local)</label>
                 </div>
-                <small class="form-note">Option facultative, désactivée par défaut. Nécessite whisper.cpp et le modèle multilingue local large-v3-turbo (~1,6 Go).</small>
+                <small class="form-note">L’analyse Whisper pour le hook est activée par défaut, même sans sous-titres. Elle ajoute le temps de transcription locale ; désactive-la pour accélérer le rendu. Sans moteur ou modèle disponible, le Short continue sans hook automatique.</small>
+                <small class="form-note">Les sous-titres restent facultatifs et désactivés par défaut. Ils nécessitent whisper.cpp et le modèle multilingue local large-v3-turbo (~1,6 Go).</small>
                 <small class="form-note">Whisper alimente aussi le hook automatique. Sans transcription exploitable ni note de contexte, aucun hook générique n'est inventé ; tu peux saisir un hook manuel.</small>
-                <small class="form-note">Filtrage vocal local en bêta : le studio garde la voix dominante et omet les sous-titres si les voix sont trop proches ou impossibles à attribuer. Cela limite les dialogues du jeu, sans garantir que la voix retenue est celle du streamer. La première utilisation peut installer le filtre local et prendre plus de temps.</small>
+                <small class="form-note">Filtrage vocal local en bêta : le studio écarte la transcription destinée au hook et aux sous-titres si les voix sont trop proches ou impossibles à attribuer. Cela limite les dialogues du jeu, sans garantir que la voix retenue est celle du streamer. La première utilisation peut installer le filtre local et prendre plus de temps.</small>
                 <div class="form-grid edit-text-grid">
                   <label>Langue parlée dans le clip<select name="caption_language"><option value="config" selected>Réglage du Studio</option><option value="auto">Détection automatique</option><option value="en">English</option><option value="fr">Français</option><option value="es">Español</option><option value="pt">Português</option><option value="de">Deutsch</option></select><small>Le réglage du Studio conserve ta configuration actuelle. Choisis la détection auto ou une langue si nécessaire.</small></label>
                   <label>Hook personnalisé <span>OPTIONNEL · 8 MOTS MAX</span><input type="text" name="hook_text" maxlength="100" placeholder="ex. BRO THOUGHT HE WAS SAFE..."></label>
@@ -118,11 +120,13 @@
                   <label><input type="checkbox" name="dynamic_zoom" data-option-checkbox> Zoom dynamique</label>
                   <label><input type="checkbox" name="brand_enabled" data-option-checkbox> Afficher GTA_rankd discrètement</label>
                   <label><input type="checkbox" name="sfx_enabled" checked data-option-checkbox> Effet sonore du hook</label>
+                  <label><input type="checkbox" name="hook_transcription_enabled" checked data-option-checkbox> Analyser la voix pour le hook automatique (Whisper local)</label>
                   <label><input type="checkbox" name="captions_enabled" data-option-checkbox> Sous-titres de la voix principale (Whisper local)</label>
                 </div>
-                <small class="form-note">Option facultative, désactivée par défaut. Nécessite whisper.cpp et le modèle multilingue local large-v3-turbo (~1,6 Go).</small>
+                <small class="form-note">L’analyse Whisper pour le hook est activée par défaut, même sans sous-titres. Elle ajoute le temps de transcription locale ; désactive-la pour accélérer le rendu. Sans moteur ou modèle disponible, le Short continue sans hook automatique.</small>
+                <small class="form-note">Les sous-titres restent facultatifs et désactivés par défaut. Ils nécessitent whisper.cpp et le modèle multilingue local large-v3-turbo (~1,6 Go).</small>
                 <small class="form-note">Whisper alimente aussi le hook automatique. Sans transcription exploitable ni note de contexte, aucun hook générique n'est inventé ; tu peux saisir un hook manuel.</small>
-                <small class="form-note">Filtrage vocal local en bêta : le studio garde la voix dominante et omet les sous-titres si les voix sont trop proches ou impossibles à attribuer. Cela limite les dialogues du jeu, sans garantir que la voix retenue est celle du streamer. La première utilisation peut installer le filtre local et prendre plus de temps.</small>
+                <small class="form-note">Filtrage vocal local en bêta : le studio écarte la transcription destinée au hook et aux sous-titres si les voix sont trop proches ou impossibles à attribuer. Cela limite les dialogues du jeu, sans garantir que la voix retenue est celle du streamer. La première utilisation peut installer le filtre local et prendre plus de temps.</small>
                 <div class="form-grid edit-text-grid">
                   <label>Langue parlée dans le clip<select name="caption_language"><option value="config" selected>Réglage du Studio</option><option value="auto">Détection automatique</option><option value="en">English</option><option value="fr">Français</option><option value="es">Español</option><option value="pt">Português</option><option value="de">Deutsch</option></select><small>Le réglage du Studio conserve ta configuration actuelle. Choisis la détection auto ou une langue si nécessaire.</small></label>
                   <label>Hook personnalisé <span>OPTIONNEL · 8 MOTS MAX</span><input type="text" name="hook_text" maxlength="100" placeholder="ex. BRO THOUGHT HE WAS SAFE..."></label>
@@ -251,6 +255,6 @@
     </main>
   </div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="/static/app.js?v=0.9.4-main-voice-captions"></script>
+  <script src="/static/app.js?v=0.9.4-hook-transcription-toggle"></script>
 </body>
 </html>
