@@ -332,8 +332,8 @@ def test_whisper_cli_falls_back_to_srt_when_dtw_bounds_are_invalid(tmp_path: Pat
     import textwrap
 
     binary = tmp_path / "fake-whisper-invalid-dtw.py"
-    binary.write_text(textwrap.dedent(f"""
-        #!{sys.executable}
+    script = textwrap.dedent("""
+        #!__PYTHON__
         import json, pathlib, sys
         if '--help' in sys.argv:
             print('-dtw MODEL --dtw MODEL')
@@ -354,7 +354,8 @@ def test_whisper_cli_falls_back_to_srt_when_dtw_bounds_are_invalid(tmp_path: Pat
         if '-dtw' not in args or '-ojf' not in args or '-nfa' not in args:
             raise SystemExit(4)
         raise SystemExit(0)
-    """).lstrip(), encoding="utf-8")
+    """).lstrip().replace("__PYTHON__", sys.executable)
+    binary.write_text(script, encoding="utf-8")
     binary.chmod(0o755)
     model = tmp_path / "model.bin"
     model.write_bytes(b"model")
