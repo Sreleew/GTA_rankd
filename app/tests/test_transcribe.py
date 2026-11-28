@@ -369,3 +369,11 @@ def test_whisper_cli_falls_back_to_srt_when_dtw_bounds_are_invalid(tmp_path: Pat
     assert result["status"] == "completed_segment_fallback"
     assert result["timestamp_mode"] == "segment_srt"
     assert result["words"][0].text == "Hello there!"
+
+
+def test_whisper_clock_parser_rejects_out_of_range_minute_and_second_fields():
+    from studio.web.transcribe import _parse_whisper_timestamp
+
+    assert _parse_whisper_timestamp("00:60:00.000") is None
+    assert _parse_whisper_timestamp("00:00:60.000") is None
+    assert _parse_whisper_timestamp("01:59:59.999") == 7199.999
