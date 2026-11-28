@@ -156,6 +156,7 @@ def test_whisper_gpu_button_uses_fresh_script_and_visible_feedback():
     static = Path(__file__).resolve().parents[1] / "studio" / "web" / "static"
     html = (static / "index.html").read_text(encoding="utf-8")
     js = (static / "app.js").read_text(encoding="utf-8")
+    assert html.count("peut couper les bords, y compris une webcam en bord d’écran") == 2
     assert '<script src="/static/app.js?v=0.9.4-main-voice-captions"></script>' in html
     assert '<button type="button" class="mini-button" id="verify-whisper-gpu"' in html
     assert "/api/models/whisper/verify" in js
@@ -837,6 +838,7 @@ def test_short_url_api_accepts_only_public_twitch_clip_or_vod_urls(tmp_path: Pat
         assert job is not None
         assert job["source_url"] == url
         assert job["status"] == "queued"
+        assert job["metadata"]["options"]["dynamic_zoom"] is False
 
     assert submitted == created_ids
 
@@ -1240,7 +1242,6 @@ def test_batch_twitch_short_import_queues_valid_urls_and_reports_invalid_ones(tm
             "rights_confirmed": "true",
             "streamer": "Test streamer",
             "layout": "blur",
-            "dynamic_zoom": "false",
         },
     )
 
@@ -1259,6 +1260,7 @@ def test_batch_twitch_short_import_queues_valid_urls_and_reports_invalid_ones(tm
     assert all(job["metadata"]["batch_count"] == 3 for job in jobs)
     assert sorted(job["metadata"]["batch_index"] for job in jobs) == [1, 2, 3]
     assert all(job["metadata"]["options"]["layout"] == "blur" for job in jobs)
+    assert all(job["metadata"]["options"]["dynamic_zoom"] is False for job in jobs)
     assert all(job["metadata"]["options"]["captions_enabled"] is False for job in jobs)
 
     queued_batch = client.get(f"/api/shorts/batches/{payload['batch_id']}")
@@ -1409,6 +1411,7 @@ def test_short_caption_option_requires_local_whisper_and_is_persisted(tmp_path: 
     uploaded_job = app.state.store.get_job(upload.json()["id"])
     assert uploaded_job["metadata"]["options"]["captions_enabled"] is True
     assert uploaded_job["metadata"]["options"]["caption_language"] == "es"
+    assert uploaded_job["metadata"]["options"]["dynamic_zoom"] is False
 
     batch_payload = {
         "urls": "https://clips.twitch.tv/CaptionBatchOne\nhttps://clips.twitch.tv/CaptionBatchTwo",
