@@ -231,6 +231,44 @@ def _segment_caption_event(segment: WordTiming, x: int, y: int) -> str | None:
     )
 
 
+def _word_caption_text(
+    group: list[WordTiming], active_index: int, max_line_chars: int = 16,
+) -> tuple[str, int]:
+    """Wrap DTW words and keep an unusually long token inside the mobile safe area."""
+    lines: list[list[tuple[int, str]]] = [[]]
+    line_lengths = [0]
+    for word_index, word in enumerate(group):
+        text = _clean_ass_text(word.text).upper()
+        if not text:
+            continue
+        required = len(text) + (1 if lines[-1] else 0)
+        if lines[-1] and line_lengths[-1] + required > max_line_chars:
+            lines.append([])
+            line_lengths.append(0)
+        lines[-1].append((word_index, text))
+        line_lengths[-1] += len(text) + (1 if len(lines[-1]) > 1 else 0)
+
+    longest_line = max(line_lengths, default=0)
+    horizontal_scale = (
+        min(100, max(60, round(max_line_chars * 100 / longest_line)))
+        if longest_line else 100
+    )
+    active_scale = round(horizontal_scale * 1.06)
+    rendered_lines: list[str] = []
+    for line in lines:
+        rendered_words: list[str] = []
+        for word_index, text in line:
+            if word_index == active_index:
+                rendered_words.append(
+                    rf"{{\c&H0000C8F5&\fscx{active_scale}\fscy106\bord7}}" + text
+                    + rf"{{\c&H00FFFFFF&\fscx{horizontal_scale}\fscy100\bord6}}"
+                )
+            else:
+                rendered_words.append(text)
+        rendered_lines.append(" ".join(rendered_words))
+    return r"\N".join(rendered_lines), horizontal_scale
+
+
 def _caption_events(
     words: list[WordTiming], width: int, height: int, *, word_timed: bool = True,
 ) -> list[str]:
@@ -288,28 +326,12 @@ def _caption_events(
                 next_word = group[index + 1] if index + 1 < len(group) else None
                 end = next_word.start if next_word and next_word.start > active.start else active.end
                 end = max(active.start + 0.06, min(end, active.end + 0.8 if next_word is None else end))
-                caption_lines: list[list[str]] = [[]]
-                line_length = 0
-                max_line_chars = 16
-                for word_index, word in enumerate(group):
-                    text = _clean_ass_text(word.text).upper()
-                    highlighted = (
-                        r"{\c&H0000C8F5&\fscx106\fscy106\bord7}" + text
-                        + r"{\c&H00FFFFFF&\fscx100\fscy100\bord6}"
-                        if word_index == index else text
-                    )
-                    plain_length = len(text)
-                    required = plain_length + (1 if caption_lines[-1] else 0)
-                    if caption_lines[-1] and line_length + required > max_line_chars:
-                        caption_lines.append([])
-                        line_length = 0
-                    caption_lines[-1].append(highlighted)
-                    line_length += plain_length + (1 if len(caption_lines[-1]) > 1 else 0)
-                line = r"\N".join(" ".join(parts) for parts in caption_lines)
+                line, horizontal_scale = _word_caption_text(group, index)
+                scale_tag = f"\\fscx{horizontal_scale}" if horizontal_scale < 100 else ""
                 start_stamp = _ass_time(active.start)
                 end_stamp = _ass_time(end)
                 events.append(
-                    f"Dialogue: 0,{start_stamp},{end_stamp},Caption,,0,0,0,,{{\\an2\\pos({x},{y})\\fad(45,65)}}{line}"
+                    f"Dialogue: 0,{start_stamp},{end_stamp},Caption,,0,0,0,,{{\\an2\\pos({x},{y})\\fad(45,65){scale_tag}}}{line}"
                 )
     return events
 

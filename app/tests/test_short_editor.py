@@ -386,3 +386,23 @@ def test_word_dtw_keeps_multiword_records_on_their_real_phrase_interval(tmp_path
     assert "0:00:01.25,0:00:01.60" in caption_lines[2]
     assert "FAST!" in caption_lines[2]
     assert r"{\c&H0000C8F5&" in caption_lines[2]
+
+def test_word_timed_caption_scales_long_unbreakable_word_without_changing_timing(tmp_path: Path):
+    word = "SUPERCALIFRAGILISTICEXPIALIDOCIOUS"
+    path = create_ass_file(
+        tmp_path / "long-dtw-word.ass",
+        words=[WordTiming(0.0, 1.8, word)],
+        captions_enabled=True,
+        word_timed_captions=True,
+        brand_enabled=False,
+    )
+    caption_line = next(
+        line for line in path.read_text(encoding="utf-8-sig").splitlines()
+        if line.startswith("Dialogue: 0,")
+    )
+
+    assert "0:00:00.00,0:00:01.80" in caption_line
+    assert word in caption_line
+    assert r"\fscx60" in caption_line
+    assert r"\fscx64" in caption_line
+
