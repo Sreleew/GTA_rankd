@@ -72,7 +72,7 @@
                   <label>Format vidéo<select name="layout"><option value="blur" selected>Vidéo entière + fond flouté</option><option value="fill">Plein écran recadré 9:16</option></select><small>La capture complète reste visible, sans cadre ni bande qui coupe l’image.</small></label>
                   <label>Focus horizontal (mode recadré) <output data-crop-output>80 %</output><input type="range" name="crop_x" min="0" max="100" value="80" data-crop-slider><small>Utilisé uniquement en mode plein écran recadré.</small></label>
                   <label>Position verticale (mode recadré) <output data-crop-output>50 %</output><input type="range" name="crop_y" min="0" max="100" value="50" data-crop-slider><small>Utilisé uniquement en mode plein écran recadré.</small></label>
-                  <label>Puissance du zoom <output data-zoom-output>0 %</output><input type="range" name="zoom_percent" min="0" max="20" value="0" data-zoom-slider><small>Zoom progressif avant et après le pic audio détecté.</small></label>
+                  <label>Puissance du zoom <output data-zoom-output>0 %</output><input type="range" name="zoom_percent" min="0" max="20" value="0" data-zoom-slider><small>Zoom progressif autour du pic audio. Il recadre légèrement l’image et peut couper les bords, y compris une webcam en bord d’écran. Désactivé par défaut.</small></label>
                 </div>
                 <div class="edit-toggles">
                   <label><input type="checkbox" name="auto_trim_enabled" checked data-option-checkbox> Recadrer automatiquement les sources de plus de 2 min 45</label>
@@ -110,7 +110,7 @@
                   <label>Format vidéo<select name="layout"><option value="blur" selected>Vidéo entière + fond flouté</option><option value="fill">Plein écran recadré 9:16</option></select><small>La capture complète reste visible, sans cadre ni bande qui coupe l’image.</small></label>
                   <label>Focus horizontal (mode recadré) <output data-crop-output>80 %</output><input type="range" name="crop_x" min="0" max="100" value="80" data-crop-slider><small>Utilisé uniquement en mode plein écran recadré.</small></label>
                   <label>Position verticale (mode recadré) <output data-crop-output>50 %</output><input type="range" name="crop_y" min="0" max="100" value="50" data-crop-slider><small>Utilisée avec le plein écran recadré.</small></label>
-                  <label>Puissance du zoom <output data-zoom-output>0 %</output><input type="range" name="zoom_percent" min="0" max="20" value="0" data-zoom-slider><small>Zoom progressif avant et après le pic audio détecté.</small></label>
+                  <label>Puissance du zoom <output data-zoom-output>0 %</output><input type="range" name="zoom_percent" min="0" max="20" value="0" data-zoom-slider><small>Zoom progressif autour du pic audio. Il recadre légèrement l’image et peut couper les bords, y compris une webcam en bord d’écran. Désactivé par défaut.</small></label>
                 </div>
                 <div class="edit-toggles">
                   <label><input type="checkbox" name="auto_trim_enabled" checked data-option-checkbox> Recadrer automatiquement les sources de plus de 2 min 45</label>
