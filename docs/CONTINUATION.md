@@ -826,7 +826,6 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - Suite : valider le rendu complet 16:9 et le son sur un ensemble de Shorts validés avant d'élargir le montage.
 
 
-
 ## 60. Filtrer les sous-titres sur la voix principale et réutiliser le WAV d'analyse, 28 novembre 2026
 
 - **État de départ :** PR #99 est fusionnée dans main au commit 5f511a375405eb9bc3ef9c6a2ab37ef2941f056a après réussite des validations PR Linux/Windows. Ses contrôles post-fusion Linux et Windows ont réussi.
@@ -839,5 +838,5 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Coût et limite :** aucun filtre n'est exécuté si les sous-titres sont désactivés. Le paquet local `diarize==0.1.2` reste installé à la demande lors du premier usage des sous-titres ; cette étape peut être longue. En cas d'échec, le Short continue sans sous-titres. La méthode ne sépare pas les voix superposées et ne certifie pas l'identité du streamer.
 - **Tests :** couverture de la réutilisation/sélection du WAV d'analyse, du comportement fail-closed de la diarisation, de l'absence de transcription et de l'écriture SRT avec timestamps exacts.
 - **Périmètre :** aucune modification de l'encodeur AMD/CPU, du cadrage source complet, des données locales, des paramètres de rendu, des jobs existants ou des miniatures personnalisées. « Moments forts » reste en pause.
-- **PR #100 :** [Filter Short captions to the dominant voice](https://github.com/Sreleew/GTA_rankd/pull/100), branche `feat/streamer-voice-caption-filter`, HEAD `b864bc101b141d7cf2c8ba7db1eb10e288d677c0`. Après correction du writer SRT existant et actualisation des assertions UI, CI Linux [46102729289](https://github.com/Sreleew/GTA_rankd/actions/runs/46102729289) réussie (254 tests passés, 1 ignoré, Ruff/audit et package Windows vérifiés) ; CI Windows [46102729301](https://github.com/Sreleew/GTA_rankd/actions/runs/46102729301) réussie (255 tests passés, Ruff/audit, PowerShell et package vérifiés).
+- **PR #100 :** [Filter Short captions to the dominant voice](https://github.com/Sreleew/GTA_rankd/pull/100), branche `feat/streamer-voice-caption-filter`, HEAD final `bc32f0868d1a7eca3fc94108c417dc9aee6a1f0c`. Après correction du writer SRT existant et actualisation des assertions UI, CI Linux [46102940662](https://github.com/Sreleew/GTA_rankd/actions/runs/46102940662) réussie (254 tests passés, 1 ignoré, Ruff/audit et package Windows vérifiés) ; CI Windows [46102940651](https://github.com/Sreleew/GTA_rankd/actions/runs/46102940651) réussie (255 tests passés, Ruff/audit, PowerShell et package vérifiés). PR prête pour fusion ; aucun rendu réel sur Windows/AMD n'est revendiqué.
 - **Suite :** valider les suites Linux et Windows, puis effectuer un essai sur un clip Twitch réel pour vérifier si la voix dominante retenue est effectivement celle du streamer et mesurer le surcoût du filtre sur le PC Windows/AMD.
