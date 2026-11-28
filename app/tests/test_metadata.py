@@ -168,7 +168,7 @@ def test_local_model_formulaic_promo_copy_falls_back_to_human_title(monkeypatch)
 
 
 
-def test_asr_fragment_is_not_reused_as_title_hook_or_thumbnail_copy():
+def test_asr_fragment_is_not_reused_as_title_hook_or_thumbnail_copy_and_uses_generic_fallback():
     result = generate_short_metadata(
         streamer="Tminnzy",
         source_title="GTA 5",
@@ -179,7 +179,8 @@ def test_asr_fragment_is_not_reused_as_title_hook_or_thumbnail_copy():
 
     assert "yeah huh shit got" not in result["title"].lower()
     assert "really said" not in result["title"].lower()
-    assert result["hook_text"] == ""
+    assert result["hook_text"] == "WAIT FOR THE REACTION"
+    assert "yeah huh shit got" not in result["hook_text"].lower()
     assert result["thumbnail_text"] == "Tminnzy GTA MOMENT"
     assert "yeah huh shit got" not in result["description"].lower()
 
@@ -364,7 +365,19 @@ def test_manual_two_word_hook_is_preserved_with_local_model(monkeypatch):
     assert result["hook_text"] == "NO WAY!"
 
 
-def test_metadata_without_a_reliable_transcript_does_not_invent_a_generic_hook():
+def test_incomplete_asr_fragment_uses_supplied_context_before_generic_hook():
+    result = generate_short_metadata(
+        streamer="Tminnzy",
+        source_title="GTA 5",
+        transcript="yeah huh shit got",
+        custom_context="Streamer escapes police chase cleanly",
+        source_url="https://www.twitch.tv/tminnzy/clip/example",
+        ollama_base_url="http://127.0.0.1:1",
+    )
+
+    assert result["hook_text"] == "STREAMER ESCAPES POLICE CHASE CLEANLY"
+
+def test_metadata_without_a_reliable_transcript_uses_generic_hook_as_last_resort():
     result = generate_short_metadata(
         streamer="Streamer",
         source_title="GTA 5",
@@ -373,5 +386,5 @@ def test_metadata_without_a_reliable_transcript_does_not_invent_a_generic_hook()
         source_url="https://clips.twitch.tv/example",
     )
 
-    assert result["hook_text"] == ""
-    assert "WAIT FOR THE REACTION" not in result["hook_text"]
+    assert result["hook_text"] == "WAIT FOR THE REACTION"
+    assert result["description"].splitlines()[0] == "From Streamer's GTA 5 session. 😭"

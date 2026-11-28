@@ -5,7 +5,7 @@
 - **Dernière mise à jour :** 28 novembre 2026
 - **Progression des releases :** à chaque relance de développement, le compte rendu doit indiquer le lot livré, les PR/CI, l'état d'avancement vers la prochaine version et une estimation actualisée du nombre de lots restants avant sa publication. Cette estimation doit être réévaluée à chaque session, sans promettre une date artificielle.
 - **Dernière version stable confirmée :** [v0.9.3](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.9.3), publiée le 28 novembre 2026.
-- **État :** les PR #92 à #112 sont intégrées dans `main` (HEAD `88962e05738c2bf0a91fb43159aab340dcd0beb3`). La PR #113 est ouverte sur `fix/hook-diarization-runtime-fallback` pour préserver l’analyse du hook si la diarisation optionnelle installée échoue techniquement, sans relâcher le filtrage strict des sous-titres. La v0.9.3 reste la dernière release stable ; la prochaine publication attend la consolidation du parcours Short et la validation matérielle Windows/AMD.
+- **État :** les PR #92 à #115 sont intégrées dans `main` (dernier HEAD connu `1358e69f57555b7295313740de56d2339b86870a`). La PR #116 est ouverte sur `feat/short-editorial-polish` ; son HEAD code `71687d41e3d981bc8f1d94cdade7bfd5c4312d38` a passé les validations Linux et Windows. La signature `GTA_rankd` reste désactivée par défaut conformément à `docs/WORKING-AGREEMENT.md`. La PR #114 reste distincte sur le Daily Best Of multi-jours et les durées Shorts libres. La v0.9.3 reste la dernière release stable ; la prochaine publication attend la consolidation du parcours Short et la validation matérielle Windows/AMD.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
 - **Source active :** `app/`. Modifier directement les fichiers Python, JavaScript, CSS, HTML, tests et installateur présents dans ce dossier.
@@ -1014,3 +1014,27 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Limite matérielle :** aucun test réel sur la RX 9060 XT ni sur un VOD de 19 heures. L'analyse ne charge plus tout le WAV en RAM, mais l'extraction audio complète crée toujours un fichier temporaire volumineux et conserve son coût disque/décodage.
 - **Release :** v0.9.3 reste la version stable ; aucun numéro, tag ou .release-approval modifié. Les données locales, paramètres et encodeurs AMD/CPU ne sont pas touchés. « Moments forts » reste en pause.
 - **Suite :** mesurer le gain sur un import groupé réel et valider la tenue disque/RAM sur une longue source Twitch Windows/AMD avant d'étendre le chantier.
+
+
+## 77. Préférences de finition Short confirmées et amélioration des fallbacks éditoriaux, 28 novembre 2026
+
+- **Décisions utilisateur :** ne pas modifier le chevauchement de sous-titres observé sur les exports ; conserver la signature `GTA_rankd` désactivée par défaut conformément à `docs/WORKING-AGREEMENT.md` ; accepter « WAIT FOR THE REACTION » uniquement si aucune accroche précise fiable ne peut être formée à partir de la transcription, de la note ou du contexte.
+- **Habillage :** le moteur actuel retire déjà l'ancien cadre gris et le trait jaune du layout historique `smart`, en le normalisant vers la composition floutée sans `drawbox`. Les tests de `test_render_integration.py` vérifient explicitement l'absence de cadre et de trait. Les captures de test fournies semblent issues de l'ancien habillage.
+- **Signature :** la case `Afficher GTA_rankd discrètement` reste décochée par défaut dans les deux formulaires ; le worker et `create_ass_file` gardent également `false` comme défaut. L’activation explicite reste disponible.
+- **Hooks :** lorsqu'aucun texte fiable n'est exploitable, le moteur peut maintenant utiliser `WAIT FOR THE REACTION` en dernier recours. Les hooks spécifiques issus d'une transcription complète, d'une note ou d'une saisie manuelle restent prioritaires ; aucune action factuelle n'est inventée.
+- **Descriptions :** le fallback neutre évite de reformuler mot pour mot le titre lorsqu'aucun détail fiable n'est disponible ; il crédite toujours le créateur, la source et les hashtags.
+- **Périmètre :** aucune correction de chevauchement de sous-titres, aucune nouvelle miniature, aucun changement de cadrage ni d'export/encodeur. « Moments forts » reste en pause. Les améliorations montage proposées restent à évaluer avant développement.
+- **Release :** aucun numéro de version, tag ou `.release-approval` modifié. v0.9.3 reste la dernière release stable.
+
+
+## 78. Corriger les fallbacks de hook et réaligner la signature sur l'accord de travail, 28 novembre 2026
+
+- **État de départ :** PR #116 sur `feat/short-editorial-polish`, HEAD `a318b1f8f376e7a2f5b6a635bc2d376934c47d61`. Les workflows Linux [46143970097](https://github.com/Sreleew/GTA_rankd/actions/runs/46143970097) et Windows [46143970192](https://github.com/Sreleew/GTA_rankd/actions/runs/46143970192) échouaient chacun sur deux assertions.
+- **Causes :** un ancien test attendait encore un hook vide alors que le nouveau fallback générique était intentionnel ; un test UI cherchait le texte exact du hook dans le HTML au lieu de vérifier l'explication destinée à l'utilisateur. La PR avait aussi activé la signature par défaut, en contradiction avec la consigne versionnée dans `docs/WORKING-AGREEMENT.md`.
+- **Corrections :** le test de transcription ASR incomplète attend maintenant le hook générique de dernier recours, sans réutiliser le fragment comme citation. Si la transcription est incomplète, le moteur essaie d'abord de former un hook spécifique à partir du contexte ou de la note. Un test couvre ce cas. Le test UI vérifie le libellé explicatif. La signature reste facultative et désactivée par défaut dans les formulaires, le worker et le renderer.
+- **Validation sur le HEAD code `71687d41e3d981bc8f1d94cdade7bfd5c4312d38` :**
+- **Linux :** [workflow 46146373657](https://github.com/Sreleew/GTA_rankd/actions/runs/46146373657) réussi ; 283 tests passés, 1 ignoré ; Ruff, pip-audit et vérification du package Windows v0.9.3 réussis.
+- **Windows :** [workflow 46146373673](https://github.com/Sreleew/GTA_rankd/actions/runs/46146373673) réussi ; 284 tests passés ; Ruff, pip-audit, scripts PowerShell et vérification du package Windows v0.9.3 réussis.
+- **Historique CI :** les deux suites avaient d'abord échoué sur deux assertions obsolètes ; les corrections ont été poussées avant ces validations vertes.
+- **Release :** v0.9.3 reste la dernière version stable. Aucun numéro, tag ou `.release-approval` modifié. Aucune donnée locale ou configuration utilisateur modifiée. « Moments forts » reste en pause.
+- **Suite :** fusionner la PR #116 après confirmation des checks verts, puis reprendre l'amélioration du rendu Shorts sans toucher au chevauchement de sous-titres ni au cadrage confirmé. La PR #114 Daily Best Of reste à remettre à jour sur le `main` courant et à corriger avant validation.
