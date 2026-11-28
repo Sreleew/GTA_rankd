@@ -377,3 +377,76 @@ def test_whisper_clock_parser_rejects_out_of_range_minute_and_second_fields():
     assert _parse_whisper_timestamp("00:60:00.000") is None
     assert _parse_whisper_timestamp("00:00:60.000") is None
     assert _parse_whisper_timestamp("01:59:59.999") == 7199.999
+
+
+def test_whisper_dtw_capability_cache_is_invalidated_when_binary_changes(tmp_path, monkeypatch):
+    import os
+    from types import SimpleNamespace
+
+    import studio.web.transcribe as transcribe_module
+
+    binary = tmp_path / "fake-whisper"
+    binary.write_bytes(b"first binary")
+    calls = []
+
+    def fake_run(command, **kwargs):
+        calls.append(command)
+        help_text = "-dtw -ojf -nfa" if len(calls) == 1 else "-osrt"
+        return SimpleNamespace(returncode=0, stdout=help_text, stderr="")
+
+    monkeypatch.setattr(transcribe_module, "run_quiet", fake_run)
+    transcribe_module._whisper_supports_dtw_cached.cache_clear()
+    try:
+        assert transcribe_module._whisper_supports_dtw(binary) is True
+        assert transcribe_module._whisper_supports_dtw(binary) is True
+        assert len(calls) == 1
+
+        previous = binary.stat()
+        binary.write_bytes(b"replacement binary with a different size")
+        os.utime(binary, ns=(previous.st_atime_ns, previous.st_mtime_ns + 2_000_000_000))
+
+        assert transcribe_module._whisper_supports_dtw(binary) is False
+        assert len(calls) == 2
+    finally:
+        transcribe_module._whisper_supports_dtw_cached.cache_clear()
+
+
+def test_whisper_cli_help_is_reused_across_short_transcriptions(tmp_path):
+    import sys
+    import textwrap
+
+    counter = tmp_path / "help-calls.txt"
+    binary = tmp_path / "fake-whisper.py"
+    script = textwrap.dedent("""\
+        #!__PYTHON__
+        import pathlib, sys
+        if "--help" in sys.argv:
+            counter = pathlib.Path(__COUNTER__)
+            previous = counter.read_text(encoding="utf-8") if counter.exists() else ""
+            counter.write_text(previous + "help\\n", encoding="utf-8")
+            print("-osrt --output-srt")
+            raise SystemExit(0)
+        args = sys.argv[1:]
+        base = pathlib.Path(args[args.index("-of") + 1])
+        base.with_suffix(".srt").write_text(
+            chr(10).join(["1", "00:00:00,000 --> 00:00:01,000", "Hello there!", ""]),
+            encoding="utf-8",
+        )
+    """).lstrip().replace("__PYTHON__", sys.executable).replace("__COUNTER__", repr(str(counter)))
+    binary.write_text(script, encoding="utf-8")
+    binary.chmod(0o755)
+
+    model = tmp_path / "model.bin"
+    model.write_bytes(b"model")
+    audio = tmp_path / "audio.wav"
+    audio.write_bytes(b"audio")
+
+    first = transcribe_with_whisper_cpp(
+        audio, whisper_cli=binary, model_path=model, output_dir=tmp_path / "first"
+    )
+    second = transcribe_with_whisper_cpp(
+        audio, whisper_cli=binary, model_path=model, output_dir=tmp_path / "second"
+    )
+
+    assert first["status"] == second["status"] == "completed_segment_fallback"
+    assert counter.read_text(encoding="utf-8").splitlines() == ["help"]

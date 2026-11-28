@@ -1000,3 +1000,14 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Périmètre :** robustesse du hook automatique uniquement. Aucun changement au filtrage des sous-titres, à Whisper, au rendu FFmpeg, à la webcam, aux paramètres locaux, aux encodeurs AMD/CPU, au Daily Best Of ou aux releases. « Moments forts » reste en pause.
 - **Release :** v0.9.3 reste la dernière version stable ; aucun numéro de version, tag ou `.release-approval` modifié.
 - **Suite :** valider Linux/Windows puis comparer sur des clips réels le hook avec diarisation disponible, indisponible et ambiguë, en vérifiant que le fallback ne présente jamais sa transcription brute comme une attribution certaine au streamer.
+
+
+## 74. Réutiliser la détection des capacités Whisper pendant les imports Shorts groupés, 28 novembre 2026
+
+- **État de départ :** \`main\` au commit \`c6db2c2f79bfcbeaaf18dc0b5d58e90f36a24284\`, après fusion de la PR #113. La PR #114 reste ouverte sur le chantier Daily Best Of ; elle n'est pas modifiée dans ce lot prioritairement consacré au parcours Short.
+- **Défaut de performance :** chaque Short relançait \`whisper-cli --help\` pour vérifier la présence de DTW, \`-ojf\` et \`-nfa\`. Un import groupé de plusieurs clips répétait donc un démarrage de processus identique alors que le binaire n'avait pas changé.
+- **Correction :** mise en cache de la détection DTW pour les 16 dernières versions de binaires Whisper rencontrées dans la session. La clé combine chemin résolu, taille, date de modification et date de changement du fichier ; une mise à jour du binaire invalide donc automatiquement l'entrée. Les arguments de transcription, le choix DTW/SRT, les timestamps et le contenu rendu restent inchangés. Les erreurs de lancement et timeouts ne sont pas mis en cache.
+- **Tests ajoutés :** vérification qu'une seconde transcription réutilise le résultat \`--help\` ; vérification qu'un binaire modifié déclenche une nouvelle détection et peut changer le support DTW.
+- **Branche :** \`perf/cache-whisper-cli-capabilities\`. PR et validations Linux/Windows à renseigner après leur création ; aucune version, release ou approbation de publication modifiée.
+- **Périmètre :** optimisation du démarrage de Whisper uniquement. Pas de changement au modèle, aux paramètres GPU/Vulkan, à la diarisation, aux sous-titres, au hook, au cadrage, aux données locales, au Daily Best Of ou à « moments forts » (toujours en pause).
+- **Suite :** mesurer sur un import groupé réel le gain de temps et poursuivre l'amélioration du parcours Short sans augmenter le coût de traitement Whisper.

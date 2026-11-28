@@ -12,6 +12,7 @@ import subprocess
 import sys
 import tempfile
 import wave
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -45,6 +46,39 @@ def _binary_invocation(binary: Path) -> list[str]:
         return [sys.executable, str(binary)]
     return [str(binary)]
 
+
+@lru_cache(maxsize=16)
+def _whisper_supports_dtw_cached(
+    binary_path: str,
+    modified_ns: int,
+    changed_ns: int,
+    size: int,
+) -> bool:
+    """Cache DTW capability for this exact local Whisper binary version."""
+    binary = Path(binary_path)
+    result = run_quiet(
+        [*_binary_invocation(binary), "--help"],
+        cwd=str(binary.parent),
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=20,
+        check=False,
+    )
+    help_text = (result.stdout or "") + "\n" + (result.stderr or "")
+    return all(flag in help_text for flag in ("-dtw", "-ojf", "-nfa"))
+
+
+def _whisper_supports_dtw(binary: Path) -> bool:
+    """Reuse CLI capability detection across batch clips, invalidating on binary updates."""
+    stat = binary.stat()
+    return _whisper_supports_dtw_cached(
+        str(binary.resolve()),
+        stat.st_mtime_ns,
+        stat.st_ctime_ns,
+        stat.st_size,
+    )
 
 
 def inspect_whisper_cli(binary_value: str | Path, *, timeout: int = 12) -> dict[str, Any]:
@@ -356,17 +390,10 @@ def transcribe_with_whisper_cpp(
     srt_path = output_base.with_suffix(".srt")
     json_path = output_base.with_suffix(".json")
 
-    # Détecte le support DTW du binaire au lieu de supposer qu'il est présent.
-    # Le préfixe fonctionne aussi sous Windows pour les wrappers de test .py.
-    binary_command = _binary_invocation(binary)
+    # Détecte le support DTW une fois par version du binaire, y compris pour les imports groupés.
     supports_dtw = False
     try:
-        help_result = run_quiet(
-            [*binary_command, "--help"], cwd=str(binary.parent), capture_output=True,
-            text=True, encoding="utf-8", errors="replace", timeout=20, check=False,
-        )
-        help_text = (help_result.stdout or "") + "\n" + (help_result.stderr or "")
-        supports_dtw = all(flag in help_text for flag in ("-dtw", "-ojf", "-nfa"))
+        supports_dtw = _whisper_supports_dtw(binary)
     except (OSError, subprocess.TimeoutExpired):
         logger.info("Impossible de lire l'aide Whisper, utilisation du mode SRT standard.")
 
