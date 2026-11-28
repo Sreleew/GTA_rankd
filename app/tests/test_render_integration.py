@@ -7,7 +7,10 @@ import subprocess
 import pytest
 
 from studio.web.short_editor import WordTiming, create_ass_file
-from studio.web.short_renderer import MediaError, build_filter_complex, create_hook_sound_effect, probe_media, render_vertical_short
+from studio.web.short_renderer import (
+    MediaError, build_filter_complex, build_render_command, create_hook_sound_effect,
+    probe_media, render_vertical_short,
+)
 
 
 def test_smart_layout_fits_the_complete_source_inside_the_editorial_panel() -> None:
@@ -67,6 +70,48 @@ def test_hook_sound_effects_are_valid_and_distinct(tmp_path: Path, style: str) -
         assert audio.getnframes() >= 15000
         frames = audio.readframes(audio.getnframes())
         assert any(frames)
+
+
+def test_hook_sound_is_ducked_under_source_audio_and_keeps_the_first_syllable(monkeypatch, tmp_path: Path) -> None:
+    from studio.web import short_renderer
+
+    monkeypatch.setattr(short_renderer, "resolve_executable", lambda _: "ffmpeg")
+    sound_effect = tmp_path / "hook.wav"
+    sound_effect.write_bytes(b"synthetic cue")
+
+    command = build_render_command(
+        "ffmpeg",
+        tmp_path / "source.mp4",
+        tmp_path / "output.mp4",
+        sound_effect_path=sound_effect,
+        sound_effect_offset=0.12,
+    )
+    graph = command[command.index("-filter_complex") + 1]
+
+    assert "afade=t=in:st=0:d=0.020[main_audio]" in graph
+    assert "adelay=120:all=1[sfx_audio]" in graph
+    assert (
+        "[sfx_audio][main_audio]sidechaincompress="
+        "threshold=0.03:ratio=8:attack=8:release=180:makeup=1[sfx_ducked]"
+    ) in graph
+    assert "[main_audio][sfx_ducked]amix=inputs=2" in graph
+    assert "afade=t=in:st=0:d=0.120[main_audio]" not in graph
+
+
+def test_source_audio_uses_a_click_safe_short_fade_when_hook_sfx_is_disabled(monkeypatch, tmp_path: Path) -> None:
+    from studio.web import short_renderer
+
+    monkeypatch.setattr(short_renderer, "resolve_executable", lambda _: "ffmpeg")
+    command = build_render_command(
+        "ffmpeg",
+        tmp_path / "source.mp4",
+        tmp_path / "output.mp4",
+        sound_effect_path=None,
+    )
+
+    audio_filter = command[command.index("-af") + 1]
+    assert "afade=t=in:st=0:d=0.020" in audio_filter
+    assert "afade=t=in:st=0:d=0.120" not in audio_filter
 
 
 def test_unknown_hook_sound_style_falls_back_to_impact(tmp_path: Path) -> None:

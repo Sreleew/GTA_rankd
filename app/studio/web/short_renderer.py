@@ -21,6 +21,11 @@ from studio.process import run_quiet, run_quiet_with_progress
 logger = logging.getLogger(__name__)
 
 
+# Keep the streamer audible from the first syllable while protecting speech from the hook cue.
+_SHORT_AUDIO_FADE_IN_SECONDS = 0.02
+_HOOK_SFX_DUCKING = "sidechaincompress=threshold=0.03:ratio=8:attack=8:release=180:makeup=1"
+
+
 class MediaError(RuntimeError):
     """Erreur lisible pendant l'analyse ou le rendu vidéo."""
 
@@ -364,9 +369,10 @@ def build_render_command(
         offset_ms = max(0, int(max(0.0, float(sound_effect_offset)) * 1000))
         volume = max(0.01, min(0.35, float(sound_effect_volume)))
         audio_parts = [
-            f"[0:a:0]loudnorm=I={loudness_lufs}:TP=-1.5:LRA=11,afade=t=in:st=0:d=0.12[main_audio]",
+            f"[0:a:0]loudnorm=I={loudness_lufs}:TP=-1.5:LRA=11,afade=t=in:st=0:d={_SHORT_AUDIO_FADE_IN_SECONDS:.3f}[main_audio]",
             f"[1:a:0]volume={volume:.3f},adelay={offset_ms}:all=1[sfx_audio]",
-            "[main_audio][sfx_audio]amix=inputs=2:duration=first:dropout_transition=0:normalize=0,alimiter=limit=0.95[a]",
+            f"[sfx_audio][main_audio]{_HOOK_SFX_DUCKING}[sfx_ducked]",
+            "[main_audio][sfx_ducked]amix=inputs=2:duration=first:dropout_transition=0:normalize=0,alimiter=limit=0.95[a]",
         ]
         if duration and duration > 0.4:
             fade_start = max(0.12, duration - 0.18)
@@ -381,7 +387,7 @@ def build_render_command(
     else:
         command.extend(["-filter_complex", filter_graph, "-map", "[v]"])
         if has_audio:
-            audio_filter = f"loudnorm=I={loudness_lufs}:TP=-1.5:LRA=11,afade=t=in:st=0:d=0.12"
+            audio_filter = f"loudnorm=I={loudness_lufs}:TP=-1.5:LRA=11,afade=t=in:st=0:d={_SHORT_AUDIO_FADE_IN_SECONDS:.3f}"
             if duration and duration > 0.4:
                 fade_start = max(0.12, duration - 0.18)
                 audio_filter += f",afade=t=out:st={fade_start:.3f}:d=0.18"
