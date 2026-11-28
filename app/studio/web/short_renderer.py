@@ -371,8 +371,9 @@ def build_render_command(
         audio_parts = [
             f"[0:a:0]loudnorm=I={loudness_lufs}:TP=-1.5:LRA=11,afade=t=in:st=0:d={_SHORT_AUDIO_FADE_IN_SECONDS:.3f}[main_audio]",
             f"[1:a:0]volume={volume:.3f},adelay={offset_ms}:all=1[sfx_audio]",
-            f"[sfx_audio][main_audio]{_HOOK_SFX_DUCKING}[sfx_ducked]",
-            "[main_audio][sfx_ducked]amix=inputs=2:duration=first:dropout_transition=0:normalize=0,alimiter=limit=0.95[a]",
+            "[main_audio]asplit=2[main_for_ducking][main_for_mix]",
+            f"[sfx_audio][main_for_ducking]{_HOOK_SFX_DUCKING}[sfx_ducked]",
+            "[main_for_mix][sfx_ducked]amix=inputs=2:duration=first:dropout_transition=0:normalize=0,alimiter=limit=0.95[a]",
         ]
         if duration and duration > 0.4:
             fade_start = max(0.12, duration - 0.18)
