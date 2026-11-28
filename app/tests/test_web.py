@@ -1448,6 +1448,8 @@ def test_batch_twitch_import_is_available_in_shorts_ui():
     assert html.count('name="zoom_percent" min="0" max="20" value="8"') == 2
     assert html.count('name="dynamic_zoom" data-option-checkbox> Zoom dynamique') == 2
     assert 'name="dynamic_zoom" checked' not in html
+    assert html.count("Effet sonore du hook") == 2
+    assert "Whoosh discret au moment fort" not in html
     config_default = (Path(__file__).resolve().parents[1] / "config.yaml.default").read_text(encoding="utf-8")
     assert "\n  dynamic_zoom: false\n" in config_default
 
