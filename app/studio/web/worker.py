@@ -210,15 +210,35 @@ def _filter_hook_words(
         diarization_installed = importlib.util.find_spec("diarize") is not None
     except (ImportError, ValueError):
         diarization_installed = False
-    if diarization_installed:
-        return _filter_caption_words(audio_path, words)
-    return list(words), {
-        "mode": "hook_only",
-        "status": "diarization_not_installed",
-        "words_before": len(words),
-        "words_after": len(words),
-        "reason": "Diarisation non installée ; installation différée pour préserver la rapidité du Short.",
-    }
+    if not diarization_installed:
+        return list(words), {
+            "mode": "hook_only",
+            "status": "diarization_not_installed",
+            "words_before": len(words),
+            "words_after": len(words),
+            "reason": (
+                "Diarisation non installée ; transcription non filtrée utilisée pour le hook, "
+                "qui peut inclure des dialogues du jeu."
+            ),
+        }
+
+    filtered, report = _filter_caption_words(audio_path, words)
+    report = dict(report)
+    report["mode"] = "hook_only"
+    if report.get("status") == "diarization_unavailable":
+        diarization_reason = str(report.get("reason") or "Moteur de diarisation indisponible.")
+        return list(words), {
+            **report,
+            "mode": "hook_only",
+            "status": "diarization_unavailable_fallback",
+            "words_after": len(words),
+            "diarization_reason": diarization_reason,
+            "reason": (
+                "Diarisation indisponible ; transcription non filtrée utilisée pour le hook, "
+                "qui peut inclure des dialogues du jeu."
+            ),
+        }
+    return filtered, report
 
 
 def _filter_short_transcription_words(
@@ -592,15 +612,24 @@ class JobRunner:
                                 render_words,
                                 captions_requested=captions_requested,
                             )
-                            if captions_requested or speaker_filter_report.get("status") != "diarization_not_installed":
+                            filter_status = str(speaker_filter_report.get("status") or "")
+                            if captions_requested or filter_status != "diarization_not_installed":
                                 timings["speaker_filter_ms"] = max(
                                     0, int(round((time.perf_counter() - filter_started) * 1000))
                                 )
-                            elif hook_transcription_requested:
-                                transcription_warning = str(
-                                    speaker_filter_report.get("reason")
-                                    or "Filtrage vocal non installé pour le hook seul."
-                                )[:240]
+                            if hook_transcription_requested and not captions_requested:
+                                if filter_status in {
+                                    "diarization_not_installed",
+                                    "diarization_unavailable_fallback",
+                                    "ambiguous_speakers",
+                                    "low_word_attribution",
+                                    "no_speaker_segments",
+                                    "no_word_attribution",
+                                }:
+                                    transcription_warning = str(
+                                        speaker_filter_report.get("reason")
+                                        or "La voix du streamer n'a pas pu être isolée avec confiance."
+                                    )[:240]
                             check_cancelled()
                             render_transcript = " ".join(
                                 str(word.text) for word in render_words
