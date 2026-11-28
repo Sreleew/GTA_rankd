@@ -5,7 +5,7 @@
 - **Dernière mise à jour :** 28 novembre 2026
 - **Progression des releases :** à chaque relance de développement, le compte rendu doit indiquer le lot livré, les PR/CI, l'état d'avancement vers la prochaine version et une estimation actualisée du nombre de lots restants avant sa publication. Cette estimation doit être réévaluée à chaque session, sans promettre une date artificielle.
 - **Dernière version stable confirmée :** [v0.9.3](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.9.3), publiée le 28 novembre 2026.
-- **État :** les PR #92 à #116 sont intégrées dans `main` (HEAD `8f56d588b58df590d6d3e4fc236e17d4f2d56791` après fusion de la PR #116). La PR #114 est ouverte sur `feat/daily-best-of-mixed-dates`, HEAD code `e6638b60260ed0a0c32ad07ee5a93aa95b489143` ; ses validations Linux et Windows sont vertes. Elle couvre le Daily Best Of multi-jours, l'étiquette d'historique multi-date, les relances et la suppression des limites de durée Short standard. La signature `GTA_rankd` reste désactivée par défaut conformément à `docs/WORKING-AGREEMENT.md`. v0.9.3 reste la dernière release stable ; la prochaine publication attend la consolidation du parcours Short et la validation matérielle Windows/AMD.
+- **État :** les PR #92 à #116 sont intégrées dans `main` (PR #116 fusionnée au commit `8f56d588b58df590d6d3e4fc236e17d4f2d56791`) et la PR #114 est fusionnée au commit `bf120cc0f1bfe32b3dcd985bfe6d355ee578c751`. La branche `fix/short-render-output-integrity` prépare la PR #117, qui vérifie la durée réelle et la présence audio après encodage, et relance libx264 si une sortie AMF est incomplète. La signature `GTA_rankd` reste désactivée par défaut conformément à `docs/WORKING-AGREEMENT.md`. v0.9.3 reste la dernière release stable ; la prochaine publication attend la consolidation du parcours Short et la validation matérielle Windows/AMD.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
 - **Source active :** `app/`. Modifier directement les fichiers Python, JavaScript, CSS, HTML, tests et installateur présents dans ce dossier.
@@ -1050,5 +1050,15 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Validation sur le HEAD code final `e6638b60260ed0a0c32ad07ee5a93aa95b489143` :**
 - **Linux :** [workflow 46147363348](https://github.com/Sreleew/GTA_rankd/actions/runs/46147363348) réussi ; 279 tests passés, 1 ignoré ; Ruff, pip-audit, vérification du dépôt et package Windows v0.9.3 vérifiés.
 - **Windows :** [workflow 46147363384](https://github.com/Sreleew/GTA_rankd/actions/runs/46147363384) réussi ; 280 tests passés ; Ruff, pip-audit, scripts PowerShell et package Windows v0.9.3 vérifiés.
-- **Suite :** fusionner la PR #114 après ces deux validations vertes, puis reprendre une amélioration Shorts visible et valider le rendu réel sur Windows/AMD lorsque l'utilisateur pourra le lancer.
+- **Suite :** la PR #114 est fusionnée au commit `bf120cc0f1bfe32b3dcd985bfe6d355ee578c751` ; la priorité revient à la fiabilité du rendu Short, puis à une validation réelle sur Windows/AMD.
 - **Release :** v0.9.3 reste la dernière version stable. Aucun numéro, tag ou `.release-approval` modifié. Aucun fichier de configuration local ni média utilisateur modifié. « Moments forts » reste en pause.
+
+
+## 80. Vérifier l'intégrité réelle du rendu vertical Short, 28 novembre 2026
+
+- **Problème :** après FFmpeg, le renderer vérifiait la résolution mais pouvait accepter un export dont la durée réelle était tronquée ou dont la piste audio source avait disparu, puis laisser le worker marquer le Short comme terminé.
+- **Correction :** un contrôle commun vérifie maintenant la résolution attendue, la durée FFprobe avec une tolérance proportionnelle plafonnée à 0,5 s, et la présence audio lorsque la source en possède une. Une sortie incohérente déclenche aussi le repli libx264 après un essai AMF, au lieu de marquer le job terminé.
+- **Tests :** cas nominal avec dérive de conteneur mineure, vidéo tronquée rejetée, audio manquant rejeté, et assertion de durée réelle ajoutée au rendu FFmpeg d'intégration.
+- **Compatibilité :** le choix AMF puis repli libx264 est conservé ; le repli est désormais aussi déclenché si le fichier produit par AMF échoue au contrôle de durée, résolution ou audio. Aucun paramètre utilisateur, média ou fichier local n'est touché. La validation CI ne remplace pas un essai réel sur le GPU AMD de l'utilisateur.
+- **Validation :** PR #117 à ouvrir ; Linux et Windows doivent être verts avant fusion. Aucun numéro de version, tag ou `.release-approval` modifié.
+- **Suite :** après validation, continuer le parcours Twitch Short sur des sources réelles, sans réintroduire « Moments forts ».
