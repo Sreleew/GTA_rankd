@@ -1019,7 +1019,7 @@ async function submitShortBatch(form) {
     const payload = new FormData(form);
     payload.delete('url');
     payload.set('urls', urls);
-    $('[data-option-checkbox]', form).forEach(input => payload.set(input.name, input.checked ? 'true' : 'false'));
+    $$('[data-option-checkbox]', form).forEach(input => payload.set(input.name, input.checked ? 'true' : 'false'));
     const response = await fetch('/api/shorts/url/batch', { method: 'POST', body: payload });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.detail || `Erreur HTTP ${response.status}`);
