@@ -50,7 +50,7 @@ def test_best_of_plan_reports_selection_that_is_too_short_or_too_long(tmp_path: 
         ([], [], None, "au moins un Short"),
         ([], ["missing"], None, "plus dans la bibliothèque"),
         ([{"id": "a", "status": "validated"}], ["a", "a"], None, "une seule fois"),
-        ([{"id": "a", "status": "ready"}], ["a"], None, "validés"),
+        ([{"id": "a", "status": "ready", "date_key": "2026-11-27"}], ["a"], None, "validés"),
         ([{"id": "a", "status": "validated", "date_key": "2026-11-26"}], ["a"], "2026-11-27", "date sélectionnée"),
     ],
 )
