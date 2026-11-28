@@ -285,6 +285,22 @@ def test_srt_fallback_keeps_phrase_timing_and_wraps_for_vertical_safe_area(tmp_p
     assert r"\c&H0000C8F5&" not in caption_lines[0]
 
 
+def test_ass_uses_safe_segment_timing_when_timestamp_mode_is_not_supplied(tmp_path: Path):
+    words = [WordTiming(0.25, 1.65, "We got away from the police!")]
+    path = create_ass_file(
+        tmp_path / "unknown-timing.ass",
+        words=words,
+        captions_enabled=True,
+        brand_enabled=False,
+    )
+    content = path.read_text(encoding="utf-8-sig")
+    caption_lines = [line for line in content.splitlines() if line.startswith("Dialogue: 0,")]
+    assert len(caption_lines) == 1
+    assert "0:00:00.25,0:00:01.65" in caption_lines[0]
+    assert "WE GOT AWAY FROM THE POLICE!" in caption_lines[0]
+    assert r"\c&H0000C8F5&" not in caption_lines[0]
+
+
 def test_srt_fallback_scales_an_unbreakable_word_without_changing_its_timing(tmp_path: Path):
     words = [WordTiming(0.0, 1.8, "SUPERCALIFRAGILISTICEXPIALIDOCIOUS")]
     path = create_ass_file(
