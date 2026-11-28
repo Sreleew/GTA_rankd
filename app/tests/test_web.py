@@ -1521,6 +1521,7 @@ def test_batch_twitch_import_is_available_in_shorts_ui():
     assert "Transcription Whisper" in js
     assert "$('[data-option-checkbox]', form).forEach" in js
     assert "submitShortBatch($('#url-form'))" in js
+    assert "payload.set(input.name, input.checked ? 'true' : 'false')" in js
 
 
 def test_store_adds_batch_id_to_existing_database_without_losing_jobs(tmp_path: Path):
