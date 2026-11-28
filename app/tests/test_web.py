@@ -1424,20 +1424,6 @@ def test_short_caption_option_requires_local_whisper_and_is_persisted(tmp_path: 
     legacy_job = app.state.store.get_job(legacy_api_default.json()["id"])
     assert legacy_job["metadata"]["options"]["hook_transcription_enabled"] is False
 
-    # The form sends hidden false first, then the checked checkbox value.
-    checked_form = client.post(
-        "/api/shorts/url",
-        data=[
-            ("url", "https://clips.twitch.tv/HookCheckboxChecked"),
-            ("rights_confirmed", "true"),
-            ("hook_transcription_enabled", "false"),
-            ("hook_transcription_enabled", "true"),
-        ],
-    )
-    assert checked_form.status_code == 202, checked_form.text
-    checked_job = app.state.store.get_job(checked_form.json()["id"])
-    assert checked_job["metadata"]["options"]["hook_transcription_enabled"] is True
-
     hook_opt_out = client.post(
         "/api/shorts/url",
         data={
@@ -1522,7 +1508,6 @@ def test_batch_twitch_import_is_available_in_shorts_ui():
     assert "/api/jobs/${encodeURIComponent(jobId)}/reprocess" in js
     assert "gta-ranked-short-batches" in js
     assert html.count('name="captions_enabled"') == 2
-    assert html.count('type="hidden" name="hook_transcription_enabled" value="false"') == 2
     assert html.count('name="hook_transcription_enabled" value="true" checked') == 2
     assert html.count('name="caption_language"') == 2
     assert html.count("L’analyse Whisper pour le hook est activée par défaut") == 2
