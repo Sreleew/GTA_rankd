@@ -1431,6 +1431,8 @@ def test_batch_twitch_import_is_available_in_shorts_ui():
     html = (static / "index.html").read_text(encoding="utf-8")
     js = (static / "app.js").read_text(encoding="utf-8")
     assert html.count("peut couper les bords, y compris une webcam en bord d’écran") == 2
+    config_default = (Path(__file__).resolve().parents[1] / "config.yaml.default").read_text(encoding="utf-8")
+    assert "\n  dynamic_zoom: false\n" in config_default
 
     assert 'id="short-batch-urls"' in html
     assert 'id="short-batch-submit"' in html
