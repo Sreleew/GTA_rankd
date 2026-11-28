@@ -242,7 +242,7 @@ def test_real_vertical_short_render(tmp_path: Path) -> None:
     rendered = probe_media(output, ffprobe)
     assert result["encoder_used"] == "libx264"
     assert result["sound_effect_used"] is True
-    assert result["layout"] == "smart"
+    assert result["layout"] == "blur"
     assert result["source_duration"] == pytest.approx(2.0, abs=0.15)
     assert result["duration"] == pytest.approx(1.5, abs=0.01)
     assert result["trim_start"] == pytest.approx(0.25)
