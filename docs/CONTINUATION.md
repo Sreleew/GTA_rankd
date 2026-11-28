@@ -5,7 +5,7 @@
 - **Dernière mise à jour :** 28 novembre 2026
 - **Progression des releases :** à chaque relance de développement, le compte rendu doit indiquer le lot livré, les PR/CI, l'état d'avancement vers la prochaine version et une estimation actualisée du nombre de lots restants avant sa publication. Cette estimation doit être réévaluée à chaque session, sans promettre une date artificielle.
 - **Dernière version stable confirmée :** [v0.9.2](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.9.2), publiée le 28 novembre 2026.
-- **État :** PR #64 à #88 fusionnées dans `main`. La release v0.9.2 est publiée. Le prochain lot retire les miniatures graphiques personnalisées et simplifie le cadrage Short à la demande de l'utilisateur.
+- **État :** PR #64 à #89 fusionnées dans `main`. La release v0.9.2 est la dernière stable confirmée. PR #89 simplifie le montage Short et laisse les plateformes choisir la miniature ; la préparation de v0.9.3 est en cours.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
 - **Source active :** `app/`. Modifier directement les fichiers Python, JavaScript, CSS, HTML, tests et installateur présents dans ce dossier.
@@ -695,5 +695,14 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Pourquoi ce choix :** la source actuelle est une seule image de stream où la caméra est déjà incrustée. Le mode `blur` est directement disponible et ne jette pas de contenu ; le mode plein écran vertical coupe des côtés et peut supprimer la webcam ; séparer la webcam nécessiterait une source caméra distincte ou une sélection manuelle, qui n'est pas prévue.
 - **Miniatures :** retirer le traitement graphique et le bouton d'export custom. Garder seulement une image brute interne pour prévisualiser le Short ; elle n'est pas attachée au MP4 ni présentée comme la miniature de la plateforme.
 - **Préférences durables :** mises à jour dans `docs/WORKING-AGREEMENT.md`. Pas de formes, cadres blanc/jaune, logo GR, tag @GTARankedStudio ou branding ajouté sans demande explicite.
-- **Branche de travail :** `fix/platform-default-thumbnails`. Le lot regroupe suppression de l'overlay de miniature, mode blur par défaut, branding off, repli des anciens jobs smart vers blur, interface simplifiée et synchronisation v0.9.3.
-- **Suite :** valider Linux/Windows sur la PR, publier v0.9.3, puis évaluer un rendu réel avant d'ajouter d'autres traitements.
+- **Livré par la PR #89 :** retrait de l'overlay de miniature et de son export, mode `blur` par défaut, branding désactivé, conversion des anciens jobs `smart` vers `blur`, interface simplifiée. La PR est fusionnée dans `main` (commit `bb1c1623670237db98eacd51a71e2cd82d536934`).
+- **CI PR #89 :** audit Linux [46084844857](https://github.com/Sreleew/GTA_rankd/actions/runs/46084844857) et validation Windows [46084844858](https://github.com/Sreleew/GTA_rankd/actions/runs/46084844858) réussis.
+- **Suite :** préparer et valider la release stable v0.9.3, puis vérifier ses assets publiés.
+
+
+## 51. Préparation de la release v0.9.3, 28 novembre 2026
+
+- **Base :** PR #89 est fusionnée dans `main` et ses validations Linux/Windows ont réussi. Le changement de montage est intégré, mais la version disponible dans l'application reste v0.9.2 jusqu'à la publication.
+- **Préparation :** synchroniser `VERSION.txt`, `app/VERSION.txt`, `app/pyproject.toml`, `app/config.yaml.default`, les notes de version et `.release-approval` sur 0.9.3.
+- **Contenu :** capture Twitch entière sur fond flouté, sans cadre ni bande graphique ; branding désactivé par défaut ; miniatures custom retirées au profit du choix automatique de la plateforme.
+- **Suite :** PR de release vers `main`, vérifier CI Linux/Windows, fusionner puis confirmer l'exécution du workflow stable et la présence du ZIP/SHA-256. Après publication, examiner un Short réel sur le PC Windows pour vérifier le rendu visuel.
