@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import logging
 import math
@@ -146,6 +147,11 @@ def _captions_should_render(captions_requested: bool, words: list[Any]) -> bool:
     return bool(captions_requested and words)
 
 
+def _short_transcription_requested(captions_requested: bool, hook_transcription_requested: bool) -> bool:
+    """Transcribe when captions or automatic hook metadata need the local voice transcript."""
+    return bool(captions_requested or hook_transcription_requested)
+
+
 def _hook_sound_should_render(sfx_requested: bool, hook_text: str) -> bool:
     """Only add an opening cue when an actual editorial hook will be visible."""
     return bool(sfx_requested and str(hook_text or "").strip())
@@ -193,6 +199,38 @@ def _filter_caption_words(
     report["words_before"] = len(words)
     report["words_after"] = len(filtered)
     return filtered, report
+
+
+def _filter_hook_words(
+    audio_path: str | Path | None,
+    words: list[Any],
+) -> tuple[list[Any], dict[str, Any]]:
+    """Use diarization for hooks only when already installed; never install it just for a hook."""
+    try:
+        diarization_installed = importlib.util.find_spec("diarize") is not None
+    except (ImportError, ValueError):
+        diarization_installed = False
+    if diarization_installed:
+        return _filter_caption_words(audio_path, words)
+    return list(words), {
+        "mode": "hook_only",
+        "status": "diarization_not_installed",
+        "words_before": len(words),
+        "words_after": len(words),
+        "reason": "Diarisation non installée ; installation différée pour préserver la rapidité du Short.",
+    }
+
+
+def _filter_short_transcription_words(
+    audio_path: str | Path | None,
+    words: list[Any],
+    *,
+    captions_requested: bool,
+) -> tuple[list[Any], dict[str, Any]]:
+    """Keep strict voice filtering for captions and avoid installing diarization for hook-only jobs."""
+    if captions_requested:
+        return _filter_caption_words(audio_path, words)
+    return _filter_hook_words(audio_path, words)
 
 
 def _transcribe_short_excerpt(
@@ -355,23 +393,32 @@ class JobRunner:
             check_cancelled()
             options = (job.get("metadata") or {}).get("options", {})
             captions_requested = bool(options.get("captions_enabled", False))
+            hook_transcription_requested = bool(options.get("hook_transcription_enabled", False))
+            transcription_requested = _short_transcription_requested(
+                captions_requested, hook_transcription_requested
+            )
             caption_language_requested = str(options.get("caption_language") or "config")
             caption_language_effective = (
                 str(self.config.get("transcription", "language", default="en") or "en")
                 if caption_language_requested == "config"
                 else caption_language_requested
             )
-            if captions_requested:
+            whisper_ready = False
+            if transcription_requested:
                 whisper_cli = self.config.path_for("executables", "whisper_cli")
                 whisper_model = self.config.path_for("transcription", "model_path")
-                if not whisper_cli.is_file():
-                    raise MediaError("Le moteur whisper.cpp a disparu. Réinstalle-le depuis Paramètres.")
                 try:
                     model_valid = whisper_model.is_file() and whisper_model.stat().st_size >= 1024 * 1024 * 1024
                 except OSError:
                     model_valid = False
-                if not model_valid:
+                whisper_ready = whisper_cli.is_file() and model_valid
+                if captions_requested and not whisper_cli.is_file():
+                    raise MediaError("Le moteur whisper.cpp a disparu. Réinstalle-le depuis Paramètres.")
+                if captions_requested and not model_valid:
                     raise MediaError("Le modèle Whisper est absent ou incomplet. Télécharge-le à nouveau depuis Paramètres.")
+                if hook_transcription_requested and not captions_requested and not whisper_ready:
+                    transcription_requested = False
+                    logger.info("Analyse vocale du hook ignorée : Whisper ou son modèle local est indisponible.")
             source_path = Path(job["source_path"]) if job.get("source_path") else None
             source_url = job.get("source_url") or ""
             if source_path is None and source_url:
@@ -484,9 +531,17 @@ class JobRunner:
             _validate_short_excerpt_duration(trim_end - trim_start, maximum_short_duration)
             render_words: list[Any] = []
             render_transcript = ""
-            transcription_status = "disabled"
+            transcription_status = (
+                "unavailable"
+                if hook_transcription_requested and not captions_requested and not whisper_ready
+                else "disabled"
+            )
             transcription_timestamp_mode = None
-            transcription_warning = None
+            transcription_warning = (
+                "Whisper indisponible : le hook automatique utilisera uniquement la note ou le texte manuel."
+                if hook_transcription_requested and not captions_requested and not whisper_ready
+                else None
+            )
             captions_output_path: Path | None = None
             speaker_filter_report: dict[str, Any] = {
                 "mode": "dominant",
@@ -494,13 +549,20 @@ class JobRunner:
                 "words_before": 0,
                 "words_after": 0,
             }
-            if captions_requested:
+            if transcription_requested:
                 stage_started = time.perf_counter()
                 if not source_info["has_audio"]:
                     transcription_status = "no_audio"
                     transcription_warning = "La source ne contient aucune piste audio."
                 else:
-                    self.store.update_job(job_id, progress=43, message="Transcription locale des dialogues · Whisper")
+                    self.store.update_job(
+                        job_id, progress=43,
+                        message=(
+                            "Transcription locale pour le hook et les sous-titres · Whisper"
+                            if captions_requested
+                            else "Analyse vocale locale pour le hook · Whisper"
+                        ),
+                    )
                     try:
                         transcription = _transcribe_short_excerpt(
                             source_path,
@@ -517,25 +579,33 @@ class JobRunner:
                         transcription_timestamp_mode = transcription.get("timestamp_mode")
                         render_words = list(transcription.get("words") or [])
                         if render_words:
-                            self.store.update_job(
-                                job_id,
-                                progress=46,
-                                message="Filtrage local de la voix principale · sous-titres",
-                            )
+                            if captions_requested:
+                                self.store.update_job(
+                                    job_id,
+                                    progress=46,
+                                    message="Filtrage local de la voix principale · sous-titres",
+                                )
                             filter_started = time.perf_counter()
                             check_cancelled()
-                            render_words, speaker_filter_report = _filter_caption_words(
+                            render_words, speaker_filter_report = _filter_short_transcription_words(
                                 transcription.get("audio_path"),
                                 render_words,
+                                captions_requested=captions_requested,
                             )
-                            timings["speaker_filter_ms"] = max(
-                                0, int(round((time.perf_counter() - filter_started) * 1000))
-                            )
+                            if captions_requested or speaker_filter_report.get("status") != "diarization_not_installed":
+                                timings["speaker_filter_ms"] = max(
+                                    0, int(round((time.perf_counter() - filter_started) * 1000))
+                                )
+                            elif hook_transcription_requested:
+                                transcription_warning = str(
+                                    speaker_filter_report.get("reason")
+                                    or "Filtrage vocal non installé pour le hook seul."
+                                )[:240]
                             check_cancelled()
                             render_transcript = " ".join(
                                 str(word.text) for word in render_words
                             ).strip()
-                            if render_words:
+                            if render_words and captions_requested:
                                 try:
                                     captions_output_path = write_srt_file(
                                         output_dir / "captions.srt", render_words
@@ -547,10 +617,10 @@ class JobRunner:
                                         job_id,
                                         exc_info=True,
                                     )
-                            else:
+                            elif not render_words:
                                 transcription_warning = str(
                                     speaker_filter_report.get("reason")
-                                    or "Voix principale non isolée : sous-titres omis."
+                                    or "Voix principale non isolée : transcription écartée pour le hook et les sous-titres."
                                 )[:240]
                         else:
                             render_transcript = ""
@@ -566,7 +636,7 @@ class JobRunner:
                     except TranscriptionError as exc:
                         transcription_status = "error"
                         transcription_warning = str(exc).strip()[:240] or "Erreur de transcription Whisper."
-                        logger.warning("Sous-titres indisponibles pour le job %s : %s", job_id, exc)
+                        logger.warning("Transcription locale indisponible pour le job %s : %s", job_id, exc)
                 timings["transcription_ms"] = max(0, int(round((time.perf_counter() - stage_started) * 1000)))
                 check_cancelled()
 
@@ -735,11 +805,12 @@ class JobRunner:
                 "transcription_status": transcription_status,
                 "transcription_timestamp_mode": transcription_timestamp_mode,
                 "speaker_filter": speaker_filter_report,
-                "transcription_language_requested": caption_language_requested if captions_requested else None,
-                "transcription_language": caption_language_effective if captions_requested else None,
+                "transcription_language_requested": caption_language_requested if (captions_requested or hook_transcription_requested) else None,
+                "transcription_language": caption_language_effective if (captions_requested or hook_transcription_requested) else None,
                 "transcribed_words": len(render_words),
                 "transcription_warning": transcription_warning,
                 "captions_enabled": captions_requested,
+                "hook_transcription_enabled": hook_transcription_requested,
                 "captions_path": str(captions_output_path) if captions_output_path else None,
                 "transcript": render_transcript,
                 "options": options,

@@ -168,7 +168,7 @@ def test_whisper_gpu_button_uses_fresh_script_and_visible_feedback():
     static = Path(__file__).resolve().parents[1] / "studio" / "web" / "static"
     html = (static / "index.html").read_text(encoding="utf-8")
     js = (static / "app.js").read_text(encoding="utf-8")
-    assert '<script src="/static/app.js?v=0.9.4-main-voice-captions"></script>' in html
+    assert '<script src="/static/app.js?v=0.9.4-hook-transcription-toggle"></script>' in html
     assert '<button type="button" class="mini-button" id="verify-whisper-gpu"' in html
     assert "/api/models/whisper/verify" in js
     assert "if (verifyGpuButton) verifyGpuButton.addEventListener('click', verifyWhisperGpu);" in js
@@ -241,7 +241,7 @@ def test_ollama_verify_button_has_a_dedicated_visible_handler():
     static = Path(__file__).resolve().parents[1] / "studio" / "web" / "static"
     html = (static / "index.html").read_text(encoding="utf-8")
     js = (static / "app.js").read_text(encoding="utf-8")
-    assert '<script src="/static/app.js?v=0.9.4-main-voice-captions"></script>' in html
+    assert '<script src="/static/app.js?v=0.9.4-hook-transcription-toggle"></script>' in html
     assert '<button type="button" class="mini-button" id="verify-ollama"' in html
     assert "#refresh-models-secondary" in js
     assert "/api/models/ollama/verify" in js
@@ -1377,12 +1377,29 @@ def test_short_caption_option_requires_local_whisper_and_is_persisted(tmp_path: 
         "url": "https://clips.twitch.tv/CaptionTestClip",
         "rights_confirmed": "true",
         "captions_enabled": "true",
+        "hook_transcription_enabled": "true",
         "caption_language": "fr",
     }
     unavailable = client.post("/api/shorts/url", data=payload)
     assert unavailable.status_code == 409
     assert "whisper.cpp" in unavailable.json()["detail"]
     assert app.state.store.list_jobs(limit=10) == []
+
+    # Automatic hook transcription is optional and must not block imports when
+    # Whisper is not installed; the worker will fall back to the note/manual hook.
+    hook_only = client.post(
+        "/api/shorts/url",
+        data={
+            "url": "https://clips.twitch.tv/HookWithoutCaptions",
+            "rights_confirmed": "true",
+            "hook_transcription_enabled": "true",
+            "captions_enabled": "false",
+        },
+    )
+    assert hook_only.status_code == 202, hook_only.text
+    hook_only_job = app.state.store.get_job(hook_only.json()["id"])
+    assert hook_only_job["metadata"]["options"]["hook_transcription_enabled"] is True
+    assert hook_only_job["metadata"]["options"]["captions_enabled"] is False
 
     whisper_cli = config.path_for("executables", "whisper_cli")
     whisper_cli.parent.mkdir(parents=True, exist_ok=True)
@@ -1396,7 +1413,29 @@ def test_short_caption_option_requires_local_whisper_and_is_persisted(tmp_path: 
     assert accepted.status_code == 202, accepted.text
     job = app.state.store.get_job(accepted.json()["id"])
     assert job["metadata"]["options"]["captions_enabled"] is True
+    assert job["metadata"]["options"]["hook_transcription_enabled"] is True
     assert job["metadata"]["options"]["caption_language"] == "fr"
+
+    legacy_api_default = client.post(
+        "/api/shorts/url",
+        data={"url": "https://clips.twitch.tv/HookOptionOmitted", "rights_confirmed": "true"},
+    )
+    assert legacy_api_default.status_code == 202, legacy_api_default.text
+    legacy_job = app.state.store.get_job(legacy_api_default.json()["id"])
+    assert legacy_job["metadata"]["options"]["hook_transcription_enabled"] is False
+
+    hook_opt_out = client.post(
+        "/api/shorts/url",
+        data={
+            "url": "https://clips.twitch.tv/HookTranscriptionDisabled",
+            "rights_confirmed": "true",
+            "hook_transcription_enabled": "false",
+            "captions_enabled": "false",
+        },
+    )
+    assert hook_opt_out.status_code == 202, hook_opt_out.text
+    hook_opt_out_job = app.state.store.get_job(hook_opt_out.json()["id"])
+    assert hook_opt_out_job["metadata"]["options"]["hook_transcription_enabled"] is False
 
     invalid_language = client.post(
         "/api/shorts/url",
@@ -1416,11 +1455,12 @@ def test_short_caption_option_requires_local_whisper_and_is_persisted(tmp_path: 
     upload = client.post(
         "/api/shorts/upload",
         files={"file": ("caption-upload.mp4", b"video", "video/mp4")},
-        data={"rights_confirmed": "true", "captions_enabled": "true", "caption_language": "es"},
+        data={"rights_confirmed": "true", "captions_enabled": "true", "hook_transcription_enabled": "true", "caption_language": "es"},
     )
     assert upload.status_code == 202, upload.text
     uploaded_job = app.state.store.get_job(upload.json()["id"])
     assert uploaded_job["metadata"]["options"]["captions_enabled"] is True
+    assert uploaded_job["metadata"]["options"]["hook_transcription_enabled"] is True
     assert uploaded_job["metadata"]["options"]["caption_language"] == "es"
     assert uploaded_job["metadata"]["options"]["dynamic_zoom"] is False
 
@@ -1428,6 +1468,7 @@ def test_short_caption_option_requires_local_whisper_and_is_persisted(tmp_path: 
         "urls": "https://clips.twitch.tv/CaptionBatchOne\nhttps://clips.twitch.tv/CaptionBatchTwo",
         "rights_confirmed": "true",
         "captions_enabled": "true",
+        "hook_transcription_enabled": "true",
         "caption_language": "auto",
     }
     batch = client.post("/api/shorts/url/batch", data=batch_payload)
@@ -1435,6 +1476,7 @@ def test_short_caption_option_requires_local_whisper_and_is_persisted(tmp_path: 
     batch_jobs = [app.state.store.get_job(item["id"]) for item in batch.json()["jobs"]]
     assert len(batch_jobs) == 2
     assert all(item["metadata"]["options"]["captions_enabled"] is True for item in batch_jobs)
+    assert all(item["metadata"]["options"]["hook_transcription_enabled"] is True for item in batch_jobs)
     assert all(item["metadata"]["options"]["caption_language"] == "auto" for item in batch_jobs)
 
 
@@ -1458,7 +1500,7 @@ def test_batch_twitch_import_is_available_in_shorts_ui():
     assert 'id="short-batch-urls"' in html
     assert 'id="short-batch-submit"' in html
     assert 'id="short-batch-tracker"' in html
-    assert "v=0.9.4-main-voice-captions" in html
+    assert "v=0.9.4-hook-transcription-toggle" in html
     assert "JUSQU'À 10 URLS" in html
     assert "/api/shorts/url/batch" in js
     assert "/api/shorts/batches/" in js
@@ -1466,15 +1508,20 @@ def test_batch_twitch_import_is_available_in_shorts_ui():
     assert "/api/jobs/${encodeURIComponent(jobId)}/reprocess" in js
     assert "gta-ranked-short-batches" in js
     assert html.count('name="captions_enabled"') == 2
+    assert html.count('name="hook_transcription_enabled" value="true" checked') == 2
     assert html.count('name="caption_language"') == 2
+    assert html.count("L’analyse Whisper pour le hook est activée par défaut") == 2
+    assert html.count("Les sous-titres restent facultatifs et désactivés par défaut") == 2
     assert "Réglage du Studio" in html
     assert "Détection automatique" in html
     assert "Modèle multilingue local" in html
     assert "large-v3-turbo" in html
     assert "metadata.transcription_warning" in js
+    assert "Analyse vocale écartée" in js
     assert "Transcription Whisper" in js
     assert "$('[data-option-checkbox]', form).forEach" in js
     assert "submitShortBatch($('#url-form'))" in js
+    assert js.count("$$('[data-option-checkbox]', form).forEach(input => payload.set(input.name, input.checked ? 'true' : 'false'))") == 2
 
 
 def test_store_adds_batch_id_to_existing_database_without_losing_jobs(tmp_path: Path):
