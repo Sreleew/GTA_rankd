@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import logging
 import math
@@ -198,6 +199,38 @@ def _filter_caption_words(
     report["words_before"] = len(words)
     report["words_after"] = len(filtered)
     return filtered, report
+
+
+def _filter_hook_words(
+    audio_path: str | Path | None,
+    words: list[Any],
+) -> tuple[list[Any], dict[str, Any]]:
+    """Use diarization for hooks only when already installed; never install it just for a hook."""
+    try:
+        diarization_installed = importlib.util.find_spec("diarize") is not None
+    except (ImportError, ValueError):
+        diarization_installed = False
+    if diarization_installed:
+        return _filter_caption_words(audio_path, words)
+    return list(words), {
+        "mode": "hook_only",
+        "status": "diarization_not_installed",
+        "words_before": len(words),
+        "words_after": len(words),
+        "reason": "Diarisation non installée ; installation différée pour préserver la rapidité du Short.",
+    }
+
+
+def _filter_short_transcription_words(
+    audio_path: str | Path | None,
+    words: list[Any],
+    *,
+    captions_requested: bool,
+) -> tuple[list[Any], dict[str, Any]]:
+    """Keep strict voice filtering for captions and avoid installing diarization for hook-only jobs."""
+    if captions_requested:
+        return _filter_caption_words(audio_path, words)
+    return _filter_hook_words(audio_path, words)
 
 
 def _transcribe_short_excerpt(
@@ -546,20 +579,28 @@ class JobRunner:
                         transcription_timestamp_mode = transcription.get("timestamp_mode")
                         render_words = list(transcription.get("words") or [])
                         if render_words:
-                            self.store.update_job(
-                                job_id,
-                                progress=46,
-                                message="Filtrage local de la voix principale · hook et sous-titres",
-                            )
+                            if captions_requested:
+                                self.store.update_job(
+                                    job_id,
+                                    progress=46,
+                                    message="Filtrage local de la voix principale · sous-titres",
+                                )
                             filter_started = time.perf_counter()
                             check_cancelled()
-                            render_words, speaker_filter_report = _filter_caption_words(
+                            render_words, speaker_filter_report = _filter_short_transcription_words(
                                 transcription.get("audio_path"),
                                 render_words,
+                                captions_requested=captions_requested,
                             )
-                            timings["speaker_filter_ms"] = max(
-                                0, int(round((time.perf_counter() - filter_started) * 1000))
-                            )
+                            if captions_requested or speaker_filter_report.get("status") != "diarization_not_installed":
+                                timings["speaker_filter_ms"] = max(
+                                    0, int(round((time.perf_counter() - filter_started) * 1000))
+                                )
+                            elif hook_transcription_requested:
+                                transcription_warning = str(
+                                    speaker_filter_report.get("reason")
+                                    or "Filtrage vocal non installé pour le hook seul."
+                                )[:240]
                             check_cancelled()
                             render_transcript = " ".join(
                                 str(word.text) for word in render_words

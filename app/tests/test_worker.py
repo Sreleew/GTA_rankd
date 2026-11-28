@@ -145,6 +145,26 @@ def test_short_transcription_can_run_for_hook_without_burning_captions():
     assert worker._captions_should_render(False, words) is False
 
 
+def test_hook_only_transcription_does_not_install_optional_diarization(tmp_path: Path, monkeypatch):
+    from studio.web.short_editor import WordTiming
+
+    words = [WordTiming(0.1, 0.4, "WAIT"), WordTiming(0.5, 0.8, "NO WAY")]
+    monkeypatch.setattr(worker.importlib.util, "find_spec", lambda name: None)
+
+    def unexpected_diarization(*args, **kwargs):
+        raise AssertionError("Hook-only analysis must not install or invoke diarization")
+
+    monkeypatch.setattr(worker, "diarize_and_filter", unexpected_diarization)
+    filtered, report = worker._filter_short_transcription_words(
+        tmp_path / "unused.wav", words, captions_requested=False
+    )
+
+    assert filtered == words
+    assert report["status"] == "diarization_not_installed"
+    assert report["words_before"] == 2
+    assert report["words_after"] == 2
+
+
 def test_caption_voice_filter_keeps_only_words_returned_by_the_diarizer(tmp_path: Path, monkeypatch):
     from studio.web.short_editor import WordTiming
 
