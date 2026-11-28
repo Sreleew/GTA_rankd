@@ -10,7 +10,7 @@ from studio.config import load_config
 from studio.web.app import create_app, safe_upload_name
 from studio.web.short_renderer import build_filter_complex, build_render_command
 import studio.web.short_renderer as short_renderer
-from studio.web.app import _validate_edit_options
+from studio.web.app import _resolve_dynamic_zoom, _validate_edit_options
 from studio.web.store import Store
 
 
@@ -37,6 +37,18 @@ def test_blur_layout_keeps_the_full_landscape_source_visible():
     graph = build_filter_complex(1080, 1920, layout="blur", dynamic_zoom=False)
     assert "boxblur" in graph
     assert "overlay=(W-w)/2:(H-h)/2" in graph
+
+
+def test_dynamic_zoom_uses_explicit_request_then_user_config():
+    class Config:
+        def get(self, section, key, default=None):
+            assert (section, key) == ("shorts", "dynamic_zoom")
+            return True
+
+    config = Config()
+    assert _resolve_dynamic_zoom(config, None) is True
+    assert _resolve_dynamic_zoom(config, False) is False
+    assert _resolve_dynamic_zoom(config, True) is True
 
 
 def test_edit_options_are_validated_and_clamped_by_api():
