@@ -275,7 +275,7 @@ def _fallback_metadata(
         complete_phrase = _last_complete_phrase(raw_text)
         hook = _limit_words(custom_hook or _fallback_hook(complete_phrase or raw_text, note), 6)
         if not custom_hook and _is_incomplete_phrase(hook):
-            hook = ""
+            hook = _limit_words(_fallback_hook("", custom_context or note), 6)
         if not hook:
             # A generic editorial cue is acceptable only when no supported specific hook exists.
             hook = "WAIT FOR THE REACTION"

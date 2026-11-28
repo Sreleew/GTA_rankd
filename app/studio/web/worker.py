@@ -717,7 +717,7 @@ class JobRunner:
                 font_name=str(self.config.get("branding", "font_name", default="Arial")),
                 captions_enabled=captions_active,
                 word_timed_captions=transcription_timestamp_mode == "word_dtw",
-                brand_enabled=bool(options.get("brand_enabled", True)),
+                brand_enabled=bool(options.get("brand_enabled", False)),
                 layout=layout,
             )
             shutil.copy2(ass_path, output_dir / "overlay.ass")
