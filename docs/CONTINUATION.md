@@ -736,4 +736,5 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Périmètre :** aucun changement au modèle Whisper, aux options de transcription, aux paramètres utilisateur, aux données locales, aux encodeurs AMD/CPU, aux miniatures ou à la version publiée. « Moments forts » reste en pause.
 - **Release :** v0.9.3 reste la dernière version stable ; aucune nouvelle release ni approbation de publication n'est créée.
 - **Limite :** aucun rendu réel Whisper ni benchmark RX 9060 XT n'est revendiqué.
-- **Suite :** corriger les éventuels échecs CI, puis vérifier un extrait Whisper DTW et un fallback SRT sur Windows avant d'élargir le chantier au Daily Best Of.
+- **CI initiale :** Linux et Windows ont tous deux réussi Ruff et pip-audit, puis échoué au contrôle `git show --check` à cause d'une ligne vide supplémentaire à la fin du test. Les suites de régression et le packaging ont été sautés par le garde-fou. La ligne vide superflue a été supprimée dans le commit `9b7229c` ; les validations doivent repartir sur ce nouveau commit.
+- **Suite :** confirmer les deux CI, puis vérifier un extrait Whisper DTW et un fallback SRT sur Windows avant d'élargir le chantier au Daily Best Of.
