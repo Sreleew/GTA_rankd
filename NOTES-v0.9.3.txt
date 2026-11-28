@@ -1,0 +1,12 @@
+GTA Ranked Studio v0.9.3
+
+Montage Short simplifié :
+- La capture Twitch complète (jeu et webcam déjà incrustée) reste visible au centre du format vertical, avec un fond flouté pour remplir l'écran.
+- Suppression des cadres, bandes et accents graphiques qui coupaient l'image.
+- Signature de chaîne désactivée par défaut ; lorsqu'elle est activée, seul le nom `GTA_rankd` apparaît discrètement.
+- Retrait des miniatures graphiques personnalisées et de leur bouton d'export. Les plateformes choisissent l'image lors de la publication ; l'aperçu interne reste une capture brute.
+- Les anciens jobs enregistrés avec le cadrage `smart` utilisent désormais le fond flouté.
+
+Validation :
+- PR #89 intégrée dans `main` après réussite des contrôles Linux et Windows.
+- Release v0.9.3 : package et SHA-256 construits et vérifiés par le workflow officiel de publication.
