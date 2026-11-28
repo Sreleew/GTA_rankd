@@ -342,6 +342,61 @@ def test_short_render_fallback_restarts_progress_for_cpu_encoder(tmp_path: Path,
     assert progress == [0.0, 50.0, 0.0, 25.0]
 
 
+def test_short_render_falls_back_when_preferred_encoder_output_is_truncated(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from studio.web import short_renderer
+
+    source = tmp_path / "source.mp4"
+    output = tmp_path / "short.mp4"
+    thumbnail = tmp_path / "thumbnail.jpg"
+    source.write_bytes(b"source")
+    source_info = {
+        "duration": 12.0, "width": 1920, "height": 1080, "has_audio": True,
+        "fps": 30.0, "video_codec": "h264", "audio_codec": "aac",
+    }
+    output_infos = [
+        {"duration": 6.0, "width": 360, "height": 640, "has_audio": True},
+        {"duration": 8.0, "width": 360, "height": 640, "has_audio": True},
+    ]
+    probed: list[Path] = []
+    encoders: list[str] = []
+
+    def fake_probe(path, ffprobe="ffprobe", **kwargs):
+        probed.append(Path(path))
+        return output_infos.pop(0)
+
+    def fake_build(*args, **kwargs):
+        encoders.append(kwargs["encoder"])
+        return ["ffmpeg", str(output)]
+
+    def fake_run(command, timeout=None, cwd=None, progress_callback=None):
+        output.write_bytes(b"rendered mp4")
+        return subprocess.CompletedProcess(command, 0, "", "")
+
+    def fake_thumbnail(*args, **kwargs):
+        thumbnail.write_bytes(b"jpeg")
+        return 7.0
+
+    monkeypatch.setattr(short_renderer, "probe_media", fake_probe)
+    monkeypatch.setattr(short_renderer, "_available_encoder_listing", lambda _: "h264_amf libx264")
+    monkeypatch.setattr(short_renderer, "build_render_command", fake_build)
+    monkeypatch.setattr(short_renderer, "run_command", fake_run)
+    monkeypatch.setattr(short_renderer, "_extract_best_thumbnail", fake_thumbnail)
+
+    result = render_vertical_short(
+        source, output, thumbnail,
+        source_media_info=source_info,
+        preferred_encoder="h264_amf",
+        fallback_encoder="libx264",
+        width=360, height=640,
+        trim_start=1.0, trim_duration=8.0,
+    )
+
+    assert result["encoder_used"] == "libx264"
+    assert encoders == ["h264_amf", "libx264"]
+    assert len(probed) == 2
+
 def test_render_reuses_source_probe_and_returns_output_probe(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     from studio.web import short_renderer
 

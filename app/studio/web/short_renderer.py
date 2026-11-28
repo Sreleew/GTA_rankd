@@ -477,7 +477,9 @@ def render_vertical_short(
     if preferred_encoder not in encoder_text:
         encoders = [fallback_encoder]
     last_error: Exception | None = None
-    encode_started = time.perf_counter()
+    encode_elapsed_ms = 0
+    output_probe_ms = 0
+    rendered_info: dict[str, Any] | None = None
     for encoder in encoders:
         if output_path.exists():
             output_path.unlink()
@@ -495,23 +497,51 @@ def render_vertical_short(
             sound_effect_volume=sound_effect_volume,
         )
         try:
-            if progress_callback is not None:
-                # FFmpeg reports encoded media time, not elapsed wall-clock time.
-                command[-1:-1] = ["-progress", "pipe:1", "-stats_period", "1", "-nostats"]
-                def notify_progress(percent: float) -> None:
-                    try:
-                        progress_callback(percent)
-                    except Exception:
-                        logger.exception("Le callback de progression du Short a échoué.")
+            encode_started = time.perf_counter()
+            try:
+                if progress_callback is not None:
+                    # FFmpeg reports encoded media time, not elapsed wall-clock time.
+                    command[-1:-1] = ["-progress", "pipe:1", "-stats_period", "1", "-nostats"]
 
-                def report_encoding_progress(elapsed_seconds: float) -> None:
-                    ratio = max(0.0, min(1.0, float(elapsed_seconds) / output_duration))
-                    notify_progress(ratio * 100.0)
+                    def notify_progress(percent: float) -> None:
+                        try:
+                            progress_callback(percent)
+                        except Exception:
+                            logger.exception("Le callback de progression du Short a échoué.")
 
-                notify_progress(0.0)
-                run_command(command, timeout=max(300, int(info["duration"] * 30)), cwd=project_root, progress_callback=report_encoding_progress)
-            else:
-                run_command(command, timeout=max(300, int(info["duration"] * 30)), cwd=project_root)
+                    def report_encoding_progress(elapsed_seconds: float) -> None:
+                        ratio = max(0.0, min(1.0, float(elapsed_seconds) / output_duration))
+                        notify_progress(ratio * 100.0)
+
+                    notify_progress(0.0)
+                    run_command(
+                        command,
+                        timeout=max(300, int(info["duration"] * 30)),
+                        cwd=project_root,
+                        progress_callback=report_encoding_progress,
+                    )
+                else:
+                    run_command(command, timeout=max(300, int(info["duration"] * 30)), cwd=project_root)
+            finally:
+                encode_elapsed_ms += max(
+                    0, int(round((time.perf_counter() - encode_started) * 1000))
+                )
+
+            probe_started = time.perf_counter()
+            try:
+                candidate_info = probe_media(output_path, ffprobe)
+            finally:
+                output_probe_ms += max(
+                    0, int(round((time.perf_counter() - probe_started) * 1000))
+                )
+            _validate_rendered_output(
+                candidate_info,
+                expected_duration=output_duration,
+                expected_width=width,
+                expected_height=height,
+                expect_audio=bool(info["has_audio"]),
+            )
+            rendered_info = candidate_info
             info["encoder_used"] = encoder
             break
         except MediaError as exc:
@@ -520,17 +550,10 @@ def render_vertical_short(
     else:
         raise MediaError(f"Échec de l'encodage avec les encodeurs disponibles : {last_error}")
 
-    performance_timings["encode_ms"] = max(0, int(round((time.perf_counter() - encode_started) * 1000)))
-    probe_started = time.perf_counter()
-    rendered_info = probe_media(output_path, ffprobe)
-    performance_timings["output_probe_ms"] = max(0, int(round((time.perf_counter() - probe_started) * 1000)))
-    _validate_rendered_output(
-        rendered_info,
-        expected_duration=output_duration,
-        expected_width=width,
-        expected_height=height,
-        expect_audio=bool(info["has_audio"]),
-    )
+    if rendered_info is None:
+        raise MediaError(f"Échec de l'encodage avec les encodeurs disponibles : {last_error}")
+    performance_timings["encode_ms"] = encode_elapsed_ms
+    performance_timings["output_probe_ms"] = output_probe_ms
     # Sample the selected excerpt and avoid blank sky/transition frames for the cover.
     thumbnail_started = time.perf_counter()
     preferred_thumbnail_time = peak_timestamp if thumbnail_timestamp is None else thumbnail_timestamp

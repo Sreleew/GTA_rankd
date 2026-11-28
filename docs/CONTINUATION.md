@@ -1057,7 +1057,7 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 ## 80. Vérifier l'intégrité réelle du rendu vertical Short, 28 novembre 2026
 
 - **Problème :** après FFmpeg, le renderer vérifiait la résolution mais pouvait accepter un export dont la durée réelle était tronquée ou dont la piste audio source avait disparu, puis laisser le worker marquer le Short comme terminé.
-- **Correction :** un contrôle commun vérifie maintenant la résolution attendue, la durée FFprobe avec une tolérance proportionnelle plafonnée à 0,5 s, et la présence audio lorsque la source en possède une. Une sortie incohérente échoue avant validation du job.
+- **Correction :** un contrôle commun vérifie maintenant la résolution attendue, la durée FFprobe avec une tolérance proportionnelle plafonnée à 0,5 s, et la présence audio lorsque la source en possède une. Une sortie incohérente déclenche aussi le repli libx264 après un essai AMF, au lieu de marquer le job terminé.
 - **Tests :** cas nominal avec dérive de conteneur mineure, vidéo tronquée rejetée, audio manquant rejeté, et assertion de durée réelle ajoutée au rendu FFmpeg d'intégration.
 - **Compatibilité :** le choix AMF puis repli libx264 existant n'est pas modifié. Aucun paramètre utilisateur, média ou fichier local n'est touché. La validation CI ne remplace pas un essai réel sur le GPU AMD de l'utilisateur.
 - **Validation :** PR #117 à ouvrir ; Linux et Windows doivent être verts avant fusion. Aucun numéro de version, tag ou `.release-approval` modifié.
