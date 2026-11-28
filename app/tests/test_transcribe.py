@@ -265,3 +265,115 @@ def test_inspect_whisper_cli_requires_no_flash_attention_for_dtw(tmp_path: Path)
     assert result['available'] is True
     assert result['dtw_supported'] is False
     assert '-nfa' in result['message']
+
+
+def test_whisper_json_dtw_discards_tokens_outside_their_segment(tmp_path: Path):
+    import json
+
+    path = tmp_path / "out-of-bounds.json"
+    path.write_text(json.dumps({"transcription": [{
+        "timestamps": {"from": "00:00:01.000", "to": "00:00:02.000"},
+        "tokens": [
+            {"text": " before", "t_dtw": 90},
+            {"text": " inside", "t_dtw": 125},
+            {"text": " after", "t_dtw": 210},
+        ],
+    }]}), encoding="utf-8")
+
+    words = parse_whisper_json_words(path)
+
+    assert [word.text for word in words] == ["inside"]
+    assert words[0].start == 1.25
+    assert words[0].end == 2.0
+
+
+def test_whisper_json_dtw_skips_missing_or_invalid_segment_bounds(tmp_path: Path):
+    import json
+
+    path = tmp_path / "invalid-segments.json"
+    path.write_text(json.dumps({"transcription": [
+        {
+            "timestamps": {"from": "00:00:99.000", "to": "00:01:40.000"},
+            "tokens": [{"text": " invalid", "t_dtw": 120}],
+        },
+        {
+            "timestamps": {"from": "00:00:02.000", "to": "00:00:01.000"},
+            "tokens": [{"text": " reversed", "t_dtw": 150}],
+        },
+        {
+            "timestamps": {"from": "00:00:03.000"},
+            "tokens": [{"text": " missing", "t_dtw": 320}],
+        },
+    ]}), encoding="utf-8")
+
+    assert parse_whisper_json_words(path) == []
+
+
+def test_whisper_json_dtw_sorts_token_times_before_grouping_words(tmp_path: Path):
+    import json
+
+    path = tmp_path / "unordered-tokens.json"
+    path.write_text(json.dumps({"transcription": [{
+        "timestamps": {"from": "00:00:00.000", "to": "00:00:02.000"},
+        "tokens": [
+            {"text": " there", "t_dtw": 55},
+            {"text": " Hello", "t_dtw": 12},
+        ],
+    }]}), encoding="utf-8")
+
+    words = parse_whisper_json_words(path)
+
+    assert [word.text for word in words] == ["Hello", "there"]
+    assert [word.start for word in words] == [0.12, 0.55]
+
+
+def test_whisper_cli_falls_back_to_srt_when_dtw_bounds_are_invalid(tmp_path: Path):
+    import sys
+    import textwrap
+
+    binary = tmp_path / "fake-whisper-invalid-dtw.py"
+    script = textwrap.dedent("""
+        #!__PYTHON__
+        import json, pathlib, sys
+        if '--help' in sys.argv:
+            print('-dtw MODEL --dtw MODEL')
+            print('-ojf --output-json-full')
+            print('-nfa --no-flash-attn')
+            raise SystemExit(0)
+        args = sys.argv[1:]
+        base = pathlib.Path(args[args.index('-of') + 1])
+        base.with_suffix('.srt').write_text(
+            chr(10).join(["1", "00:00:00,000 --> 00:00:01,000", "Hello there!", ""]),
+            encoding='utf-8'
+        )
+        payload = {'transcription': [{
+            'timestamps': {'from': '00:00:02.000', 'to': '00:00:01.000'},
+            'tokens': [{'text': ' Hello', 't_dtw': 120}, {'text': ' there', 't_dtw': 550}]
+        }]}
+        base.with_suffix('.json').write_text(json.dumps(payload), encoding='utf-8')
+        if '-dtw' not in args or '-ojf' not in args or '-nfa' not in args:
+            raise SystemExit(4)
+        raise SystemExit(0)
+    """).lstrip().replace("__PYTHON__", sys.executable)
+    binary.write_text(script, encoding="utf-8")
+    binary.chmod(0o755)
+    model = tmp_path / "model.bin"
+    model.write_bytes(b"model")
+    audio = tmp_path / "audio.wav"
+    audio.write_bytes(b"audio")
+
+    result = transcribe_with_whisper_cpp(
+        audio, whisper_cli=binary, model_path=model, output_dir=tmp_path / "out"
+    )
+
+    assert result["status"] == "completed_segment_fallback"
+    assert result["timestamp_mode"] == "segment_srt"
+    assert result["words"][0].text == "Hello there!"
+
+
+def test_whisper_clock_parser_rejects_out_of_range_minute_and_second_fields():
+    from studio.web.transcribe import _parse_whisper_timestamp
+
+    assert _parse_whisper_timestamp("00:60:00.000") is None
+    assert _parse_whisper_timestamp("00:00:60.000") is None
+    assert _parse_whisper_timestamp("01:59:59.999") == 7199.999

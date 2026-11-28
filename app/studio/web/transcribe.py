@@ -171,7 +171,11 @@ def _parse_whisper_timestamp(value: Any) -> float | None:
     if not match:
         return None
     hours, minutes, seconds, milliseconds = match.groups()
-    return int(hours) * 3600 + int(minutes) * 60 + int(seconds) + int(milliseconds.ljust(3, "0")) / 1000
+    minute_value = int(minutes)
+    second_value = int(seconds)
+    if minute_value >= 60 or second_value >= 60:
+        return None
+    return int(hours) * 3600 + minute_value * 60 + second_value + int(milliseconds.ljust(3, "0")) / 1000
 
 
 def parse_whisper_json_words(path: Path) -> list[WordTiming]:
@@ -203,10 +207,19 @@ def parse_whisper_json_words(path: Path) -> list[WordTiming]:
             continue
 
         segment_times = segment.get("timestamps") if isinstance(segment.get("timestamps"), dict) else {}
-        segment_start = _parse_whisper_timestamp(segment_times.get("from")) or 0.0
+        segment_start = _parse_whisper_timestamp(segment_times.get("from"))
         segment_end = _parse_whisper_timestamp(segment_times.get("to"))
-        if segment_end is None:
-            segment_end = segment_start + 1.0
+        # DTW word times are meaningful only inside a valid Whisper segment.
+        # If the segment bounds are missing or reversed, let the SRT fallback
+        # provide honest phrase timing instead of inventing a one-second window.
+        if (
+            segment_start is None
+            or segment_end is None
+            or not math.isfinite(segment_start)
+            or not math.isfinite(segment_end)
+            or segment_end - segment_start < 0.06
+        ):
+            continue
 
         token_items: list[tuple[str, float]] = []
         for token in tokens:
@@ -221,9 +234,18 @@ def parse_whisper_json_words(path: Path) -> list[WordTiming]:
                 token_start = float(raw_time) / 100.0
             except (TypeError, ValueError):
                 continue
-            if not math.isfinite(token_start) or token_start < 0:
+            if (
+                not math.isfinite(token_start)
+                or token_start < segment_start
+                or token_start > segment_end - 0.04
+            ):
+                # Out-of-segment timestamps can create captions after the spoken
+                # phrase or beyond the selected clip. Drop them; SRT remains the
+                # safe fallback when no trustworthy DTW words survive.
                 continue
-            token_items.append((raw_text, max(segment_start, token_start)))
+            token_items.append((raw_text, token_start))
+
+        token_items.sort(key=lambda item: item[1])
 
         # Without DTW, recent whisper.cpp builds may leave t_dtw at zero for
         # every token. In that case the segment SRT is the honest fallback.
