@@ -114,7 +114,8 @@ def test_best_of_renderer_reencodes_landscape_and_adds_silence_when_needed(tmp_p
     assert result["width"] == 1920 and result["height"] == 1080
     assert result["clip_count"] == 2
     assert "anullsrc=channel_layout=stereo:sample_rate=48000" in command
-    assert "concat=n=2:v=1:a=1[outv][outa]" in graph
+    assert "concat=n=2:v=1:a=1[outv][outa_raw]" in graph
+    assert "[outa_raw]afade=t=in:st=0:d=0.350,afade=t=out:st=559.250:d=0.750[outa]" in graph
     assert command[-1] == str(output.resolve())
 
 
@@ -236,3 +237,20 @@ def test_best_of_plan_requires_a_date_when_the_selected_short_has_none(tmp_path:
 
     with pytest.raises(ValueError, match="date des Shorts sélectionnés"):
         build_best_of_plan([clip], ["undated"])
+
+
+def test_best_of_filter_graph_keeps_legacy_audio_when_durations_are_unknown():
+    from studio.web.best_of import build_best_of_filter_graph
+
+    graph = build_best_of_filter_graph(1, [0])
+
+    assert "concat=n=1:v=1:a=1[outv][outa]" in graph
+    assert "afade=" not in graph
+
+
+def test_best_of_filter_graph_clamps_edge_fades_for_short_test_durations():
+    from studio.web.best_of import build_best_of_filter_graph
+
+    graph = build_best_of_filter_graph(1, [0], clip_durations=[0.2])
+
+    assert "[outa_raw]afade=t=in:st=0:d=0.050,afade=t=out:st=0.150:d=0.050[outa]" in graph

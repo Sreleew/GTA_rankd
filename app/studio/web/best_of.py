@@ -130,9 +130,20 @@ def build_best_of_filter_graph(
             + f"asetpts=PTS-STARTPTS,aformat=sample_fmts=fltp:channel_layouts=stereo[a{index}]"
         )
         concat_inputs.extend([f"[v{index}]", f"[a{index}]"])
+    audio_concat_label = "outa_raw" if clip_durations is not None else "outa"
     parts.append(
-        "".join(concat_inputs) + f"concat=n={clip_count}:v=1:a=1[outv][outa]"
+        "".join(concat_inputs)
+        + f"concat=n={clip_count}:v=1:a=1[outv][{audio_concat_label}]"
     )
+    if clip_durations is not None:
+        total_duration = sum(float(value) for value in clip_durations)
+        fade_in_duration = min(0.35, total_duration / 4)
+        fade_out_duration = min(0.75, total_duration / 4)
+        fade_out_start = max(0.0, total_duration - fade_out_duration)
+        parts.append(
+            f"[outa_raw]afade=t=in:st=0:d={fade_in_duration:.3f},"
+            f"afade=t=out:st={fade_out_start:.3f}:d={fade_out_duration:.3f}[outa]"
+        )
     return ";".join(parts)
 
 
