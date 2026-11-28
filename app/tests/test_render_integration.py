@@ -9,38 +9,52 @@ import pytest
 from studio.web.short_editor import WordTiming, create_ass_file
 from studio.web.short_renderer import (
     MediaError, build_filter_complex, build_render_command, create_hook_sound_effect,
-    probe_media, render_vertical_short,
+    normalize_short_layout, probe_media, render_vertical_short,
 )
 
 
-def test_smart_layout_fits_the_complete_source_inside_the_editorial_panel() -> None:
-    graph = build_filter_complex(
+def test_legacy_smart_layout_uses_the_borderless_blur_composition() -> None:
+    legacy_graph = build_filter_complex(
         width=1080, height=1920, layout="smart", crop_x=80,
         source_width=1920, source_height=1080,
     )
-    assert "[0:v]split=3[bgsrc][panelbgsrc][fgsrc]" in graph
-    assert "scale=1080:921:force_original_aspect_ratio=decrease" in graph
-    assert "[panelbg][panelfg]overlay=(W-w)/2:(H-h)/2" in graph
-    assert "crop=1080:921:(in_w-out_w)*0.800" not in graph
-    assert "overlay=(W-w)/2:576" in graph
-    assert graph.count("boxblur=28:10") == 2
-    assert "drawbox=x=37:y=571:w=1006:h=932:color=white@0.30:t=2" in graph
-    assert "drawbox=x=37:y=599:w=6:h=875:color=0xF6C445@0.96:t=fill" in graph
+    blur_graph = build_filter_complex(
+        width=1080, height=1920, layout="blur", crop_x=80,
+        source_width=1920, source_height=1080,
+    )
+
+    assert legacy_graph == blur_graph
+    assert "[0:v]split=2[bgsrc][fgsrc]" in legacy_graph
+    assert "drawbox=" not in legacy_graph
+    assert "F6C445" not in legacy_graph
 
 
-def test_smart_layout_fits_portrait_sources_inside_the_same_editorial_panel() -> None:
-    graph = build_filter_complex(
+def test_legacy_smart_layout_keeps_portrait_sources_unchanged() -> None:
+    legacy_graph = build_filter_complex(
         width=1080, height=1920, layout="smart",
         source_width=1080, source_height=1920,
     )
-    assert "scale=1080:921:force_original_aspect_ratio=decrease" in graph
-    assert "[panelbg][panelfg]overlay=(W-w)/2:(H-h)/2" in graph
-    assert "crop=1080:921:(in_w-out_w)*" not in graph
+    blur_graph = build_filter_complex(
+        width=1080, height=1920, layout="blur",
+        source_width=1080, source_height=1920,
+    )
+
+    assert legacy_graph == blur_graph
+    assert "scale=1080:1920:force_original_aspect_ratio=decrease" in legacy_graph
+    assert "drawbox=" not in legacy_graph
+
+
+@pytest.mark.parametrize(
+    ("requested", "expected"),
+    [("blur", "blur"), ("fill", "fill"), ("smart", "blur")],
+)
+def test_short_layout_normalization_keeps_legacy_jobs_compatible(requested: str, expected: str) -> None:
+    assert normalize_short_layout(requested) == expected
 
 
 def test_dynamic_zoom_uses_multiple_audio_moments_when_available() -> None:
     graph = build_filter_complex(
-        width=1080, height=1920, layout="smart",
+        width=1080, height=1920, layout="blur",
         dynamic_zoom=True, peak_timestamp=2.0,
         zoom_timestamps=[2.0, 8.0], zoom_percent=8,
     )
@@ -51,7 +65,7 @@ def test_dynamic_zoom_uses_multiple_audio_moments_when_available() -> None:
 
 def test_dynamic_zoom_falls_back_to_the_primary_peak() -> None:
     graph = build_filter_complex(
-        width=1080, height=1920, layout="smart",
+        width=1080, height=1920, layout="blur",
         dynamic_zoom=True, peak_timestamp=3.0, zoom_percent=8,
     )
     assert "between(in_time,2.550,3.850)" in graph
@@ -228,7 +242,7 @@ def test_real_vertical_short_render(tmp_path: Path) -> None:
     rendered = probe_media(output, ffprobe)
     assert result["encoder_used"] == "libx264"
     assert result["sound_effect_used"] is True
-    assert result["layout"] == "smart"
+    assert result["layout"] == "blur"
     assert result["source_duration"] == pytest.approx(2.0, abs=0.15)
     assert result["duration"] == pytest.approx(1.5, abs=0.01)
     assert result["trim_start"] == pytest.approx(0.25)
@@ -333,7 +347,13 @@ def test_render_reuses_source_probe_and_returns_output_probe(tmp_path: Path, mon
 
     monkeypatch.setattr(short_renderer, "probe_media", fake_probe)
     monkeypatch.setattr(short_renderer, "_available_encoder_listing", lambda _: "libx264")
-    monkeypatch.setattr(short_renderer, "build_render_command", lambda *args, **kwargs: ["ffmpeg", str(output)])
+    rendered_layouts: list[str] = []
+
+    def fake_build_render_command(*args, **kwargs):
+        rendered_layouts.append(kwargs["layout"])
+        return ["ffmpeg", str(output)]
+
+    monkeypatch.setattr(short_renderer, "build_render_command", fake_build_render_command)
     monkeypatch.setattr(short_renderer, "run_command", fake_run)
 
     def fake_thumbnail(*args, **kwargs):
@@ -348,11 +368,14 @@ def test_render_reuses_source_probe_and_returns_output_probe(tmp_path: Path, mon
         fallback_encoder="libx264",
         width=360,
         height=640,
+        layout="smart",
         trim_start=1.0,
         trim_duration=8.0,
         progress_callback=report_progress,
     )
 
+    assert rendered_layouts == ["blur"]
+    assert result["layout"] == "blur"
     assert reported_progress == [50.0]
     assert probed == [output]
     assert result["source_duration"] == 12.0
@@ -362,7 +385,7 @@ def test_render_reuses_source_probe_and_returns_output_probe(tmp_path: Path, mon
 
 
 @pytest.mark.skipif(shutil.which("ffmpeg") is None or shutil.which("ffprobe") is None, reason="FFmpeg/FFprobe absent")
-def test_smart_layout_keeps_both_edges_of_a_twitch_frame_visible(tmp_path: Path) -> None:
+def test_legacy_smart_layout_keeps_both_edges_of_a_twitch_frame_visible(tmp_path: Path) -> None:
     ffmpeg = shutil.which("ffmpeg")
     ffprobe = shutil.which("ffprobe")
     assert ffmpeg and ffprobe
@@ -404,8 +427,8 @@ def test_smart_layout_keeps_both_edges_of_a_twitch_frame_visible(tmp_path: Path)
         offset = (y * 360 + x) * 3
         return tuple(frame[offset:offset + 3])
 
-    # The full 16:9 source is fitted into the center panel, so edge content
-    # (where Twitch webcams are often placed) must survive the vertical render.
+    # The full 16:9 source is fitted into the vertical canvas, so edge content
+    # (where Twitch webcams are often placed) must survive the render.
     left_edge = pixel(20, 345)
     right_edge = pixel(340, 345)
     assert left_edge[1] > left_edge[0] * 1.4 and left_edge[1] > left_edge[2] * 1.4

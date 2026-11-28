@@ -22,7 +22,9 @@ from studio.web.short_editor import (
     create_ass_file, infer_hook_style,
     select_thumbnail_timestamp, select_excerpt_range, write_srt_file,
 )
-from studio.web.short_renderer import MediaError, create_hook_sound_effect, probe_media, render_vertical_short
+from studio.web.short_renderer import (
+    MediaError, create_hook_sound_effect, normalize_short_layout, probe_media, render_vertical_short,
+)
 from studio.web.export_quality import analyze_export_quality
 from studio.web.store import Store
 from studio.web.transcribe import (
@@ -595,11 +597,9 @@ class JobRunner:
             timings["metadata_generation_ms"] = max(0, int(round((time.perf_counter() - stage_started) * 1000)))
             check_cancelled()
 
-            layout = str(options.get("layout", self.config.get("shorts", "layout", default="blur")))
-            if layout == "smart":
-                # Older saved jobs used the framed editorial layout; keep them on
-                # the source-preserving, border-free composition after upgrade.
-                layout = "blur"
+            layout = normalize_short_layout(
+                str(options.get("layout", self.config.get("shorts", "layout", default="blur")))
+            )
             ass_path = temp_dir / "overlay.ass"
             create_ass_file(
                 ass_path,
@@ -640,7 +640,7 @@ class JobRunner:
                 loudness_lufs=int(self.config.get("encoding", "short_loudness_lufs", default=-14)),
                 width=int(self.config.get("encoding", "width_short", default=1080)),
                 height=int(self.config.get("encoding", "height_short", default=1920)),
-                layout=str(options.get("layout", self.config.get("shorts", "layout", default="smart"))),
+                layout=layout,
                 crop_x=int(options.get("crop_x", self.config.get("shorts", "default_crop_x", default=80))),
                 crop_y=int(options.get("crop_y", 50)),
                 ass_file=ass_path,
