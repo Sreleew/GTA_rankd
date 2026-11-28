@@ -781,17 +781,17 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - PR #96 : [Prevent parallel Daily Best Of renders](https://github.com/Sreleew/GTA_rankd/pull/96), branche fix/prevent-parallel-best-of-renders, fusionnée dans main au commit f0c54bc9b759aafeb41958611ed66560a343519e après réussite Linux/Windows sur le HEAD final.
 - Release : v0.9.3 reste la dernière version stable ; aucune nouvelle release ni approbation de publication n'est créée.
 - CI PR #96 : Linux [46101164834](https://github.com/Sreleew/GTA_rankd/actions/runs/46101164834) a réussi (244 tests passés, 1 ignoré, package Windows construit et vérifié) et Windows [46101164807](https://github.com/Sreleew/GTA_rankd/actions/runs/46101164807) a réussi (audit, PowerShell, tests et package).
-- CI post-fusion PR #96 : Linux [46101338246](https://github.com/Sreleew/GTA_rankd/actions/runs/46101338246) et Windows [46101338357](https://github.com/Sreleew/GTA_rankd/actions/runs/46101338357) sont en cours.
+- CI post-fusion PR #96 : Linux [46101338246](https://github.com/Sreleew/GTA_rankd/actions/runs/46101338246) et Windows [46101338357](https://github.com/Sreleew/GTA_rankd/actions/runs/46101338357) ont réussi.
 - Suite : garantir qu'un Daily Best Of reste strictement limité à une seule date, puis vérifier la reprise après interruption et la composition 16:9 sur des Shorts validés.
 
 
 ## 57. Garantir une seule date par Daily Best Of, 28 novembre 2026
 
-- État de départ : PR #96 fusionnée dans main après réussite Linux/Windows ; les contrôles post-fusion sont en cours.
+- État de départ : PR #96 fusionnée dans main après réussite Linux/Windows ; ses contrôles post-fusion Linux et Windows ont également réussi.
 - Défaut identifié : si un appel API omettait date_key, le plan reprenait la date du premier Short mais acceptait encore des clips d'autres jours. Le titre Daily Best Of pouvait donc masquer une compilation multi-jours.
 - Correction : inférer la date depuis le premier Short sélectionné lorsque le filtre n'est pas fourni, puis imposer cette date à tous les clips. Refuser également une sélection dont le premier Short ne possède aucune date exploitable. L'ordre choisi par l'utilisateur et la durée cible de 9 à 11 minutes restent inchangés.
 - Tests : vérifier l'inférence d'une date commune, le rejet d'une sélection multi-jours sans filtre et le rejet d'un Short sans date.
 - Périmètre : validation du plan uniquement ; aucun changement aux rendus déjà produits, aux clips validés, à l'ordre, aux fichiers locaux, aux paramètres ou aux encodeurs. « Moments forts » reste en pause.
-- PR #97 : [Enforce one date per Daily Best Of](https://github.com/Sreleew/GTA_rankd/pull/97), branche fix/daily-best-of-single-date. Les validations Linux et Windows doivent réussir sur le HEAD final avant fusion.
+- PR #97 : [Enforce one date per Daily Best Of](https://github.com/Sreleew/GTA_rankd/pull/97), branche fix/daily-best-of-single-date, commit 24665726c76510d46e7622f9d3b98f9a25386f52. Les validations Linux et Windows doivent réussir sur le HEAD final avant fusion.
 - Release : v0.9.3 reste la dernière version stable ; aucune nouvelle release ni approbation de publication n'est créée.
 - Suite : terminer les validations Daily Best Of et confirmer la composition 16:9 avant de reprendre le développement créatif du montage.
