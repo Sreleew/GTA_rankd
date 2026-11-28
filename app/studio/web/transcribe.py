@@ -458,32 +458,51 @@ def analyze_audio_peaks(
     minimum_gap_seconds: float = 4.5,
     maximum_peaks: int = 5,
 ) -> tuple[float, list[float]]:
-    """Analyze a WAV once and return its strongest peak plus chronological accents."""
+    """Analyze a WAV in bounded chunks and return its strongest peak plus accents."""
     if not wav_path.is_file():
         return 0.0, []
     try:
         with wave.open(str(wav_path), "rb") as audio:
             sample_rate = audio.getframerate()
-            frames = audio.readframes(audio.getnframes())
             channels = audio.getnchannels()
             sample_width = audio.getsampwidth()
-        if sample_width != 2 or sample_rate <= 0:
-            return 0.0, []
-        samples = array.array("h")
-        samples.frombytes(frames)
-        if channels > 1:
-            samples = array.array("h", samples[::channels])
-        window_size = max(1, int(sample_rate * window_seconds))
-        hop_size = max(1, window_size // 2)
-        measurements: list[tuple[float, float]] = []
-        for start in range(0, len(samples), hop_size):
-            chunk = samples[start:start + window_size]
-            if len(chunk) < max(1, window_size // 3):
-                continue
-            square_sum = sum(int(value) * int(value) for value in chunk)
-            rms = math.sqrt(square_sum / len(chunk)) / 32768.0
-            center = (start + len(chunk) / 2) / sample_rate
-            measurements.append((center, rms))
+            if sample_width != 2 or sample_rate <= 0:
+                return 0.0, []
+
+            window_size = max(1, int(sample_rate * window_seconds))
+            hop_size = max(1, window_size // 2)
+            minimum_chunk_samples = max(1, window_size // 3)
+            read_chunk_frames = max(1, sample_rate * 10)
+            measurements: list[tuple[float, float]] = []
+            pending = array.array("h")
+            pending_start = 0
+
+            def record_window(chunk: array.array) -> None:
+                if len(chunk) < minimum_chunk_samples:
+                    return
+                square_sum = sum(int(value) * int(value) for value in chunk)
+                rms = math.sqrt(square_sum / len(chunk)) / 32768.0
+                center = (pending_start + len(chunk) / 2) / sample_rate
+                measurements.append((center, rms))
+
+            while True:
+                frame_data = audio.readframes(read_chunk_frames)
+                if not frame_data:
+                    break
+                samples = array.array("h")
+                samples.frombytes(frame_data)
+                if channels > 1:
+                    samples = array.array("h", samples[::channels])
+                pending.extend(samples)
+
+                while len(pending) >= window_size:
+                    record_window(pending[:window_size])
+                    del pending[:hop_size]
+                    pending_start += hop_size
+
+            if len(pending) >= minimum_chunk_samples:
+                record_window(pending)
+
         if not measurements:
             return 0.0, []
         levels = sorted(level for _, level in measurements)
@@ -509,8 +528,6 @@ def analyze_audio_peaks(
     except (OSError, wave.Error, ValueError):
         logger.exception("Impossible d'analyser les accents audio pour le cadrage dynamique.")
         return 0.0, []
-
-
 def detect_audio_peak_timestamps(
     wav_path: Path,
     window_seconds: float = 0.35,
