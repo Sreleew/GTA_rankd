@@ -5,7 +5,7 @@
 - **Dernière mise à jour :** 28 novembre 2026
 - **Progression des releases :** à chaque relance de développement, le compte rendu doit indiquer le lot livré, les PR/CI, l'état d'avancement vers la prochaine version et une estimation actualisée du nombre de lots restants avant sa publication. Cette estimation doit être réévaluée à chaque session, sans promettre une date artificielle.
 - **Dernière version stable confirmée :** [v0.9.3](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.9.3), publiée le 28 novembre 2026.
-- **État :** les PR #114, #116, #117, #119 et #118 sont intégrées dans `main` ; la PR #118 a été fusionnée au commit `d621683701f894b52c27573891fcfcdbd9122e67` après réussite Linux/Windows sur son HEAD final. La PR #120 prépare une protection des timestamps Whisper avant le recalage des sous-titres. v0.9.3 reste la dernière version stable.
+- **État :** les PR #114, #116, #117, #119 et #118 sont intégrées dans `main` ; la PR #118 a été fusionnée au commit `d621683701f894b52c27573891fcfcdbd9122e67` après réussite Linux/Windows sur son HEAD final. La [PR #120](https://github.com/Sreleew/GTA_rankd/pull/120) est ouverte sur `fix/sanitize-rebased-short-caption-timings` pour sécuriser le recalage des timestamps Whisper. v0.9.3 reste la dernière version stable.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
 - **Source active :** `app/`. Modifier directement les fichiers Python, JavaScript, CSS, HTML, tests et installateur présents dans ce dossier.
@@ -1096,5 +1096,5 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Correction :** valider les bornes de coupe et chaque intervalle mot avant recalage ; rejeter les valeurs non numériques, NaN, infinies et les intervalles inversés ; conserver les mots valides qui croisent les bornes en les limitant proprement à la coupe. Les timestamps valides gardent leur comportement actuel.
 - **Tests :** couvrir les débuts NaN, fins infinies, valeurs négatives infinies, intervalles inversés, bornes de coupe invalides et mots qui traversent les limites. Aucun changement de position ou de chevauchement visuel des sous-titres.
 - **Compatibilité :** aucun changement aux hooks, au rendu FFmpeg, au cadrage webcam, aux paramètres locaux, aux médias ou aux encodeurs AMD/CPU. Aucun numéro de version, tag ou `.release-approval` modifié.
-- **Branche / PR :** `fix/sanitize-rebased-short-caption-timings`, PR #120 à ouvrir ; Linux et Windows doivent passer sur le HEAD final avant fusion.
+- **Branche / PR :** `fix/sanitize-rebased-short-caption-timings`, [PR #120 ouverte](https://github.com/Sreleew/GTA_rankd/pull/120) ; Linux et Windows doivent passer sur le HEAD final avant fusion.
 - **Release :** v0.9.3 reste la dernière version stable. « Moments forts » reste en pause.
