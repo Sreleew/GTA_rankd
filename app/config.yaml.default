@@ -58,7 +58,7 @@ shorts:
   max_input_duration_seconds: 165
   layout: blur
   default_crop_x: 80
-  dynamic_zoom: true
+  dynamic_zoom: false
   zoom_percent: 8
   peak_trim_threshold_seconds: 165
   peak_lead_seconds: 1.5
