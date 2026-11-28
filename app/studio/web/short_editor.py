@@ -163,18 +163,28 @@ def infer_hook_style(hook_text: str, context_text: str = "") -> str:
         "did", "does", "could", "would", "can", "will",
         "pourquoi", "comment", "quoi", "que", "qui", "ou", "quand",
         "est", "ce", "vraiment",
+        # Spanish and Portuguese questions
+        "como", "quien", "donde", "cuando", "cual", "porque",
+        "quem", "onde", "qual", "sera",
     }
     suspense_words = {
         "wait", "watch", "until", "before", "thought", "safe",
         "almost", "then", "just", "secret", "never",
         "attends", "regarde", "jusque", "avant", "croyait", "pensait",
         "presque", "ensuite", "jamais", "tranquille", "jusqu",
+        # Spanish and Portuguese suspense cues
+        "espera", "mira", "hasta", "creia", "pensaba", "casi", "luego",
+        "nunca", "olha", "ate", "achou", "pensou", "quase", "entao",
     }
     reaction_words = {
         "no", "way", "wtf", "omg", "holy", "damn", "crazy",
         "insane", "unreal", "nah", "bro", "wow", "sheesh",
         "incroyable", "dingue", "fou", "folle", "serieux", "impossible",
         "putain", "merde", "abuse", "non",
+        # Spanish and Portuguese reaction cues
+        "increible", "locura", "dios", "joder", "mierda", "imposible",
+        "nao", "incrivel", "caramba", "deus", "impossivel", "louco", "louca",
+        "merda", "puta",
     }
 
     scores = {

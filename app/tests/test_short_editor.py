@@ -66,6 +66,11 @@ def test_hook_style_inference_selects_distinct_animations_for_short_hooks(tmp_pa
     assert infer_hook_style("POURQUOI IL A FAIT ÇA ?") == "question"
     assert infer_hook_style("ATTENDS DE VOIR LA SUITE") == "suspense"
     assert infer_hook_style("C'EST INCROYABLE !") == "reaction"
+    assert infer_hook_style("¡NO PUEDE SER, ES INCREÍBLE!") == "reaction"
+    assert infer_hook_style("NÃO ACREDITO, ISSO É INCRÍVEL!") == "reaction"
+    assert infer_hook_style("¿CÓMO PASÓ ESTO?") == "question"
+    assert infer_hook_style("ESPERA, MIRA LO QUE PASÓ") == "suspense"
+    assert infer_hook_style("ESPERA, OLHA O QUE ACONTECEU") == "suspense"
 
 
 def test_caption_active_word_gets_a_subtle_kinetic_pop(tmp_path: Path):
