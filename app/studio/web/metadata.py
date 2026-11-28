@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+import unicodedata
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -20,6 +21,73 @@ DEFAULT_TAGS = {
 
 def _limit_words(value: str, maximum: int) -> str:
     return " ".join(str(value or "").split()[:maximum]).strip()
+
+
+def _word_tokens(value: str) -> list[str]:
+    """Split words without dropping accents or splitting apostrophe contractions."""
+    return re.findall(r"[^\W_]+(?:[’'][^\W_]+)*", str(value or ""), flags=re.UNICODE)
+
+
+def _token_key(value: str) -> str:
+    """Return an accent-insensitive key for matching multilingual cue words."""
+    normalized = unicodedata.normalize("NFKD", str(value or "").casefold())
+    return "".join(char for char in normalized if not unicodedata.combining(char))
+
+
+_HOOK_CUES = {
+    # English
+    "what", "wait", "bro", "no", "oh", "why", "look", "listen", "insane",
+    "crazy", "actually", "help", "stop", "how", "wtf", "omg", "nah", "clutch",
+    # French
+    "quoi", "attends", "regarde", "ecoute", "incroyable", "dingue", "impossible",
+    "serieux", "fou", "folle", "merde", "putain", "non", "pourquoi", "comment", "aide",
+    # Spanish and Portuguese
+    "mira", "espera", "increible", "locura", "dios", "ayuda", "como",
+    "nao", "incrivel", "caramba", "olha", "ajuda", "meu", "deus",
+}
+_FILLER_OPENERS = {
+    "yeah", "yea", "huh", "uh", "um", "bro", "man", "shit", "like",
+    "ouais", "bah", "ben", "genre", "frere", "mano", "tio", "bueno", "vale",
+}
+_DANGLING_WORDS = {
+    # English
+    "a", "an", "and", "are", "at", "because", "but", "for", "from", "got",
+    "had", "has", "have", "he", "her", "his", "if", "in", "is", "it", "my",
+    "of", "on", "or", "she", "so", "that", "the", "their", "them", "then",
+    "there", "they", "this", "to", "was", "we", "were", "with", "you", "your",
+    "yeah", "yea", "huh", "shit", "uh", "um",
+    # French, Spanish and Portuguese articles, prepositions and conjunctions
+    "de", "du", "des", "le", "la", "les", "un", "une", "et", "mais", "pour",
+    "avec", "dans", "sur", "au", "aux", "que", "qui", "est", "sont", "ont",
+    "ce", "cette", "mon", "ma", "mes", "son", "sa", "ses", "leur", "leurs",
+    "pas", "ne", "se", "ou", "donc", "car", "el", "los", "las", "una", "y",
+    "pero", "por", "para", "con", "del", "al", "es", "mi", "tu", "su", "sus",
+    "o", "os", "as", "um", "uma", "e", "do", "da", "em", "com", "quem",
+    "meu", "minha", "seu", "sua",
+}
+_LEADING_DANGLING_WORDS = {
+    # Function words only: do not remove meaningful verbs or pronouns such as "got" or "my".
+    "a", "an", "and", "but", "for", "from", "in", "of", "on", "or", "so", "the", "to", "with",
+    # French, Spanish and Portuguese articles, prepositions and conjunctions
+    "de", "du", "des", "le", "la", "les", "un", "une", "et", "mais", "pour", "avec",
+    "dans", "sur", "au", "aux", "en", "que", "qui", "el", "los", "las", "una", "y",
+    "pero", "por", "para", "con", "del", "al", "o", "os", "as", "uma", "e", "do",
+    "da", "em", "com",
+}
+_GTA_ANCHORS = {
+    # English
+    "lambo", "lamborghini", "car", "cars", "whip", "ride", "vehicle", "police",
+    "cop", "cops", "crash", "crashed", "explosion", "bank", "money", "bike",
+    "motorcycle", "plane", "helicopter", "train", "house", "store", "shop",
+    "robbery", "robbed", "chase", "chased",
+    # French, Spanish and Portuguese
+    "voiture", "voitures", "vehicule", "police", "flic", "flics", "accident",
+    "explosion", "banque", "argent", "moto", "avion", "helicoptere", "train",
+    "maison", "magasin", "boutique", "braquage", "braque", "poursuite",
+    "coche", "carro", "policia", "choque", "banco", "dinero", "helicoptero",
+    "tren", "casa", "tienda", "robo", "persecucion", "acidente", "dinheiro",
+    "aviao", "trem", "loja", "roubo", "perseguicao",
+}
 
 
 def _clean_line(value: Any, maximum: int, fallback: str = "") -> str:
@@ -58,26 +126,18 @@ def _fallback_hook(transcript: str, note: str = "") -> str:
         if note_clean and not re.search(r"(?:moment fort détecté|score|100/100|automatiquement)", note_clean, re.I):
             return _limit_words(note_clean, 5).upper()
         return "WAIT FOR THE REACTION"
-    words = re.findall(r"[A-Za-z0-9’']+", source)
+    words = _word_tokens(source)
     if not words:
         return "WAIT FOR THE REACTION"
-    cues = {"what", "wait", "bro", "no", "oh", "why", "look", "listen", "insane", "crazy", "actually", "help", "stop", "how", "wtf", "omg", "nah", "clutch"}
-    cue_index = next((i for i, word in enumerate(words) if word.lower() in cues), 0)
+    keys = [_token_key(word) for word in words]
+    cue_index = next((i for i, key in enumerate(keys) if key in _HOOK_CUES), 0)
     start = max(0, cue_index - 2)
     chosen = words[start:start + 6]
     if len(chosen) < 3:
         chosen = words[:6]
-    filler_openers = {"yeah", "yea", "huh", "uh", "um", "bro", "man", "shit", "like"}
-    while len(chosen) > 1 and chosen[0].lower() in filler_openers:
-        chosen = chosen[1:]
-    dangling = {
-        "a", "an", "and", "are", "at", "because", "but", "for", "from",
-        "got", "had", "has", "have", "he", "her", "his", "if", "in", "is",
-        "it", "my", "of", "on", "or", "she", "so", "that", "the", "their",
-        "them", "then", "there", "they", "this", "to", "was", "we", "were",
-        "with", "you", "your",
-    }
-    while chosen and chosen[-1].lower().strip(".,!?;:") in dangling:
+    while len(chosen) > 1 and _token_key(chosen[0]) in _FILLER_OPENERS:
+        chosen.pop(0)
+    while chosen and _token_key(chosen[-1]) in _DANGLING_WORDS:
         chosen.pop()
     return " ".join(chosen).upper()
 
@@ -132,17 +192,10 @@ def _is_formulaic_promo_copy(value: str) -> bool:
     return any(pattern in text for pattern in patterns)
 
 def _is_incomplete_phrase(value: str) -> bool:
-    words = re.findall(r"[A-Za-z0-9’']+", str(value or "").lower())
+    words = _word_tokens(str(value or "").lower())
     if not words:
         return True
-    dangling = {
-        "a", "an", "and", "are", "at", "because", "but", "for", "from", "got",
-        "had", "has", "have", "he", "her", "his", "if", "in", "is", "it",
-        "my", "of", "on", "or", "she", "so", "that", "the", "their", "them",
-        "then", "there", "they", "this", "to", "was", "we", "were", "with",
-        "you", "your", "yeah", "yea", "huh", "shit", "uh", "um",
-    }
-    return words[-1] in dangling
+    return _token_key(words[-1]) in _DANGLING_WORDS
 
 
 def _last_complete_phrase(transcript: str) -> str:
@@ -150,38 +203,25 @@ def _last_complete_phrase(transcript: str) -> str:
     clean = re.sub(r"\s+", " ", str(transcript or "")).strip()
     phrases = re.split(r"(?<=[.!?])\s+", clean)
     for phrase in reversed(phrases):
-        words = re.findall(r"[A-Za-z0-9’']+", phrase)
+        words = _word_tokens(phrase)
         if 3 <= len(words) <= 14 and not _is_incomplete_phrase(phrase):
             return phrase.strip()
 
-    # ASR often omits punctuation. In that case, retain a short phrase only
-    # when it is anchored by a concrete object/action word rather than filler.
-    tokens = re.findall(r"[A-Za-z0-9’']+", clean)
-    anchors = {
-        "lambo", "lamborghini", "car", "cars", "whip", "ride", "vehicle",
-        "police", "cop", "cops", "crash", "crashed", "explosion", "bank",
-        "money", "bike", "motorcycle", "plane", "helicopter", "train",
-        "house", "store", "shop", "robbery", "robbed", "chase", "chased",
-    }
-    filler = {"yeah", "yea", "huh", "uh", "um", "bro", "man", "shit", "like"}
-    dangling = {
-        "a", "an", "and", "are", "at", "because", "but", "for", "from",
-        "got", "had", "has", "have", "he", "her", "his", "if", "in", "is",
-        "it", "my", "of", "on", "or", "she", "so", "that", "the", "their",
-        "them", "then", "there", "they", "this", "to", "was", "we", "were",
-        "with", "you", "your",
-    }
+    # ASR often omits punctuation. Retain a short phrase only when it contains
+    # a concrete object/action word, including common French, Spanish and Portuguese terms.
+    tokens = _word_tokens(clean)
+    keys = [_token_key(token) for token in tokens]
     for index in range(len(tokens) - 1, -1, -1):
-        if tokens[index].lower() not in anchors:
+        if keys[index] not in _GTA_ANCHORS:
             continue
         start = max(0, index - 3)
         end = min(len(tokens), index + 2)
         selected = tokens[start:end]
-        while len(selected) > 1 and selected[0].lower() in filler:
-            selected = selected[1:]
-        while selected and selected[-1].lower() in dangling:
+        while len(selected) > 1 and _token_key(selected[0]) in _FILLER_OPENERS:
+            selected.pop(0)
+        while selected and _token_key(selected[-1]) in _DANGLING_WORDS:
             selected.pop()
-        if 2 <= len(selected) <= 5 and selected[-1].lower() not in dangling:
+        if 2 <= len(selected) <= 5:
             return " ".join(selected)
     return ""
 
@@ -237,9 +277,8 @@ def _fallback_metadata(
         if not custom_hook and _is_incomplete_phrase(hook):
             hook = ""
         if complete_phrase:
-            phrase_words = re.findall(r"[A-Za-z0-9’']+", complete_phrase)[-4:]
-            leading_dangling = {"a", "an", "and", "but", "for", "from", "in", "of", "on", "or", "so", "the", "to", "with"}
-            while phrase_words and phrase_words[0].lower() in leading_dangling:
+            phrase_words = _word_tokens(complete_phrase)[-4:]
+            while phrase_words and _token_key(phrase_words[0]) in _LEADING_DANGLING_WORDS:
                 phrase_words.pop(0)
             phrase = _limit_words(" ".join(phrase_words), 4) or "GTA MOMENT"
             if creator:

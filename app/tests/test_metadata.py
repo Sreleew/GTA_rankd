@@ -253,3 +253,37 @@ def test_title_rejects_an_unstated_lambo_recovery_claim():
     assert not _has_unsupported_event_claim(
         "Tminnzy got his Lambo back in GTA 5 😭", transcript + " back",
     )
+
+def test_fallback_hooks_keep_accented_words_and_apostrophe_contractions() -> None:
+    from studio.web.metadata import (
+        _fallback_hook, _fallback_metadata, _is_incomplete_phrase, _last_complete_phrase,
+    )
+
+    french = "Attends, c'est complètement incroyable !"
+    assert _fallback_hook(french) == "ATTENDS C'EST COMPLÈTEMENT INCROYABLE"
+    assert _last_complete_phrase(french) == french
+    assert not _is_incomplete_phrase("C'est incroyable")
+    assert _is_incomplete_phrase("Je crois que")
+
+    result = _fallback_metadata(
+        streamer="Streamer",
+        note="",
+        source_url="",
+        transcript=french,
+        custom_hook="",
+        custom_context="",
+        source_title="GTA RP",
+    )
+    assert "complètement incroyable" in result["title"].lower()
+    assert "COMPLÈTEMENT INCROYABLE" in result["hook_text"]
+
+
+def test_fallback_hook_recognises_spanish_and_portuguese_reaction_cues() -> None:
+    from studio.web.metadata import _fallback_hook, _last_complete_phrase
+
+    spanish = "¡No puede ser, es increíble!"
+    portuguese = "Não acredito, isso é incrível!"
+
+    assert "INCREÍBLE" in _fallback_hook(spanish)
+    assert "INCRÍVEL" in _fallback_hook(portuguese)
+    assert _last_complete_phrase("Le flic a percuté la voiture").endswith("percuté la voiture")
