@@ -1443,6 +1443,11 @@ def test_batch_twitch_import_is_available_in_shorts_ui():
     html = (static / "index.html").read_text(encoding="utf-8")
     js = (static / "app.js").read_text(encoding="utf-8")
     assert html.count("peut couper les bords, y compris une webcam en bord d’écran") == 2
+    assert html.count("Désactivé tant que la case reste décochée.") == 2
+    assert html.count('<output data-zoom-output>8 %</output>') == 2
+    assert html.count('name="zoom_percent" min="0" max="20" value="8"') == 2
+    assert html.count('name="dynamic_zoom" data-option-checkbox> Zoom dynamique') == 2
+    assert 'name="dynamic_zoom" checked' not in html
     config_default = (Path(__file__).resolve().parents[1] / "config.yaml.default").read_text(encoding="utf-8")
     assert "\n  dynamic_zoom: false\n" in config_default
 
