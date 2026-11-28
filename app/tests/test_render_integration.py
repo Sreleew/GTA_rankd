@@ -356,8 +356,8 @@ def test_short_render_falls_back_when_preferred_encoder_output_is_truncated(
         "fps": 30.0, "video_codec": "h264", "audio_codec": "aac",
     }
     output_infos = [
-        {"duration": 6.0, "width": 360, "height": 640, "has_audio": True},
-        {"duration": 8.0, "width": 360, "height": 640, "has_audio": True},
+        {"duration": 6.0, "width": 360, "height": 640, "fps": 30.0, "has_audio": True},
+        {"duration": 8.0, "width": 360, "height": 640, "fps": 30.0, "has_audio": True},
     ]
     probed: list[Path] = []
     encoders: list[str] = []
