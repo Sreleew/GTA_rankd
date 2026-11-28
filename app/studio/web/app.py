@@ -1331,9 +1331,10 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
                 status_code=409,
                 detail="Une relance de cet épisode est déjà en cours ou a déjà abouti.",
             )
+        # Recompute episode date metadata from the selected clips. A mixed-date
+        # sentinel is not a user-supplied ISO date and must not be forwarded.
         return render_best_of({
             "clip_ids": clip_ids,
-            "date_key": previous.get("date_key") or previous_plan.get("date_key"),
             "retry_of_job_id": job_id,
         })
 

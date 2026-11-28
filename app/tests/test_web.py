@@ -1021,6 +1021,12 @@ def test_daily_best_of_render_history_survives_app_restart(tmp_path: Path, monke
                 (clip_id, clip_id, str(output), "2026-11-27T12:00:00"),
             )
 
+    with app.state.store._connect() as connection:
+        connection.execute(
+            "UPDATE clips SET date_key = ? WHERE id = ?",
+            ("2026-11-28", "episode-b"),
+        )
+
     def fake_render(plan, output_path, **kwargs):
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_bytes(b"complete Daily Best Of")
@@ -1041,7 +1047,7 @@ def test_daily_best_of_render_history_survives_app_restart(tmp_path: Path, monke
         patcher.setattr(app_module, "threading", SimpleNamespace(Thread=ImmediateThread))
         response = client.post(
             "/api/bestof/render",
-            json={"clip_ids": clip_ids, "date_key": "2026-11-27"},
+            json={"clip_ids": clip_ids},
         )
 
     assert response.status_code == 202, response.text
@@ -1050,6 +1056,7 @@ def test_daily_best_of_render_history_survives_app_restart(tmp_path: Path, monke
     assert completed.status_code == 200
     assert completed.json()["status"] == "completed"
     assert completed.json()["file_available"] is True
+    assert completed.json()["date_key"] == "multi"
     assert completed.json()["output_url"].endswith(".mp4")
     history = client.get("/api/bestof/jobs?limit=10")
     assert history.status_code == 200
@@ -1085,7 +1092,7 @@ def test_daily_best_of_render_history_survives_app_restart(tmp_path: Path, monke
         "status": "error",
         "progress": 100,
         "message": "Rendu interrompu",
-        "date_key": "2026-11-27",
+        "date_key": "multi",
         "clip_count": 4,
         "total_duration": 620,
         "plan": retry_plan,
@@ -1106,6 +1113,7 @@ def test_daily_best_of_render_history_survives_app_restart(tmp_path: Path, monke
         assert retried_job.status_code == 200
         assert retried_job.json()["status"] == "completed"
         assert retried_job.json()["file_available"] is True
+        assert retried_job.json()["date_key"] == "multi"
         duplicate_retry = restarted_client.post(f"/api/bestof/jobs/{retryable_id}/retry")
         assert duplicate_retry.status_code == 409
 
