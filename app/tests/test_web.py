@@ -942,6 +942,7 @@ def test_daily_best_of_ui_exposes_selection_order_and_duration_validation():
     assert "/api/bestof/plan" in js
     assert "data-bestof-up" in js
     assert "data-bestof-down" in js
+    assert "${streamer} · ${date} · ${duration}" in js
     assert "total >= 600 && total <= 660" in js
     assert 'id="bestof-history"' in html
     assert "/api/bestof/jobs?limit=10" in js
