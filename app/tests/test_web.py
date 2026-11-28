@@ -1377,6 +1377,7 @@ def test_short_caption_option_requires_local_whisper_and_is_persisted(tmp_path: 
         "url": "https://clips.twitch.tv/CaptionTestClip",
         "rights_confirmed": "true",
         "captions_enabled": "true",
+        "hook_transcription_enabled": "true",
         "caption_language": "fr",
     }
     unavailable = client.post("/api/shorts/url", data=payload)
@@ -1415,6 +1416,28 @@ def test_short_caption_option_requires_local_whisper_and_is_persisted(tmp_path: 
     assert job["metadata"]["options"]["hook_transcription_enabled"] is True
     assert job["metadata"]["options"]["caption_language"] == "fr"
 
+    legacy_api_default = client.post(
+        "/api/shorts/url",
+        data={"url": "https://clips.twitch.tv/HookOptionOmitted", "rights_confirmed": "true"},
+    )
+    assert legacy_api_default.status_code == 202, legacy_api_default.text
+    legacy_job = app.state.store.get_job(legacy_api_default.json()["id"])
+    assert legacy_job["metadata"]["options"]["hook_transcription_enabled"] is False
+
+    # The form sends hidden false first, then the checked checkbox value.
+    checked_form = client.post(
+        "/api/shorts/url",
+        data=[
+            ("url", "https://clips.twitch.tv/HookCheckboxChecked"),
+            ("rights_confirmed", "true"),
+            ("hook_transcription_enabled", "false"),
+            ("hook_transcription_enabled", "true"),
+        ],
+    )
+    assert checked_form.status_code == 202, checked_form.text
+    checked_job = app.state.store.get_job(checked_form.json()["id"])
+    assert checked_job["metadata"]["options"]["hook_transcription_enabled"] is True
+
     hook_opt_out = client.post(
         "/api/shorts/url",
         data={
@@ -1446,7 +1469,7 @@ def test_short_caption_option_requires_local_whisper_and_is_persisted(tmp_path: 
     upload = client.post(
         "/api/shorts/upload",
         files={"file": ("caption-upload.mp4", b"video", "video/mp4")},
-        data={"rights_confirmed": "true", "captions_enabled": "true", "caption_language": "es"},
+        data={"rights_confirmed": "true", "captions_enabled": "true", "hook_transcription_enabled": "true", "caption_language": "es"},
     )
     assert upload.status_code == 202, upload.text
     uploaded_job = app.state.store.get_job(upload.json()["id"])
@@ -1459,6 +1482,7 @@ def test_short_caption_option_requires_local_whisper_and_is_persisted(tmp_path: 
         "urls": "https://clips.twitch.tv/CaptionBatchOne\nhttps://clips.twitch.tv/CaptionBatchTwo",
         "rights_confirmed": "true",
         "captions_enabled": "true",
+        "hook_transcription_enabled": "true",
         "caption_language": "auto",
     }
     batch = client.post("/api/shorts/url/batch", data=batch_payload)
@@ -1498,7 +1522,8 @@ def test_batch_twitch_import_is_available_in_shorts_ui():
     assert "/api/jobs/${encodeURIComponent(jobId)}/reprocess" in js
     assert "gta-ranked-short-batches" in js
     assert html.count('name="captions_enabled"') == 2
-    assert html.count('name="hook_transcription_enabled" checked') == 2
+    assert html.count('type="hidden" name="hook_transcription_enabled" value="false"') == 2
+    assert html.count('name="hook_transcription_enabled" value="true" checked') == 2
     assert html.count('name="caption_language"') == 2
     assert html.count("L’analyse Whisper pour le hook est activée par défaut") == 2
     assert html.count("Les sous-titres restent facultatifs et désactivés par défaut") == 2
