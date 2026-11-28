@@ -397,6 +397,7 @@ def transcribe_with_whisper_cpp(
     except (OSError, subprocess.TimeoutExpired):
         logger.info("Impossible de lire l'aide Whisper, utilisation du mode SRT standard.")
 
+    binary_command = _binary_invocation(binary)
     command = [
         *binary_command, "-m", str(model_path.resolve()), "-f", str(audio_path.resolve()),
         "-l", language or "en", "-osrt", "-of", str(output_base), "-np",
