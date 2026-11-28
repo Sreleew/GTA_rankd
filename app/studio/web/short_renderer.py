@@ -178,13 +178,17 @@ def probe_media(
     audio = next((stream for stream in streams if stream.get("codec_type") == "audio"), None)
     if video is None:
         raise MediaError("Le fichier ne contient aucune piste vidéo.")
-    duration_raw = data.get("format", {}).get("duration") or video.get("duration")
-    try:
-        duration = float(duration_raw)
-    except (TypeError, ValueError) as exc:
-        raise MediaError("Durée de la vidéo introuvable.") from exc
-    if duration <= 0:
-        raise MediaError("La durée de la vidéo doit être supérieure à zéro.")
+    duration = None
+    for duration_raw in (data.get("format", {}).get("duration"), video.get("duration")):
+        try:
+            candidate_duration = float(duration_raw)
+        except (TypeError, ValueError, OverflowError):
+            continue
+        if math.isfinite(candidate_duration) and candidate_duration > 0:
+            duration = candidate_duration
+            break
+    if duration is None:
+        raise MediaError("Durée de la vidéo introuvable ou invalide : elle doit être finie et supérieure à zéro.")
     rate_raw = video.get("avg_frame_rate") or video.get("r_frame_rate") or "30/1"
     try:
         fps = float(Fraction(rate_raw))
