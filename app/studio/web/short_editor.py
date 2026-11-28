@@ -597,14 +597,33 @@ def select_excerpt_range(
     return round(start, 3), round(end, 3)
 
 def rebase_word_timings(words: list[WordTiming], trim_start: float, trim_end: float) -> list[WordTiming]:
-    """Garde les mots dans la coupe et ramène leurs horodatages à zéro."""
+    """Keep only valid word timings inside the cut and rebase them to zero."""
+    try:
+        cut_start = float(trim_start)
+        cut_end = float(trim_end)
+    except (TypeError, ValueError, OverflowError):
+        return []
+    if not math.isfinite(cut_start) or not math.isfinite(cut_end) or cut_end <= cut_start:
+        return []
+
     result: list[WordTiming] = []
-    for word in words:
-        if word.end <= trim_start or word.start >= trim_end:
+    for word in words or []:
+        try:
+            word_start = float(word.start)
+            word_end = float(word.end)
+        except (AttributeError, TypeError, ValueError, OverflowError):
             continue
-        start = round(max(0.0, word.start - trim_start), 3)
-        end = round(max(start + 0.04, min(trim_end, word.end) - trim_start), 3)
-        result.append(WordTiming(start, end, word.text))
+        if not math.isfinite(word_start) or not math.isfinite(word_end) or word_end <= word_start:
+            continue
+        if word_end <= cut_start or word_start >= cut_end:
+            continue
+
+        start = round(max(0.0, word_start - cut_start), 3)
+        end = round(max(start + 0.04, min(cut_end, word_end) - cut_start), 3)
+        if not math.isfinite(start) or not math.isfinite(end) or end <= start:
+            continue
+        text = str(getattr(word, "text", "") or "")
+        result.append(WordTiming(start, end, text))
     return result
 
 

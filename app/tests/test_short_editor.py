@@ -572,3 +572,37 @@ def test_caption_punctuation_keeps_spanish_and_french_marks_with_their_words():
     assert merged[1].end == 0.40
     assert merged[2].start == 0.50
     assert merged[2].end == 0.84
+
+
+
+def test_rebase_word_timings_discards_non_finite_and_reversed_words():
+    words = [
+        WordTiming(float("nan"), 1.2, "nan start"),
+        WordTiming(1.0, float("inf"), "infinite end"),
+        WordTiming(float("-inf"), 0.5, "negative infinity"),
+        WordTiming(2.0, 1.5, "reversed"),
+        WordTiming(3.0, 3.5, "valid"),
+    ]
+
+    assert rebase_word_timings(words, 0.0, 5.0) == [
+        WordTiming(3.0, 3.5, "valid"),
+    ]
+
+
+def test_rebase_word_timings_clips_valid_words_to_the_selected_range():
+    words = [
+        WordTiming(2.5, 3.5, "starts before"),
+        WordTiming(4.5, 5.5, "ends after"),
+    ]
+
+    assert rebase_word_timings(words, 3.0, 5.0) == [
+        WordTiming(0.0, 0.5, "starts before"),
+        WordTiming(1.5, 2.0, "ends after"),
+    ]
+
+
+def test_rebase_word_timings_rejects_invalid_cut_bounds():
+    words = [WordTiming(1.0, 2.0, "valid")]
+
+    assert rebase_word_timings(words, float("nan"), 3.0) == []
+    assert rebase_word_timings(words, 3.0, 2.0) == []
