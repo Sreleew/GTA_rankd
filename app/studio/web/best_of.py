@@ -36,13 +36,19 @@ def build_best_of_plan(
     if missing:
         raise ValueError("Certains Shorts sélectionnés ne sont plus dans la bibliothèque. Actualise la page.")
 
+    selected_date_key = str(
+        date_key or by_id[normalized_ids[0]].get("date_key") or ""
+    ).strip()
+    if not selected_date_key:
+        raise ValueError("La date des Shorts sélectionnés est manquante.")
+
     ordered: list[dict[str, Any]] = []
     total_duration = 0.0
     for clip_id in normalized_ids:
         clip = by_id[clip_id]
         if clip.get("status") != "validated":
             raise ValueError("Seuls les Shorts validés peuvent entrer dans un Daily Best Of.")
-        if date_key and str(clip.get("date_key") or "") != date_key:
+        if str(clip.get("date_key") or "") != selected_date_key:
             raise ValueError("Tous les Shorts d'un Daily Best Of doivent appartenir à la date sélectionnée.")
         output_path = Path(str(clip.get("output_path") or ""))
         if not output_path.is_file():
@@ -76,7 +82,7 @@ def build_best_of_plan(
         "ready_for_render": MIN_EPISODE_SECONDS <= total_duration <= MAX_EPISODE_SECONDS,
         "remaining_to_minimum": round(max(0.0, MIN_EPISODE_SECONDS - total_duration), 2),
         "over_maximum": round(max(0.0, total_duration - MAX_EPISODE_SECONDS), 2),
-        "date_key": date_key or (ordered[0]["date_key"] if ordered else ""),
+        "date_key": selected_date_key,
     }
 
 

@@ -50,7 +50,7 @@ def test_best_of_plan_reports_selection_that_is_too_short_or_too_long(tmp_path: 
         ([], [], None, "au moins un Short"),
         ([], ["missing"], None, "plus dans la bibliothèque"),
         ([{"id": "a", "status": "validated"}], ["a", "a"], None, "une seule fois"),
-        ([{"id": "a", "status": "ready"}], ["a"], None, "validés"),
+        ([{"id": "a", "status": "ready", "date_key": "2026-11-27"}], ["a"], None, "validés"),
         ([{"id": "a", "status": "validated", "date_key": "2026-11-26"}], ["a"], "2026-11-27", "date sélectionnée"),
     ],
 )
@@ -211,3 +211,28 @@ def test_best_of_renderer_reports_real_encoding_progress(tmp_path: Path, monkeyp
     assert any(message == "Vérification des sources · 1/1" for _, message in callbacks)
     assert (52, "Encodage 16:9 · 52%") in callbacks
     assert callbacks[-1] == (95, "Vérification du fichier exporté")
+
+
+def test_best_of_plan_infers_one_day_and_rejects_mixed_days_without_filter(tmp_path: Path):
+    clips = [
+        _clip(tmp_path, "same-a", date_key="2026-11-27"),
+        _clip(tmp_path, "same-b", date_key="2026-11-27"),
+        _clip(tmp_path, "same-c", date_key="2026-11-27"),
+        _clip(tmp_path, "same-d", date_key="2026-11-27"),
+    ]
+    plan = build_best_of_plan(clips, ["same-a", "same-b", "same-c", "same-d"])
+    assert plan["date_key"] == "2026-11-27"
+
+    mixed = [
+        _clip(tmp_path, "mixed-a", date_key="2026-11-27"),
+        _clip(tmp_path, "mixed-b", date_key="2026-11-28"),
+    ]
+    with pytest.raises(ValueError, match="date sélectionnée"):
+        build_best_of_plan(mixed, ["mixed-a", "mixed-b"])
+
+
+def test_best_of_plan_requires_a_date_when_the_selected_short_has_none(tmp_path: Path):
+    clip = _clip(tmp_path, "undated", date_key="")
+
+    with pytest.raises(ValueError, match="date des Shorts sélectionnés"):
+        build_best_of_plan([clip], ["undated"])
