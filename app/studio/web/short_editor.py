@@ -217,6 +217,58 @@ def _wrap_caption_segment(value: str, max_line_chars: int = 24) -> tuple[str, in
     return r"\N".join(lines), horizontal_scale
 
 
+def _segment_caption_event(segment: WordTiming, x: int, y: int) -> str | None:
+    """Render one phrase on its own trusted interval, without word-level emphasis."""
+    text, horizontal_scale = _wrap_caption_segment(segment.text)
+    if not text:
+        return None
+    start_stamp = _ass_time(segment.start)
+    end_stamp = _ass_time(max(segment.start + 0.06, segment.end))
+    scale_tag = f"\\fscx{horizontal_scale}" if horizontal_scale < 100 else ""
+    return (
+        f"Dialogue: 0,{start_stamp},{end_stamp},Caption,,0,0,0,,"
+        f"{{\\an2\\pos({x},{y})\\fad(45,65){scale_tag}}}{text}"
+    )
+
+
+def _word_caption_text(
+    group: list[WordTiming], active_index: int, max_line_chars: int = 16,
+) -> tuple[str, int]:
+    """Wrap DTW words and keep an unusually long token inside the mobile safe area."""
+    lines: list[list[tuple[int, str]]] = [[]]
+    line_lengths = [0]
+    for word_index, word in enumerate(group):
+        text = _clean_ass_text(word.text).upper()
+        if not text:
+            continue
+        required = len(text) + (1 if lines[-1] else 0)
+        if lines[-1] and line_lengths[-1] + required > max_line_chars:
+            lines.append([])
+            line_lengths.append(0)
+        lines[-1].append((word_index, text))
+        line_lengths[-1] += len(text) + (1 if len(lines[-1]) > 1 else 0)
+
+    longest_line = max(line_lengths, default=0)
+    horizontal_scale = (
+        min(100, max(60, round(max_line_chars * 100 / longest_line)))
+        if longest_line else 100
+    )
+    active_scale = round(horizontal_scale * 1.06)
+    rendered_lines: list[str] = []
+    for line in lines:
+        rendered_words: list[str] = []
+        for word_index, text in line:
+            if word_index == active_index:
+                rendered_words.append(
+                    rf"{{\c&H0000C8F5&\fscx{active_scale}\fscy106\bord7}}" + text
+                    + rf"{{\c&H00FFFFFF&\fscx{horizontal_scale}\fscy100\bord6}}"
+                )
+            else:
+                rendered_words.append(text)
+        rendered_lines.append(" ".join(rendered_words))
+    return r"\N".join(rendered_lines), horizontal_scale
+
+
 def _caption_events(
     words: list[WordTiming], width: int, height: int, *, word_timed: bool = True,
 ) -> list[str]:
@@ -228,81 +280,60 @@ def _caption_events(
     if not word_timed:
         # SRT fallback only exposes segment boundaries. Do not invent per-word timing.
         for segment in words:
-            text, horizontal_scale = _wrap_caption_segment(segment.text)
-            if not text:
-                continue
-            start_stamp = _ass_time(segment.start)
-            end_stamp = _ass_time(max(segment.start + 0.06, segment.end))
-            scale_tag = f"\\fscx{horizontal_scale}" if horizontal_scale < 100 else ""
-            events.append(
-                f"Dialogue: 0,{start_stamp},{end_stamp},Caption,,0,0,0,,"
-                f"{{\\an2\\pos({x},{y})\\fad(45,65){scale_tag}}}{text}"
-            )
+            event = _segment_caption_event(segment, x, y)
+            if event:
+                events.append(event)
         return events
 
-    # DTW mode provides genuine word boundaries, so the active-word treatment is safe.
-    expanded: list[WordTiming] = []
+    # DTW normally yields one timestamp per word. If an entry still contains
+    # several words, its interval belongs to the whole phrase: keep that exact
+    # interval and do not derive artificial token timings from character counts.
+    chunks: list[list[WordTiming] | WordTiming] = []
+    current_run: list[WordTiming] = []
     for item in words:
-        parts = item.text.split()
-        if len(parts) <= 1:
-            expanded.append(item)
+        if len(_clean_ass_text(item.text).split()) > 1:
+            if current_run:
+                chunks.append(current_run)
+                current_run = []
+            chunks.append(item)
+        else:
+            current_run.append(item)
+    if current_run:
+        chunks.append(current_run)
+
+    for chunk in chunks:
+        if isinstance(chunk, WordTiming):
+            event = _segment_caption_event(chunk, x, y)
+            if event:
+                events.append(event)
             continue
-        weights = [max(1, len(part.strip(".,!?;:"))) for part in parts]
-        total_weight = sum(weights)
-        duration = max(0.04, item.end - item.start)
-        cursor = item.start
-        for part_index, (part, weight) in enumerate(zip(parts, weights)):
-            next_cursor = (
-                item.end if part_index == len(parts) - 1
-                else cursor + duration * weight / total_weight
-            )
-            expanded.append(WordTiming(cursor, max(cursor + 0.04, next_cursor), part))
-            cursor = next_cursor
-    words = expanded
 
-    groups: list[list[WordTiming]] = []
-    current: list[WordTiming] = []
-    for word in words:
-        pause = word.start - current[-1].end if current else 0.0
-        previous_text = current[-1].text.rstrip('"”’)]}') if current else ""
-        sentence_finished = bool(previous_text) and previous_text[-1] in ".!?"
-        if current and (len(current) >= 4 or pause > 0.55 or sentence_finished):
+        groups: list[list[WordTiming]] = []
+        current: list[WordTiming] = []
+        for word in chunk:
+            pause = word.start - current[-1].end if current else 0.0
+            previous_text = current[-1].text.rstrip('"”’)]}') if current else ""
+            sentence_finished = bool(previous_text) and previous_text[-1] in ".!?"
+            if current and (len(current) >= 4 or pause > 0.55 or sentence_finished):
+                groups.append(current)
+                current = []
+            current.append(word)
+        if current:
             groups.append(current)
-            current = []
-        current.append(word)
-    if current:
-        groups.append(current)
 
-    for group in groups:
-        for index, active in enumerate(group):
-            next_word = group[index + 1] if index + 1 < len(group) else None
-            end = next_word.start if next_word and next_word.start > active.start else active.end
-            end = max(active.start + 0.06, min(end, active.end + 0.8 if next_word is None else end))
-            caption_lines: list[list[str]] = [[]]
-            line_length = 0
-            max_line_chars = 16
-            for word_index, word in enumerate(group):
-                text = _clean_ass_text(word.text).upper()
-                highlighted = (
-                    r"{\c&H0000C8F5&\fscx106\fscy106\bord7}" + text
-                    + r"{\c&H00FFFFFF&\fscx100\fscy100\bord6}"
-                    if word_index == index else text
+        for group in groups:
+            for index, active in enumerate(group):
+                next_word = group[index + 1] if index + 1 < len(group) else None
+                end = next_word.start if next_word and next_word.start > active.start else active.end
+                end = max(active.start + 0.06, min(end, active.end + 0.8 if next_word is None else end))
+                line, horizontal_scale = _word_caption_text(group, index)
+                scale_tag = f"\\fscx{horizontal_scale}" if horizontal_scale < 100 else ""
+                start_stamp = _ass_time(active.start)
+                end_stamp = _ass_time(end)
+                events.append(
+                    f"Dialogue: 0,{start_stamp},{end_stamp},Caption,,0,0,0,,{{\\an2\\pos({x},{y})\\fad(45,65){scale_tag}}}{line}"
                 )
-                plain_length = len(text)
-                required = plain_length + (1 if caption_lines[-1] else 0)
-                if caption_lines[-1] and line_length + required > max_line_chars:
-                    caption_lines.append([])
-                    line_length = 0
-                caption_lines[-1].append(highlighted)
-                line_length += plain_length + (1 if len(caption_lines[-1]) > 1 else 0)
-            line = r"\N".join(" ".join(parts) for parts in caption_lines)
-            start_stamp = _ass_time(active.start)
-            end_stamp = _ass_time(end)
-            events.append(
-                f"Dialogue: 0,{start_stamp},{end_stamp},Caption,,0,0,0,,{{\\an2\\pos({x},{y})\\fad(45,65)}}{line}"
-            )
     return events
-
 
 def create_ass_file(
     output_path: Path,

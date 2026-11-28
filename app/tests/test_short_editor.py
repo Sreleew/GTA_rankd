@@ -360,3 +360,48 @@ def test_thumbnail_timestamp_recognizes_french_reactions_and_emphasis():
     ]
     selected = select_thumbnail_timestamp(words, 30.0, preferred=2.0)
     assert 12.0 <= selected <= 14.0
+
+def test_word_dtw_keeps_multiword_records_on_their_real_phrase_interval(tmp_path: Path):
+    words = [
+        WordTiming(0.00, 0.20, "WAIT"),
+        WordTiming(0.25, 1.20, "WE GOT AWAY"),
+        WordTiming(1.25, 1.60, "FAST!"),
+    ]
+    path = create_ass_file(
+        tmp_path / "mixed-dtw.ass",
+        words=words,
+        captions_enabled=True,
+        word_timed_captions=True,
+        brand_enabled=False,
+    )
+    content = path.read_text(encoding="utf-8-sig")
+    caption_lines = [line for line in content.splitlines() if line.startswith("Dialogue: 0,")]
+
+    assert len(caption_lines) == 3
+    assert "0:00:00.00,0:00:00.20" in caption_lines[0]
+    assert r"{\c&H0000C8F5&" in caption_lines[0]
+    assert "0:00:00.25,0:00:01.20" in caption_lines[1]
+    assert "WE GOT AWAY" in caption_lines[1]
+    assert r"{\c&H0000C8F5&" not in caption_lines[1]
+    assert "0:00:01.25,0:00:01.60" in caption_lines[2]
+    assert "FAST!" in caption_lines[2]
+    assert r"{\c&H0000C8F5&" in caption_lines[2]
+
+def test_word_timed_caption_scales_long_unbreakable_word_without_changing_timing(tmp_path: Path):
+    word = "SUPERCALIFRAGILISTICEXPIALIDOCIOUS"
+    path = create_ass_file(
+        tmp_path / "long-dtw-word.ass",
+        words=[WordTiming(0.0, 1.8, word)],
+        captions_enabled=True,
+        word_timed_captions=True,
+        brand_enabled=False,
+    )
+    caption_line = next(
+        line for line in path.read_text(encoding="utf-8-sig").splitlines()
+        if line.startswith("Dialogue: 0,")
+    )
+
+    assert "0:00:00.00,0:00:01.80" in caption_line
+    assert word in caption_line
+    assert r"\fscx60" in caption_line
+    assert r"\fscx64" in caption_line

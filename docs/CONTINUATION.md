@@ -5,7 +5,7 @@
 - **Dernière mise à jour :** 28 novembre 2026
 - **Progression des releases :** à chaque relance de développement, le compte rendu doit indiquer le lot livré, les PR/CI, l'état d'avancement vers la prochaine version et une estimation actualisée du nombre de lots restants avant sa publication. Cette estimation doit être réévaluée à chaque session, sans promettre une date artificielle.
 - **Dernière version stable confirmée :** [v0.9.3](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.9.3), publiée le 28 novembre 2026.
-- **État :** PR #64 à #90 fusionnées dans `main`. La release v0.9.3 est publiée ; elle simplifie le montage Short et laisse les plateformes choisir la miniature. La prochaine version sera déterminée après validation d'un Short réel sur le PC Windows.
+- **État :** la PR #92 est intégrée dans `main` (commit `617cec55`). La release v0.9.3 reste publiée ; les évolutions suivantes sont destinées à une prochaine version après validation d'un Short réel sur le PC Windows.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
 - **Source active :** `app/`. Modifier directement les fichiers Python, JavaScript, CSS, HTML, tests et installateur présents dans ce dossier.
@@ -720,7 +720,23 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Tests :** couverture des bornes SRT exactes, de l'absence de faux surlignage mot à mot, du retour à la mise en emphase DTW et du rythme hook/contexte.
 - **Premier retour CI :** Linux a exécuté 236 tests avec 1 ignoré et révélé une assertion de test trop stricte : elle ne normalisait pas le marqueur de retour à la ligne ASS `\\N`. L'assertion a été corrigée pour comparer le texte rendu sans ce séparateur ; le code de rendu n'était pas en échec.
 - **Défaut sûr :** si un appelant ne connaît pas le mode Whisper, le générateur reste en mode segment par défaut. Un test dédié vérifie qu'il n'invente pas de synchronisation mot à mot sans confirmation DTW.
-- **PR #92 :** [Keep SRT captions accurate and shorten Short opening overlays](https://github.com/Sreleew/GTA_rankd/pull/92), branche `fix/srt-caption-timing-and-hook-exit`. Les validations Linux et Windows doivent réussir sur le commit final de la PR avant fusion.
+- **PR #92 :** [Keep SRT captions accurate and shorten Short opening overlays](https://github.com/Sreleew/GTA_rankd/pull/92), branche `fix/srt-caption-timing-and-hook-exit`, intégrée dans `main` au commit `617cec55b678ff52204808fba471ad32fd6bec23`.
 - **Release :** v0.9.3 reste la dernière version stable ; aucun numéro de version, fichier d'approbation ou réglage utilisateur n'est modifié.
 - **Limite :** aucun nouveau rendu réel ni benchmark Whisper sur la RX 9060 XT n'est revendiqué.
 - **Suite :** valider les deux plateformes, puis comparer un rendu DTW et un fallback SRT sur Windows avant de poursuivre les améliorations éditoriales.
+
+
+## 53. Préserver les intervalles des entrées DTW contenant plusieurs mots, 28 novembre 2026
+
+- **État de départ :** la PR #92 est intégrée dans `main` ; la comparaison confirme que `main` pointe sur `617cec55b678ff52204808fba471ad32fd6bec23`. Aucune autre PR n'était ouverte au début de ce lot.
+- **Défaut identifié :** le moteur conservait les intervalles exacts en mode SRT, mais continuait à découper une entrée DTW contenant plusieurs mots en timings artificiels proportionnels à la longueur des mots. Ce cas est inhabituel, mais peut apparaître si le regroupement des tokens Whisper ne fournit pas une entrée par mot.
+- **Correction :** une entrée DTW multi-mots est désormais rendue comme une phrase sur son intervalle d'origine, sans emphase mot à mot. Les entrées réellement unitaires gardent l'emphase cinétique. Les listes mixtes conservent leur ordre chronologique.
+- **Lisibilité mobile complémentaire :** les mots isolés exceptionnellement longs en mode DTW sont maintenant comprimés horizontalement de façon bornée, comme dans le fallback phrase. Le timing d'origine et l'emphase cinétique restent préservés.
+- **Tests :** régression des entrées mixtes (mot, phrase, mot suivant), plus vérification d'un mot DTW très long : intervalle exact, compression horizontale et emphase conservée.
+- **PR #93 :** [Preserve exact timing for mixed DTW caption records](https://github.com/Sreleew/GTA_rankd/pull/93), branche `fix/dtw-caption-mixed-segments`. Les validations Linux et Windows doivent réussir sur le commit final avant toute fusion.
+- **Périmètre :** aucun changement au modèle Whisper, aux options de transcription, aux paramètres utilisateur, aux données locales, aux encodeurs AMD/CPU, aux miniatures ou à la version publiée. « Moments forts » reste en pause.
+- **Release :** v0.9.3 reste la dernière version stable ; aucune nouvelle release ni approbation de publication n'est créée.
+- **Limite :** aucun rendu réel Whisper ni benchmark RX 9060 XT n'est revendiqué.
+- **CI initiale :** Linux et Windows ont tous deux réussi Ruff et pip-audit, puis échoué au contrôle `git show --check` à cause d'une ligne vide supplémentaire à la fin du test. Les suites de régression et le packaging ont été sautés par le garde-fou. La ligne vide superflue a été supprimée dans le commit `9b7229c` ; les validations doivent repartir sur ce nouveau commit.
+- **CI après extension :** Linux et Windows ont échoué au contrôle `git show --check` car l'ajout du test de mot long avait laissé une ligne vide supplémentaire à la fin du fichier. Ruff et pip-audit ont réussi ; les tests et le package ont été sautés. La fin du test a été normalisée à une seule nouvelle ligne dans le commit `233cf8c54f8b51e538311073b278a16792168e45` ; les deux plateformes doivent être revalidées sur le HEAD final.
+- **Suite :** confirmer les deux CI, puis vérifier un extrait Whisper DTW et un fallback SRT sur Windows avant d'élargir le chantier au Daily Best Of.
