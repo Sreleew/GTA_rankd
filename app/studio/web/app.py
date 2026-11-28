@@ -1216,7 +1216,7 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         if not plan.get("ready_for_render"):
-            raise HTTPException(status_code=400, detail="La sélection doit durer entre 9 et 11 minutes.")
+            raise HTTPException(status_code=400, detail="La sélection doit durer entre 10 et 11 minutes.")
         with app.state.best_of_lock:
             active_job = store.get_active_best_of_job()
             if active_job is not None:
@@ -1331,9 +1331,10 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
                 status_code=409,
                 detail="Une relance de cet épisode est déjà en cours ou a déjà abouti.",
             )
+        # Recompute episode date metadata from the selected clips. A mixed-date
+        # sentinel is not a user-supplied ISO date and must not be forwarded.
         return render_best_of({
             "clip_ids": clip_ids,
-            "date_key": previous.get("date_key") or previous_plan.get("date_key"),
             "retry_of_job_id": job_id,
         })
 

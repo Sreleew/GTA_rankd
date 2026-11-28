@@ -198,10 +198,9 @@
       </section>
 
       <section class="page" id="page-bestof">
-        <div class="section-intro"><div><div class="eyebrow">DAILY COMPILATION / EPISODE BUILDER</div><h2>Daily Best Of</h2><p>Compose ton épisode à partir des Shorts validés. Choisis les séquences, ajuste leur ordre et vise une durée finale de 9 à 11 minutes.</p></div><div class="format-pill">16:9 · 1920 × 1080</div></div>
+        <div class="section-intro"><div><div class="eyebrow">DAILY COMPILATION / EPISODE BUILDER</div><h2>Daily Best Of</h2><p>Compose ton épisode à partir des Shorts validés, même s'ils proviennent de journées différentes. Choisis les séquences, ajuste leur ordre et vise une durée finale de 10 à 11 minutes.</p></div><div class="format-pill">16:9 · 1920 × 1080</div></div>
         <section class="panel bestof-toolbar">
-          <label for="bestof-date">Journée à compiler</label>
-          <select id="bestof-date"><option value="">Chargement des journées…</option></select>
+          <span class="muted">Les Shorts de toutes les journées sont disponibles dans la même bibliothèque.</span>
           <button type="button" class="mini-button" id="refresh-bestof">Actualiser la bibliothèque</button>
         </section>
         <div class="bestof-layout">
@@ -215,7 +214,7 @@
             <div class="bestof-summary">
               <div class="bestof-total"><span>Durée estimée</span><strong id="bestof-total-time">00:00</strong></div>
               <div class="bestof-progress"><span id="bestof-progress-fill"></span></div>
-              <div class="bestof-target"><span>Objectif : 09:00 à 11:00</span><span id="bestof-target-state">Sélectionne des clips</span></div>
+              <div class="bestof-target"><span>Objectif : 10:00 minimum · 11:00 maximum</span><span id="bestof-target-state">Sélectionne des clips</span></div>
               <button type="button" class="button button-primary" id="bestof-validate" disabled>Vérifier la sélection</button>
               <button type="button" class="button button-primary hidden" id="bestof-render" disabled>Générer le Daily Best Of 16:9</button>
               <p id="bestof-feedback" class="bestof-feedback">Vérifie ta sélection, puis lance l’assemblage horizontal. Les Shorts sources ne sont jamais modifiés.</p>

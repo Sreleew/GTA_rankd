@@ -116,16 +116,14 @@ def test_short_transcription_slices_existing_analysis_wav_for_selected_excerpt(t
     assert result["audio_path"] == str(tmp_path / "temp" / "short-captions-16k.wav")
 
 
-def test_short_excerpt_duration_is_rejected_before_expensive_transcription():
+def test_short_excerpt_duration_has_no_minimum_or_maximum_limit():
     import pytest
 
-    with pytest.raises(worker.MediaError, match="Active le recadrage automatique"):
-        worker._validate_short_excerpt_duration(900.0, 165.0)
-
-    assert worker._validate_short_excerpt_duration(165.0, 165.0) == 165.0
+    assert worker._validate_short_excerpt_duration(0.5) == 0.5
+    assert worker._validate_short_excerpt_duration(900.0) == 900.0
 
     with pytest.raises(worker.MediaError, match="supérieure à zéro"):
-        worker._validate_short_excerpt_duration(0.0, 165.0)
+        worker._validate_short_excerpt_duration(0.0)
 
 
 def test_requested_short_captions_stay_enabled_for_the_final_overlay():

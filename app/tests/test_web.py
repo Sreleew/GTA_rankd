@@ -912,25 +912,21 @@ def test_best_of_plan_api_requires_validated_local_clips_and_preserves_order(tmp
             connection.execute(
                 """INSERT INTO clips (id, job_id, date_key, duration, output_path, status, created_at)
                    VALUES (?, ?, ?, ?, ?, 'validated', ?)""",
-                (clip_id, clip_id, "2026-11-27", 140, str(output), "2026-11-27T12:00:00"),
+                (clip_id, clip_id, "2026-11-28" if clip_id == "clip-b" else "2026-11-27", 155, str(output), "2026-11-27T12:00:00"),
             )
 
     response = client.post(
         "/api/bestof/plan",
-        json={"clip_ids": ["clip-c", "clip-a", "clip-d", "clip-b"], "date_key": "2026-11-27"},
+        json={"clip_ids": ["clip-c", "clip-a", "clip-d", "clip-b"]},
     )
     assert response.status_code == 200, response.text
     plan = response.json()
     assert [clip["id"] for clip in plan["clips"]] == ["clip-c", "clip-a", "clip-d", "clip-b"]
-    assert plan["formatted_duration"] == "09:20"
+    assert [clip["date_key"] for clip in plan["clips"]] == [
+        "2026-11-27", "2026-11-27", "2026-11-27", "2026-11-28",
+    ]
+    assert plan["formatted_duration"] == "10:20"
     assert plan["ready_for_render"] is True
-
-    wrong_day = client.post(
-        "/api/bestof/plan",
-        json={"clip_ids": ["clip-a"], "date_key": "2026-11-26"},
-    )
-    assert wrong_day.status_code == 400
-    assert "date sélectionnée" in wrong_day.json()["detail"]
 
 
 def test_daily_best_of_ui_exposes_selection_order_and_duration_validation():
@@ -946,7 +942,10 @@ def test_daily_best_of_ui_exposes_selection_order_and_duration_validation():
     assert "/api/bestof/plan" in js
     assert "data-bestof-up" in js
     assert "data-bestof-down" in js
-    assert "total >= 540 && total <= 660" in js
+    assert "${streamer} · ${date} · ${duration}" in js
+    assert "job.date_key === 'multi'" in js
+    assert "Plusieurs dates" in js
+    assert "total >= 600 && total <= 660" in js
     assert 'id="bestof-history"' in html
     assert "/api/bestof/jobs?limit=10" in js
     assert "bestOfHistoryPoll" in js
@@ -965,7 +964,7 @@ def test_best_of_store_recovers_interrupted_jobs_and_keeps_completed_history(tmp
         "message": "Assemblage en cours",
         "date_key": "2026-11-27",
         "clip_count": 4,
-        "total_duration": 560,
+        "total_duration": 620,
         "plan": {"clips": [{"id": "clip-a"}]},
         "output_path": str(tmp_path / "running.mp4"),
     })
@@ -976,7 +975,7 @@ def test_best_of_store_recovers_interrupted_jobs_and_keeps_completed_history(tmp
         "message": "Daily Best Of prêt",
         "date_key": "2026-11-26",
         "clip_count": 4,
-        "total_duration": 560,
+        "total_duration": 620,
         "plan": {"clips": [{"id": "clip-b"}]},
         "output_path": str(tmp_path / "completed.mp4"),
         "output_url": "/outputs/bestof/completed.mp4",
@@ -1018,14 +1017,20 @@ def test_daily_best_of_render_history_survives_app_restart(tmp_path: Path, monke
             )
             connection.execute(
                 """INSERT INTO clips (id, job_id, date_key, duration, output_path, status, created_at)
-                   VALUES (?, ?, '2026-11-27', 140, ?, 'validated', ?)""",
+                   VALUES (?, ?, '2026-11-27', 155, ?, 'validated', ?)""",
                 (clip_id, clip_id, str(output), "2026-11-27T12:00:00"),
             )
+
+    with app.state.store._connect() as connection:
+        connection.execute(
+            "UPDATE clips SET date_key = ? WHERE id = ?",
+            ("2026-11-28", "episode-b"),
+        )
 
     def fake_render(plan, output_path, **kwargs):
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_bytes(b"complete Daily Best Of")
-        return {"width": 1920, "height": 1080, "duration": 560, "clip_count": len(plan["clips"])}
+        return {"width": 1920, "height": 1080, "duration": 620, "clip_count": len(plan["clips"])}
 
     class ImmediateThread:
         def __init__(self, *, target, name, daemon):
@@ -1042,7 +1047,7 @@ def test_daily_best_of_render_history_survives_app_restart(tmp_path: Path, monke
         patcher.setattr(app_module, "threading", SimpleNamespace(Thread=ImmediateThread))
         response = client.post(
             "/api/bestof/render",
-            json={"clip_ids": clip_ids, "date_key": "2026-11-27"},
+            json={"clip_ids": clip_ids},
         )
 
     assert response.status_code == 202, response.text
@@ -1051,6 +1056,7 @@ def test_daily_best_of_render_history_survives_app_restart(tmp_path: Path, monke
     assert completed.status_code == 200
     assert completed.json()["status"] == "completed"
     assert completed.json()["file_available"] is True
+    assert completed.json()["date_key"] == "multi"
     assert completed.json()["output_url"].endswith(".mp4")
     history = client.get("/api/bestof/jobs?limit=10")
     assert history.status_code == 200
@@ -1063,7 +1069,7 @@ def test_daily_best_of_render_history_survives_app_restart(tmp_path: Path, monke
         "message": "Assemblage et encodage 16:9",
         "date_key": "2026-11-27",
         "clip_count": 4,
-        "total_duration": 560,
+        "total_duration": 620,
         "plan": {"clips": [{"id": clip_ids[0]}]},
         "output_path": str(tmp_path / "partial.mp4"),
     })
@@ -1086,9 +1092,9 @@ def test_daily_best_of_render_history_survives_app_restart(tmp_path: Path, monke
         "status": "error",
         "progress": 100,
         "message": "Rendu interrompu",
-        "date_key": "2026-11-27",
+        "date_key": "multi",
         "clip_count": 4,
-        "total_duration": 560,
+        "total_duration": 620,
         "plan": retry_plan,
         "output_path": str(tmp_path / "failed.mp4"),
         "error": "Simulated render interruption",
@@ -1107,6 +1113,7 @@ def test_daily_best_of_render_history_survives_app_restart(tmp_path: Path, monke
         assert retried_job.status_code == 200
         assert retried_job.json()["status"] == "completed"
         assert retried_job.json()["file_available"] is True
+        assert retried_job.json()["date_key"] == "multi"
         duplicate_retry = restarted_client.post(f"/api/bestof/jobs/{retryable_id}/retry")
         assert duplicate_retry.status_code == 409
 
@@ -1196,7 +1203,7 @@ def test_best_of_render_endpoint_runs_in_background_and_returns_output_url(tmp_p
             connection.execute(
                 """INSERT INTO clips (id, job_id, date_key, duration, output_path, status, created_at)
                    VALUES (?, ?, ?, ?, ?, 'validated', ?)""",
-                (clip_id, clip_id, "2026-11-27", 140, str(output), "2026-11-27T12:00:00"),
+                (clip_id, clip_id, "2026-11-27", 155, str(output), "2026-11-27T12:00:00"),
             )
 
     progress_updates = []
@@ -1208,7 +1215,7 @@ def test_best_of_render_endpoint_runs_in_background_and_returns_output_url(tmp_p
             progress_updates.append((52, "Encodage 16:9 · 52%"))
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_bytes(b"episode")
-        return {"output_path": str(output_path), "duration": 560, "width": 1920, "height": 1080}
+        return {"output_path": str(output_path), "duration": 620, "width": 1920, "height": 1080}
 
     monkeypatch.setattr(app_module, "render_best_of_episode", fake_render)
     monkeypatch.setattr(
@@ -1646,7 +1653,7 @@ def test_daily_best_of_rejects_parallel_active_render_but_allows_a_new_one_after
             )
             connection.execute(
                 """INSERT INTO clips (id, job_id, date_key, duration, output_path, status, created_at)
-                   VALUES (?, ?, '2026-11-28', 140, ?, 'validated', ?)""",
+                   VALUES (?, ?, '2026-11-28', 155, ?, 'validated', ?)""",
                 (clip_id, clip_id, str(output), "2026-11-28T12:00:00"),
             )
 

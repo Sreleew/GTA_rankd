@@ -58,13 +58,11 @@ def _apply_legacy_short_profile(raw: dict[str, Any]) -> None:
         return
 
     legacy_defaults = {
-        "max_input_duration_seconds": 60,
         "peak_trim_threshold_seconds": 45,
         "auto_trim_min_seconds": 15,
         "auto_trim_max_seconds": 45,
     }
     production_defaults = {
-        "max_input_duration_seconds": 165,
         "peak_trim_threshold_seconds": 165,
         "auto_trim_min_seconds": 60,
         "auto_trim_max_seconds": 165,

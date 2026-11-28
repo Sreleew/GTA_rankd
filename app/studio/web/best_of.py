@@ -7,7 +7,7 @@ import math
 from pathlib import Path
 from typing import Any, Callable
 
-MIN_EPISODE_SECONDS = 9 * 60
+MIN_EPISODE_SECONDS = 10 * 60
 MAX_EPISODE_SECONDS = 11 * 60
 MAX_SELECTED_CLIPS = 50
 
@@ -36,11 +36,17 @@ def build_best_of_plan(
     if missing:
         raise ValueError("Certains Shorts sélectionnés ne sont plus dans la bibliothèque. Actualise la page.")
 
-    selected_date_key = str(
-        date_key or by_id[normalized_ids[0]].get("date_key") or ""
-    ).strip()
-    if not selected_date_key:
-        raise ValueError("La date des Shorts sélectionnés est manquante.")
+    # Keep a truthful episode date label when selections span multiple source days.
+    selected_dates = {
+        str(by_id[clip_id].get("date_key") or "").strip()
+        for clip_id in normalized_ids
+    }
+    if len(selected_dates) > 1:
+        selected_date_key = "multi"
+    else:
+        selected_date_key = next(iter(selected_dates), "")
+        if not selected_date_key and date_key:
+            selected_date_key = str(date_key).strip()
 
     ordered: list[dict[str, Any]] = []
     total_duration = 0.0
@@ -48,8 +54,6 @@ def build_best_of_plan(
         clip = by_id[clip_id]
         if clip.get("status") != "validated":
             raise ValueError("Seuls les Shorts validés peuvent entrer dans un Daily Best Of.")
-        if str(clip.get("date_key") or "") != selected_date_key:
-            raise ValueError("Tous les Shorts d'un Daily Best Of doivent appartenir à la date sélectionnée.")
         output_path = Path(str(clip.get("output_path") or ""))
         if not output_path.is_file():
             raise ValueError(f"Le rendu du Short {clip_id[:8]} est introuvable sur ce PC.")
@@ -161,7 +165,7 @@ def render_best_of_episode(
 
     clips = plan.get("clips") if isinstance(plan, dict) else None
     if not plan.get("ready_for_render") or not isinstance(clips, list) or not clips:
-        raise ValueError("La sélection doit être vérifiée et durer entre 9 et 11 minutes.")
+        raise ValueError("La sélection doit être vérifiée et durer entre 10 et 11 minutes.")
     if len(clips) > MAX_SELECTED_CLIPS:
         raise ValueError(f"Un épisode ne peut pas contenir plus de {MAX_SELECTED_CLIPS} Shorts.")
     if encoder not in {"h264_amf", "libx264"}:
@@ -235,7 +239,7 @@ def render_best_of_episode(
     if not MIN_EPISODE_SECONDS <= total_duration <= MAX_EPISODE_SECONDS:
         raise MediaError(
             "La durée réelle des Shorts a changé : l'épisode n'est plus dans la plage "
-            "de 9 à 11 minutes. Actualise la bibliothèque avant de relancer le rendu."
+            "de 10 à 11 minutes. Actualise la bibliothèque avant de relancer le rendu."
         )
     graph = build_best_of_filter_graph(
         len(clips), audio_input_indices, clip_durations=actual_durations,
