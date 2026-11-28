@@ -181,13 +181,31 @@ def render_best_of_episode(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     command = [resolve_executable(ffmpeg), "-hide_banner", "-y"]
     audio_input_indices: list[int] = []
+    actual_durations: list[float] = []
     for index, clip in enumerate(clips):
+        clip_id = str(clip.get("id") or "")[:8]
         source = Path(str(clip.get("output_path") or ""))
         if not source.is_file():
-            raise MediaError(f"Le rendu du Short {str(clip.get('id') or '')[:8]} est introuvable.")
+            raise MediaError(f"Le rendu du Short {clip_id} est introuvable.")
         info = probe_media(source, ffprobe)
         if not info.get("width") or not info.get("height"):
-            raise MediaError(f"Impossible de lire la vidéo du Short {str(clip.get('id') or '')[:8]}.")
+            raise MediaError(f"Impossible de lire la vidéo du Short {clip_id}.")
+        try:
+            actual_duration = float(info.get("duration") or 0.0)
+            planned_duration = float(clip.get("duration") or 0.0)
+        except (TypeError, ValueError) as exc:
+            raise MediaError(f"Impossible de vérifier la durée du Short {clip_id}.") from exc
+        if not math.isfinite(actual_duration) or actual_duration <= 0:
+            raise MediaError(f"Impossible de lire la durée réelle du Short {clip_id}.")
+        if not math.isfinite(planned_duration) or planned_duration <= 0:
+            raise MediaError(f"La durée enregistrée du Short {clip_id} est invalide.")
+        duration_tolerance = max(1.0, planned_duration * 0.01)
+        if abs(actual_duration - planned_duration) > duration_tolerance:
+            raise MediaError(
+                f"La durée du Short {clip_id} a changé depuis sa validation. "
+                "Actualise la bibliothèque avant de créer le Daily Best Of."
+            )
+        actual_durations.append(actual_duration)
         command.extend(["-i", str(source.resolve())])
         if info.get("has_audio"):
             audio_input_indices.append(len(audio_input_indices))
@@ -201,9 +219,9 @@ def render_best_of_episode(
     # Add explicit silent tracks for Shorts without audio. Keeping each source
     # as a separate input avoids concat-demuxer assumptions about stream layouts.
     source_input_count = len(clips)
-    for index, clip in enumerate(clips):
+    for index, duration in enumerate(actual_durations):
         if audio_input_indices[index] < 0:
-            duration = max(0.1, float(clip.get("duration") or 0.1))
+            duration = max(0.1, duration)
             audio_input_indices[index] = source_input_count
             command.extend([
                 "-f", "lavfi", "-t", f"{duration:.3f}",
@@ -213,11 +231,15 @@ def render_best_of_episode(
         else:
             audio_input_indices[index] = index
 
+    total_duration = sum(actual_durations)
+    if not MIN_EPISODE_SECONDS <= total_duration <= MAX_EPISODE_SECONDS:
+        raise MediaError(
+            "La durée réelle des Shorts a changé : l'épisode n'est plus dans la plage "
+            "de 9 à 11 minutes. Actualise la bibliothèque avant de relancer le rendu."
+        )
     graph = build_best_of_filter_graph(
-        len(clips), audio_input_indices,
-        clip_durations=[float(clip.get("duration") or 0.0) for clip in clips],
+        len(clips), audio_input_indices, clip_durations=actual_durations,
     )
-    total_duration = sum(float(clip.get("duration") or 0.0) for clip in clips)
     command.extend([
         "-filter_complex", graph,
         "-map", "[outv]", "-map", "[outa]",
