@@ -5,7 +5,7 @@
 - **Dernière mise à jour :** 28 novembre 2026
 - **Progression des releases :** à chaque relance de développement, le compte rendu doit indiquer le lot livré, les PR/CI, l'état d'avancement vers la prochaine version et une estimation actualisée du nombre de lots restants avant sa publication. Cette estimation doit être réévaluée à chaque session, sans promettre une date artificielle.
 - **Dernière version stable confirmée :** [v0.9.3](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.9.3), publiée le 28 novembre 2026.
-- **État :** les PR #92, #93 et #94 sont intégrées dans `main` ; la PR #94 a été fusionnée au commit `2b124724`. La release v0.9.3 reste publiée ; les évolutions suivantes sont destinées à une prochaine version après validation d'un Short réel sur le PC Windows.
+- **État :** les PR #92 à #95 sont intégrées dans `main` ; la PR #95 a été fusionnée au commit `c7b9c06f`. La release v0.9.3 reste publiée ; les évolutions suivantes sont destinées à une prochaine version après validation d'un Short réel sur le PC Windows.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
 - **Source active :** `app/`. Modifier directement les fichiers Python, JavaScript, CSS, HTML, tests et installateur présents dans ce dossier.
@@ -763,7 +763,21 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - Correction : transmettre les mots transcrits, déjà recalés sur l'extrait final, au sélecteur existant. Les mots-clés d'action et de réaction en français et en anglais peuvent ainsi guider le choix du timestamp ; en l'absence de mots pertinents, le pic audio reste le fallback inchangé.
 - Tests : ajout d'un cluster français « incroyable / police / crash / explosion » et d'un cas sans mots descriptifs qui vérifie le fallback au pic audio.
 - Périmètre : sélection du timestamp de la vignette/aperçu déjà existant uniquement ; aucune miniature graphique générée, aucune modification de couverture de plateforme, de layout, de Whisper, d'encodeur ou de paramètres. « Moments forts » reste en pause.
-- PR #95 : [Use transcript cues for Short thumbnail timestamp](https://github.com/Sreleew/GTA_rankd/pull/95), branche fix/transcript-aware-short-cover, commit 23a0bbcbde870a5290a3b0fde1031d7ee5b9462a. Les validations Linux et Windows doivent réussir sur le HEAD final avant fusion.
+- PR #95 : [Use transcript cues for Short thumbnail timestamp](https://github.com/Sreleew/GTA_rankd/pull/95), branche fix/transcript-aware-short-cover, fusionnée dans main au commit c7b9c06f0c8768455b230bae2a90679de534b942 après réussite Linux/Windows sur le HEAD final.
 - Release : v0.9.3 reste la dernière version stable ; aucune nouvelle release ni approbation de publication n'est créée.
 - Limite : aucun rendu réel Twitch ni mesure d'engagement sur une plateforme n'est revendiqué.
-- Suite : valider le parcours complet du Short sur des clips réels, puis reprendre le Daily Best Of lorsque le flux Shorts sera suffisamment consolidé.
+- CI PR #95 : Linux [46100755822](https://github.com/Sreleew/GTA_rankd/actions/runs/46100755822) et Windows [46100755831](https://github.com/Sreleew/GTA_rankd/actions/runs/46100755831) ont réussi sur le HEAD final ; Linux confirme 243 tests passés et 1 ignoré, le package Windows a été construit et vérifié.
+- CI post-fusion PR #95 : Linux [46100933598](https://github.com/Sreleew/GTA_rankd/actions/runs/46100933598) et Windows [46100933521](https://github.com/Sreleew/GTA_rankd/actions/runs/46100933521) ont réussi.
+- Suite : valider le parcours complet du Short sur des clips réels, puis consolider la génération Daily Best Of.
+
+
+## 56. Empêcher les rendus Daily Best Of concurrents, 28 novembre 2026
+
+- État de départ : PR #95 fusionnée dans main après réussite Linux/Windows ; ses contrôles post-fusion Linux et Windows ont également réussi.
+- Défaut identifié : l'API pouvait accepter plusieurs demandes Daily Best Of pendant qu'un premier rendu était en file ou en cours. Plusieurs encodages de 9 à 11 minutes pouvaient alors se disputer CPU/GPU et les ressources disque.
+- Correction : une réservation protégée par verrou local vérifie atomiquement l'existence d'un job queued/running avant d'en créer un autre. Une demande concurrente reçoit HTTP 409 avec l'identifiant court du rendu actif. Les rendus terminés ou en erreur ne bloquent pas un nouvel épisode. Le stockage expose une requête ciblée sur le seul job actif.
+- Tests : un test API démarre un premier rendu différé, vérifie que le second est refusé, puis simule l'échec du premier et confirme qu'un nouveau rendu peut démarrer.
+- Périmètre : aucun changement aux clips validés, à leur ordre, aux rendus existants, aux paramètres, aux fichiers locaux ou aux encodeurs AMD/CPU. « Moments forts » reste en pause.
+- PR #96 : [Prevent parallel Daily Best Of renders](https://github.com/Sreleew/GTA_rankd/pull/96), branche fix/prevent-parallel-best-of-renders, commit 2fcc6e4fda9c8d020e93c6ff340d142851c73971. Les validations Linux et Windows doivent réussir sur le HEAD final avant fusion.
+- Release : v0.9.3 reste la dernière version stable ; aucune nouvelle release ni approbation de publication n'est créée.
+- Suite : après fiabilisation de la file de rendu, vérifier la reprise après interruption et la composition 16:9 sur des Shorts validés.

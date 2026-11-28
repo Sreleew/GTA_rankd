@@ -1540,3 +1540,58 @@ def test_short_ui_explains_full_frame_twitch_composition() -> None:
     assert "La capture complète reste visible, sans cadre ni bande qui coupe l’image." in html
     assert 'option value="blur" selected' in html
     assert 'option value="smart"' not in html
+
+
+def test_daily_best_of_rejects_parallel_active_render_but_allows_a_new_one_after_failure(
+    tmp_path: Path, monkeypatch,
+):
+    from types import SimpleNamespace
+
+    import studio.web.app as app_module
+
+    config = load_config(_make_isolated_app_config(tmp_path))
+    app = create_app(config)
+    client = TestClient(app)
+    clip_ids = ["parallel-a", "parallel-b", "parallel-c", "parallel-d"]
+    for clip_id in clip_ids:
+        output = tmp_path / f"{clip_id}.mp4"
+        output.write_bytes(b"rendered short")
+        with app.state.store._connect() as connection:
+            connection.execute(
+                """INSERT INTO jobs (id, status, source_kind, created_at, updated_at)
+                   VALUES (?, 'validated', 'upload', ?, ?)""",
+                (clip_id, "2026-11-28T12:00:00", "2026-11-28T12:00:00"),
+            )
+            connection.execute(
+                """INSERT INTO clips (id, job_id, date_key, duration, output_path, status, created_at)
+                   VALUES (?, ?, '2026-11-28', 140, ?, 'validated', ?)""",
+                (clip_id, clip_id, str(output), "2026-11-28T12:00:00"),
+            )
+
+    class DeferredThread:
+        def __init__(self, *, target, name, daemon):
+            self.target = target
+
+        def start(self):
+            return None
+
+    monkeypatch.setattr(app_module, "threading", SimpleNamespace(Thread=DeferredThread))
+    payload = {"clip_ids": clip_ids, "date_key": "2026-11-28"}
+
+    first = client.post("/api/bestof/render", json=payload)
+    assert first.status_code == 202, first.text
+    first_id = first.json()["id"]
+    assert app.state.store.get_active_best_of_job()["id"] == first_id
+
+    duplicate = client.post("/api/bestof/render", json=payload)
+    assert duplicate.status_code == 409
+    assert "déjà en cours" in duplicate.json()["detail"]
+    assert len(app.state.store.list_best_of_jobs(10)) == 1
+
+    app.state.store.update_best_of_job(
+        first_id, status="error", progress=100, message="Rendu interrompu",
+    )
+    next_render = client.post("/api/bestof/render", json=payload)
+    assert next_render.status_code == 202, next_render.text
+    assert next_render.json()["id"] != first_id
+    assert app.state.store.get_active_best_of_job()["id"] == next_render.json()["id"]

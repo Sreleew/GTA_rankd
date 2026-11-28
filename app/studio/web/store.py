@@ -326,6 +326,15 @@ class Store:
             ).fetchall()
         return [self._best_of_job_dict(row) for row in rows]
 
+    def get_active_best_of_job(self) -> dict[str, Any] | None:
+        """Return the single queued/running Daily Best Of job, if any."""
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT * FROM best_of_jobs WHERE status IN ('queued', 'running') "
+                "ORDER BY created_at DESC LIMIT 1"
+            ).fetchone()
+        return self._best_of_job_dict(row) if row else None
+
     def find_duplicate_hash(self, source_hash: str) -> dict[str, Any] | None:
         with self._connect() as connection:
             row = connection.execute(

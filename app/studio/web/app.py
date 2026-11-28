@@ -119,6 +119,7 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
     app = FastAPI(title="GTA Ranked Studio", docs_url="/api/docs", redoc_url=None)
     app.state.config = config
     app.state.store = store
+    app.state.best_of_lock = threading.Lock()
     app.state.runner = runner
     app.state.model_manager = model_manager
     app.state.update_service = update_service
@@ -1204,24 +1205,32 @@ def create_app(config_or_path: AppConfig | str | Path = "config.yaml") -> FastAP
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         if not plan.get("ready_for_render"):
             raise HTTPException(status_code=400, detail="La sélection doit durer entre 9 et 11 minutes.")
-        job_id = uuid.uuid4().hex
-        date_folder = str(plan.get("date_key") or "episode")
-        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", date_folder):
-            date_folder = "episode"
-        output_dir = outputs / "bestof" / date_folder
-        output_path = output_dir / f"daily-best-of-{job_id[:8]}.mp4"
-        stored_plan = {**plan, "retry_of_job_id": retry_of_job_id} if retry_of_job_id else plan
-        store.create_best_of_job({
-            "id": job_id,
-            "status": "queued",
-            "progress": 0,
-            "message": "Épisode en attente de rendu",
-            "date_key": plan.get("date_key"),
-            "clip_count": plan.get("clip_count"),
-            "total_duration": plan.get("total_duration"),
-            "plan": stored_plan,
-            "output_path": str(output_path),
-        })
+        with app.state.best_of_lock:
+            active_job = store.get_active_best_of_job()
+            if active_job is not None:
+                active_id = str(active_job.get("id") or "")[:8]
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"Un rendu Daily Best Of est déjà en cours ({active_id}). Attends sa fin avant d'en lancer un autre.",
+                )
+            job_id = uuid.uuid4().hex
+            date_folder = str(plan.get("date_key") or "episode")
+            if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", date_folder):
+                date_folder = "episode"
+            output_dir = outputs / "bestof" / date_folder
+            output_path = output_dir / f"daily-best-of-{job_id[:8]}.mp4"
+            stored_plan = {**plan, "retry_of_job_id": retry_of_job_id} if retry_of_job_id else plan
+            store.create_best_of_job({
+                "id": job_id,
+                "status": "queued",
+                "progress": 0,
+                "message": "Épisode en attente de rendu",
+                "date_key": plan.get("date_key"),
+                "clip_count": plan.get("clip_count"),
+                "total_duration": plan.get("total_duration"),
+                "plan": stored_plan,
+                "output_path": str(output_path),
+            })
 
         def _run_best_of() -> None:
             store.update_best_of_job(
