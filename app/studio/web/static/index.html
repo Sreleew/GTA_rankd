@@ -77,14 +77,14 @@
                 <div class="edit-toggles">
                   <label><input type="checkbox" name="auto_trim_enabled" checked data-option-checkbox> Recadrer automatiquement les sources de plus de 2 min 45</label>
                   <label><input type="checkbox" name="dynamic_zoom" data-option-checkbox> Zoom dynamique</label>
-                  <label><input type="checkbox" name="brand_enabled" data-option-checkbox> Afficher GTA_rankd discrètement</label>
+                  <label><input type="checkbox" name="brand_enabled" data-option-checkbox checked> Afficher GTA_rankd discrètement</label>
                   <label><input type="checkbox" name="sfx_enabled" checked data-option-checkbox> Effet sonore du hook</label>
                   <label><input type="checkbox" name="hook_transcription_enabled" value="true" checked data-option-checkbox> Analyser la voix pour le hook automatique (Whisper local)</label>
                   <label><input type="checkbox" name="captions_enabled" data-option-checkbox> Sous-titres de la voix principale (Whisper local)</label>
                 </div>
                 <small class="form-note">L’analyse Whisper pour le hook est activée par défaut, même sans sous-titres. Elle ajoute le temps de transcription locale ; désactive-la pour accélérer le rendu. Sans moteur ou modèle disponible, le Short continue sans hook automatique.</small>
                 <small class="form-note">Les sous-titres restent facultatifs et désactivés par défaut. Ils nécessitent whisper.cpp et le modèle multilingue local large-v3-turbo (~1,6 Go).</small>
-                <small class="form-note">Whisper alimente aussi le hook automatique. Sans transcription exploitable ni note de contexte, aucun hook générique n'est inventé ; tu peux saisir un hook manuel.</small>
+                <small class="form-note">Whisper alimente aussi le hook automatique. Sans transcription exploitable ni note de contexte, un hook générique peut être utilisé en dernier recours ; tu peux saisir un hook manuel.</small>
                 <small class="form-note">Filtrage vocal local en bêta : le filtre strict est utilisé pour les sous-titres. Pour le hook seul, le Studio réutilise ce filtre s’il est déjà installé, mais ne déclenche pas son installation à la demande afin de préserver la rapidité ; sans filtre, la transcription peut inclure des dialogues du jeu. La première utilisation des sous-titres peut installer le filtre local et prendre plus de temps.</small>
                 <div class="form-grid edit-text-grid">
                   <label>Langue parlée dans le clip<select name="caption_language"><option value="config" selected>Réglage du Studio</option><option value="auto">Détection automatique</option><option value="en">English</option><option value="fr">Français</option><option value="es">Español</option><option value="pt">Português</option><option value="de">Deutsch</option></select><small>Le réglage du Studio conserve ta configuration actuelle. Choisis la détection auto ou une langue si nécessaire.</small></label>
@@ -118,14 +118,14 @@
                 <div class="edit-toggles">
                   <label><input type="checkbox" name="auto_trim_enabled" checked data-option-checkbox> Recadrer automatiquement les sources de plus de 2 min 45</label>
                   <label><input type="checkbox" name="dynamic_zoom" data-option-checkbox> Zoom dynamique</label>
-                  <label><input type="checkbox" name="brand_enabled" data-option-checkbox> Afficher GTA_rankd discrètement</label>
+                  <label><input type="checkbox" name="brand_enabled" data-option-checkbox checked> Afficher GTA_rankd discrètement</label>
                   <label><input type="checkbox" name="sfx_enabled" checked data-option-checkbox> Effet sonore du hook</label>
                   <label><input type="checkbox" name="hook_transcription_enabled" value="true" checked data-option-checkbox> Analyser la voix pour le hook automatique (Whisper local)</label>
                   <label><input type="checkbox" name="captions_enabled" data-option-checkbox> Sous-titres de la voix principale (Whisper local)</label>
                 </div>
                 <small class="form-note">L’analyse Whisper pour le hook est activée par défaut, même sans sous-titres. Elle ajoute le temps de transcription locale ; désactive-la pour accélérer le rendu. Sans moteur ou modèle disponible, le Short continue sans hook automatique.</small>
                 <small class="form-note">Les sous-titres restent facultatifs et désactivés par défaut. Ils nécessitent whisper.cpp et le modèle multilingue local large-v3-turbo (~1,6 Go).</small>
-                <small class="form-note">Whisper alimente aussi le hook automatique. Sans transcription exploitable ni note de contexte, aucun hook générique n'est inventé ; tu peux saisir un hook manuel.</small>
+                <small class="form-note">Whisper alimente aussi le hook automatique. Sans transcription exploitable ni note de contexte, un hook générique peut être utilisé en dernier recours ; tu peux saisir un hook manuel.</small>
                 <small class="form-note">Filtrage vocal local en bêta : le filtre strict est utilisé pour les sous-titres. Pour le hook seul, le Studio réutilise ce filtre s’il est déjà installé, mais ne déclenche pas son installation à la demande afin de préserver la rapidité ; sans filtre, la transcription peut inclure des dialogues du jeu. La première utilisation des sous-titres peut installer le filtre local et prendre plus de temps.</small>
                 <div class="form-grid edit-text-grid">
                   <label>Langue parlée dans le clip<select name="caption_language"><option value="config" selected>Réglage du Studio</option><option value="auto">Détection automatique</option><option value="en">English</option><option value="fr">Français</option><option value="es">Español</option><option value="pt">Português</option><option value="de">Deutsch</option></select><small>Le réglage du Studio conserve ta configuration actuelle. Choisis la détection auto ou une langue si nécessaire.</small></label>

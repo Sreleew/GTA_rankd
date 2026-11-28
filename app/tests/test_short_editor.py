@@ -42,6 +42,17 @@ def test_ass_contains_hook_branding_and_active_word_highlight(tmp_path: Path):
     assert r"\c&H0000C8F5&" in content
 
 
+def test_ass_branding_is_enabled_by_default(tmp_path: Path):
+    path = create_ass_file(
+        tmp_path / "default-brand.ass",
+        words=[],
+        hook_text="WAIT FOR IT",
+        captions_enabled=False,
+    )
+    content = path.read_text(encoding="utf-8-sig")
+    assert "GTA_rankd" in content
+
+
 def test_hook_style_inference_selects_distinct_animations_for_short_hooks(tmp_path: Path):
     examples = [
         ("WHAT JUST HAPPENED?", "question", r"\frz-2"),

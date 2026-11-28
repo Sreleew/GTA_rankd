@@ -5,7 +5,7 @@
 - **Dernière mise à jour :** 28 novembre 2026
 - **Progression des releases :** à chaque relance de développement, le compte rendu doit indiquer le lot livré, les PR/CI, l'état d'avancement vers la prochaine version et une estimation actualisée du nombre de lots restants avant sa publication. Cette estimation doit être réévaluée à chaque session, sans promettre une date artificielle.
 - **Dernière version stable confirmée :** [v0.9.3](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.9.3), publiée le 28 novembre 2026.
-- **État :** les PR #92 à #112 sont intégrées dans `main` (HEAD `88962e05738c2bf0a91fb43159aab340dcd0beb3`). La PR #113 est ouverte sur `fix/hook-diarization-runtime-fallback` pour préserver l’analyse du hook si la diarisation optionnelle installée échoue techniquement, sans relâcher le filtrage strict des sous-titres. La v0.9.3 reste la dernière release stable ; la prochaine publication attend la consolidation du parcours Short et la validation matérielle Windows/AMD.
+- **État :** les PR #92 à #115 sont intégrées dans `main` (dernier HEAD connu `1358e69f57555b7295313740de56d2339b86870a`). Une PR dédiée est en préparation pour activer la signature GTA_rankd par défaut et autoriser un hook générique uniquement en dernier recours. La PR #114 reste distincte sur le Daily Best Of multi-jours et les durées Shorts libres. La v0.9.3 reste la dernière release stable ; la prochaine publication attend la consolidation du parcours Short et la validation matérielle Windows/AMD.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
 - **Source active :** `app/`. Modifier directement les fichiers Python, JavaScript, CSS, HTML, tests et installateur présents dans ce dossier.
@@ -1014,3 +1014,14 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Limite matérielle :** aucun test réel sur la RX 9060 XT ni sur un VOD de 19 heures. L'analyse ne charge plus tout le WAV en RAM, mais l'extraction audio complète crée toujours un fichier temporaire volumineux et conserve son coût disque/décodage.
 - **Release :** v0.9.3 reste la version stable ; aucun numéro, tag ou .release-approval modifié. Les données locales, paramètres et encodeurs AMD/CPU ne sont pas touchés. « Moments forts » reste en pause.
 - **Suite :** mesurer le gain sur un import groupé réel et valider la tenue disque/RAM sur une longue source Twitch Windows/AMD avant d'étendre le chantier.
+
+
+## 77. Préférences de finition Short confirmées et amélioration des fallbacks éditoriaux, 28 novembre 2026
+
+- **Décisions utilisateur :** ne pas modifier le chevauchement de sous-titres observé sur les exports ; conserver la signature `GTA_rankd` activée par défaut ; accepter « WAIT FOR THE REACTION » comme hook générique si aucune accroche précise fiable n'est disponible.
+- **Habillage :** le moteur actuel retire déjà l'ancien cadre gris et le trait jaune du layout historique `smart`, en le normalisant vers la composition floutée sans `drawbox`. Les tests de `test_render_integration.py` vérifient explicitement l'absence de cadre et de trait. Les captures de test fournies semblent issues de l'ancien habillage.
+- **Signature :** la case `Afficher GTA_rankd discrètement` devient cochée par défaut dans les deux formulaires ; le moteur active aussi la signature lorsque le champ est absent, tout en respectant un `false` explicite. Le défaut de `create_ass_file` est aligné.
+- **Hooks :** lorsqu'aucun texte fiable n'est exploitable, le moteur peut maintenant utiliser `WAIT FOR THE REACTION` en dernier recours. Les hooks spécifiques issus d'une transcription complète, d'une note ou d'une saisie manuelle restent prioritaires ; aucune action factuelle n'est inventée.
+- **Descriptions :** le fallback neutre évite de reformuler mot pour mot le titre lorsqu'aucun détail fiable n'est disponible ; il crédite toujours le créateur, la source et les hashtags.
+- **Périmètre :** aucune correction de chevauchement de sous-titres, aucune nouvelle miniature, aucun changement de cadrage ni d'export/encodeur. « Moments forts » reste en pause. Les améliorations montage proposées restent à évaluer avant développement.
+- **Release :** aucun numéro de version, tag ou `.release-approval` modifié. v0.9.3 reste la dernière release stable.

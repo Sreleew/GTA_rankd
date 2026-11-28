@@ -1492,6 +1492,8 @@ def test_batch_twitch_import_is_available_in_shorts_ui():
     assert 'name="dynamic_zoom" checked' not in html
     assert html.count("Effet sonore du hook") == 2
     assert html.count("Whisper alimente aussi le hook automatique.") == 2
+    assert html.count('name="brand_enabled" data-option-checkbox checked') == 2
+    assert "WAIT FOR THE REACTION" in html
     assert html.count("Sans transcription exploitable ni note de contexte") == 2
     assert "Whoosh discret au moment fort" not in html
     config_default = (Path(__file__).resolve().parents[1] / "config.yaml.default").read_text(encoding="utf-8")

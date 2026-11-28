@@ -391,7 +391,7 @@ def create_ass_file(
     font_name: str = "Arial",
     captions_enabled: bool = True,
     word_timed_captions: bool = False,
-    brand_enabled: bool = False,
+    brand_enabled: bool = True,
     layout: str = "blur",
     hook_style: str = "auto",
 ) -> Path:

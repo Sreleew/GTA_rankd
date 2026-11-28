@@ -364,7 +364,7 @@ def test_manual_two_word_hook_is_preserved_with_local_model(monkeypatch):
     assert result["hook_text"] == "NO WAY!"
 
 
-def test_metadata_without_a_reliable_transcript_does_not_invent_a_generic_hook():
+def test_metadata_without_a_reliable_transcript_uses_generic_hook_as_last_resort():
     result = generate_short_metadata(
         streamer="Streamer",
         source_title="GTA 5",
@@ -373,5 +373,5 @@ def test_metadata_without_a_reliable_transcript_does_not_invent_a_generic_hook()
         source_url="https://clips.twitch.tv/example",
     )
 
-    assert result["hook_text"] == ""
-    assert "WAIT FOR THE REACTION" not in result["hook_text"]
+    assert result["hook_text"] == "WAIT FOR THE REACTION"
+    assert result["description"].splitlines()[0] == "From Streamer's GTA 5 session. 😭"
