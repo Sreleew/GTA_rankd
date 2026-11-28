@@ -612,6 +612,8 @@ def test_rebase_word_timings_rejects_invalid_cut_bounds():
 def test_sanitize_word_timings_clips_sorts_and_discards_invalid_words():
     words = [
         WordTiming(1.5, 2.0, "later"),
+        WordTiming(2.5, 3.0, "first same start"),
+        WordTiming(2.5, 2.8, "second same start"),
         WordTiming(float("nan"), 0.5, "nan start"),
         WordTiming(0.2, float("inf"), "infinite end"),
         WordTiming(1.0, 0.5, "reversed"),
@@ -624,6 +626,8 @@ def test_sanitize_word_timings_clips_sorts_and_discards_invalid_words():
     assert sanitize_word_timings(words, 5.0) == [
         WordTiming(0.0, 0.3, "clipped start"),
         WordTiming(1.5, 2.0, "later"),
+        WordTiming(2.5, 3.0, "first same start"),
+        WordTiming(2.5, 2.8, "second same start"),
         WordTiming(4.8, 5.0, "clipped end"),
     ]
 
