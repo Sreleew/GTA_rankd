@@ -10,7 +10,7 @@ from studio.config import load_config
 from studio.web.app import create_app, safe_upload_name
 from studio.web.short_renderer import build_filter_complex, build_render_command
 import studio.web.short_renderer as short_renderer
-from studio.web.app import _validate_edit_options
+from studio.web.app import _resolve_dynamic_zoom, _validate_edit_options
 from studio.web.store import Store
 
 
@@ -37,6 +37,18 @@ def test_blur_layout_keeps_the_full_landscape_source_visible():
     graph = build_filter_complex(1080, 1920, layout="blur", dynamic_zoom=False)
     assert "boxblur" in graph
     assert "overlay=(W-w)/2:(H-h)/2" in graph
+
+
+def test_dynamic_zoom_uses_explicit_request_then_user_config():
+    class Config:
+        def get(self, section, key, default=None):
+            assert (section, key) == ("shorts", "dynamic_zoom")
+            return True
+
+    config = Config()
+    assert _resolve_dynamic_zoom(config, None) is True
+    assert _resolve_dynamic_zoom(config, False) is False
+    assert _resolve_dynamic_zoom(config, True) is True
 
 
 def test_edit_options_are_validated_and_clamped_by_api():
@@ -837,6 +849,7 @@ def test_short_url_api_accepts_only_public_twitch_clip_or_vod_urls(tmp_path: Pat
         assert job is not None
         assert job["source_url"] == url
         assert job["status"] == "queued"
+        assert job["metadata"]["options"]["dynamic_zoom"] is False
 
     assert submitted == created_ids
 
@@ -1240,7 +1253,6 @@ def test_batch_twitch_short_import_queues_valid_urls_and_reports_invalid_ones(tm
             "rights_confirmed": "true",
             "streamer": "Test streamer",
             "layout": "blur",
-            "dynamic_zoom": "false",
         },
     )
 
@@ -1259,6 +1271,7 @@ def test_batch_twitch_short_import_queues_valid_urls_and_reports_invalid_ones(tm
     assert all(job["metadata"]["batch_count"] == 3 for job in jobs)
     assert sorted(job["metadata"]["batch_index"] for job in jobs) == [1, 2, 3]
     assert all(job["metadata"]["options"]["layout"] == "blur" for job in jobs)
+    assert all(job["metadata"]["options"]["dynamic_zoom"] is False for job in jobs)
     assert all(job["metadata"]["options"]["captions_enabled"] is False for job in jobs)
 
     queued_batch = client.get(f"/api/shorts/batches/{payload['batch_id']}")
@@ -1409,6 +1422,7 @@ def test_short_caption_option_requires_local_whisper_and_is_persisted(tmp_path: 
     uploaded_job = app.state.store.get_job(upload.json()["id"])
     assert uploaded_job["metadata"]["options"]["captions_enabled"] is True
     assert uploaded_job["metadata"]["options"]["caption_language"] == "es"
+    assert uploaded_job["metadata"]["options"]["dynamic_zoom"] is False
 
     batch_payload = {
         "urls": "https://clips.twitch.tv/CaptionBatchOne\nhttps://clips.twitch.tv/CaptionBatchTwo",
@@ -1428,6 +1442,9 @@ def test_batch_twitch_import_is_available_in_shorts_ui():
     static = Path(__file__).resolve().parents[1] / "studio" / "web" / "static"
     html = (static / "index.html").read_text(encoding="utf-8")
     js = (static / "app.js").read_text(encoding="utf-8")
+    assert html.count("peut couper les bords, y compris une webcam en bord d’écran") == 2
+    config_default = (Path(__file__).resolve().parents[1] / "config.yaml.default").read_text(encoding="utf-8")
+    assert "\n  dynamic_zoom: false\n" in config_default
 
     assert 'id="short-batch-urls"' in html
     assert 'id="short-batch-submit"' in html
