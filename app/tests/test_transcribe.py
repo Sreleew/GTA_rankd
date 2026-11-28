@@ -461,7 +461,7 @@ def test_audio_peak_analysis_reads_wav_in_bounded_chunks(tmp_path, monkeypatch):
 
     path = tmp_path / "streamed-accents.wav"
     sample_rate = 16000
-    total_frames = sample_rate * 12
+    total_frames = int(sample_rate * 12.4)
     samples = []
     for index in range(total_frames):
         timestamp = index / sample_rate
