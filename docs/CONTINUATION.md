@@ -718,7 +718,7 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Fallback SRT :** le worker transmet maintenant le mode de timestamps réellement retourné par whisper.cpp. En `segment_srt`, chaque phrase reste affichée sur l'intervalle SRT exact ; le moteur ne répartit plus artificiellement le temps entre les mots. Les phrases sont repliées sur plusieurs lignes et les mots exceptionnellement longs reçoivent une réduction horizontale bornée.
 - **Hook :** le texte principal disparaît après 2,0 s et le contexte après 2,6 s. Le gameplay reste visible dès la première image ; aucun écran d'introduction n'est ajouté.
 - **Tests :** couverture des bornes SRT exactes, de l'absence de faux surlignage mot à mot, du retour à la mise en emphase DTW et du rythme hook/contexte.
-- **Branche :** `fix/srt-caption-timing-and-hook-exit`. Les validations Linux et Windows doivent être vérifiées sur la PR avant fusion.
+- **PR #92 :** [Keep SRT captions accurate and shorten Short opening overlays](https://github.com/Sreleew/GTA_rankd/pull/92), branche `fix/srt-caption-timing-and-hook-exit`. Les validations Linux et Windows doivent réussir sur le commit final de la PR avant fusion.
 - **Release :** v0.9.3 reste la dernière version stable ; aucun numéro de version, fichier d'approbation ou réglage utilisateur n'est modifié.
 - **Limite :** aucun nouveau rendu réel ni benchmark Whisper sur la RX 9060 XT n'est revendiqué.
 - **Suite :** valider les deux plateformes, puis comparer un rendu DTW et un fallback SRT sur Windows avant de poursuivre les améliorations éditoriales.
