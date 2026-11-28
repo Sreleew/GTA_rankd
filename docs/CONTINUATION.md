@@ -806,6 +806,6 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - Correction : appliquer un fondu audio d'entrée de 0,35 s et un fondu de sortie de 0,75 s au mix final lorsque les durées exactes sont disponibles. Les durées sont bornées pour les tests ou les épisodes exceptionnellement courts. Aucun crossfade n'est ajouté entre les clips afin de ne pas brouiller les dialogues ni les effets de gameplay.
 - Tests : vérifier les timestamps exacts sur un épisode de 560 s, le comportement historique sans durées connues et le bornage sur un flux de 0,2 s.
 - Périmètre : audio uniquement ; aucun changement aux vidéos, à l'ordre des Shorts, à la durée cible, aux données locales, aux paramètres ou aux encodeurs AMD/CPU. « Moments forts » reste en pause.
-- PR #98 : [Add clean audio edges to Daily Best Of](https://github.com/Sreleew/GTA_rankd/pull/98), branche feat/daily-best-of-audio-edges. Les validations Linux et Windows doivent réussir sur le HEAD final avant fusion.
+- PR #98 : [Add clean audio edges to Daily Best Of](https://github.com/Sreleew/GTA_rankd/pull/98), branche feat/daily-best-of-audio-edges, commit 93b64d842bdee2fe8590fc007cf6d141ba7a0d87. Les validations Linux et Windows doivent réussir sur le HEAD final avant fusion.
 - Release : v0.9.3 reste la dernière version stable ; aucune nouvelle release ni approbation de publication n'est créée.
 - Suite : vérifier le son sur un Daily Best Of complet et ne considérer des transitions entre clips que si elles améliorent la compréhension sans masquer la parole.
