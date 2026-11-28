@@ -334,7 +334,7 @@ def test_manual_two_word_hook_is_preserved_with_local_model(monkeypatch):
 
     payload = {
         "response": json.dumps({
-            "title": "Tminnzy's Lambo moment in GTA 5",
+            "title": "Tminnzy really said “got my” in GTA 5",
             "description": "A tense moment with his Lambo.",
             "hashtags": ["#GTA5", "#GTAClips"],
             "hook_text": "MODEL GENERATED TEXT",
