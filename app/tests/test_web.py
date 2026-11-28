@@ -152,7 +152,7 @@ def test_whisper_gpu_button_uses_fresh_script_and_visible_feedback():
     static = Path(__file__).resolve().parents[1] / "studio" / "web" / "static"
     html = (static / "index.html").read_text(encoding="utf-8")
     js = (static / "app.js").read_text(encoding="utf-8")
-    assert '<script src="/static/app.js?v=0.9.3-platform-defaults"></script>' in html
+    assert '<script src="/static/app.js?v=0.9.4-main-voice-captions"></script>' in html
     assert '<button type="button" class="mini-button" id="verify-whisper-gpu"' in html
     assert "/api/models/whisper/verify" in js
     assert "if (verifyGpuButton) verifyGpuButton.addEventListener('click', verifyWhisperGpu);" in js
@@ -225,7 +225,7 @@ def test_ollama_verify_button_has_a_dedicated_visible_handler():
     static = Path(__file__).resolve().parents[1] / "studio" / "web" / "static"
     html = (static / "index.html").read_text(encoding="utf-8")
     js = (static / "app.js").read_text(encoding="utf-8")
-    assert '<script src="/static/app.js?v=0.9.3-platform-defaults"></script>' in html
+    assert '<script src="/static/app.js?v=0.9.4-main-voice-captions"></script>' in html
     assert '<button type="button" class="mini-button" id="verify-ollama"' in html
     assert "#refresh-models-secondary" in js
     assert "/api/models/ollama/verify" in js
@@ -1426,7 +1426,7 @@ def test_batch_twitch_import_is_available_in_shorts_ui():
     assert 'id="short-batch-urls"' in html
     assert 'id="short-batch-submit"' in html
     assert 'id="short-batch-tracker"' in html
-    assert "v=0.9.3-platform-defaults" in html
+    assert "v=0.9.4-main-voice-captions" in html
     assert "JUSQU'À 10 URLS" in html
     assert "/api/shorts/url/batch" in js
     assert "/api/shorts/batches/" in js
