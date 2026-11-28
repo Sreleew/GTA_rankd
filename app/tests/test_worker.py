@@ -277,6 +277,21 @@ def test_caption_voice_filter_skips_diarization_when_transcript_is_empty(monkeyp
 
 
 
+def test_audio_analysis_does_not_decode_a_full_wav_for_reaction_micro_zoom():
+    assert not worker._needs_audio_analysis(
+        True, 60.0, dynamic_zoom=True, auto_trim=False, trim_threshold_seconds=165.0,
+    )
+    assert not worker._needs_audio_analysis(
+        True, 60.0, dynamic_zoom=True, auto_trim=True, trim_threshold_seconds=165.0,
+    )
+    assert worker._needs_audio_analysis(
+        True, 180.0, dynamic_zoom=True, auto_trim=True, trim_threshold_seconds=165.0,
+    )
+    assert not worker._needs_audio_analysis(
+        False, 180.0, dynamic_zoom=True, auto_trim=True, trim_threshold_seconds=165.0,
+    )
+
+
 def test_hook_sound_requires_a_visible_hook_and_user_opt_in():
     assert worker._hook_sound_should_render(True, "WAIT, WHAT JUST HAPPENED?")
     assert worker._hook_sound_should_render(True, "  NO WAY!  ")

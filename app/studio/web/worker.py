@@ -20,8 +20,9 @@ from studio.config import AppConfig
 from studio.process import ProcessingCancelled, check_cancelled, set_current_cancel_event
 from studio.web.metadata import generate_short_metadata
 from studio.web.short_editor import (
-    create_ass_file, infer_hook_style,
-    select_thumbnail_timestamp, select_excerpt_range, write_srt_file,
+    create_ass_file, infer_hook_style, rebase_word_timings,
+    select_reaction_zoom_timestamps, select_thumbnail_timestamp,
+    select_excerpt_range, tighten_speech_edges, write_srt_file,
 )
 from studio.web.short_renderer import (
     MediaError, create_hook_sound_effect, normalize_short_layout, probe_media, render_vertical_short,
@@ -122,10 +123,12 @@ def _needs_audio_analysis(
     auto_trim: bool,
     trim_threshold_seconds: float = 45.0,
 ) -> bool:
-    """Avoid extracting a full WAV when neither zoom nor long-source trimming needs it."""
-    return bool(has_audio and (
-        dynamic_zoom or (auto_trim and float(duration) > max(0.0, trim_threshold_seconds))
-    ))
+    """Decode a WAV only when long-source auto-trimming needs its audio peak.
+
+    Reaction micro-zooms use Whisper timestamps, so enabling them must not trigger an
+    otherwise unnecessary full-source WAV extraction.
+    """
+    return bool(has_audio and auto_trim and float(duration) > max(0.0, trim_threshold_seconds))
 
 
 def _validate_short_excerpt_duration(duration: float) -> float:
@@ -502,7 +505,6 @@ class JobRunner:
                     "shorts", "peak_trim_threshold_seconds", default=45
                 )),
             )
-            audio_peak_timestamps: list[float] = []
             audio_path: Path | None = None
             audio_path_start = 0.0
             audio_path_duration = float(source_info["duration"])
@@ -518,10 +520,8 @@ class JobRunner:
                         start_seconds=trim_start if source_range else None,
                         duration_seconds=(trim_end - trim_start) if source_range else None,
                     )
-                    local_peak, audio_peak_timestamps = analyze_audio_peaks(audio_path)
+                    local_peak, _ = analyze_audio_peaks(audio_path)
                     peak_timestamp = (trim_start + local_peak) if source_range and local_peak else (local_peak or peak_timestamp)
-                    if source_range:
-                        audio_peak_timestamps = [trim_start + item for item in audio_peak_timestamps]
 
                 except TranscriptionError as exc:
                     logger.warning("Analyse audio ignorée pour le job %s : %s", job_id, exc)
@@ -623,6 +623,32 @@ class JobRunner:
                                         or "La voix du streamer n'a pas pu être isolée avec confiance."
                                     )[:240]
                             check_cancelled()
+                            excerpt_duration = trim_end - trim_start
+                            speech_start, speech_end = tighten_speech_edges(
+                                render_words, excerpt_duration,
+                            )
+                            if speech_start > 0 or speech_end < excerpt_duration:
+                                original_trim_start = trim_start
+                                removed_seconds = speech_start + (excerpt_duration - speech_end)
+                                render_words = rebase_word_timings(
+                                    render_words, speech_start, speech_end,
+                                )
+                                trim_start = round(original_trim_start + speech_start, 3)
+                                trim_end = round(original_trim_start + speech_end, 3)
+                                timings["speech_edge_trim_ms"] = int(round(removed_seconds * 1000))
+                                logger.info(
+                                    "Temps morts de bord retirés pour le Short %s : %.2f s",
+                                    job_id, removed_seconds,
+                                )
+                                if captions_requested and captions_output_path is not None:
+                                    try:
+                                        write_srt_file(captions_output_path, render_words)
+                                    except OSError:
+                                        logger.warning(
+                                            "Le SRT du Short %s n'a pas pu être recalé après le retrait des temps morts.",
+                                            job_id,
+                                            exc_info=True,
+                                        )
                             render_transcript = " ".join(
                                 str(word.text) for word in render_words
                             ).strip()
@@ -663,13 +689,16 @@ class JobRunner:
 
             captions_active = _captions_should_render(captions_requested, render_words)
             render_peak_timestamp = max(0.0, peak_timestamp - trim_start)
-            render_zoom_timestamps = [
-                round(item - trim_start, 3)
-                for item in audio_peak_timestamps
-                if trim_start <= item <= trim_end
-            ]
-            if not render_zoom_timestamps:
-                render_zoom_timestamps = [render_peak_timestamp]
+            render_zoom_timestamps = (
+                select_reaction_zoom_timestamps(render_words, trim_end - trim_start)
+                if dynamic_zoom_enabled else []
+            )
+            # A requested micro-zoom is skipped rather than aimed at an unrelated loud game sound.
+            dynamic_zoom_enabled = bool(dynamic_zoom_enabled and render_zoom_timestamps)
+            try:
+                render_zoom_percent = max(0, min(6, int(options.get("zoom_percent", 4))))
+            except (TypeError, ValueError, OverflowError):
+                render_zoom_percent = 4
             render_thumbnail_timestamp = select_thumbnail_timestamp(
                 render_words, trim_end - trim_start, preferred=render_peak_timestamp
             )
@@ -749,7 +778,7 @@ class JobRunner:
                 peak_timestamp=render_peak_timestamp,
                 zoom_timestamps=render_zoom_timestamps,
                 thumbnail_timestamp=render_thumbnail_timestamp,
-                zoom_percent=int(options.get("zoom_percent", 8)),
+                zoom_percent=render_zoom_percent,
                 trim_start=trim_start,
                 trim_duration=trim_end - trim_start,
                 sound_effect_path=hook_sound_path if hook_sound_enabled else None,
