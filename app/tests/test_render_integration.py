@@ -44,7 +44,10 @@ def test_legacy_smart_layout_keeps_portrait_sources_unchanged() -> None:
     assert "drawbox=" not in legacy_graph
 
 
-@pytest.mark.parametrize(("requested", "expected"), [("blur", "blur"), ("fill", "fill"), ("smart", "blur")])
+@pytest.mark.parametrize(
+    ("requested", "expected"),
+    [("blur", "blur"), ("fill", "fill"), ("smart", "blur")],
+)
 def test_short_layout_normalization_keeps_legacy_jobs_compatible(requested: str, expected: str) -> None:
     assert normalize_short_layout(requested) == expected
 
@@ -424,8 +427,8 @@ def test_legacy_smart_layout_keeps_both_edges_of_a_twitch_frame_visible(tmp_path
         offset = (y * 360 + x) * 3
         return tuple(frame[offset:offset + 3])
 
-    # The full 16:9 source is fitted into the center panel, so edge content
-    # (where Twitch webcams are often placed) must survive the vertical render.
+    # The full 16:9 source is fitted into the vertical canvas, so edge content
+    # (where Twitch webcams are often placed) must survive the render.
     left_edge = pixel(20, 345)
     right_edge = pixel(340, 345)
     assert left_edge[1] > left_edge[0] * 1.4 and left_edge[1] > left_edge[2] * 1.4
