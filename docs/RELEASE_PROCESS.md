@@ -32,9 +32,9 @@ La voie `workflow_dispatch` reste disponible pour préparer une Release brouillo
 - Les scripts PowerShell doivent conserver le BOM UTF-8 et les CRLF ; cette règle est versionnée dans `.gitattributes` et contrôlée par les tests.
 - L'archive `archive/releases/v0.7.8/` est conservée uniquement comme provenance historique de la Release v0.7.8.
 
-## État au 27 novembre 2026
+## État de référence au 28 novembre 2026
 
-- Dernière Release stable publiée : [v0.9.2](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.9.2), avec le ZIP Windows et `SHA256SUMS.txt` (publication vérifiée le 27 novembre 2026).
+- Dernière Release stable publiée : [v0.9.3](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.9.3), avec le ZIP Windows et `SHA256SUMS.txt` (publication vérifiée le 28 novembre 2026).
 - PR #41 fusionnée : constructeur de sélection Daily Best Of, avec CI Linux et Windows réussies.
 - PR #42 fusionnée : relance des jobs Twitch en erreur depuis l'URL d'origine, conservation des options et réutilisation du média local.
 - CI PR #42 : Linux [46012357301](https://github.com/Sreleew/GTA_rankd/actions/runs/46012357301) et Windows [46012357283](https://github.com/Sreleew/GTA_rankd/actions/runs/46012357283) réussies.
@@ -86,3 +86,12 @@ Les PR suivantes sont fusionnées après la création de l'archive v0.8.9. Elles
 - ZIP Windows `GTA-Ranked-Studio-v0.9.1.zip` : 249 800 octets ; SHA-256 `d798b112838ecccc9877267949035a6a7faaede5c76ab80898aab9b07e311200`.
 - Manifeste `SHA256SUMS.txt` : 95 octets ; SHA-256 `a2bc90f701dd022eab65dae71b1005b18b29939b222d5eef6617c78dddbcbfa9`.
 - Limite confirmée : la miniature garde la frame source entière. La webcam n'est pas isolée ni déplacée ; sa taille et sa position restent celles de la source.
+
+
+## Publication de la v0.9.3, 28 novembre 2026
+
+- PR #90 de préparation fusionnée dans `main` (commit `7c809cc9de267524d6ad811a81f84fa88e54a0d5`) après réussite Linux/Windows.
+- CI post-fusion Linux [46086077738](https://github.com/Sreleew/GTA_rankd/actions/runs/46086077738) et Windows [46086077825](https://github.com/Sreleew/GTA_rankd/actions/runs/46086077825) réussies.
+- Workflow officiel de publication [46086077731](https://github.com/Sreleew/GTA_rankd/actions/runs/46086077731) réussi.
+- Release stable : [GTA Ranked Studio v0.9.3](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.9.3).
+- ZIP Windows `GTA-Ranked-Studio-v0.9.3.zip` : 250 018 octets ; `SHA256SUMS.txt` publié.

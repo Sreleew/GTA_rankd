@@ -4,8 +4,8 @@
 
 - **Dernière mise à jour :** 28 novembre 2026
 - **Progression des releases :** à chaque relance de développement, le compte rendu doit indiquer le lot livré, les PR/CI, l'état d'avancement vers la prochaine version et une estimation actualisée du nombre de lots restants avant sa publication. Cette estimation doit être réévaluée à chaque session, sans promettre une date artificielle.
-- **Dernière version stable confirmée :** [v0.9.2](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.9.2), publiée le 28 novembre 2026.
-- **État :** PR #64 à #89 fusionnées dans `main`. La release v0.9.2 est la dernière stable confirmée. PR #89 simplifie le montage Short et laisse les plateformes choisir la miniature ; la préparation de v0.9.3 est en cours.
+- **Dernière version stable confirmée :** [v0.9.3](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.9.3), publiée le 28 novembre 2026.
+- **État :** PR #64 à #90 fusionnées dans `main`. La release v0.9.3 est publiée ; elle simplifie le montage Short et laisse les plateformes choisir la miniature. La prochaine version sera déterminée après validation d'un Short réel sur le PC Windows.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
 - **Source active :** `app/`. Modifier directement les fichiers Python, JavaScript, CSS, HTML, tests et installateur présents dans ce dossier.
@@ -43,12 +43,12 @@ Le projet doit rester local-first, sans abonnement ni API IA payante obligatoire
 - Génération de Shorts 1080 × 1920. Le rendu conserve l'image source complète avec fond flouté par défaut. Le zoom dynamique est désactivé par défaut.
 - Transcription locale, sous-titres, filtre lexical de réactions et mode expérimental de voix dominante.
 - Hooks, titres, descriptions et hashtags générés localement avec Ollama/Qwen facultatif et fallback déterministe. Les fragments ASR incomplets ne sont pas utilisés comme citations ; en l'absence de phrase ou de contexte fiable, le fallback reste neutre.
-- Miniatures issues d'images réelles du clip, avec une composition verticale 1080 × 1920 plus épurée, gameplay mis au premier plan, fond assombri, titre court et branding discret.
+- Aucune miniature graphique personnalisée n'est générée : l'aperçu interne reste une capture brute et la plateforme choisit l'image de couverture lors de la publication.
 - File de traitement, progression FFmpeg, annulation, prévisualisation, validation/rejet et bibliothèque de clips.
-- Après validation d'un Short, Prévisualiser, Télécharger, Miniature et Copier le titre, la description, les hashtags et le post restent accessibles.
+- Après validation d'un Short, Prévisualiser, Télécharger et Copier le titre, la description, les hashtags et le post restent accessibles.
 - La shortlist de moments forts écarte les transcriptions longues quasi identiques issues de passages éloignés, sans filtrer les réactions courtes ni les scans audio seuls.
 - Le calcul des scores utilise des index temporels sur les fenêtres audio et les mots Whisper, avec fallback linéaire pour les entrées non triées.
-- Le montage intelligent de Shorts est intégré : les clips Twitch déjà sélectionnés sont préservés, les pauses longues ne sont retirées qu'avec des timestamps mot à mot DTW fiables, et les sous-titres, le pic audio, le zoom, l'audio et la miniature sont recalés sur la timeline assemblée.
+- Le montage intelligent de Shorts est intégré : les clips Twitch déjà sélectionnés sont préservés, les pauses longues ne sont retirées qu'avec des timestamps mot à mot DTW fiables, et les sous-titres, le pic audio, le zoom et l'audio sont recalés sur la timeline assemblée.
 - La publication vers YouTube, TikTok et Instagram reste manuelle.
 
 ## 3. Architecture technique et environnement
@@ -174,7 +174,7 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Durée cible :** Shorts de 60 à 165 secondes. Les clips Twitch plus courts sont conservés tels quels, sans rallongement artificiel. Les passages VOD sont proposés en 60, 90, 120, 150 ou 165 secondes.
 - **Direction des miniatures :** rendu propre, esthétique, lisible et immédiatement compréhensible, construit autour d'une vraie image du clip. Le visuel doit donner envie de cliquer sans surcharge, faux événement ou texte tronqué.
 - **Évaluer sur des exemples réels.** Quand l'utilisateur envoie un clip ou un Short généré, examiner concrètement le rendu avant de décider des corrections. Distinguer les observations réelles des hypothèses.
-- **Garder les contrôles accessibles après validation.** Ne pas retirer les actions de prévisualisation, téléchargement, miniature et copie du titre/description/hashtags après validation d'un Short.
+- **Garder les contrôles utiles accessibles après validation.** Conserver prévisualisation, téléchargement et copie des métadonnées ; l'export de miniature custom est en pause.
 - **Communication :** être direct et concis, donner les résultats concrets et signaler clairement ce qui reste non testé.
 - **Pilotage proactif confirmé le 27 novembre 2026 :** l'utilisateur ne souhaite pas devoir arbitrer les choix techniques ou connaître le développement. L'assistant prend l'initiative de piloter le produit et les décisions techniques, explique les conséquences en termes simples et recommande clairement de ne pas construire une fonctionnalité lorsqu'elle est trop complexe, lente, coûteuse à maintenir, peu utile ou peu rentable par rapport à sa valeur. Toujours comparer le bénéfice attendu au temps de développement, au temps de traitement, à la fiabilité, à la maintenance et à l'impact sur l'expérience utilisateur. Proposer des alternatives plus simples, supprimer ou reporter les idées à faible ROI, anticiper les besoins et pousser le concept vers un produit premium sans sur-ingénierie. Ne demander un arbitrage utilisateur que lorsqu'il dépend réellement de ses goûts, de ses objectifs ou d'une contrainte inaccessible au développeur. L'utilisateur fait confiance à l'assistant pour le guider et attend une posture proactive, experte et honnête.
 - **Suivi de progression demandé le 27 novembre 2026 :** terminer chaque relance par un indicateur lisible de progression vers la prochaine Release (lots terminés/restants, contenu restant et estimation de la prochaine mise à jour). Ne pas laisser l'utilisateur deviner où en est le chantier. Les réponses doivent rester courtes et les gros travaux être découpés en petits lots pour éviter les expirations de réception de ChatGPT. Une seule prochaine action prioritaire dans le bilan.
@@ -700,9 +700,11 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Suite :** préparer et valider la release stable v0.9.3, puis vérifier ses assets publiés.
 
 
-## 51. Préparation de la release v0.9.3, 28 novembre 2026
 
-- **Base :** PR #89 est fusionnée dans `main` et ses validations Linux/Windows ont réussi. Le changement de montage est intégré, mais la version disponible dans l'application reste v0.9.2 jusqu'à la publication.
-- **Préparation :** synchroniser `VERSION.txt`, `app/VERSION.txt`, `app/pyproject.toml`, `app/config.yaml.default`, les notes de version et `.release-approval` sur 0.9.3.
-- **Contenu :** capture Twitch entière sur fond flouté, sans cadre ni bande graphique ; branding désactivé par défaut ; miniatures custom retirées au profit du choix automatique de la plateforme.
-- **Suite :** PR de release vers `main`, vérifier CI Linux/Windows, fusionner puis confirmer l'exécution du workflow stable et la présence du ZIP/SHA-256. Après publication, examiner un Short réel sur le PC Windows pour vérifier le rendu visuel.
+## 51. Publication de la release v0.9.3, 28 novembre 2026
+
+- **PR #90 :** préparation v0.9.3 fusionnée dans `main`, commit `7c809cc9de267524d6ad811a81f84fa88e54a0d5`. Versions racine/app synchronisées, notes identiques, approbation publiée et mémo mis à jour.
+- **CI de PR #90 :** audit Linux [46085837169](https://github.com/Sreleew/GTA_rankd/actions/runs/46085837169) et validation Windows [46085837134](https://github.com/Sreleew/GTA_rankd/actions/runs/46085837134) réussis.
+- **CI post-fusion :** audit Linux [46086077738](https://github.com/Sreleew/GTA_rankd/actions/runs/46086077738) et validation Windows [46086077825](https://github.com/Sreleew/GTA_rankd/actions/runs/46086077825) réussis, avec tests complets et vérification du package.
+- **Publication :** workflow officiel [46086077731](https://github.com/Sreleew/GTA_rankd/actions/runs/46086077731) réussi. La [v0.9.3](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.9.3) est publiée avec le ZIP Windows `GTA-Ranked-Studio-v0.9.3.zip` (250 018 octets) et `SHA256SUMS.txt`.
+- **Suite :** installer la v0.9.3 et examiner un Short réel pour vérifier le rendu visuel final sur Windows ; le CI ne remplace pas ce contrôle sur le PC cible.
