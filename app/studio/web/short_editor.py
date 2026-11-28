@@ -210,8 +210,8 @@ _HOOK_MAX_HORIZONTAL_SCALE = {
 
 def _merge_punctuation(words: Iterable[WordTiming]) -> list[WordTiming]:
     output: list[WordTiming] = []
-    closing_punctuation = re.compile(r"^[,.;:!?…)]\\]\\}»”’]+$")
-    opening_punctuation = re.compile(r"^[¿¡(\\[\\{«“‘]+$")
+    closing_punctuation = re.compile(r"^[,.;:!?…)\]\}»”’]+$")
+    opening_punctuation = re.compile(r"^[¿¡(\[\{«“‘]+$")
     for word in words:
         text = _clean_ass_text(word.text)
         if not text:
