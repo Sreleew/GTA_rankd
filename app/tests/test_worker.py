@@ -165,6 +165,63 @@ def test_hook_only_transcription_does_not_install_optional_diarization(tmp_path:
     assert report["words_after"] == 2
 
 
+def test_hook_only_transcription_falls_back_when_installed_diarization_is_unavailable(tmp_path: Path, monkeypatch):
+    from studio.web.speakers import SpeakerFilterError
+    from studio.web.short_editor import WordTiming
+
+    audio = tmp_path / "short.wav"
+    audio.write_bytes(b"wav")
+    words = [WordTiming(0.1, 0.4, "STREAMER"), WordTiming(0.6, 0.9, "REACTION")]
+    monkeypatch.setattr(worker.importlib.util, "find_spec", lambda name: object())
+
+    def unavailable(*args, **kwargs):
+        raise SpeakerFilterError("Moteur de voix indisponible")
+
+    monkeypatch.setattr(worker, "diarize_and_filter", unavailable)
+    filtered, report = worker._filter_short_transcription_words(
+        audio, words, captions_requested=False
+    )
+
+    assert filtered == words
+    assert report["mode"] == "hook_only"
+    assert report["status"] == "diarization_unavailable_fallback"
+    assert report["words_before"] == 2
+    assert report["words_after"] == 2
+    assert report["diarization_reason"] == "Moteur de voix indisponible"
+    assert "dialogues du jeu" in report["reason"]
+
+
+def test_hook_only_transcription_does_not_fallback_when_speakers_are_ambiguous(tmp_path: Path, monkeypatch):
+    from studio.web.short_editor import WordTiming
+
+    audio = tmp_path / "short.wav"
+    audio.write_bytes(b"wav")
+    words = [WordTiming(0.1, 0.4, "STREAMER"), WordTiming(0.6, 0.9, "GAME")]
+    monkeypatch.setattr(worker.importlib.util, "find_spec", lambda name: object())
+    monkeypatch.setattr(
+        worker,
+        "diarize_and_filter",
+        lambda *args, **kwargs: (
+            [],
+            {
+                "status": "ambiguous_speakers",
+                "words_before": 2,
+                "words_after": 0,
+                "reason": "Plusieurs voix sont trop proches.",
+            },
+        ),
+    )
+
+    filtered, report = worker._filter_short_transcription_words(
+        audio, words, captions_requested=False
+    )
+
+    assert filtered == []
+    assert report["mode"] == "hook_only"
+    assert report["status"] == "ambiguous_speakers"
+    assert report["words_after"] == 0
+
+
 def test_caption_voice_filter_keeps_only_words_returned_by_the_diarizer(tmp_path: Path, monkeypatch):
     from studio.web.short_editor import WordTiming
 
