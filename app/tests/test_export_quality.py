@@ -187,3 +187,15 @@ def test_analyze_export_quality_reuses_preprobed_media_info(tmp_path: Path, monk
     report = export_quality.analyze_export_quality(output, preprobed_info=info, expected_duration=15.0)
     assert report["status"] == "passed"
     assert report["metrics"]["width"] == 1080
+
+
+
+def test_word_timing_issues_flags_non_finite_intervals() -> None:
+    words = [
+        WordTiming(float("nan"), 1.0, "nan start"),
+        WordTiming(1.0, float("inf"), "infinite end"),
+        WordTiming(float("-inf"), 0.5, "negative infinity"),
+        WordTiming(2.0, 2.5, "valid"),
+    ]
+
+    assert export_quality._word_timing_issues(words, 15.0) == 3
