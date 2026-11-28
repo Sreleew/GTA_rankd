@@ -30,6 +30,15 @@ class MediaError(RuntimeError):
     """Erreur lisible pendant l'analyse ou le rendu vidéo."""
 
 
+def normalize_short_layout(layout: str) -> str:
+    """Map the retired framed layout to the source-preserving blur composition."""
+    if layout == "smart":
+        return "blur"
+    if layout not in {"fill", "blur"}:
+        raise ValueError("Le layout doit être 'fill', 'blur' ou 'smart'.")
+    return layout
+
+
 
 def create_hook_sound_effect(
     output_path: Path,
@@ -233,44 +242,10 @@ def build_filter_complex(
     """Build a vertical canvas while preserving the complete source frame."""
     if width <= 0 or height <= 0:
         raise ValueError("Les dimensions de sortie doivent être positives.")
-    if layout not in {"fill", "blur", "smart"}:
-        raise ValueError("Le layout doit être 'fill', 'blur' ou 'smart'.")
-
+    layout = normalize_short_layout(layout)
     crop_x = max(0, min(100, int(crop_x))) / 100
     crop_y = max(0, min(100, int(crop_y))) / 100
-    if layout == "smart":
-        # Keep the complete Twitch composition, including any webcam already
-        # embedded in the source. The clear frame is fitted inside an editorial
-        # panel; a blurred duplicate fills the remaining panel space.
-        panel_height = max(1, int(height * 0.48))
-        panel_y = int(height * 0.30)
-        base = (
-            f"[0:v]split=3[bgsrc][panelbgsrc][fgsrc];"
-            f"[bgsrc]scale={width}:{height}:force_original_aspect_ratio=increase,"
-            f"crop={width}:{height},boxblur={blur}:10,setsar=1[bg];"
-            f"[panelbgsrc]scale={width}:{panel_height}:force_original_aspect_ratio=increase,"
-            f"crop={width}:{panel_height},boxblur={blur}:10,setsar=1[panelbg];"
-            f"[fgsrc]scale={width}:{panel_height}:force_original_aspect_ratio=decrease,"
-            f"setsar=1[panelfg];"
-            "[panelbg][panelfg]overlay=(W-w)/2:(H-h)/2,setsar=1[panel];"
-        )
-        # Editorial frame: a restrained hairline and amber edge marker make
-        # the full source composition feel intentionally art-directed.
-        frame_x = max(8, int(width * 0.035))
-        frame_y = max(0, panel_y - max(2, int(height * 0.003)))
-        frame_width = max(1, width - frame_x * 2)
-        frame_height = panel_height + max(4, int(height * 0.006))
-        accent_width = max(3, int(width * 0.006))
-        accent_y = panel_y + max(4, int(panel_height * 0.025))
-        accent_height = max(1, panel_height - max(8, int(panel_height * 0.05)))
-        base += (
-            f"[bg][panel]overlay=(W-w)/2:{panel_y},"
-            f"drawbox=x={frame_x}:y={frame_y}:w={frame_width}:h={frame_height}:"
-            "color=white@0.30:t=2,"
-            f"drawbox=x={frame_x}:y={accent_y}:w={accent_width}:h={accent_height}:"
-            "color=0xF6C445@0.96:t=fill,setsar=1[base]"
-        )
-    elif layout == "fill":
+    if layout == "fill":
         base = (
             f"[0:v]scale={width}:{height}:force_original_aspect_ratio=increase,"
             f"crop={width}:{height}:(in_w-out_w)*{crop_x:.3f}:(in_h-out_h)*{crop_y:.3f},setsar=1[base]"
@@ -439,6 +414,7 @@ def render_vertical_short(
     sound_effect_volume: float = 0.14,
     progress_callback: Callable[[float], None] | None = None,
 ) -> dict[str, Any]:
+    layout = normalize_short_layout(layout)
     renderer_started = time.perf_counter()
     performance_timings: dict[str, int] = {}
     input_path = input_path.resolve()
