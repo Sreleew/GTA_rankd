@@ -284,11 +284,25 @@ def render_best_of_episode(
     result = probe_media(output_path, ffprobe, timeout=90)
     if int(result.get("width") or 0) != 1920 or int(result.get("height") or 0) != 1080:
         raise MediaError("Le fichier Daily Best Of exporté n'est pas au format 1920 × 1080.")
+    try:
+        output_duration = float(result.get("duration") or 0.0)
+    except (TypeError, ValueError) as exc:
+        raise MediaError("Impossible de vérifier la durée du Daily Best Of exporté.") from exc
+    output_duration_tolerance = max(1.0, total_duration * 0.01)
+    if (
+        not math.isfinite(output_duration)
+        or output_duration <= 0
+        or abs(output_duration - total_duration) > output_duration_tolerance
+    ):
+        raise MediaError(
+            "La durée du Daily Best Of exporté ne correspond pas à la durée attendue. "
+            "Le rendu est incomplet ou tronqué."
+        )
     if not result.get("has_audio"):
         raise MediaError("La vidéo finale ne contient aucune piste audio.")
     return {
         "output_path": str(output_path.resolve()),
-        "duration": round(float(result.get("duration") or 0.0), 2),
+        "duration": round(output_duration, 2),
         "width": 1920,
         "height": 1080,
         "clip_count": len(clips),
