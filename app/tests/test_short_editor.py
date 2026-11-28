@@ -482,3 +482,26 @@ def test_filtered_srt_sidecar_preserves_only_supplied_words_and_exact_intervals(
     assert "00:00:00,125 --> 00:00:00,450" in content
     assert "00:00:01,200 --> 00:00:01,850" in content
     assert "GAME_DIALOGUE" not in content
+
+
+def test_caption_punctuation_keeps_spanish_and_french_marks_with_their_words():
+    from studio.web.short_editor import _merge_punctuation
+
+    words = [
+        WordTiming(0.10, 0.12, "¿"),
+        WordTiming(0.12, 0.25, "Qué"),
+        WordTiming(0.25, 0.35, "pasó"),
+        WordTiming(0.35, 0.40, "?"),
+        WordTiming(0.50, 0.52, "«"),
+        WordTiming(0.52, 0.80, "incroyable"),
+        WordTiming(0.80, 0.84, "»"),
+    ]
+
+    merged = _merge_punctuation(words)
+
+    assert [word.text for word in merged] == ["¿Qué", "pasó?", "«incroyable»"]
+    assert merged[0].start == 0.10
+    assert merged[0].end == 0.25
+    assert merged[1].end == 0.40
+    assert merged[2].start == 0.50
+    assert merged[2].end == 0.84
