@@ -116,12 +116,35 @@ def _clean_ass_text(value: str) -> str:
     return re.sub(r"\s+", " ", cleaned).strip()
 
 
-def _wrap_words(value: str, max_words: int = 5) -> str:
+def _wrap_overlay_text(
+    value: str,
+    *,
+    max_line_chars: int,
+    base_font_size: int,
+    min_font_size: int,
+) -> tuple[str, int]:
+    """Fit a hook or context into two balanced mobile-safe lines."""
     words = _clean_ass_text(value).split()
-    if len(words) <= max_words:
-        return " ".join(words)
-    midpoint = min(max_words, (len(words) + 1) // 2)
-    return " ".join(words[:midpoint]) + r"\N" + " ".join(words[midpoint:])
+    if not words:
+        return "", base_font_size
+
+    joined = " ".join(words)
+    if len(joined) <= max_line_chars or len(words) == 1:
+        lines = [joined]
+    else:
+        candidates = []
+        for split_index in range(1, len(words)):
+            left = " ".join(words[:split_index])
+            right = " ".join(words[split_index:])
+            candidates.append((max(len(left), len(right)), abs(len(left) - len(right)), left, right))
+        _, _, left, right = min(candidates, key=lambda item: (item[0], item[1]))
+        lines = [left, right]
+
+    longest_line = max(len(line) for line in lines)
+    minimum_scale = min_font_size / max(1, base_font_size)
+    scale = min(1.0, max(minimum_scale, max_line_chars / max(1, longest_line)))
+    font_size = max(min_font_size, min(base_font_size, round(base_font_size * scale)))
+    return r"\N".join(lines), font_size
 
 
 def infer_hook_style(hook_text: str, context_text: str = "") -> str:
@@ -176,6 +199,13 @@ _HOOK_ANIMATIONS = {
     "suspense": r"\fad(180,120)\fscx96\fscy96\blur7\t(0,320,\fscx100\fscy100\blur0)",
     # A brief squash-and-stretch sells a genuine reaction.
     "reaction": r"\fad(20,130)\fscx78\fscy122\frz4\blur3\t(0,110,\fscx108\fscy96\frz-1\blur0)\t(110,210,\fscx100\fscy100\frz0)",
+}
+
+_HOOK_MAX_HORIZONTAL_SCALE = {
+    "impact": 1.42,
+    "question": 1.0,
+    "suspense": 1.0,
+    "reaction": 1.22,
 }
 
 
@@ -379,20 +409,37 @@ Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
         )
 
     clean_hook = _clean_ass_text(hook_text)
+    hook_line_count = 1
     if clean_hook:
         # Show the hook itself without a series label or extra branding.
         selected_hook_style = str(hook_style or "auto").strip().lower()
         if selected_hook_style == "auto" or selected_hook_style not in _HOOK_ANIMATIONS:
             selected_hook_style = infer_hook_style(clean_hook, context_text)
         motion = _HOOK_ANIMATIONS[selected_hook_style]
+        maximum_animation_scale = _HOOK_MAX_HORIZONTAL_SCALE[selected_hook_style]
+        hook_overlay, hook_font_size = _wrap_overlay_text(
+            clean_hook,
+            max_line_chars=max(12, round(width / (42 * maximum_animation_scale))),
+            base_font_size=86,
+            min_font_size=54,
+        )
+        hook_line_count = hook_overlay.count(r"\N") + 1
         events.append(
             f"Dialogue: 2,0:00:00.00,0:00:02.00,Hook,,0,0,0,,"
-            f"{{\\an8\\pos({width // 2},{int(height * 0.20)}){motion}}}{_wrap_words(clean_hook, 5)}"
+            f"{{\\an8\\pos({width // 2},{int(height * 0.18)})\\fs{hook_font_size}{motion}}}{hook_overlay}"
         )
     clean_context = _clean_ass_text(context_text)
     if clean_context:
+        context_overlay, context_font_size = _wrap_overlay_text(
+            clean_context,
+            max_line_chars=max(24, round(width / 26)),
+            base_font_size=31,
+            min_font_size=20,
+        )
+        context_y_ratio = 0.35 if hook_line_count > 1 else 0.30
         events.append(
-            f"Dialogue: 2,0:00:00.35,0:00:02.60,Context,,0,0,0,,{{\\an8\\pos({width // 2},{int(height * 0.29)})}}{_wrap_words(clean_context, 7)}"
+            f"Dialogue: 2,0:00:00.35,0:00:02.60,Context,,0,0,0,,"
+            f"{{\\an8\\pos({width // 2},{int(height * context_y_ratio)})\\fs{context_font_size}}}{context_overlay}"
         )
     if captions_enabled and words:
         caption_events = _caption_events(

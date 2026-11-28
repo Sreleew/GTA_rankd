@@ -5,7 +5,7 @@
 - **Dernière mise à jour :** 28 novembre 2026
 - **Progression des releases :** à chaque relance de développement, le compte rendu doit indiquer le lot livré, les PR/CI, l'état d'avancement vers la prochaine version et une estimation actualisée du nombre de lots restants avant sa publication. Cette estimation doit être réévaluée à chaque session, sans promettre une date artificielle.
 - **Dernière version stable confirmée :** [v0.9.3](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.9.3), publiée le 28 novembre 2026.
-- **État :** la PR #92 est intégrée dans `main` (commit `617cec55`). La release v0.9.3 reste publiée ; les évolutions suivantes sont destinées à une prochaine version après validation d'un Short réel sur le PC Windows.
+- **État :** les PR #92 et #93 sont intégrées dans `main` ; la PR #93 a été fusionnée au commit `c05ea08`. La release v0.9.3 reste publiée ; les évolutions suivantes sont destinées à une prochaine version après validation d'un Short réel sur le PC Windows.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
 - **Source active :** `app/`. Modifier directement les fichiers Python, JavaScript, CSS, HTML, tests et installateur présents dans ce dossier.
@@ -733,10 +733,23 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **Correction :** une entrée DTW multi-mots est désormais rendue comme une phrase sur son intervalle d'origine, sans emphase mot à mot. Les entrées réellement unitaires gardent l'emphase cinétique. Les listes mixtes conservent leur ordre chronologique.
 - **Lisibilité mobile complémentaire :** les mots isolés exceptionnellement longs en mode DTW sont maintenant comprimés horizontalement de façon bornée, comme dans le fallback phrase. Le timing d'origine et l'emphase cinétique restent préservés.
 - **Tests :** régression des entrées mixtes (mot, phrase, mot suivant), plus vérification d'un mot DTW très long : intervalle exact, compression horizontale et emphase conservée.
-- **PR #93 :** [Preserve exact timing for mixed DTW caption records](https://github.com/Sreleew/GTA_rankd/pull/93), branche `fix/dtw-caption-mixed-segments`. Les validations Linux et Windows doivent réussir sur le commit final avant toute fusion.
+- **PR #93 :** [Preserve exact timing for mixed DTW caption records](https://github.com/Sreleew/GTA_rankd/pull/93), branche `fix/dtw-caption-mixed-segments`, fusionnée dans `main` au commit `c05ea08be0fd097f11621f61652cc9f4d3afe606` après réussite Linux/Windows sur le HEAD final.
 - **Périmètre :** aucun changement au modèle Whisper, aux options de transcription, aux paramètres utilisateur, aux données locales, aux encodeurs AMD/CPU, aux miniatures ou à la version publiée. « Moments forts » reste en pause.
 - **Release :** v0.9.3 reste la dernière version stable ; aucune nouvelle release ni approbation de publication n'est créée.
 - **Limite :** aucun rendu réel Whisper ni benchmark RX 9060 XT n'est revendiqué.
 - **CI initiale :** Linux et Windows ont tous deux réussi Ruff et pip-audit, puis échoué au contrôle `git show --check` à cause d'une ligne vide supplémentaire à la fin du test. Les suites de régression et le packaging ont été sautés par le garde-fou. La ligne vide superflue a été supprimée dans le commit `9b7229c` ; les validations doivent repartir sur ce nouveau commit.
-- **CI après extension :** Linux et Windows ont échoué au contrôle `git show --check` car l'ajout du test de mot long avait laissé une ligne vide supplémentaire à la fin du fichier. Ruff et pip-audit ont réussi ; les tests et le package ont été sautés. La fin du test a été normalisée à une seule nouvelle ligne dans le commit `233cf8c54f8b51e538311073b278a16792168e45` ; les deux plateformes doivent être revalidées sur le HEAD final.
-- **Suite :** confirmer les deux CI, puis vérifier un extrait Whisper DTW et un fallback SRT sur Windows avant d'élargir le chantier au Daily Best Of.
+- **CI après extension :** deux premières tentatives ont échoué uniquement sur une ligne vide supplémentaire à la fin du test. Après normalisation de la fin de fichier, Linux [46099885272](https://github.com/Sreleew/GTA_rankd/actions/runs/46099885272) a réussi (239 tests passés, 1 ignoré, package Windows construit et vérifié) et Windows [46099885244](https://github.com/Sreleew/GTA_rankd/actions/runs/46099885244) a réussi (audit, PowerShell, tests et package). Les contrôles post-fusion Linux [46100078401](https://github.com/Sreleew/GTA_rankd/actions/runs/46100078401) et Windows [46100078570](https://github.com/Sreleew/GTA_rankd/actions/runs/46100078570) ont également réussi ; Linux confirme 239 tests passés et 1 ignoré.
+- **Suite :** poursuivre l'amélioration des hooks courts et du cadrage du texte éditorial, puis vérifier un extrait Whisper DTW et un fallback SRT sur Windows avant d'élargir le chantier au Daily Best Of.
+
+
+## 54. Adapter les hooks et le contexte aux limites mobiles, 28 novembre 2026
+
+- État de départ : PR #93 fusionnée dans main ; les contrôles post-fusion Linux et Windows ont réussi.
+- Défaut identifié : l'ancien retour à la ligne du hook se basait sur le nombre de mots et pouvait laisser une ligne trop longue. Les hooks français ou anglais comportant de longs mots pouvaient déborder ou produire une composition déséquilibrée. Le contexte pouvait également se rapprocher excessivement d'un hook sur deux lignes.
+- Correction : les overlays sont maintenant répartis sur une ou deux lignes équilibrées selon la longueur réelle du texte. La taille de police est réduite de façon bornée lorsque nécessaire et tient compte du grossissement maximal de chaque animation de hook. Le contexte descend automatiquement lorsque le hook occupe deux lignes. Les animations, les durées (hook 2,0 s, contexte 2,6 s) et l'absence d'intro sont conservées.
+- Tests : ajout de cas français longs (hook et contexte sur deux lignes) et d'un hook court qui conserve la position compacte du contexte.
+- Périmètre : aucun logo, miniature, cadre, changement de composition Twitch, modèle Whisper, encodeur, paramètre utilisateur ou donnée locale. « Moments forts » reste en pause.
+- PR #94 : [Mobile-safe hook and context layout](https://github.com/Sreleew/GTA_rankd/pull/94), branche feat/mobile-hook-layout, commit e8ca8577c393a32053d1f0d6cbcdada471e6dfe9. Les validations Linux et Windows doivent réussir sur le HEAD final avant fusion.
+- Release : v0.9.3 reste la dernière version stable ; aucune nouvelle release ni approbation de publication n'est créée.
+- Limite : aucun rendu réel ni mesure de rétention sur une vidéo publiée n'est revendiqué.
+- Suite : valider les hooks sur plusieurs clips français et anglais, puis poursuivre la consolidation du parcours Short.

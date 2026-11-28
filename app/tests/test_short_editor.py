@@ -405,3 +405,45 @@ def test_word_timed_caption_scales_long_unbreakable_word_without_changing_timing
     assert word in caption_line
     assert r"\fscx60" in caption_line
     assert r"\fscx64" in caption_line
+
+
+def test_long_hook_and_context_are_balanced_and_kept_inside_mobile_safe_area(tmp_path: Path):
+    path = create_ass_file(
+        tmp_path / "long-editorial-overlays.ass",
+        hook_text="IL A VRAIMENT PENSÉ POUVOIR ÉCHAPPER À LA POLICE",
+        hook_style="impact",
+        context_text="ET LE STREAMER N'AVAIT ABSOLUMENT RIEN VU VENIR",
+        captions_enabled=False,
+        brand_enabled=False,
+    )
+    content = path.read_text(encoding="utf-8-sig")
+    hook_line = next(line for line in content.splitlines() if ",Hook,," in line)
+    context_line = next(line for line in content.splitlines() if ",Context,," in line)
+
+    assert hook_line.count(r"\N") == 1
+    assert context_line.count(r"\N") == 1
+    assert r"\fs" in hook_line
+    assert r"\fscx142" in hook_line
+    assert r"\fs" in context_line
+    assert "0:00:00.00,0:00:02.00" in hook_line
+    assert "0:00:00.35,0:00:02.60" in context_line
+    assert r"\pos(540,345)" in hook_line
+    assert r"\pos(540,672)" in context_line
+
+
+def test_short_hook_keeps_context_in_its_compact_position(tmp_path: Path):
+    path = create_ass_file(
+        tmp_path / "compact-editorial-overlays.ass",
+        hook_text="WAIT FOR IT",
+        context_text="THE GETAWAY GOES WRONG",
+        captions_enabled=False,
+        brand_enabled=False,
+    )
+    content = path.read_text(encoding="utf-8-sig")
+    hook_line = next(line for line in content.splitlines() if ",Hook,," in line)
+    context_line = next(line for line in content.splitlines() if ",Context,," in line)
+
+    assert r"\pos(540,345)" in hook_line
+    assert r"\pos(540,576)" in context_line
+    assert "WAIT FOR IT" in hook_line
+    assert "THE GETAWAY GOES WRONG" in context_line
