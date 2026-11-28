@@ -332,7 +332,7 @@ def test_whisper_cli_falls_back_to_srt_when_dtw_bounds_are_invalid(tmp_path: Pat
     import textwrap
 
     binary = tmp_path / "fake-whisper-invalid-dtw.py"
-    binary.write_text(textwrap.dedent(f"""\\
+    binary.write_text(textwrap.dedent(f"""
         #!{sys.executable}
         import json, pathlib, sys
         if '--help' in sys.argv:
@@ -343,7 +343,7 @@ def test_whisper_cli_falls_back_to_srt_when_dtw_bounds_are_invalid(tmp_path: Pat
         args = sys.argv[1:]
         base = pathlib.Path(args[args.index('-of') + 1])
         base.with_suffix('.srt').write_text(
-            '1\\\\n00:00:00,000 --> 00:00:01,000\\\\nHello there!\\\\n',
+            chr(10).join(["1", "00:00:00,000 --> 00:00:01,000", "Hello there!", ""]),
             encoding='utf-8'
         )
         payload = {'transcription': [{
@@ -354,7 +354,7 @@ def test_whisper_cli_falls_back_to_srt_when_dtw_bounds_are_invalid(tmp_path: Pat
         if '-dtw' not in args or '-ojf' not in args or '-nfa' not in args:
             raise SystemExit(4)
         raise SystemExit(0)
-    """), encoding="utf-8")
+    """).lstrip(), encoding="utf-8")
     binary.chmod(0o755)
     model = tmp_path / "model.bin"
     model.write_bytes(b"model")
