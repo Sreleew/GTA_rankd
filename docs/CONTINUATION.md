@@ -5,7 +5,7 @@
 - **Dernière mise à jour :** 28 novembre 2026
 - **Progression des releases :** à chaque relance de développement, le compte rendu doit indiquer le lot livré, les PR/CI, l'état d'avancement vers la prochaine version et une estimation actualisée du nombre de lots restants avant sa publication. Cette estimation doit être réévaluée à chaque session, sans promettre une date artificielle.
 - **Dernière version stable confirmée :** [v0.9.3](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.9.3), publiée le 28 novembre 2026.
-- **État :** les PR #92 à #97 sont intégrées dans `main` ; la PR #97 a été fusionnée au commit `7613e983`. La release v0.9.3 reste publiée ; les évolutions suivantes sont destinées à une prochaine version après validation d'un Short réel sur le PC Windows.
+- **État :** les PR #92 à #98 sont intégrées dans `main` ; la PR #98 a été fusionnée au commit `d7d96db6`. La release v0.9.3 reste publiée ; les évolutions suivantes sont destinées à une prochaine version après validation d'un Short réel sur le PC Windows.
 - **Dépôt :** https://github.com/Sreleew/GTA_rankd
 - **Archive de provenance :** `archive/releases/v0.7.8/`. C'est une archive historique de la version publiée, pas la source de développement.
 - **Source active :** `app/`. Modifier directement les fichiers Python, JavaScript, CSS, HTML, tests et installateur présents dans ce dossier.
@@ -806,6 +806,20 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - Correction : appliquer un fondu audio d'entrée de 0,35 s et un fondu de sortie de 0,75 s au mix final lorsque les durées exactes sont disponibles. Les durées sont bornées pour les tests ou les épisodes exceptionnellement courts. Aucun crossfade n'est ajouté entre les clips afin de ne pas brouiller les dialogues ni les effets de gameplay.
 - Tests : vérifier les timestamps exacts sur un épisode de 560 s, le comportement historique sans durées connues et le bornage sur un flux de 0,2 s.
 - Périmètre : audio uniquement ; aucun changement aux vidéos, à l'ordre des Shorts, à la durée cible, aux données locales, aux paramètres ou aux encodeurs AMD/CPU. « Moments forts » reste en pause.
-- PR #98 : [Add clean audio edges to Daily Best Of](https://github.com/Sreleew/GTA_rankd/pull/98), branche feat/daily-best-of-audio-edges, commit 93b64d842bdee2fe8590fc007cf6d141ba7a0d87. Les validations Linux et Windows doivent réussir sur le HEAD final avant fusion.
+- PR #98 : [Add clean audio edges to Daily Best Of](https://github.com/Sreleew/GTA_rankd/pull/98), branche feat/daily-best-of-audio-edges, fusionnée dans main au commit d7d96db68a360f376a3adf07beeb33b7894128bc après réussite Linux/Windows sur le HEAD final.
 - Release : v0.9.3 reste la dernière version stable ; aucune nouvelle release ni approbation de publication n'est créée.
+- CI PR #98 : Linux [46101822791](https://github.com/Sreleew/GTA_rankd/actions/runs/46101822791) et Windows [46101822773](https://github.com/Sreleew/GTA_rankd/actions/runs/46101822773) ont réussi ; Linux confirme 249 tests passés et 1 ignoré, le package Windows a été construit et vérifié.
+- CI post-fusion PR #98 : Linux [46101996557](https://github.com/Sreleew/GTA_rankd/actions/runs/46101996557) et Windows [46101996393](https://github.com/Sreleew/GTA_rankd/actions/runs/46101996393) sont en cours.
 - Suite : vérifier le son sur un Daily Best Of complet et ne considérer des transitions entre clips que si elles améliorent la compréhension sans masquer la parole.
+
+
+## 59. Vérifier la durée réelle des Shorts avant le rendu Daily Best Of, 28 novembre 2026
+
+- État de départ : PR #98 fusionnée dans main après réussite Linux/Windows ; ses contrôles post-fusion sont en cours.
+- Défaut identifié : le renderer utilisait uniquement la durée enregistrée dans la bibliothèque pour couper chaque Short et calculer la progression. Si un fichier avait été remplacé ou modifié après validation, la concaténation et le fondu final pouvaient être décalés, voire produire un épisode plus court que prévu.
+- Correction : comparer la durée ffprobe de chaque fichier à la durée enregistrée, avec une tolérance bornée à 1 seconde ou 1 % pour absorber les écarts de conteneur. Utiliser ensuite les durées réelles pour les pistes silencieuses, le graphe FFmpeg, les fondus audio et la progression. Refuser le rendu si les durées ont changé ou si le total réel sort de la plage 9 à 11 minutes.
+- Tests : ajouter un cas où un Short a été raccourci après validation ; les tests de rendu existants continuent de vérifier les durées exactes utilisées par FFmpeg.
+- Périmètre : contrôle avant encodage ; aucun fichier local n'est modifié, aucun clip n'est supprimé et aucune donnée de bibliothèque n'est réécrite. Les encodeurs AMD/CPU et le fallback restent inchangés. « Moments forts » reste en pause.
+- PR #99 : [Verify source durations before Daily Best Of render](https://github.com/Sreleew/GTA_rankd/pull/99), branche fix/verify-best-of-source-durations, commit ebc66b259e81f288bf6aa5176e1036c83f33c056. Les validations Linux et Windows doivent réussir sur le HEAD final avant fusion.
+- Release : v0.9.3 reste la dernière version stable ; aucune nouvelle release ni approbation de publication n'est créée.
+- Suite : valider le rendu complet 16:9 et le son sur un ensemble de Shorts validés avant d'élargir le montage.

@@ -254,3 +254,28 @@ def test_best_of_filter_graph_clamps_edge_fades_for_short_test_durations():
     graph = build_best_of_filter_graph(1, [0], clip_durations=[0.2])
 
     assert "[outa_raw]afade=t=in:st=0:d=0.050,afade=t=out:st=0.150:d=0.050[outa]" in graph
+
+
+def test_best_of_renderer_rejects_source_duration_changed_after_validation(tmp_path: Path, monkeypatch):
+    from studio.web import short_renderer
+    from studio.web.best_of import render_best_of_episode
+
+    source = tmp_path / "changed-short.mp4"
+    source.write_bytes(b"source")
+    output = tmp_path / "episode.mp4"
+
+    def fake_probe(path, ffprobe="ffprobe", timeout=None):
+        return {"width": 1080, "height": 1920, "duration": 240, "has_audio": True}
+
+    monkeypatch.setattr(short_renderer, "probe_media", fake_probe)
+    monkeypatch.setattr(short_renderer, "resolve_executable", lambda value: str(value))
+
+    with pytest.raises(short_renderer.MediaError, match="durée du Short .* a changé"):
+        render_best_of_episode(
+            {
+                "ready_for_render": True,
+                "clips": [{"id": "changed", "output_path": str(source), "duration": 280}],
+            },
+            output,
+            encoder="libx264",
+        )
