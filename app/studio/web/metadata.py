@@ -125,10 +125,10 @@ def _fallback_hook(transcript: str, note: str = "") -> str:
         note_clean = re.sub(r"\s+", " ", str(note or "")).strip()
         if note_clean and not re.search(r"(?:moment fort détecté|score|100/100|automatiquement)", note_clean, re.I):
             return _limit_words(note_clean, 5).upper()
-        return "WAIT FOR THE REACTION"
+        return ""
     words = _word_tokens(source)
     if not words:
-        return "WAIT FOR THE REACTION"
+        return ""
     keys = [_token_key(word) for word in words]
     cue_index = next((i for i, key in enumerate(keys) if key in _HOOK_CUES), 0)
     start = max(0, cue_index - 2)
