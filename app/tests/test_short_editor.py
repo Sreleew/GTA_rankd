@@ -27,6 +27,7 @@ def test_ass_contains_hook_branding_and_active_word_highlight(tmp_path: Path):
         hook_text="BRO THOUGHT HE WAS SAFE",
         context_text="A GTA VI police chase goes wrong",
         handle="GTA_rankd",
+        word_timed_captions=True,
         brand_enabled=True,
     )
     content = path.read_text(encoding="utf-8-sig")
@@ -35,7 +36,7 @@ def test_ass_contains_hook_branding_and_active_word_highlight(tmp_path: Path):
     assert "GTA VI" in content
     assert "GR  //" not in content
     assert r"\fad(180,120)" in content
-    assert "0:00:02.60,Hook" in content
+    assert "0:00:02.00,Hook" in content
     assert "Style: HookKicker" not in content
     assert "HAPPENED?" in content
     assert r"\c&H0000C8F5&" in content
@@ -72,6 +73,7 @@ def test_caption_active_word_gets_a_subtle_kinetic_pop(tmp_path: Path):
         tmp_path / "active-word.ass",
         words=[WordTiming(0.1, 0.4, "WAIT"), WordTiming(0.4, 0.8, "WHAT?")],
         hook_text="",
+        word_timed_captions=True,
         brand_enabled=False,
     )
     content = path.read_text(encoding="utf-8-sig")
@@ -94,7 +96,7 @@ def test_hook_uses_direct_text_without_series_branding(tmp_path: Path):
     assert infer_hook_style("HE THOUGHT HE WAS SAFE") == "suspense"
     assert r"\blur7" in content
     assert r"\t(0,320,\fscx100\fscy100\blur0)" in content
-    assert "0:00:02.60,Hook" in content
+    assert "0:00:02.00,Hook" in content
 
 
 def test_smart_layout_moves_captions_below_the_gameplay_panel(tmp_path: Path):
@@ -265,14 +267,67 @@ def test_short_clip_is_never_trimmed_and_word_times_are_rebased(tmp_path: Path) 
     assert "WHAT?" in contents
 
 
-def test_long_caption_segment_is_split_and_wrapped_for_vertical_safe_area(tmp_path: Path):
+def test_srt_fallback_keeps_phrase_timing_and_wraps_for_vertical_safe_area(tmp_path: Path):
     words = [WordTiming(0.0, 1.2, "SHOOT IF I'M CLOSE TO CIVILIANS, THEY")]
-    path = create_ass_file(tmp_path / "wrapped.ass", words=words, brand_enabled=False)
+    path = create_ass_file(
+        tmp_path / "wrapped-srt.ass",
+        words=words,
+        captions_enabled=True,
+        word_timed_captions=False,
+        brand_enabled=False,
+    )
     content = path.read_text(encoding="utf-8-sig")
-    assert r"\N" in content
-    assert "CIVILIANS" in content
-    # A segment-level fallback is expanded to individual active words.
-    assert content.count("Dialogue: 0,") > 1
+    caption_lines = [line for line in content.splitlines() if line.startswith("Dialogue: 0,")]
+    assert len(caption_lines) == 1
+    assert "0:00:00.00,0:00:01.20" in caption_lines[0]
+    assert r"\N" in caption_lines[0]
+    assert "CIVILIANS" in caption_lines[0]
+    assert r"\c&H0000C8F5&" not in caption_lines[0]
+
+
+def test_ass_uses_safe_segment_timing_when_timestamp_mode_is_not_supplied(tmp_path: Path):
+    words = [WordTiming(0.25, 1.65, "We got away from the police!")]
+    path = create_ass_file(
+        tmp_path / "unknown-timing.ass",
+        words=words,
+        captions_enabled=True,
+        brand_enabled=False,
+    )
+    content = path.read_text(encoding="utf-8-sig")
+    caption_lines = [line for line in content.splitlines() if line.startswith("Dialogue: 0,")]
+    assert len(caption_lines) == 1
+    assert "0:00:00.25,0:00:01.65" in caption_lines[0]
+    assert "WE GOT AWAY FROM THE POLICE!" in caption_lines[0].replace(r"\N", " ")
+    assert r"\c&H0000C8F5&" not in caption_lines[0]
+
+
+def test_srt_fallback_scales_an_unbreakable_word_without_changing_its_timing(tmp_path: Path):
+    words = [WordTiming(0.0, 1.8, "SUPERCALIFRAGILISTICEXPIALIDOCIOUS")]
+    path = create_ass_file(
+        tmp_path / "long-srt-word.ass",
+        words=words,
+        captions_enabled=True,
+        word_timed_captions=False,
+        brand_enabled=False,
+    )
+    content = path.read_text(encoding="utf-8-sig")
+    caption_line = next(line for line in content.splitlines() if line.startswith("Dialogue: 0,"))
+    assert "0:00:00.00,0:00:01.80" in caption_line
+    assert r"\fscx" in caption_line
+    assert "SUPERCALIFRAGILISTICEXPIALIDOCIOUS" in caption_line
+
+
+def test_hook_and_context_clear_quickly_without_an_intro_screen(tmp_path: Path):
+    path = create_ass_file(
+        tmp_path / "fast-hook.ass",
+        hook_text="WAIT, WHAT JUST HAPPENED?",
+        context_text="The getaway goes wrong",
+        captions_enabled=False,
+        brand_enabled=False,
+    )
+    content = path.read_text(encoding="utf-8-sig")
+    assert "0:00:02.00,Hook" in content
+    assert "0:00:02.60,Context" in content
 
 
 def test_caption_groups_break_at_sentence_punctuation():

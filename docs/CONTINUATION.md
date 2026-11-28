@@ -708,3 +708,19 @@ Pour un test isolé, créer `config.yaml` depuis `config.yaml.default` uniquemen
 - **CI post-fusion :** audit Linux [46086077738](https://github.com/Sreleew/GTA_rankd/actions/runs/46086077738) et validation Windows [46086077825](https://github.com/Sreleew/GTA_rankd/actions/runs/46086077825) réussis, avec tests complets et vérification du package.
 - **Publication :** workflow officiel [46086077731](https://github.com/Sreleew/GTA_rankd/actions/runs/46086077731) réussi. La [v0.9.3](https://github.com/Sreleew/GTA_rankd/releases/tag/v0.9.3) est publiée avec le ZIP Windows `GTA-Ranked-Studio-v0.9.3.zip` (250 018 octets) et `SHA256SUMS.txt`.
 - **Suite :** installer la v0.9.3 et examiner un Short réel pour vérifier le rendu visuel final sur Windows ; le CI ne remplace pas ce contrôle sur le PC cible.
+
+
+## 52. Fidélité des sous-titres SRT et sortie rapide du hook, 28 novembre 2026
+
+- **État de départ :** la PR #86 avait des validations Linux et Windows réussies sur son commit, mais sa branche était devenue divergente et non fusionnable après les évolutions #87 et #89. Son lot mélangeait la correction SRT avec une sélection de frame de couverture par transcript qui n'est plus nécessaire dans la direction v0.9.3.
+- **Décision de portage :** reprendre uniquement les changements utiles au montage actuel sur une branche issue du `main` v0.9.3. Ne pas réintroduire de miniature graphique ni de sélection de cover custom ; l'aperçu interne reste une image brute et les plateformes choisissent la couverture.
+- **Sous-titres DTW :** le mode `word_dtw` conserve les timestamps mot à mot réels et son emphase cinétique existante.
+- **Fallback SRT :** le worker transmet maintenant le mode de timestamps réellement retourné par whisper.cpp. En `segment_srt`, chaque phrase reste affichée sur l'intervalle SRT exact ; le moteur ne répartit plus artificiellement le temps entre les mots. Les phrases sont repliées sur plusieurs lignes et les mots exceptionnellement longs reçoivent une réduction horizontale bornée. Le générateur ASS choisit prudemment le mode segment si aucun mode explicite n'est fourni ; le traitement mot à mot est activé uniquement lorsque whisper.cpp confirme `word_dtw`.
+- **Hook :** le texte principal disparaît après 2,0 s et le contexte après 2,6 s. Le gameplay reste visible dès la première image ; aucun écran d'introduction n'est ajouté.
+- **Tests :** couverture des bornes SRT exactes, de l'absence de faux surlignage mot à mot, du retour à la mise en emphase DTW et du rythme hook/contexte.
+- **Premier retour CI :** Linux a exécuté 236 tests avec 1 ignoré et révélé une assertion de test trop stricte : elle ne normalisait pas le marqueur de retour à la ligne ASS `\\N`. L'assertion a été corrigée pour comparer le texte rendu sans ce séparateur ; le code de rendu n'était pas en échec.
+- **Défaut sûr :** si un appelant ne connaît pas le mode Whisper, le générateur reste en mode segment par défaut. Un test dédié vérifie qu'il n'invente pas de synchronisation mot à mot sans confirmation DTW.
+- **PR #92 :** [Keep SRT captions accurate and shorten Short opening overlays](https://github.com/Sreleew/GTA_rankd/pull/92), branche `fix/srt-caption-timing-and-hook-exit`. Les validations Linux et Windows doivent réussir sur le commit final de la PR avant fusion.
+- **Release :** v0.9.3 reste la dernière version stable ; aucun numéro de version, fichier d'approbation ou réglage utilisateur n'est modifié.
+- **Limite :** aucun nouveau rendu réel ni benchmark Whisper sur la RX 9060 XT n'est revendiqué.
+- **Suite :** valider les deux plateformes, puis comparer un rendu DTW et un fallback SRT sur Windows avant de poursuivre les améliorations éditoriales.
