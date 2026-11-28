@@ -1738,3 +1738,45 @@ def test_hook_sound_effect_filter_graph_executes_with_real_ffmpeg(tmp_path: Path
 
     assert output.is_file()
     assert output.stat().st_size > 0
+
+
+@pytest.mark.parametrize("invalid_duration", ["nan", "inf", "-inf", "not-a-number", "0", "-1"])
+def test_probe_media_rejects_non_finite_or_non_positive_duration(invalid_duration, monkeypatch, tmp_path):
+    source = tmp_path / "invalid-duration.mp4"
+    source.write_bytes(b"media")
+    monkeypatch.setattr(short_renderer, "resolve_executable", lambda _name: "ffprobe")
+
+    def fake_run_command(args, *, timeout=None, cwd=None):
+        return short_renderer.subprocess.CompletedProcess(
+            args, 0,
+            stdout=(
+                '{"streams":[{"codec_type":"video","width":1920,"height":1080}],'
+                f'"format":{{"duration":"{invalid_duration}"}}' + '}'
+            ),
+            stderr="",
+        )
+
+    monkeypatch.setattr(short_renderer, "run_command", fake_run_command)
+    with pytest.raises(short_renderer.MediaError, match="finie et supérieure à zéro"):
+        short_renderer.probe_media(source)
+
+
+def test_probe_media_falls_back_to_valid_video_stream_duration(monkeypatch, tmp_path):
+    source = tmp_path / "stream-duration.mp4"
+    source.write_bytes(b"media")
+    monkeypatch.setattr(short_renderer, "resolve_executable", lambda _name: "ffprobe")
+
+    def fake_run_command(args, *, timeout=None, cwd=None):
+        return short_renderer.subprocess.CompletedProcess(
+            args, 0,
+            stdout=(
+                '{"streams":[{"codec_type":"video","width":1920,"height":1080,"duration":"30"}],'
+                '"format":{"duration":"nan"}}'
+            ),
+            stderr="",
+        )
+
+    monkeypatch.setattr(short_renderer, "run_command", fake_run_command)
+    result = short_renderer.probe_media(source)
+
+    assert result["duration"] == 30.0

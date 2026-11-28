@@ -132,10 +132,15 @@ def _needs_audio_analysis(
 
 
 def _validate_short_excerpt_duration(duration: float) -> float:
-    """Validate that a Short excerpt has a positive duration, without a length cap."""
-    selected = float(duration)
-    if selected <= 0:
-        raise MediaError("La durée de l'extrait Short doit être supérieure à zéro.")
+    """Validate that a Short excerpt has a finite positive duration, without a length cap."""
+    try:
+        selected = float(duration)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise MediaError(
+            "La durée de l'extrait Short doit être finie et supérieure à zéro."
+        ) from exc
+    if not math.isfinite(selected) or selected <= 0:
+        raise MediaError("La durée de l'extrait Short doit être finie et supérieure à zéro.")
     return selected
 
 
