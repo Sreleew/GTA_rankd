@@ -54,7 +54,7 @@ def sanitize_word_timings(
         if text:
             cleaned.append(WordTiming(start, end, text))
 
-    return sorted(cleaned, key=lambda item: (item.start, item.end))
+    return sorted(cleaned, key=lambda item: item.start)
 
 
 def parse_srt(path: Path) -> list[WordTiming]:
