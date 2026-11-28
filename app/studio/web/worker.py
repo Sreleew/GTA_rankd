@@ -426,7 +426,7 @@ class JobRunner:
                     self.config.get("shorts", "auto_trim_enabled", default=True),
                 ))
             dynamic_zoom_enabled = bool(options.get(
-                "dynamic_zoom", self.config.get("shorts", "dynamic_zoom", default=True)
+                "dynamic_zoom", self.config.get("shorts", "dynamic_zoom", default=False)
             ))
             audio_analysis_needed = _needs_audio_analysis(
                 source_info["has_audio"],
